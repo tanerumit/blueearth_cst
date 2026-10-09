@@ -67,6 +67,20 @@ The [landscape and development plan](t2610082103/landscape-and-plan.md) preserve
 Start with a bounded foundations design and focused specialist handoffs. Implementation remains in
 the pinned session branch; board and planning records stay on main.
 
-The first foundations design passed internal and independent review with no findings.
-Its exact-revision approval is pending; 167 baseline figures are captured. See
-[review state](t2610082103/design-runs/rendering-foundations/status.md) and the prepared implementation brief.
+The first foundations design passed internal and independent review with no findings, and the user
+approved its exact revision. The extraction is implemented and verified on the pinned branch.
+See [completion evidence](t2610082103/design-runs/rendering-foundations/completion.md) and
+[review state](t2610082103/design-runs/rendering-foundations/status.md).
+
+
+### Rendering foundations increment completed (2026-10-10)
+
+The new internal plotting core owns the existing style tokens and ten drawing helpers. Active WF0–WF2
+callers now import it directly; WF0 compatibility aliases remain. WF1 explicitly owns its batch backend.
+Existing scientific preparation, appearance and product inventories are preserved. The broader progress
+items above remain open because export separation, map references and reusable chart interfaces are later work.
+
+Next packet: separate rendering/export mechanics from workflow logging, with an explicit caption/layout
+contract. Preserve the verified baseline until any visual change is approved. Existing issues to address
+there or in a later layout packet: captions grow the axes area; very long records crowd year labels;
+all-missing maps retain a default scale with little interpretive value. R/WF3 and external packaging follow later.

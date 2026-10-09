@@ -1,0 +1,87 @@
+{
+  "retained-input-hashes.json": {
+    "equal": true,
+    "before_count": 86,
+    "after_count": 86
+  },
+  "prepared-value-hashes.json": {
+    "equal": true,
+    "before_count": 77,
+    "after_count": 77
+  },
+  "evaluation-input-hashes.json": {
+    "equal": true,
+    "before_count": 91,
+    "after_count": 91
+  },
+  "inputs.json": {
+    "equal": true,
+    "count": 73,
+    "different_keys": []
+  },
+  "evaluation-prepared-hashes.json": {
+    "equal": true,
+    "count": 2,
+    "different_keys": []
+  },
+  "wf1_fields": {
+    "identical": true,
+    "variables": [
+      "precip",
+      "precip_valid_years",
+      "precip_unavailable",
+      "temp",
+      "temp_valid_years",
+      "temp_unavailable",
+      "pet",
+      "pet_valid_years",
+      "pet_unavailable"
+    ]
+  },
+  "pngs": {
+    "count": 167,
+    "missing": [],
+    "different": []
+  },
+  "metadata": {
+    "count": 15,
+    "different": []
+  },
+  "geometry": {
+    "short": {
+      "equal": true,
+      "caption_changes_axes_inches": [
+        [
+          5.551115123125783e-17,
+          0.34455380577427824,
+          1.2702647822493418e-08,
+          0.029461942257218432
+        ]
+      ]
+    },
+    "long": {
+      "equal": true,
+      "caption_changes_axes_inches": [
+        [
+          5.551115123125783e-17,
+          1.3195538057742786,
+          1.2702647822493418e-08,
+          0.29461942257217766
+        ]
+      ]
+    },
+    "multi_period": {
+      "equal": true
+    }
+  },
+  "style_aliases": {
+    "mutable_style_alias": true,
+    "mutable_label_box_alias": true
+  },
+  "supplemental": {
+    "pairs": 20,
+    "different": [],
+    "metadata_count": 4,
+    "different_metadata": []
+  }
+}

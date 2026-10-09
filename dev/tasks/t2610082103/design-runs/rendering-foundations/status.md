@@ -5,13 +5,13 @@ genre: decision-record
 author-binding: cst-architect
 started: 2026-10-10
 variant: lean
-stage: G2
+stage: 7
 external-rounds-completed: 1
 allocation: "See allocation and execution record below"
 dispatches: 5
 gates:
   G1: approved 2026-10-10
-  G2: pending
+  G2: approved 2026-10-10
 flags: [canonical-board-on-main, same-provider-review, allocation-revised-stage-3]
 ---
 
@@ -46,8 +46,8 @@ Prior comparable diagnostics ledger absent. Maximum two concurrent workers, seri
 | Revision | Fresh cst-architect | gpt-6-luna/low | 6.1-sol/low | Mechanical unchanged v2; no findings |
 | External | Headless reviewer | gpt-6.1-sol/high | Astra/high | One review; enforced read-only |
 | Convergence/G2 | Coordinator | Current frontier session | Verified frontier | Exact revision approval |
-| Baseline preflight | python-engineer | gpt-6.1-sol/medium | 6-sol/medium | Three scratch scripts; no source edits |
-| Implementation | python-engineer | gpt-6.1-sol/medium | 6-sol/medium | 11 Python files + reference; G2 first |
+| Baseline preflight | python-engineer | gpt-6.1-sol/medium | 6-sol/medium | Scratch only |
+| Implementation | python-engineer | gpt-6.1-sol/medium | 6-sol/medium | Bounded scope; G2 first |
 | Diff/check review | Fresh python-engineer | gpt-6.1-sol/medium | Astra/high | One report; completed diff |
 
 Fallback model names above abbreviate their live `gpt-` names. A fallback must meet the task's capability.
@@ -75,11 +75,12 @@ Use Luna/low for that mechanical operation, with no design judgments or content 
   approval never, sandbox read-only. CLI reported 54,387 tokens.
 - [done] 5-convergence-r1 — external approval names v2; both completed reviews have no findings.
   Explicit empty findings/disposition closure verified. No ledger, revision or second round required.
-- [open] G2 — exact reviewed revision awaits owner approval; implementation remains unopened.
+- [done] G2 — owner explicitly approved design-v2.md for implementation on 2026-10-10.
+- [done] 7-finalize — reviewed bytes retained unchanged; implementation-brief.md is the next action.
 - [done] Baseline preflight — 167 PNGs: WF0 116, WF2 36, WF1 forcing 9 and evaluation/summaries 6.
   Commands succeeded after one scratch evaluation adapter correction; no production/source changes.
   86 WF0/WF2 retained-input hashes and 77 WF0 restored-table hashes, plus WF1 prepared-value evidence.
-  Optional subbasins, missing/constant and multi-period supplemental acceptance remain pending.
+  Optional subbasins, missing/constant and multi-period supplements subsequently passed (20 pairs).
 
 ## Observed dispatches and runtime preflight
 
@@ -93,7 +94,8 @@ Use Luna/low for that mechanical operation, with no design judgments or content 
   Probe report/transcript retained in active scratch and will be captured with run evidence.
 - Pixi environment probe: Python 3.12.13 and Matplotlib 3.11.0 imported successfully.
 - Input inventory: rapid tree lacks WF0 prepared tables. Liberia retained source/comparison roots have
-  tables and diagnostics metadata; Gabon lab CSVs exist. Baseline agent will prove renderer feasibility.
+  tables and diagnostics metadata; Gabon lab CSVs exist. Baseline and candidate renders proved renderer
+  feasibility.
 
 ## Placement and provenance
 
@@ -107,18 +109,19 @@ Installed review contract: brain-infrastructure commit c59c76091db310ad0d53ade07
 `artifacts/skills/design-review-loop/`. Installed tracked content had no local changes when inspected.
 Consumed entry point and references: SKILL.md, stage-contracts.md, run-artifacts.md,
 roles-and-recovery.md, evidence-and-gates.md, journey-and-sketch.md, external-review-brief.md,
-findings-and-closure.md (references are below references/). Installed-byte hashes will be recorded in
-this status before review dispatch. Role/model effective settings are unverified unless runtime reports them.
+findings-and-closure.md (references are below references/). Installed-byte hashes were recorded before review
+dispatch. Role/model effective settings are unverified unless runtime reports them.
 
 ## Verification and approval limitations
 
-Source inspection establishes sharing and current dependency directions; it does not establish visual
-equivalence. Pre-change render baseline required before implementation. Retained input preflight pending.
+Source inspection established sharing and dependency directions. Baseline and candidate rendering,
+prepared-value comparison and visual inspection are complete; see the linked implementation evidence.
 Board check has eight pre-existing errors outside this task (two incomplete overview notes and two legacy
 folders); current task only has a length warning. Saved plan/board commit passed git diff --check.
-Internal/external design reviews and convergence completed without findings; G2 and implementation remain
-pending. Detailed baseline evidence is retained as baseline-evidence.md; active images/probes remain in
-session-1 task scratch until comparison is complete. No post-change acceptance is claimed.
+Internal/external design reviews and convergence completed without findings; G2 and this extraction
+are complete. Detailed baseline evidence is retained as baseline-evidence.md; active images/probes remain in
+session-1 task scratch for owner review and the remaining task. Post-change acceptance is recorded in
+render-acceptance.md and visual-review.md.
 
 ## Allocation diagnostics — 2026-10-10, G2 handoff
 
@@ -159,3 +162,38 @@ External round 1 dispatch components (frozen):
 - design-v2.md SHA256=80602fda7fae0ad1932eb4d618f98de148b950e0090093c0aa9652afd6b1ffaf
 - review-brief.md SHA256=6f9d66718dce57521b5a5494b8ca586fc3a082faa6f0c918089385346a4c27ad
 - Settled framing supplied verbatim from this status in the brief; same-provider limitation explicit.
+
+## Accepted identity
+
+The owner answered: Approve this reviewed design and implement.
+Accepted path: design-v2.md.
+SHA256: 80602fda7fae0ad1932eb4d618f98de148b950e0090093c0aa9652afd6b1ffaf.
+No editorial delta authorized or needed; retain PROPOSED header in reviewed bytes.
+Review finished; containing implementation task remains active. Exact bytes verified at capture.
+Implementation worker owns the twelve-file maximum plus reference update in the saved handoff.
+
+## Implementation closure — 2026-10-10
+
+Verified source commit: `dbe6cbe69739c697a9c6e585acc3c92bf30cf202` on session-1/chore/minor-fixes. No landing
+or push.
+This bounded extraction is complete; the broader t2610082103 library task remains active.
+The historical G2-handoff diagnostics above describe the pre-approval state at their recording time.
+
+- Implementation: python-engineer, requested gpt-6.1-sol/medium; one source writer, exact extraction.
+- Candidate renders: reused baseline python-engineer context on gpt-6.1-sol/medium.
+- Independent diff review: fresh python-engineer, requested gpt-6.1-sol/high; no findings.
+  High effort was used for dependency/state verification; the initial allocation listed medium.
+- Three specialist packets briefly overlapped during verification (initial plan ceiling: two).
+  Only implementation edited source. No nested delegation or source rework was needed.
+- In-process effective models/token usage remain unreported; no monetary savings are claimed.
+- Focused pytest, repository lint/format, import/state/AST probes and before/after checks passed.
+- 167 normal plus 20 supplemental figure pairs; prepared values, metadata and measured geometry match.
+  Coordinator inspected all normal pairs at overview scale plus representative full PNGs.
+- No source files deleted; ten duplicate helper bodies and seventeen token assignments moved to core.
+- Caption-induced axes growth and crowded very-long-series labels reproduce in both revisions;
+  retain as future layout work, alongside the existing all-missing-map scale behavior.
+
+Evidence: implementation-evidence.md, render-acceptance.md, render-comparison.json, code-review.md,
+visual-review.md and completion.md. The exact reviewed design-v2 bytes remain unchanged.
+Active scratch retains full PNGs, review pages, logs, probes and fingerprints for owner review and
+the remaining task. Retention owner: t2610082103; reconsider cleanup when the broader task lands.

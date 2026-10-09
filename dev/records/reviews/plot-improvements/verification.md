@@ -543,3 +543,37 @@ Only this verification Markdown changes after the tested commit; its added prose
 checks and is eligible for exact-path evidence reuse. Managed `task-land --verify` must require lint,
 format-check, test-full, wf1-dag and review-inventory, then prove committed-tree equivalence and ancestry
 before deleting the merged branch and parking the session. No push is authorized.
+
+### Concurrent-main integration and final candidate
+
+Another session advanced `main` to `11778cee` during verification. The initial managed landing
+therefore attempted a rebase and stopped on two conflicts. That tool-started rebase was aborted,
+restoring the verified branch, and an ancestry-preserving merge incorporated the new main. Conflict
+resolution preserves this batch's canonical forcing renderer and main's historical-source map frame.
+Merge candidate `929cfdc6d38f47201ad6a8acd2b402acf414123a` supersedes the earlier landing candidate.
+
+`source_nc` now forwards the selected historical grid's outer edges through the canonical renderer
+to `draw_map`; legacy direct calls retain the default native model-grid frame. The extent is recorded
+in map JSON metadata. No data interpolation or forcing/model calculation changed. Documentation
+retains both the approved plotting behavior and main's frame explanation.
+
+Final-candidate repository lint and formatting passed. The complete suite was rerun with two isolated
+workers, without excluding either contract tier: `pixi run test-full -n 2 --dist loadfile`.
+It passed 4,086 tests with the same 17 skips, one expected failure and 8,645 warnings as the first run.
+The final plotting DAG and inventory checks also passed. The record now uses
+`.tmp/scratchpad/wf1-plot-landing/integrated-final.json`, covering lint, format-check, test-full,
+wf1-dag and review-inventory on the same clean candidate and Pixi environment.
+
+One-time `render-integrated.py` generated nine canonical forcing figures under `integrated-forcing/`.
+Independent coordinate-edge assertions checked all three map axes against the retained historical
+grid: west −10.625°, east −8.375°, south 6.625°, north 9.125°. Metadata preserves those limits, and
+all three exported maps were visually inspected. `shared.py` regenerated six WF0 source figures and
+one annual comparison under `wf0-callers/`; the source precipitation map was also inspected. These
+scripts and assertions remain temporary, outside the test suite. Evaluation and annual/seasonal
+plotting code is unchanged from the approved review candidate; its retained acceptance evidence
+remains applicable. No production outputs were modified during landing verification.
+
+Retain the review artifacts and machine-readable gate logs in the named session scratch roots for
+this evidence and the owner's HTML links. Subsequent tracked changes are confined to this evidence
+Markdown and are classified for exact-path verification reuse. Managed landing must still prove
+equivalence and ancestry before session release; no pushing or tagging is authorized.

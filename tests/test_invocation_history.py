@@ -20,9 +20,13 @@ def _records(root: Path) -> list[dict]:
 def test_direct_dry_run_is_a_nonproductive_attempt(tmp_path, monkeypatch):
     from blueearth_cst.shared import windows_job
 
+    config = tmp_path / "project_config_test.yml"
+    config.write_text(
+        "workflows:\n  analyze_climate:\n    enabled: true\n", encoding="utf-8"
+    )
     monkeypatch.setattr(windows_job, "run_project_child", lambda *_args, **_kwargs: 0)
     result = workflow_archive_launch.run_workflow(
-        "analyze_climate", tmp_path / "missing.yml", tmp_path / "project", dry_run=True
+        "analyze_climate", config, tmp_path / "project", dry_run=True
     )
     assert result == 0
     (record,) = _records(tmp_path / "project")

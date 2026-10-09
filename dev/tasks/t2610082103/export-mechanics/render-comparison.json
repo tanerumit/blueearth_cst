@@ -1,0 +1,47 @@
+{
+  "exports": 51,
+  "pngs": 49,
+  "pdfs": 2,
+  "differences": [],
+  "records": [
+    {
+      "path": "wf1/evaluation/_engine/figure_captions.json",
+      "equal": true
+    },
+    {
+      "path": "wf1/evaluation/cell_counts.json",
+      "equal": true
+    },
+    {
+      "path": "wf1/evaluation/figure_captions.md",
+      "equal": true
+    },
+    {
+      "path": "wf1/evaluation/performance_metrics.csv",
+      "equal": true
+    },
+    {
+      "path": "wf2/_engine/figure_captions.json",
+      "equal": true
+    },
+    {
+      "path": "wf2/inputs.json",
+      "equal": true
+    },
+    {
+      "path": "wf2/plots/figure_captions.md",
+      "equal": true
+    },
+    {
+      "path": "wf2/record.json",
+      "equal": true
+    }
+  ],
+  "input_hashes_equal": true,
+  "synthetic_fixture_equal": true,
+  "evaluation_values_equal": true,
+  "evaluation_inputs_equal": true,
+  "distinct_log_equal": true,
+  "wf2_log_equal": true,
+  "pdf_visual_review": "unavailable: no Poppler/PDF Python rendering dependency in Pixi"
+}

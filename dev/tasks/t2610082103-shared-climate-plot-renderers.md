@@ -78,12 +78,17 @@ See [completion evidence](t2610082103/design-runs/rendering-foundations/completi
 The new internal plotting core owns the existing style tokens and ten drawing helpers. Active WF0–WF2
 callers now import it directly; WF0 compatibility aliases remain. WF1 explicitly owns its batch backend.
 Existing scientific preparation, appearance and product inventories are preserved. The broader progress
-items above remain open because export separation, map references and reusable chart interfaces are later work.
+items above remain open because caption/layout policy, map references and reusable chart interfaces remain.
 
-Next packet: separate rendering/export mechanics from workflow logging, with an explicit caption/layout
-contract. Preserve the verified baseline until any visual change is approved. Existing issues to address
-there or in a later layout packet: captions grow the axes area; very long records crowd year labels;
-all-missing maps retain a default scale with little interpretive value. R/WF3 and external packaging follow later.
+Export mechanics are now separated from workflow logging in source commit `480f9be5`.
+See [export completion and validation](t2610082103/export-mechanics/completion.md).
+Six focused tests and the independent review passed; 49 PNG pairs showed no new visual regression.
+Two PDF pairs passed structural checks; PDF rasterized visual parity remains unverified.
+
+Next packet: define the explicit caption/layout contract. Preserve the verified baseline until any visual
+change is approved. Existing issues: captions grow the axes area; very long records crowd year labels;
+all-missing maps retain a default scale with little interpretive value; the soil-clay colourbar title clips
+the upper canvas edge. R/WF3 and external packaging follow later.
 
 
 ### Branch identity (2026-10-10)

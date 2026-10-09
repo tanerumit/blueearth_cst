@@ -416,3 +416,6 @@ declared-output checks cover the new optional WF1 setting, script parameter and 
 inventory. The default Pixi environment and Liberia/synthetic review inputs described above were used.
 Logs remain under the retained review root. No production output files were modified or deleted.
 The work remains on the pinned session branch; landing and pushing require separate instructions.
+
+Verified implementation commit: `75183c20` (`feat(plots): standardize hydrological output summaries`).
+It contains the executable candidate covered by the focused checks and inspected renders above.

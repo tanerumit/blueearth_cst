@@ -140,4 +140,23 @@ must still report Junction with main's `dev/` target. Never use recursive deleti
   to start another task. Report lexical/resolved paths and direct implementation edits to the
   branch-local path. Measured with session-1/dev/00-current-board-main/scripts/todoboard.py before
   removing the junction; relevant across linked checkouts and shared-directory links. Placement:
-  native edit-tool guard diagnostics. Upstream files were not modified.
+  native edit-tool guard diagnostics. Upstream files were not modified during Phase B.
+
+## Approved upstream follow-up
+
+Implemented in infrastructure commit `8327ab3346757c748779cadb8b70fd957ecfbf94` after owner approval.
+Canonical `infrastructure:artifacts/skills/git-workflow/` guard and hook guidance now report
+lexical/resolved targets and direct an existing linked caller to a safe branch-local path.
+Allow/deny decisions are unchanged. The fix is unreleased under manual cadence.
+
+- Red/green: all four real-junction cases failed before the fix, then passed.
+- Both test trees: `conda run --no-capture-output -n brain python -m pytest
+  artifacts/skills/git-workflow/tests artifacts/skills/git-workflow/scripts/tests -q
+  --import-mode=importlib` — 337 passed; the run also set task-local basetemp and cache_dir.
+- Touched-file Ruff, compilation and infrastructure pre-commit covering tests passed.
+- Installed fallback bundles were refreshed from the tested canonical guard and verified.
+- Strict status still reports inbox and existing cached agent-audit findings; runtime is current.
+- Evidence: infrastructure :: `.tmp/scratchpad/guard-link-diagnostics/` and session-1 ::
+  `.tmp/scratchpad/guard-link-diagnostics/`; retain through approved source-task landing.
+- No release, push or CST landing occurred. Skill prose was checked on disk; fresh-session
+  instruction uptake was not tested with a same-session subagent.

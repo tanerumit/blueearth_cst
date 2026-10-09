@@ -14,6 +14,7 @@ from blueearth_cst.climate_analysis.diagnostic_captions import caption
 from blueearth_cst.climate_analysis.diagnostic_maps import draw_map, visible_values
 from blueearth_cst.climate_analysis.diagnostic_tables import write_json
 from blueearth_cst.climate_analysis.diagnostics import sen_trend
+from blueearth_cst.plotting.fundamentals import STYLE, add_caption, new_fig
 
 
 def load_result(root, source):
@@ -143,7 +144,7 @@ def render(
             if form.startswith("map-")
             else view.support
         )
-        with plt.rc_context(artists.STYLE):
+        with plt.rc_context(STYLE):
             if form.startswith("map-"):
                 variable = form.removeprefix("map-")
                 with xr.open_dataset(paths["compute"]["maps"]) as fields:
@@ -218,7 +219,7 @@ def render(
                 )
                 if isinstance(fig, str):
                     availability = re.sub("<[^>]*>", "", fig)
-                    fig, axs = artists.new_fig(80)
+                    fig, axs = new_fig(80)
                     axs[0, 0].text(
                         0.5, 0.5, availability, ha="center", va="center", wrap=True
                     )
@@ -290,7 +291,7 @@ def render(
                     fig.set_size_inches(
                         map_bounds.width + 4 / 25.4, fig.get_figheight()
                     )
-                artists.add_caption(fig, text)
+                add_caption(fig, text)
                 fig.savefig(captioned, dpi=600, facecolor="white", **map_export)
             plt.close(fig)
             relative = str(Path(filename).relative_to(root)).replace("\\", "/")

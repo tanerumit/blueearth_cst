@@ -14,7 +14,7 @@ from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
 
-from blueearth_cst.climate_analysis.diagnostic_figures import (
+from blueearth_cst.plotting.fundamentals import (
     FS_NOTE,
     H_SINGLE,
     H_STACK2,

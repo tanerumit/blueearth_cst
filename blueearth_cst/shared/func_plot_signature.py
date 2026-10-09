@@ -262,6 +262,7 @@ def plot_basavg(
 
     from blueearth_cst.climate_analysis import diagnostic_figures as artists
     from blueearth_cst.climate_analysis import diagnostics as dg
+    from blueearth_cst.plotting import fundamentals
     from blueearth_cst.shared.plot_evaluation import COLOR_SIMULATED
     from blueearth_cst.shared.wflow_outputs import (
         BASAVG_FIGURE_STEMS,
@@ -322,17 +323,17 @@ def plot_basavg(
                 common_years=years,
             )
             for kind in ("annual_ts", "monthly_clim_band"):
-                with plt.rc_context(artists.STYLE):
+                with plt.rc_context(fundamentals.STYLE):
                     if kind == "annual_ts":
-                        fig, axes = artists.new_fig(artists.H_SINGLE)
+                        fig, axes = fundamentals.new_fig(fundamentals.H_SINGLE)
                         ax = axes[0, 0]
                         (line,) = ax.plot(
                             years,
                             annual,
                             color=COLOR_SIMULATED,
-                            lw=artists.LW_LINE,
+                            lw=fundamentals.LW_LINE,
                             marker="o",
-                            ms=artists.MS_LINE,
+                            ms=fundamentals.MS_LINE,
                         )
                         artists._annual_trends(
                             ax,
@@ -350,13 +351,13 @@ def plot_basavg(
                         ax.set_xticks(np.arange(first, years[-1] + 1), minor=True)
                         ax.set_ylabel(meta["annual_units"])
                         ax.yaxis.get_major_formatter().set_useOffset(False)
-                        artists.ygrid(ax)
+                        fundamentals.ygrid(ax)
                         line.set_label(
                             "Annual total"
                             if meta["kind"] == "amount"
                             else "Annual mean"
                         )
-                        artists.inside_legend(fig, ax, [line], lines=[line])
+                        fundamentals.inside_legend(fig, ax, [line], lines=[line])
                         available = annual.notna().any()
                     else:
                         fig = artists._climatology(

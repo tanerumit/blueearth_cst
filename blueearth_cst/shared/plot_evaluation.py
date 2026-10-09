@@ -469,7 +469,7 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
     from matplotlib import gridspec, rc_context
     from matplotlib.ticker import PercentFormatter
 
-    from blueearth_cst.climate_analysis import diagnostic_figures as artists
+    from blueearth_cst.plotting import fundamentals as artists
 
     prepared = _hydrograph_data(simulated, observed)
     years = prepared["years"]
@@ -718,7 +718,7 @@ def _hydrograph_fdc(ax, prepared, log_scale):
     """Finite-only Weibull positions, retaining zero mass on the log panel."""
     import numpy as np
 
-    from blueearth_cst.climate_analysis.diagnostic_figures import (
+    from blueearth_cst.plotting.fundamentals import (
         FS_NOTE,
         LABEL_BOX,
         MUTED,
@@ -1196,7 +1196,7 @@ def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=Non
     import numpy as np
     from matplotlib import gridspec
 
-    from blueearth_cst.climate_analysis import diagnostic_figures as artists
+    from blueearth_cst.plotting import fundamentals as artists
 
     pairs, support = _performance_pairs(simulated, observed)
     finite = pairs.dropna()

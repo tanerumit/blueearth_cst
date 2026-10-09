@@ -14,7 +14,7 @@ from matplotlib.ticker import FuncFormatter
 from matplotlib.transforms import Bbox
 
 from blueearth_cst.climate_analysis import diagnostics as dg
-from blueearth_cst.climate_analysis.diagnostic_figures import STYLE
+from blueearth_cst.plotting.fundamentals import STYLE
 
 
 def annual_fields(ds, m0, settings):

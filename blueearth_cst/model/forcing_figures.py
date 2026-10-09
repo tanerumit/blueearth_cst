@@ -12,6 +12,7 @@ from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis import diagnostics as dg
 from blueearth_cst.climate_analysis.diagnostic_maps import draw_map
 from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
+from blueearth_cst.plotting.fundamentals import STYLE
 from blueearth_cst.shared.variable_registry import CLIMATE_VARS
 
 
@@ -185,7 +186,7 @@ def render_forcing_figures(
             common_years=years,
         )
         for kind in ("map", "annual", "monthly"):
-            with plt.rc_context(artists.STYLE):
+            with plt.rc_context(STYLE):
                 if kind == "map":
                     field = fields[variable]
                     finite = field.values[np.isfinite(field.values)]

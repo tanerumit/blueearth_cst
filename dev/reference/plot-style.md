@@ -271,7 +271,9 @@ in this visual review.
 
 ## Implementation entry points
 
-- WF0 artists and shared styles: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
+- Shared drawing fundamentals and reviewed CST preset: `blueearth_cst/plotting/fundamentals.py`.
+- WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
+- Legacy cartographic/evaluation preset and runtime overrides: `blueearth_cst/shared/plot_style.py`.
 - WF0 maps: `blueearth_cst/climate_analysis/diagnostic_maps.py`.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.

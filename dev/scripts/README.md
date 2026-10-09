@@ -41,9 +41,15 @@ both legs, so an import-time error fails the suite.
 | [`check_env.py`](check_env.py) | Whether a checkout can actually run the workflows (weathergenr, Julia, activation). |
 | [`inspect_weathergenr.R`](inspect_weathergenr.R) | The installed weathergenr's exports and the signatures the workflow calls; run after an upgrade. |
 | [`pixi_activate.bat`](pixi_activate.bat) | Activate the pixi env in a cmd shell. |
-| [`setup-board-view.ps1`](setup-board-view.ps1) | Give a session worktree an Explorer path to the canonical board on `main`; run by the post-checkout and post-merge hooks. |
-| [Navigation setup](setup-worktree-navigation.ps1) | Preview or create Explorer shortcuts. |
+| [Board exclusion](setup-board-view.ps1) | Sparse-exclude one clean session's board snapshots. |
+| [Navigation setup](setup-worktree-navigation.ps1) | Preview or create shortcuts; sparse targets must be named. |
 | [`check_activation.py`](check_activation.py) | Drift between `dev/reference/agent-activation.md` and the untracked agent manifest. |
+
+Open `.tmp/navigation/main-dev.lnk` to view the board; edit through `todoboard.py` or main's own path.
+Navigation preview makes no writes. Apply sparse exclusion with `-Apply -ExcludeSnapshots -Worktree
+session-N`; selected roots are preflighted before writing, failures are reported while valid roots
+continue, and stale shortcuts are retained. See [coordination](../README.md#worktree-coordination)
+for ownership and safe legacy junction removal with non-recursive `cmd /c rmdir`, never `git clean`.
 
 ## Data staging and catalogs
 

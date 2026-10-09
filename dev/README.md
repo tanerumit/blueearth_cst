@@ -31,15 +31,12 @@ it even when invoked from a session worktree. Edit notes there, render the view,
 and commit board changes on `main` separately from feature work. A task's
 `branch:` field links unfinished implementation without copying its note into
 the task branch. The repository wrapper refuses to use a different board root.
-On Windows, open `dev/00-current-board-main/TODO.md` in a session worktree to
-see the live main board in File Explorer. The local setup script links that
-directory to main's `dev/`. Run `pwsh -File dev/scripts/setup-board-view.ps1
--ExcludeSnapshots` once per clean session worktree to leave its tracked
-`TODO.md` and `tasks/` out of the working tree through per-worktree sparse
-checkout. The main worktree keeps the complete board, and the session index
-still records it for Git history and merges. With `core.hooksPath` set to
-`.githooks`, checkout and merge hooks restore the link. The link is ignored by
-Git and never committed.
+On Windows, open `.tmp/navigation/main-dev.lnk` to view main's live board in
+File Explorer. Edit it through the wrapper or main's own `dev/tasks/` path.
+Navigation setup below excludes a named session's tracked `TODO.md` and
+`tasks/` through per-worktree sparse checkout. Main keeps the complete board;
+the session index retains its snapshots for Git history and merges. Relative
+`core.hooksPath: .githooks` keeps the post-checkout session identity warning.
 
 **Stays true** — consulted while working, rewritten rarely and deliberately:
 
@@ -97,9 +94,8 @@ contents depend on a branch in that branch. Never mirror all of `dev/` or share 
 | Scratch, caches, environments, mutable outputs | Local to their owning worktree |
 | Immutable input data | Shared external location when consumers cannot modify it |
 
-The `00-current-board-main` junction exposes **all of main's `dev/`**, not only the board. It is a
-coordination and integrated-reference view. Use local references and scripts when changing a branch's
-contracts. Do not edit branch implementation through the junction. Local `tasks/` and `TODO.md`
+The `main-dev.lnk` shortcut opens main's `dev/` without a traversable directory link inside a session.
+Use branch-local references and scripts when changing its contracts. Local `tasks/` and `TODO.md`
 snapshots should be excluded from session working directories; Git still retains them for merges.
 
 ### One task, one locator
@@ -133,18 +129,31 @@ files. Before cleaning a task folder, preserve needed evidence, check active wri
 and verify its exact containment; age and ignore status do not establish deletion authority.
 Existing loose files require classification before moving or deleting them.
 
-From main, preview and then apply Explorer navigation for every registered worktree:
+Preview Explorer navigation for every registered worktree; name each worktree before sparse exclusion:
 
 ```powershell
 pwsh -NoProfile -File dev/scripts/setup-worktree-navigation.ps1
-pwsh -NoProfile -File dev/scripts/setup-worktree-navigation.ps1 -Apply -ExcludeSnapshots
+pwsh -NoProfile -File dev/scripts/setup-worktree-navigation.ps1 -Apply -ExcludeSnapshots -Worktree session-1
 ```
 
 Each worktree gets ignored `.tmp/navigation/` shortcuts to main, the sessions, main's `dev/`, and
 its own scratchpad. Pin that folder in Explorer Quick access. Shortcuts do not share file contents.
-Rerun setup after worktrees are added or recreated. Snapshot exclusion requires clean sessions and
-refuses custom sparse layouts. Existing checkout/merge hooks preserve the current-board junction.
-Use main's setup script until a session has integrated the new script through Git.
+Rerun setup after worktrees are added or recreated. Without `-Worktree`, shortcut setup covers all
+registered worktrees; sparse exclusion always requires explicit names. Preview makes no writes,
+including when `-ExcludeSnapshots` is requested. Setup preflights every selected root before writing,
+reports per-root failures, continues valid targets and exits nonzero if any failed. Snapshot exclusion
+requires clean sessions and refuses custom sparse layouts. Stale shortcuts are reported and retained.
+Use the updated session script until it has integrated into main.
+
+Old branches may still recreate `dev/00-current-board-main/`. Confirm `Get-Item -Force` reports
+`LinkType=Junction` with main's `dev/` as its target, then remove only that link from its owning session:
+
+```powershell
+cmd /c rmdir dev\00-current-board-main
+```
+
+This non-recursive command removes the junction itself. Never use `git clean` or recursive deletion
+for junction removal.
 
 ### Handoff and synchronisation
 
@@ -171,7 +180,7 @@ infrastructure checkout to check conformance.
 | Path | Owner | Retention | Depends on |
 |---|---|---|---|
 | `dev/baseline/` | Replication validation | Frozen per baseline; replaced only by a recorded successor baseline | `dev/scripts/check_baseline.py` (`MANIFEST_PATH_DEFAULT`), `build_model.smk`, `analyze_projections.smk`, `config/advanced_settings.yml` |
-| `dev/00-current-board-main/` | `dev/scripts/setup-board-view.ps1` | Ignored link to main's `dev/`, session worktrees only | `dev/scripts/setup-board-view.ps1`, `.githooks` checkout and merge hooks, `.gitignore` |
+| `dev/00-current-board-main/` | Old branch hooks | Legacy junction; remove locally as above | `.gitignore` |
 | `dev/working/` | Repository owner | Frozen legacy; no new files; migrate folder by folder as citations move | `dev/reference/sealed-records.yml`, `.gitattributes` |
 
 ## The promotion rule
@@ -205,6 +214,11 @@ A review may be deleted when **all three** hold:
 3. **Its durable output has left** — if the review produced skill or role
    candidates, those changes are committed in `brain`. The lesson's home is the
    skill; the review that prompted it is then spent.
+
+`check_activation.check_links()` rejects new reference links into transient `tasks/` and prunable
+`records/reviews/`. The two Phase A citations to `plot-improvements/verification.md` in `plot-style.md`
+and `migration_plot_paths.md` are explicit retained exceptions. Before pruning that evidence, update
+both citations and the checker's exception set together; the link check also requires the file to exist.
 
 Delete whole files. **Do not collapse a register to its outcome summary** — that
 rule was tried on 2026-08-02 and fails in practice, twice over: the post-R6

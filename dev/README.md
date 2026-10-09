@@ -17,7 +17,7 @@ it goes and when it may be deleted.
 | ↳ `origin:` | Which milestone the item fell out of, using `reference/roadmap.md`'s own IDs (`R10`, `P3-3`, `M02b`). Set it only from a **recorded** origin — the source item's ID, or the `followups.md` section it was migrated from. Leave it blank when the lineage would have to be inferred from prose, and say so in the note's `## Refs`: the Origin column is read when prioritising, so a guess there costs more than a gap |
 | `TODO.md` | **Generated** view of `tasks/` — `todoboard render` writes it and the banner says do-not-edit. Never hand-edit it; edit the note |
 | `LOG.md` | Closure ledger. One row per item the board has closed since 2026-08-07, **capped at three short sentences** — see the cap below |
-| `working/` | Legacy working notes awaiting classification and migration; do not add files or folders |
+| `working/` | Three held legacy sources; do not add files or folders |
 
 Do not create `dev/drafts/` or add to `dev/working/`. Put substantial task
 material in the owning live task's `tasks/<id>/` sidecar and link it from the

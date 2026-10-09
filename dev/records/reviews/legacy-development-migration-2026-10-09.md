@@ -1,7 +1,8 @@
 # Legacy development migration: retained evidence context
 
 Lifecycle: frozen-with-supersession after completion. Owner approved the per-file plan on 2026-10-09.
-Migration in progress on `chore/maintainance`; this record grants no landing or push authority.
+Migration completed on `chore/maintainance`; integration into `main` awaits owner approval.
+This record grants no landing or push authority.
 
 ## Original sources and approval
 
@@ -58,4 +59,44 @@ titles and the newer WF2 suite. Preserve that history; do not restore the old vi
 
 ## Execution and verification
 
-Batch commits, final inventory, exact checks, and residual limitations will be recorded here at completion.
+Applied all 101 approved dispositions: 53 relocations, 45 retirements, and three unchanged holds.
+Of the relocations, 50 retain historical evidence, two serve the existing sample-dataset task, and one
+promotes the read-only Zarr geometry inspector into `dev/scripts/inspect_era5_zarr_geometry.py`.
+The sample task brief changes only its design citation; the other 52 relocated files retain original blobs.
+
+| Batch | Commit | Result |
+|---|---|---|
+| Sample task and original context | `21c81ac9` | Two task-owned files moved; context retained |
+| Historical notes and inspector | `d166df9e` | 18 files moved |
+| Output-schema evidence | `785d344f` | 33 files moved |
+| Preserved duplicates and obsolete brief | `deeda577` | 45 files retired |
+| Canonical board citations, on main | `c6cb38d9` | Live sample and WF0 citations repointed |
+
+Deleted sources comprise 15 GF15 adapter review files, 29 simulation-identity review files, and the
+superseded experiment-freeze repair brief. The context inventory lists every exact deleted path.
+All 44 archive counterparts remain unchanged, and every original source is retrievable from the pin.
+The obsolete GF15 working-directory attributes rule was removed. Byte-preserving attributes accompany
+relocated historical evidence; historical relative links resolve in the original pinned context.
+
+Verification candidate: `deeda577` on Windows 11, PowerShell 7, Pixi default environment.
+No simulation input/config or project output root was used; this is a repository-placement change.
+
+- `pixi run pytest tests/test_activation_links.py tests/test_sealed_records.py -q` passed all 38 tests
+  after each batch. Final run used `--basetemp .tmp/scratchpad/legacy-migration/pytest-final` (0.53 s).
+  Initial sandboxed runs failed on Windows temporary-directory permissions; the successful checks used
+  a worktree-local temporary root with execution escalation.
+- `pixi run ruff check dev/scripts/inspect_era5_zarr_geometry.py` and its Ruff format check passed.
+- `pixi run python dev/scripts/inspect_era5_zarr_geometry.py --help` passed; live stores were not probed.
+- `pixi run lint` passed. `pixi run format-check` passed: 432 files already formatted.
+- The disposable final verifier checked all 101 original source blobs and SHA256 values, all 44 archive
+  identities, all 34 recorded citation byte spans, all applied destinations, and the three unchanged holds.
+  The only remaining tracked `dev/working` files are the three approved holds.
+- `git diff --cached --check` passed for each batch. Board citation checks retained the pre-existing
+  eight errors and 26 warnings, with no new issue set.
+
+No full suite, workflow execution, baseline check, landing, or push was performed. Combined integration
+gates remain due at approved landing under the repository validation ladder.
+
+Open follow-up: triage the geographic register's unresolved findings against current case evidence before
+admitting fixes. It has no matched active task; the migration task retains this handoff. The pre-existing
+absent Quarto design citation is outside this migration and remains unresolved.

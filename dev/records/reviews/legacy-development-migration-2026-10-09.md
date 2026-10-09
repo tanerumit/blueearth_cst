@@ -1,7 +1,7 @@
 # Legacy development migration: retained evidence context
 
 Lifecycle: frozen-with-supersession after completion. Owner approved the per-file plan on 2026-10-09.
-Migration completed on `chore/maintainance`; integration into `main` awaits owner approval.
+Migration completed on `chore/maintainance`; landed into `main` on 2026-10-09 following owner approval.
 This record grants no landing or push authority.
 
 ## Original sources and approval
@@ -100,3 +100,24 @@ gates remain due at approved landing under the repository validation ladder.
 Open follow-up: triage the geographic register's unresolved findings against current case evidence before
 admitting fixes. It has no matched active task; the migration task retains this handoff. The pre-existing
 absent Quarto design citation is outside this migration and remains unresolved.
+
+## Approved landing
+
+Merged as `422afceba2aa8242c738801a04d4ae7a8cbb450e`; tested candidate
+`83f38e1918e60ba59b0afdca45a53a0f16192931`, tree `34f87ee695b5e6c39f3d51817f0cf207404ce465`.
+The merged tree matched the tested candidate exactly, with candidate and original approval ancestry proved.
+The original migration commits remain reachable through the ancestry-preserving merge.
+
+`pixi run test-fast`: 4013 passed, 17 skipped, one expected failure, 8645 warnings (241.38 s).
+The gate recorder and executable verifier passed. Retained [gate identity](legacy-development-migration-2026-10-09/landing/gates.json)
+and compressed diagnostic log sit under the same `landing/` evidence directory. Decompress
+`test-fast.log.gz` to recover the exact original log bytes and recorded SHA256; the JSON's original
+absolute log path describes the execution location, rather than a permanent storage location.
+
+The first test run passed but its evidence was refused because ancestry changed during execution.
+The successful record came from a fresh run on the frozen candidate. The landing helper's automatic
+rebase flattened the preservation merge and conflicted; that rebase was aborted, the exact verified
+candidate was merged directly, and `task-land` completed its already-landed cleanup path.
+Session-1 is detached and free; the merged local branch was deleted. No push was performed.
+
+Geographic triage continues as backlog item `t2610091622`; the migration task can close independently.

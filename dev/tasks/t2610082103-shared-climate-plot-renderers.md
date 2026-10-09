@@ -22,7 +22,7 @@ branch: refactor/t2610082103-shared-plotting
 ## Progress
 
 - [ ] Agree the target appearance and shared renderer inputs through a reviewed design.
-- [ ] Consolidate style, sizing, export and caption placement; migrate WF2's common helper imports.
+- [x] Consolidate style, sizing, export and caption placement; migrate WF2's common helper imports.
 - [ ] Share raster-map drawing and an input-identified reference producer; migrate WF0/WF1 adapters.
 - [ ] Share equivalent annual-series and monthly-distribution renderers with workflow-specific preparation.
 - [ ] Verify prepared values and WF0-to-WF1 versus WF1-only equivalence; inspect affected rapid renders.
@@ -78,17 +78,22 @@ See [completion evidence](t2610082103/design-runs/rendering-foundations/completi
 The new internal plotting core owns the existing style tokens and ten drawing helpers. Active WF0–WF2
 callers now import it directly; WF0 compatibility aliases remain. WF1 explicitly owns its batch backend.
 Existing scientific preparation, appearance and product inventories are preserved. The broader progress
-items above remain open because caption/layout policy, map references and reusable chart interfaces remain.
+remaining items cover reusable chart interfaces, shared map references and their workflow acceptance.
 
 Export mechanics are now separated from workflow logging in source commit `480f9be5`.
 See [export completion and validation](t2610082103/export-mechanics/completion.md).
 Six focused tests and the independent review passed; 49 PNG pairs showed no new visual regression.
 Two PDF pairs passed structural checks; PDF rasterized visual parity remains unverified.
 
-Next packet: define the explicit caption/layout contract. Preserve the verified baseline until any visual
-change is approved. Existing issues: captions grow the axes area; very long records crowd year labels;
-all-missing maps retain a default scale with little interpretive value; the soil-clay colourbar title clips
-the upper canvas edge. R/WF3 and external packaging follow later.
+The caption/layout correction is complete in `4d19a377`: embedded captions preserve the ordinary
+plot's physical geometry and wrap to the drawn axes. All 79 caption variants passed saved-geometry checks
+and visual inspection; maximum drift was about 0.0042 mm. See
+[caption completion and contract](t2610082103/caption-layout/completion.md).
+
+Next packet: prepared-input annual-series and monthly-cycle chart interfaces for WF0/WF1.
+Remaining visual issues: very long records crowd year labels; all-missing maps retain a default scale
+with little interpretive value; the soil-clay colourbar title clips the upper canvas edge.
+Map-reference production, R/WF3 and external packaging remain later work.
 
 
 ### Branch identity (2026-10-10)

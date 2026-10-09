@@ -1,0 +1,36 @@
+{
+  "python": "3.12.13",
+  "matplotlib": "3.11.0",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "default_backend": "qtagg",
+  "render_backend": "Agg (selected by each render driver)",
+  "source_hashes": {
+    "blueearth_cst/plotting/fundamentals.py": "7963c659b7c96cb29fbbcae81139fd6bf02f32a3b948e4fc5f5281e434096878",
+    "blueearth_cst/climate_analysis/diagnostic_render.py": "ce4ee116626fbc9e8843dd80ca7e42210fcc2107425c42037d6863234ca338c7",
+    "blueearth_cst/climate_analysis/diagnostic_subbasins.py": "706cb90d3d54a7a0693c12e7eb8f44cb229c7ce41486523c29d53c0655282ce3",
+    "blueearth_cst/climate_analysis/diagnostic_figures.py": "b49ece86b39aebe0de8a063c766e19d6ef25342f54ed58cc2597dc17016f2c17",
+    "blueearth_cst/climate_analysis/diagnostic_maps.py": "e4b112ea681f0bec2e3bc7774d1087fb2de3e05953a82efd2376d1abadf45964",
+    "blueearth_cst/projections/plot_proj_timeseries.py": "e160857b7616b7cdd447d1d632f7b96c893ff5ff87718b7c852c538e5b0a5c05",
+    "blueearth_cst/projections/projection_suite_figures.py": "adaaa7f8fa52fd32c166cfbd620039a386f717309d3feed967751c4da44001d6",
+    "pixi.lock": "797afdad5a8f8c37dd62b2f1e2f88f3fea120c3fc53b7e7c792b860700a6782b"
+  },
+  "wf0_input_count": 60,
+  "wf0_inputs_match": true,
+  "wf2_inputs": {
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c0_coverage.csv": "db2689ab497222c9c94f313877013f59c417d26c2a8a20ffed26396c66755505",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c1_model_changes.csv": "6f9a756095f31dffde786617bb546208c017ec33ef0a98da08f72ddaad0f0d24",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c2_climatology.csv": "21a6918b3e2a3978484eadc97b88ae15881f4ddfd7b632b9a128e758b830919b",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c2_climatology_summary.csv": "7a9c56984d3ea9d90ef702112cb7c3eda99fcb2386ae35a3d9f00acbb8a4a7c1",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c3_member_anomalies.csv": "018ee6e633b4dcf74b6036505ec94201ab8bca89517d156ac27417bfbbcbfa15",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c3_model_trajectories.csv": "98ad7f1ea0f0d4cbebc9fc3a370733eca2cb165177a184120dab03e722757a7a",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c4_member_ratios.csv": "8d4dde1055ac0713b79013827fb9687b81b3560edb7579fb17370896999fe532",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c4_model_ratios.csv": "33beb7991ef4e848bfd49d5dc29b94baeab42e2aa9e94004d6f86b12b94dda69",
+    "C:\\Users\\taner\\workspace\\wf0-lab\\outputs\\wf2\\gabon-ntoum-dev-ensemble\\results\\c5_agreement.csv": "e77611d7b68034d81873e48dcb51d7fe8de38b853619970c80010c8fbab0bedf"
+  },
+  "subbasin_fixture_hashes": {
+    ".tmp\\scratchpad\\shared-rendering\\candidate\\supplemental\\fixtures\\subbasin_1\\annual_indices.csv": "ffce55e2ad382d04185e7857ffcf99be489e11e2b682099a4f422131a9845a63",
+    ".tmp\\scratchpad\\shared-rendering\\candidate\\supplemental\\fixtures\\subbasin_1\\precip_climatology.csv": "ea8f758961cb438fdc7f49a45f8cc49df88238cc5e4b3f648f6d2866b847926f",
+    ".tmp\\scratchpad\\shared-rendering\\candidate\\supplemental\\fixtures\\subbasin_1\\temp_climatology.csv": "68602525f12cd72b4327a2967a544bcccddde086f1d92288773fee95773b066e",
+    ".tmp\\scratchpad\\shared-rendering\\candidate\\supplemental\\fixtures\\subbasin_1\\trends.csv": "558a1827b5314fd58b44db550ec87402b1f871ad784f0c88c6bf45beca9d955f"
+  }
+}

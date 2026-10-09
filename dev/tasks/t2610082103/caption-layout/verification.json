@@ -1,0 +1,58 @@
+{
+  "pngs": 158,
+  "captions": 79,
+  "tolerance_mm": 0.05,
+  "max_shape_drift_mm": 0.004075041666456158,
+  "max_translation_spread_mm": 0.00415654249999644,
+  "failures": [],
+  "records": [
+    {
+      "path": "subbasins/plots/_engine/figure_captions.json",
+      "equal": true
+    },
+    {
+      "path": "subbasins/plots/figure_captions.md",
+      "equal": true
+    },
+    {
+      "path": "wf0/chirps_20000101_20161231/figure_captions.json",
+      "equal": true
+    },
+    {
+      "path": "wf0/chirps_20000101_20161231/figure_captions.md",
+      "equal": true
+    },
+    {
+      "path": "wf0/comparison/figure_captions.json",
+      "equal": true
+    },
+    {
+      "path": "wf0/comparison/figure_captions.md",
+      "equal": true
+    },
+    {
+      "path": "wf0/era5_20000101_20161231/figure_captions.json",
+      "equal": true
+    },
+    {
+      "path": "wf0/era5_20000101_20161231/figure_captions.md",
+      "equal": true
+    },
+    {
+      "path": "wf2/_engine/figure_captions.json",
+      "equal": true
+    },
+    {
+      "path": "wf2/inputs.json",
+      "equal": true
+    },
+    {
+      "path": "wf2/plots/figure_captions.md",
+      "equal": true
+    },
+    {
+      "path": "wf2/record.json",
+      "equal": true
+    }
+  ]
+}

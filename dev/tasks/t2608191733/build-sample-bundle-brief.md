@@ -25,7 +25,7 @@ Canonical ruleset: `AGENTS.md`. Read it first; this brief assumes it.
   × 7 vars (28.7 MB), CHIRPS 41 yr (34.0 MB), static spatial (24.1 MB), 60
   CMIP6 slices (5.4 MB). Time range dominates cost; bbox does not.
 - Full rationale and the evidence behind each constraint below:
-  `dev/working/2026-08-19_shipped-sample-dataset/design.md`. Board item:
+  `dev/tasks/t2608191733/sample-dataset-design.md`. Board item:
   `dev/tasks/t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive.md`.
 
 ### Goal

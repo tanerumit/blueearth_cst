@@ -490,3 +490,56 @@ modules passed all 32 tests in 27.13 s using the default Pixi environment:
 `pixi run pytest tests/test_func_plot_signature.py tests/test_plot_evaluation.py -q`.
 The log is `temporary-checks/suite-cleanup.log`. Touched-file Ruff lint/format and whitespace checks
 passed. The snapshots remain disposable review evidence, alongside the existing rendered examples.
+
+## WF1 batch landing verification — 2026-10-09
+
+The owner authorized local landing and release of session-2. Local `main` was clean at `f98c56df`;
+an origin fetch showed it ahead with no remote-only commits. Synchronization used merge commit
+`c7fddd7a56d7a5bd206bf68c609ba8e165d3e9df`, preserving the original verification pins above.
+The plotting/runtime paths are unchanged from the approved `8eb326cd` candidate after synchronization.
+
+Required software gates were repository-wide lint, formatting and `test-full`, because this batch
+changes a WF1 script parameter and declared outputs. Full covers fast on the same candidate, so no
+second fast run was required. All-five execution is not owed: the runtime contract changes are
+confined to WF1; shared WF0/WF1 artists affect terminal figures only. The inspected shared-caller
+renders and retained Liberia/synthetic examples described above remain applicable. WF2–WF4 execution
+and the stale numerical baseline were omitted; model construction and simulation physics are unchanged.
+
+The default Pixi environment and lock identity match the earlier WF1 sections. Recorded checks:
+
+```text
+pixi run lint
+pixi run format-check
+pixi run test-full
+pixi run snakemake plot_model_forcing plot_model_evaluation --snakefile build_model.smk --configfile test_case/project_config_rapid.yml --cores 1 --dry-run --forcerun plot_model_forcing plot_model_evaluation
+pixi run python .tmp/scratchpad/wf1-plot-landing/check-retained.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/basavg/probe_basin.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/performance/probe_clean_metrics.py
+```
+
+All required checks passed. Full: 4,086 passed, 17 skipped, one expected failure, 8,645 warnings.
+Skips are five Linux-only GEV controls, eleven optional WF2 P0/lab parity cases without local inputs,
+and the opt-in all-five execution check. The expected failure is the established upstream HydroMT
+catalog serialization defect. No required WF1 check was skipped. One-time basin checks passed all
+six acceptance cases; complete-record metrics preserved all 14 values and the CSV shape within 1e-12.
+The inventory check found nine forcing, four basin, 44 optional subbasin and ten synthetic-variable
+figures with captions, plus five performance cases. It reports the additional `offset-fix-review.png`
+preview separately. Temporary figure checks remain outside suite collection.
+
+An extra fresh model rebuild was attempted under `.tmp/scratchpad/wf1-plot-landing/rapid`. The first
+invocation was refused before execution because config and output root differed. A scratch rapid
+config corrected that mismatch. The second invocation reached delineation but spent several minutes
+reading the unrelated P-drive basin index; its identified delineation process was stopped. These
+attempts are recorded as failed, and no fresh complete WF1 execution is claimed. Terminal figure
+acceptance uses the previously inspected retained-input renders, unchanged code and the plotting DAG;
+the full suite covers the revised rule/output/script contracts. Production project files were untouched.
+
+Machine-readable gate evidence is `.tmp/scratchpad/wf1-plot-landing/gates-final.json`, created by
+`dev/scripts/verify_landing.py`; retain it and its logs for this landing record. Its SHA-256 is
+`351f4174490fc2557c6728abc6f2d8b3fdc0e3f52756be9ac87892397dde8309`.
+The full-suite log SHA-256 is
+`d4997d68c01ced8cbc8bd70b5838e95d4567b15a6eca3aad97567bb056ffc5fc`.
+Only this verification Markdown changes after the tested commit; its added prose records existing
+checks and is eligible for exact-path evidence reuse. Managed `task-land --verify` must require lint,
+format-check, test-full, wf1-dag and review-inventory, then prove committed-tree equivalence and ancestry
+before deleting the merged branch and parking the session. No push is authorized.

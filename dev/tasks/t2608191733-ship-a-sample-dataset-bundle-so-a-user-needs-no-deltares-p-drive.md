@@ -22,8 +22,16 @@ updated: 2026-10-09
 > release process, and a source-completeness audit that has to happen first.
 
 **Scoped 2026-08-19.** Design and rulings:
-`dev/working/2026-08-19_shipped-sample-dataset/design.md`.
+`dev/tasks/t2608191733/sample-dataset-design.md`.
 Input contract, already authored: `dev/scripts/sample_bundle.yml`.
+
+The backing files are migrated on `chore/maintainance` and await approved landing.
+Until then, retrieve them from commit `21c81ac915577293ab5a35403a19cf93621726dc`:
+
+```powershell
+git show 21c81ac915577293ab5a35403a19cf93621726dc:dev/tasks/t2608191733/sample-dataset-design.md
+git show 21c81ac915577293ab5a35403a19cf93621726dc:dev/tasks/t2608191733/build-sample-bundle-brief.md
+```
 
 ## Progress
 
@@ -61,7 +69,7 @@ Input contract, already authored: `dev/scripts/sample_bundle.yml`.
       `jrc` — the annotation is wrong upstream, so do not "fix" our config to
       match it.
 - [ ] `dev/scripts/build_sample_bundle.py` — **briefed**:
-      `dev/working/2026-08-19_shipped-sample-dataset/build-sample-bundle.task.md`
+      `dev/tasks/t2608191733/build-sample-bundle-brief.md`
       carries the scope, the two gates and the six falsifiable acceptance
       criteria. Reads `sample_bundle.yml`, drives
       `stage_data.py` and `stage_cmip6.py`, writes the self-locating catalog,
@@ -170,10 +178,10 @@ sample catalog, and Docker as the primary channel.
 
 ## Refs
 
-- `dev/working/2026-08-19_shipped-sample-dataset/design.md` — the scope, the
+- `dev/tasks/t2608191733/sample-dataset-design.md` — the scope, the
   rulings, and the evidence behind each finding above.
 - `dev/scripts/sample_bundle.yml` — the parameter template this item builds from.
-- `dev/working/2026-08-19_shipped-sample-dataset/build-sample-bundle.task.md` —
+- `dev/tasks/t2608191733/build-sample-bundle-brief.md` —
   the builder's assignment brief.
 - [[t2608191733a-rename-snake-config-yml-to-project-config-yml-repo-wide]] —
   decides whether the sample config lands as `project_config_sample.yml` or

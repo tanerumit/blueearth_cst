@@ -11,7 +11,7 @@ updated: 2026-10-09
 ---
 
 > [!note] Overview
-> **What changes** — Classify all 101 legacy files and produce a citation-aware migration plan before approved moves.
+> **What changes** — Moved 53 files, retired 45 preserved or superseded sources, and held three unchanged.
 > **Why it matters** — Legacy working files mix active task material, retained evidence and exploratory scripts.
 > **What it takes** — Review contents, copies, citations and retention constraints; apply approved placement changes and preserve original evidence.
 
@@ -30,8 +30,8 @@ Review and exact per-file plan: commit `ebc53054` on `chore/maintainance`, under
 
 ## Migration handoff
 
-- [ ] Approve landing, run the integration gates, and close this migration task.
-- [ ] Triage unresolved geographic findings against current evidence and existing task coverage.
+- [x] Approved landing and test-fast verification completed; merge 422afceb.
+- [x] Geographic triage handed off to backlog item t2610091622.
 
 Retained evidence: commit `deeda577` plus the completed record at
 `dev/records/reviews/legacy-development-migration-2026-10-09.md` on the task branch.

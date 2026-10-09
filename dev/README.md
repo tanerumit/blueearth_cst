@@ -202,6 +202,10 @@ infrastructure checkout to check conformance.
 
 ## The promotion rule
 
+The [legacy migration record](records/reviews/legacy-development-migration-2026-10-09.md) retains the
+original Git context and per-file destinations for the 2026-10-09 cleanup. Use it to resolve historical
+citations after a legacy file moves; it is evidence navigation, not current workflow guidance.
+
 **A cited note is a record, not a draft.** Before deleting anything from
 `working/` at closure, grep the repo for its filename. If a test, module,
 config, or tracked document cites it, it is source-of-record: promote it to the

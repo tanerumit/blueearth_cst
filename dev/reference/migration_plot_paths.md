@@ -82,10 +82,39 @@ records and the stale numerical baseline manifest remain unchanged.
 
 This migration placed machine plot manifests in `plots/_engine/` and internal analysis records in
 `analysis/_engine/`. The subsequently approved [output naming rule](naming.md#generated-outputs-under-project_dir)
-adopts one root `_engine/` per cohesive output unit; consolidation of these existing paths is pending.
+adopts one root `_engine/` per cohesive output unit. WF2 now consolidates both records under
+`data/climate/projections/cmip6/_engine/`; WF0 consolidation is pending.
+
+For an existing WF2 tree, move `analysis/_engine/analysis_record.json` to `_engine/analysis_record.json`
+and `plots/_engine/figure_captions.json` to `_engine/figure_captions.json` beneath the ensemble root.
+Preserve file contents and timestamps; remove the two old directories only when empty. If a destination
+already exists, compare the records before choosing which to retain. Manifest entries still resolve
+relative to `plots/`. The workflow does not move or delete old records automatically; without migration,
+its new output paths can trigger analysis and figure regeneration. Raw and aligned inputs stay reusable.
 Readable captions remain at `plots/figure_captions.md`. JSON is a format, not a placement rule:
 user-facing data and provenance deliverables remain with their owning data products, including
 `summary/provenance.json`.
+
+### WF2 engine consolidation verification (2026-10-09)
+
+On Windows with the Pixi default environment, the consolidation passed:
+
+- `pixi run python -m pytest tests/test_projection_suite_figures.py tests/test_project_tree_inventory.py
+  tests/test_check_baseline_scope.py tests/test_cli.py tests/test_activation_links.py -q
+  -p no:cacheprovider --basetemp .tmp/scratchpad/wf2-engine/pytest`: 243 passed.
+- Ruff lint and format checks on all six touched Python files; `git diff --check`.
+- Rapid WF2 dry-run with `test_case/project_config_rapid.yml` and `test_case/test_rapid`:
+  both new metadata paths appear in the DAG.
+- A synthetic CSV-to-renderer smoke run wrote the explicitly declared central manifest, resolved its
+  figure entries against `plots/`, and produced no nested engine directories. One available product
+  rendered; the other 18 were explicitly marked unavailable. The rendered figure was visually inspected.
+
+Full rapid execution remains unverified. The existing rapid tree's archive predates `run-record/2`.
+A fresh scratch project, using rapid settings with only the output root and workflow config references
+relocated, reached basin delineation but was stopped after the global MERIT basin-index read produced
+no further output for five minutes. It did not reach the changed rules. Logs and synthetic render
+evidence remain under `.tmp/scratchpad/wf2-engine/` pending batch landing. Other workflows' execution
+and numerical baseline checks are outside this confined metadata-path change.
 
 ## Verification status
 

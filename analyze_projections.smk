@@ -868,13 +868,13 @@ ANALYSIS_TABLE_NAMES = (
 ANALYSIS_OUTPUTS = {
     name: f"{clim_project_dir}/analysis/{name}.csv" for name in ANALYSIS_TABLE_NAMES
 }
-ANALYSIS_OUTPUTS["analysis_record"] = f"{clim_project_dir}/analysis/_engine/analysis_record.json"
+ANALYSIS_OUTPUTS["analysis_record"] = f"{clim_project_dir}/_engine/analysis_record.json"
 WF2_SUITE_PATHS = {
     folder: f"{clim_project_dir}/plots/{folder}"
     for folder in projection_figures.suite_folders(future_horizons, water_year_start, time_horizon_hist)
 }
 FIGURE_CAPTIONS_MD = f"{clim_project_dir}/plots/figure_captions.md"
-FIGURE_CAPTIONS_JSON = f"{clim_project_dir}/plots/_engine/figure_captions.json"
+FIGURE_CAPTIONS_JSON = f"{clim_project_dir}/_engine/figure_captions.json"
 
 WF2_TARGETS = {
     **{f"analysis_{name}": path for name, path in ANALYSIS_OUTPUTS.items()},

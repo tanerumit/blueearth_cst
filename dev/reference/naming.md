@@ -146,9 +146,9 @@ user-facing JSON data and provenance remain with their data products. WF0 and WF
 figure names follow dataset/variable/context/spatial fields; WF2's controlled mapping lives in
 `projection_figures.FIGURE_FILENAMES`. See [plot path migration](migration_plot_paths.md).
 
-The single-engine rule is approved; existing WF0 and WF2 nested engine paths await explicit migration.
-For WF2, the intended home is `data/climate/projections/cmip6/_engine/` for `stage_b_settings.json`,
-`analysis_record.json` and `figure_captions.json`. Recording this convention does not change runtime paths.
+WF2 uses `data/climate/projections/cmip6/_engine/` for `stage_b_settings.json`, `analysis_record.json`
+and `figure_captions.json`; manifest figure paths resolve relative to the sibling `plots/` directory.
+Existing WF0 nested engine paths await explicit migration.
 
 1. **Upstream-owned names pass through verbatim.** Engine-mandated filenames (`wflow_sbm.toml`, `staticmaps.nc`, `instates.nc`, `hydromt_data.yml`) and upstream identifiers embedded in a path — CMIP model IDs such as `NOAA-GFDL/GFDL-ESM4`, carrying hyphens, slashes and mixed case — are never normalized. These are §6 tier-1 identifiers.
 2. **Config keys and data labels are out of reach.** The rule governs file and directory names only. Column and row labels (`BFI`, `T10`) and config keys keep their domain spelling (§7).

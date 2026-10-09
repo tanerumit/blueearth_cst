@@ -168,12 +168,13 @@ def test_manifest_bijection_unavailable_and_captioned_copy(
     tables["availability"].loc[~tables["availability"].available, "reason"] = (
         "synthetic unavailable product"
     )
-    manifest, skipped = render_suite(tables, record, tmp_path, captioned_figures=True)
+    plots = tmp_path / "plots"
+    manifest, skipped = render_suite(tables, record, plots, captioned_figures=True)
     assert len(manifest) == 1 and len(skipped) == 18
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }
-    assert (tmp_path / "captioned" / next(iter(manifest))).is_file()
+    assert (plots / "captioned" / next(iter(manifest))).is_file()
     assert (
         manifest[next(iter(manifest))]["captioned_path"]
         == "captioned/period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
@@ -181,12 +182,13 @@ def test_manifest_bijection_unavailable_and_captioned_copy(
     assert (
         json.loads((tmp_path / "_engine/figure_captions.json").read_text()) == manifest
     )
-    assert "Not produced" in (tmp_path / "figure_captions.md").read_text()
-    stale = tmp_path / extra_path
+    assert not (plots / "_engine").exists()
+    assert "Not produced" in (plots / "figure_captions.md").read_text()
+    stale = plots / extra_path
     stale.parent.mkdir(parents=True, exist_ok=True)
     stale.write_bytes(b"stale")
     with pytest.raises(RuntimeError, match=message):
-        render_suite(tables, record, tmp_path, captioned_figures=True)
+        render_suite(tables, record, plots, captioned_figures=True)
 
 
 def test_captions_and_distinct_folder_contract(suite):
@@ -250,19 +252,23 @@ def test_driver_csv_roundtrip_normalizes_full_period_window(
     monkeypatch.setattr(
         driver,
         "render_suite",
-        lambda tables, *args, **kwargs: captured.update(tables=tables),
+        lambda tables, *args, **kwargs: captured.update(tables=tables, kwargs=kwargs),
     )
     driver.run(
         SimpleNamespace(
             input=SimpleNamespace(tables=files, record=str(record_path)),
             output=SimpleNamespace(
                 captions_md=str(plots / "figure_captions.md"),
+                captions_json=str(tmp_path / "_engine/figure_captions.json"),
                 folders=[str(plots / "full_period"), str(plots / "period_2036_2065")],
             ),
             params=SimpleNamespace(captioned_figures=False),
         )
     )
     available = captured["tables"]["availability"]
+    assert captured["kwargs"]["captions_json"] == str(
+        tmp_path / "_engine/figure_captions.json"
+    )
     assert available.loc[available.folder == "full_period", "window_id"].eq("").all()
     assert available.available.dtype == bool
 

@@ -10,8 +10,8 @@ the underlying calculation or statistical interpretation.
 Use `plots/` for generated graphics throughout the toolbox. Keep readable captions in
 `plots/figure_captions.md`. Machine plot manifests and internal analysis records belong in the cohesive
 output unit's single root `_engine/`, following [the output naming rule](naming.md#generated-outputs-under-project_dir).
-Existing WF0 and WF2 `plots/_engine/` paths and WF2 `analysis/_engine/` await explicit migration;
-the approved convention does not change runtime paths. JSON containing user-facing data stays with
+WF2 uses the ensemble root's `_engine/`, with manifest figure paths relative to `plots/`.
+Existing WF0 `plots/_engine/` paths await explicit migration. JSON containing user-facing data stays with
 its owning data product. Generated filenames and directories use lowercase snake_case, including
 `full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
 with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the rename mapping.

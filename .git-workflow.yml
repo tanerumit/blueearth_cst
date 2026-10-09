@@ -11,6 +11,7 @@
 #
 # Aliases: lite = trunk; full = branch
 mode: slot
+trunk: main
 
 # Explicit settings below override the selected mode.
 

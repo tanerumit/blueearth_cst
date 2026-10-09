@@ -1,48 +1,22 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for ``blueearth_cst/shared/func_plot_signature.py``.
+"""Numerical tests for exported discharge performance metrics.
 
-The module had NO direct coverage until 2026-08-11
-(`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md` §4), while being a
-shared helper with three consumers — ``model/plot_results.py``,
-``shared/plot_evaluation.py`` and ``shared/wflow_outputs.py``. That is the
-profile AGENTS.md names as *"a contract surface with other callers"*: only its
-rule wiring was pinned, never its arithmetic.
-
-Two halves, and they are tested differently.
-
-* ``compute_metrics`` writes ``performance_metrics.csv``, which the performance
-  sheet RENDERS rather than recomputes — so the numbers here reach a deliverable
-  unchecked by anything downstream. Tested as arithmetic: the perfect-fit
-  identities, the sign convention of ``Pbias``, and the daily/monthly split
-  actually discriminating (the whole reason the table has two rows per metric).
-* ``plot_basavg`` is a figure, and a figure is verified by rendering it and
-  looking at it (AGENTS.md, "Figures are terminal artifacts"). What is tested
-  here is therefore STRUCTURE, not appearance — how many panels exist, in what
-  order, under which resample rule. Every case below stands for the 2026-08-10
-  defect recorded in the function's own docstring: the per-subcatchment series
-  were drawn as one object, which was correct only by accident while a basin had
-  exactly one subcatchment, and dispatched to ``pcolormesh`` at four.
+Figure rendering, layout and plotting-only checks are temporary review probes
+outside the test suite. CSV arithmetic, bias conventions and paired daily/monthly
+calculations remain covered here.
 """
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-from matplotlib import pyplot as plt
 
-from blueearth_cst.shared import func_plot_signature as fps
 from blueearth_cst.shared.func_plot_signature import (
     compute_metrics,
-    plot_basavg,
     rsquared,
 )
-
-#: Every figure test here asserts STRUCTURE, never the export resolution.
-pytestmark = pytest.mark.usefixtures("fast_figure_dpi")
 
 #: A CONSTANT observation is the only way to state a bias or an error exactly,
 #: and it is degenerate for the variance-normalised metrics: ``skills`` divides
@@ -253,182 +227,3 @@ def test_metrics_handle_zero_denominators_and_no_concurrent_pairs():
     assert invalid.loc[("MSE", "daily"), "S"] == pytest.approx(0.0)
     assert invalid.loc[("NSE", "daily"), "S"] == pytest.approx(1.0)
     assert invalid.attrs["comparison_support"]["paired_days"] == 2
-
-
-# ---------------------------------------------------------------------------
-# plot_basavg — structure
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture
-def captured(monkeypatch):
-    """Record ``(path, figure)`` for every save, without asserting on pixels.
-
-    ``plot_basavg`` writes through the module-level ``save_figure`` binding and
-    returns nothing, so the figure is only reachable at save time. Patching the
-    binding avoids PNG writes; caption inventories still use the test directory.
-    """
-    saves: list[tuple[str, plt.Figure]] = []
-
-    def _fake_save_figure(path, *args, **kwargs):
-        saves.append((path, kwargs.get("fig") or plt.gcf()))
-
-    monkeypatch.setattr(fps, "save_figure", _fake_save_figure)
-    yield saves
-    plt.close("all")
-
-
-def _basavg(codes, indices=None, years=2, value=1.0):
-    """A basin-average dataset in the shape hydromt writes it.
-
-    ``<code>_subcatchment`` is hydromt's ``<header>_<mapname>`` naming for a csv
-    output reduced over the ``subcatchment`` map, which is what
-    ``code_from_variable`` recovers the PLOT_META key from.
-    """
-    time = pd.date_range("2001-01-01", periods=365 * years, freq="D")
-    data = {}
-    for code in codes:
-        if indices is None:
-            data[f"{code}_subcatchment"] = xr.DataArray(
-                np.full(len(time), value), dims="time", coords={"time": time}
-            )
-        else:
-            data[f"{code}_subcatchment"] = xr.DataArray(
-                np.full((len(indices), len(time)), value),
-                dims=("index", "time"),
-                coords={"index": list(indices), "time": time},
-            )
-    return xr.Dataset(data)
-
-
-def test_basin_and_optional_individual_inventory(captured, tmp_path):
-    ds = _basavg(["gwr"], indices=[103, 101, 102])
-    plot_basavg(
-        ds, str(tmp_path), cell_counts={101: 1, 102: 2, 103: 3}, subbasin_plots=True
-    )
-    names = [Path(path).name for path, _ in captured]
-    assert names == [
-        f"wflow_gwr_{kind}_{support}.png"
-        for support in ("basin_avg", "subbasin_101", "subbasin_102", "subbasin_103")
-        for kind in ("annual_ts", "monthly_clim_band")
-    ]
-    assert all(len(fig.axes) == 1 for _, fig in captured)
-    assert all("subbasins" in Path(path).parts for path, _ in captured[2:])
-    assert (tmp_path / "_engine/figure_captions.json").exists()
-    assert (tmp_path / "subbasins/_engine/figure_captions.json").exists()
-
-
-def test_weighted_daily_support_is_fixed_and_complete():
-    time = pd.date_range("2000-01-01", periods=3)
-    series = xr.DataArray(
-        [[2.0, 10.0], [4.0, np.nan], [-2.0, -10.0]],
-        dims=("time", "index"),
-        coords={"time": time, "index": [101, 102]},
-    )
-    daily, _, _ = fps._basavg_daily(series, {101: 1, 102: 3})
-    assert daily.iloc[0] == pytest.approx(8.0)
-    assert np.isnan(daily.iloc[1])  # Never renormalize onto the remaining zone.
-    assert daily.iloc[2] == pytest.approx(-8.0)
-    with pytest.raises(ValueError, match="require exact"):
-        fps._basavg_daily(series)
-    for weights in ({101: 1}, {101: 1, 102: 0}, {101: 1, 102: np.inf}):
-        with pytest.raises(ValueError):
-            fps._basavg_daily(series, weights)
-
-
-def test_calendar_gaps_leap_amounts_and_completeness():
-    time = pd.date_range("2000-01-01", "2000-12-31")
-    daily = pd.Series(2.0, index=time).drop(pd.Timestamp("2000-02-29"))
-    annual, cycle, info = fps._basavg_statistics(daily, "amount")
-    assert annual.loc[2000] == pytest.approx(732.0)
-    assert cycle.loc[2, "mean"] == pytest.approx(58.0)
-    assert info["omitted_dates"] == 1
-    # Four absent March dates exceed the per-month tolerance even though the
-    # year as a whole has only five missing days.
-    daily = daily.drop(pd.date_range("2000-03-01", periods=4))
-    annual, cycle, _ = fps._basavg_statistics(daily, "amount")
-    assert np.isnan(annual.loc[2000])
-    assert np.isnan(cycle.loc[3, "mean"])
-    # Sixteen missing days, never more than two per month, fail annual tolerance.
-    removed = [
-        pd.Timestamp(2000, month, day) for month in range(1, 9) for day in (3, 4)
-    ]
-    annual, cycle, _ = fps._basavg_statistics(
-        pd.Series(2.0, index=time).drop(removed), "amount"
-    )
-    assert np.isnan(annual.loc[2000])
-    assert cycle["mean"].notna().all()
-
-
-def test_partial_periods_equal_year_month_weight_and_quantiles():
-    time = pd.date_range("2001-01-02", "2005-12-31")
-    daily = pd.Series(time.year - 2000, index=time, dtype=float)
-    annual, cycle, info = fps._basavg_statistics(daily, "amount")
-    assert np.isnan(annual.loc[2001])
-    assert info["partial_years"] == [2001]
-    assert info["partial_months"] == ["2001-01"]
-    # February remains eligible in2001. Calendar-month years have equal weight.
-    assert cycle.loc[2, "mean"] == pytest.approx((28 + 56 + 84 + 116 + 140) / 5)
-    full = pd.date_range("2001-01-01", "2005-12-31")
-    _, cycle, _ = fps._basavg_statistics(
-        pd.Series(full.year - 2000, index=full, dtype=float), "amount"
-    )
-    assert cycle.loc[1, ["mean", "p10", "p90"]].values == pytest.approx(
-        [93.0, 43.4, 142.6]
-    )
-
-
-def test_stock_rate_means_and_warmup_not_cut_twice(captured, tmp_path):
-    time = pd.date_range("2001-01-02", "2002-12-31")
-    daily = pd.Series(7.0, index=time)
-    for kind in ("stock", "rate"):
-        annual, cycle, _ = fps._basavg_statistics(daily, kind)
-        assert annual.loc[2002] == pytest.approx(7.0)
-        assert cycle["mean"].values == pytest.approx(np.full(12, 7.0))
-    ds = xr.Dataset({"swe_subcatchment": ("time", daily.values)}, coords={"time": time})
-    plot_basavg(ds, str(tmp_path), warmup_excluded=True)
-    annual = captured[0][1].axes[0].lines[0]
-    assert list(annual.get_xdata()) == [2001, 2002]
-    assert annual.get_ydata()[1] == pytest.approx(7.0)
-    assert captured[0][1].axes[0].get_ylabel() == "mm"
-    assert Path(captured[0][0]).name == "wflow_snow_annual_ts_basin_avg.png"
-    assert captured[1][1].axes[0].get_ylabel() == "mm"
-
-
-def test_unsupported_variable_fails_loud(captured, tmp_path):
-    with pytest.raises(KeyError):
-        plot_basavg(_basavg(["not_a_wflow_output"]), str(tmp_path))
-
-
-def test_caption_inventory_tracks_current_request(captured, tmp_path):
-    import json
-
-    weights = {101: 1, 102: 2}
-    plot_basavg(
-        _basavg(["aet", "gwr"], indices=[101, 102]),
-        str(tmp_path),
-        cell_counts=weights,
-        subbasin_plots=True,
-    )
-    path = tmp_path / "_engine/figure_captions.json"
-    inventory = json.loads(path.read_text(encoding="utf-8"))
-    inventory["figures"]["unrelated.png"] = {
-        "caption": "Retain another figure family's caption."
-    }
-    path.write_text(json.dumps(inventory), encoding="utf-8")
-    plot_basavg(
-        _basavg(["gwr"], indices=[101, 102]), str(tmp_path), cell_counts=weights
-    )
-    inventory = json.loads(path.read_text(encoding="utf-8"))
-    assert set(inventory["figures"]) == {
-        "unrelated.png",
-        "wflow_gwr_annual_ts_basin_avg.png",
-        "wflow_gwr_monthly_clim_band_basin_avg.png",
-    }
-    assert not any("aet" in name for name in inventory["produced_paths"])
-    optional = json.loads(
-        (tmp_path / "subbasins/_engine/figure_captions.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    assert optional["figures"] == {}

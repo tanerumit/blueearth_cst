@@ -474,3 +474,19 @@ The owner approved this family for commit. The final executable candidate passed
 touched Python files listed above; `git diff --check` passed. The revised five-case review retains
 its original comparison image and measured caption bounds. No files were deleted. This scoped
 commit does not land the batch or push it.
+
+### Temporary figure checks — 2026-10-09
+
+The owner clarified that figure-specific unit tests are one-time checks, not additions to the
+persistent suite. Snapshots of the forcing, evaluation and signature checks are retained outside
+collection under `.tmp/scratchpad/wf1-evaluation-style/temporary-checks/` for this active review.
+`tests/test_forcing_figures.py` was deleted; plotting-only additions to `test_plot_evaluation.py`
+were removed, preserving its pre-existing tests. The revised `plot_basavg` checks and their unused
+fixtures/imports were removed from `test_func_plot_signature.py`. Exported-metric arithmetic tests
+and existing workflow output-contract tests remain. The plotting implementation is unchanged.
+
+The plotting reference now states this policy for future figure iterations. The two retained test
+modules passed all 32 tests in 27.13 s using the default Pixi environment:
+`pixi run pytest tests/test_func_plot_signature.py tests/test_plot_evaluation.py -q`.
+The log is `temporary-checks/suite-cleanup.log`. Touched-file Ruff lint/format and whitespace checks
+passed. The snapshots remain disposable review evidence, alongside the existing rendered examples.

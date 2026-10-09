@@ -255,6 +255,9 @@ in this visual review.
   Keep the full selected file path in the page data so the source remains identifiable.
 - Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
   applicable plots, and render all affected callers when a shared figure helper changes.
+- Keep figure-specific tests and plotting-only probes temporary under `.tmp/scratchpad/`, outside the
+  persistent test suite. Verify figure changes by rendering and visual inspection. Retain tests for
+  exported numerical metrics and workflow contracts separately from figure review checks.
 - During an explicitly deferred-check visual session, do not run tests or gates at each revision. Run
   appropriate checks at the end of the session. Commit once the user approves a figure style/type, rather
   than after each incremental revision. Do not land or push without separate authorization.

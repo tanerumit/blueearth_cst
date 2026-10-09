@@ -24,6 +24,8 @@ SNAKEDIR = join(TESTDIR, "..")
 
 config_fn = join(TESTDIR, "project_config_fixture.yml")
 
+pytest_plugins = ["dev.scripts.pytest_temp"]
+
 
 @pytest.fixture(autouse=True)
 def _no_ambient_path_tokens(monkeypatch):

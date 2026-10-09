@@ -67,21 +67,25 @@ def test_a_failure_message_carries_the_number_the_floor_was_measured_at():
 # --- Allowance.covers --------------------------------------------------------
 
 
-def test_a_path_outside_the_repository_matches_no_path_allowance(tmp_path):
+def test_a_path_outside_the_repository_matches_no_path_allowance():
     """Every sweep is run against throwaway trees by its tests and, in one
     case, by its own specimen check. Before this fallback existed those raised
     `ValueError` out of `relative_to` — and the reason a REPOSITORY file is
     excused must not travel to a fixture that merely shares its name."""
     allowance = Allowance(name="x", reason="y" * 50, paths=("dev/scripts/tool.py",))
+    outside = REPO_ROOT.parent / "sweep-external-fixture" / "dev/scripts/tool.py"
+    assert not outside.is_relative_to(REPO_ROOT)
     assert allowance.covers(REPO_ROOT / "dev/scripts/tool.py", "any line")
-    assert not allowance.covers(tmp_path / "dev/scripts/tool.py", "any line")
+    assert not allowance.covers(outside, "any line")
 
 
-def test_a_line_pattern_still_applies_to_an_outside_path(tmp_path):
+def test_a_line_pattern_still_applies_to_an_outside_path():
     """The fallback narrows PATH matching only. A line-shaped reason is a
     property of the text, so it holds wherever the text is."""
     allowance = Allowance(name="x", reason="y" * 50, line_patterns=(r"^ok$",))
-    assert allowance.covers(tmp_path / "anything.py", "ok")
+    outside = REPO_ROOT.parent / "sweep-external-fixture" / "anything.py"
+    assert not outside.is_relative_to(REPO_ROOT)
+    assert allowance.covers(outside, "ok")
 
 
 def test_a_glob_allowance_matches_by_repository_relative_path():

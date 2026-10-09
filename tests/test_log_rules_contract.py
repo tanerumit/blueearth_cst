@@ -184,9 +184,9 @@ def config_paths(tmp_path_factory) -> dict[str, Path]:
     is what brings rule 0.06 -- and its appended label -- into existence.
 
     Built through ``tmp_path_factory`` rather than ``tempfile.mkdtemp`` so
-    pytest owns the cleanup. A cached module-level builder would orphan one
-    directory per pytest process, outside the repo's own ``.tmp/``; session
-    scope gets the same build-once reuse with nothing left behind.
+    pytest places it under the run's temporary root. Session scope gives
+    build-once reuse; the retained run directory can be inspected and cleaned
+    with the rest of the test artifacts.
     """
     cfg = load_composed_config(CONFIG_FN)
     # `C-43`: the candidate set moved UP to `climate.sources` and is the FULL

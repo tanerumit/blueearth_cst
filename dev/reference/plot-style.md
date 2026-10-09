@@ -272,11 +272,23 @@ in this visual review.
 ## Implementation entry points
 
 - Shared drawing fundamentals and reviewed CST preset: `blueearth_cst/plotting/fundamentals.py`.
+- Explicit-figure export without workflow logging: `blueearth_cst/plotting/export.py`.
+- Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
 - WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
 - Legacy cartographic/evaluation preset and runtime overrides: `blueearth_cst/shared/plot_style.py`.
 - WF0 maps: `blueearth_cst/climate_analysis/diagnostic_maps.py`.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.
+
+For export without workflow logging, pass the figure explicitly and retain the caller's save options:
+
+```python
+from blueearth_cst.plotting.export import export_figure
+
+export_figure(fig, "plots/precip_annual_ts.png", dpi=600, metadata={"Software": None})
+```
+
+The caller closes the figure after its final export. Existing workflow callers keep using `save_figure`.
 
 WF2 review uses the newer artists and retained tables in the `wf0-lab` ensemble outputs as its visual
 baseline. The annual overview, trajectories, change strips, split seasonal products, variability ratios,

@@ -38,7 +38,7 @@ Self-explanatory except for these. Full detail: `dev/reference/repo-layout.md`.
 
 **Three homes for executables, split by INVOCATION MODEL** — not by audience: `blueearth_cst/` is executed by Snakemake, `scripts/` is what a user runs to execute the pipeline, `dev/scripts/` inspects or maintains the repository and is never part of a run. `dev/scripts/` also holds libraries `tests/` imports, so an import error there fails CI on a bare checkout. **When something in `dev/scripts/` acquires a run-path caller, move the shared part into the shipped package** rather than importing `dev/` from a run.
 
-`dev/scripts/console.py` is VENDORED: fix console defects in the `console-formatting` skill upstream and re-copy, never here. The agent-config directories (`.claude/`, `.codex/`, `.agents/`) are gitignored per-user state, symlinked per skill into worktrees; their absence downgrades rather than fails.
+`dev/scripts/console.py` is VENDORED: fix console defects in the `console-formatting` skill upstream and re-copy, never here. The agent-config directories (`.claude/`, `.codex/`, `.agents/`) are gitignored per-user state, linked as whole-directory symlinks into worktrees; their absence downgrades rather than fails.
 
 ## Key Commands
 

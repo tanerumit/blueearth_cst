@@ -50,6 +50,19 @@ _BACKTICKED = re.compile(r"`([^`]+)`")
 # Inline links only; reference-style and bare URLs are out of scope.
 _MD_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 
+# Phase A retained these verification citations. They block pruning under
+# dev/README.md's retention rule; new reference links to reviews are refused.
+_RETAINED_REVIEW_LINKS = {
+    (
+        "dev/reference/plot-style.md",
+        "dev/records/reviews/plot-improvements/verification.md",
+    ),
+    (
+        "dev/reference/migration_plot_paths.md",
+        "dev/records/reviews/plot-improvements/verification.md",
+    ),
+}
+
 
 def _bullets(text: str) -> list[str]:
     """Markdown bullets, each rejoined from its wrapped continuation lines.
@@ -180,7 +193,7 @@ def check_names() -> tuple[list[str], bool]:
 
 
 def check_links() -> list[str]:
-    """Every relative Markdown link under dev/reference/ must resolve.
+    """Relative reference links must resolve and avoid transient/prunable homes.
 
     Holds on a bare checkout, which is why it is the half a test can pin.
     """
@@ -190,7 +203,25 @@ def check_links() -> list[str]:
             target = target.split("#", 1)[0].strip()
             if not target or "://" in target or target.startswith("<"):
                 continue
-            if not (doc.parent / target).resolve().exists():
+            resolved = (doc.parent / target).resolve()
+            source = doc.relative_to(REPO_ROOT).as_posix()
+            if resolved.is_relative_to(REPO_ROOT / "dev/tasks"):
+                problems.append(
+                    f"{source}: link to transient task material -> {target}; "
+                    "promote cited evidence before linking from a reference"
+                )
+                continue
+            if (
+                resolved.is_relative_to(REPO_ROOT / "dev/records/reviews")
+                and (source, resolved.relative_to(REPO_ROOT).as_posix())
+                not in _RETAINED_REVIEW_LINKS
+            ):
+                problems.append(
+                    f"{source}: link to prunable review material -> {target}; "
+                    "use a durable evidence home"
+                )
+                continue
+            if not resolved.exists():
                 problems.append(
                     f"{doc.relative_to(REPO_ROOT)}: broken link -> {target}"
                 )

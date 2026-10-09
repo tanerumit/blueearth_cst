@@ -74,4 +74,4 @@ worktree_provision:
 # pixi run python dev/scripts/check_env.py --all
 
 
-primary_maintenance_paths: [dev/]
+primary_maintenance_paths: [dev/tasks/, dev/TODO.md, dev/LOG.md]

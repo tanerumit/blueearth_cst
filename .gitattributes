@@ -92,6 +92,15 @@ dev/records/milestones/r12/gf15-production-adapter-design.md -text -whitespace
 dev/working/design-runs/gf15-production-adapter/** -text -whitespace
 dev/records/milestones/r12/implementation/evidence/gf15-production-integration/** -text -whitespace
 
+# Relocated legacy evidence retains the exact original Git bytes on every platform.
+dev/records/reviews/climate-workflow-split-2026-08-14.md -text -whitespace
+dev/records/reviews/wf3-scenario-generation-trace-2026-08-15/** -text -whitespace
+dev/records/reviews/gw-command-simplification-2026-09-06/** -text -whitespace
+dev/records/reviews/wf0-climate-transfer-2026-09-18/** -text -whitespace
+dev/records/reviews/geographic-robustness-2026-09-28.md -text -whitespace
+dev/records/reviews/wf2-plot-standardization-2026-09-27.md -text -whitespace
+dev/records/milestones/post-r12/output-schema/** -text -whitespace
+
 # The vendored hydromt `deltares_data` catalog records the upstream body's
 # sha256 in its header, and hydromt's own registry hashes that file byte for
 # byte. Under `*.yml text` the bytes would be LF in the repository and CRLF in

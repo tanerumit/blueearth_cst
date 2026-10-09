@@ -24,6 +24,12 @@ def simulation_settings(config_path):
         stanza["enabled"], bool
     ):
         raise ValueError("simulate_system requires a closed enabled/config_path stanza")
+    if stanza["enabled"] is False:
+        raise ValueError(
+            f"Workflow simulate_system is disabled in {path}. "
+            "Set workflows.simulate_system.enabled to true in that "
+            "project configuration file, then rerun the command."
+        )
     settings = yaml.safe_load(
         (path.parent / stanza["config_path"]).read_text(encoding="utf-8")
     )

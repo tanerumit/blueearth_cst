@@ -116,7 +116,11 @@ def run_owned(
         declared_sections=PROJECTION,
     )
     if config["workflows"]["generate_scenarios"].get("enabled") is False:
-        raise ValueError("WF3 is disabled in this project configuration")
+        raise ValueError(
+            f"WF3 is disabled in {config_path}. "
+            "Set workflows.generate_scenarios.enabled to true in that "
+            "project configuration file, then rerun the command."
+        )
     if Path(config["project"]["project_dir"]).resolve() != project_root:
         raise ValueError("WF3 config project root differs from owned root")
     settings, candidate, plan = _plan_quietly(config)

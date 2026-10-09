@@ -89,8 +89,15 @@ def visible_values(field, basin_path):
     return field.values[np.ix_(y, x)].ravel()
 
 
-def draw_map(field, variable, source, overlays, limits, counts):
-    """Native cells, basin/subbasin/river/gauge overlays and discrete colourbar."""
+def draw_map(
+    field, variable, source, overlays, limits, counts, *, cell_edges=True, inside=None
+):
+    """Native cells, overlays and discrete colourbar.
+
+    Defaults preserve source-grid maps. Dense model grids can suppress cell
+    edges and supply a basin mask: outside cells are white, while unavailable
+    values within the basin retain the shared gray missing-data color.
+    """
     with plt.rc_context(STYLE):
         fig, ax = plt.subplots(figsize=(180 / 25.4, 113 / 25.4), layout="constrained")
         low, high = limits
@@ -144,9 +151,22 @@ def draw_map(field, variable, source, overlays, limits, counts):
             cmap=cmap,
             norm=BoundaryNorm(levels, cmap.N),
             shading="flat",
-            edgecolors=(0.25, 0.25, 0.25, 0.12),
-            linewidth=0.25,
+            edgecolors=(0.25, 0.25, 0.25, 0.12) if cell_edges else "none",
+            linewidth=0.25 if cell_edges else 0,
         )
+        if inside is not None:
+            field, inside = xr.align(field, inside, join="exact")
+            ax.pcolormesh(
+                xedges,
+                yedges,
+                np.ma.masked_where(
+                    inside.transpose(*field.dims).values, np.zeros(field.shape)
+                ),
+                cmap=ListedColormap(["white"]),
+                shading="flat",
+                edgecolors="none",
+                linewidth=0,
+            )
         layers = {
             key: json.loads(Path(path).read_text(encoding="utf-8"))["features"]
             for key, path in overlays.items()

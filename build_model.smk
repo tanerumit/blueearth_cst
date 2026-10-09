@@ -296,10 +296,8 @@ basin_dir = f"{project_dir}/models/hydrology/wflow"
 # with basin_dir above.
 spatial_dir = f"{project_dir}/data/spatial"
 
-# The canonical climate figure set, one directory per dataset (rule 1.12 draws
-# the forcing, 1.15 the source). variable x kind is a fixed cross-product, so
-# unlike rule 1.15's per-station figures these are fully knowable at parse time
-# and ALL of them are declared — see climate_figures' module docstring.
+# Rule 1.12 draws the model forcing; source diagnostics belong to WF0.
+# Variable x kind is a fixed cross-product, fully knowable at parse time.
 FORCING_PLOTS_DIR = f"{basin_dir}/forcing/plots"
 _forcing_climate_pngs = [f"{FORCING_PLOTS_DIR}/{name}" for name in figure_names("forcing")]
 
@@ -1174,6 +1172,8 @@ rule plot_model_forcing:
     # rather than being restated here.
     output:
         _forcing_climate_pngs,
+        captions_md = f"{FORCING_PLOTS_DIR}/figure_captions.md",
+        captions_json = f"{FORCING_PLOTS_DIR}/_engine/figure_captions.json",
     params:
         project_dir = f"{project_dir}",
         # Rule-owned model root; see rule 1.15's note.

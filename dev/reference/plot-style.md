@@ -1,6 +1,6 @@
 # Scientific plot style and visual review
 
-This shared reference records the agreed WF0 and WF2 styles and defaults for subsequent figure
+This shared reference records the agreed WF0, WF1 forcing and WF2 styles and defaults for subsequent figure
 revisions. Apply relevant defaults across plot types; preserve the explicit exceptions below. New visual
 decisions belong here, alongside changes to the plotting code. A style decision does not authorize changing
 the underlying calculation or statistical interpretation.
@@ -71,6 +71,22 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
   height of 80% of the plotting area. Their final figure height is 56% of the original height.
 
 ## Figure-specific decisions
+
+WF1 forcing QA uses the reviewed WF0 map, annual-series and monthly-climatology styles for precipitation,
+temperature and PET. Read the actual model-grid forcing, mask to the model basin, and use equal-weight
+cell means for temporal figures. Keep the nine `forcing_<variable>_<kind>.png` filenames for now.
+Identify the data as Wflow forcing in legends and captions; use ERA5 blue for this forcing family.
+Maps retain their model-grid footprint and basin mask, with the reviewed coordinate labels, palettes,
+spatial overlays and gauge labels. Source and forcing maps retain independent color limits; identical
+colors alone do not establish equal values.
+Suppress individual model-cell outlines on the fine forcing grid so they do not obscure the field.
+Show cells outside the model basin in white and unavailable summaries inside it in gray.
+
+Use WF0's start-year reporting labels, completeness handling, Sen trends and monthly mean with a
+10–90th percentile band. WF1 uses WF0's default tolerances of three missing days per month and fifteen
+per reporting year, independently of whether WF0 runs. Temperature uses means; precipitation and PET
+use totals. Keep model corrections and statistical caveats in separate captions, without plot footers.
+These summaries describe forcing QA; they do not modify the forcing or simulation calculations.
 
 | Figure type | Agreed treatment |
 |---|---|

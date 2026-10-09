@@ -47,6 +47,20 @@ flowchart LR
 
 The figure branches are terminal products; the historical simulation uses the completed model and forcing.
 
+Rule 1.12 writes nine forcing QA figures under `models/hydrology/wflow/forcing/plots/`: annual
+climatology maps, annual basin-average series and monthly climatologies for precipitation, temperature
+and PET. They use WF0's canonical style and methods: reporting years labeled by their starting year,
+completeness-aware aggregates, Sen trends and monthly means with 10–90th percentile bands.
+Precipitation and PET are totals; temperature is a mean. Temporal figures average model-basin cells
+with equal weights. The completeness tolerances are WF0's defaults: three missing days per month and
+fifteen per reporting year. WF1 can produce these figures without running WF0.
+
+The existing `forcing_<variable>_<kind>.png` filenames remain. Captions are recorded in
+`plots/figure_captions.md` and `plots/_engine/figure_captions.json` beneath the forcing directory.
+The figures describe the post-processed model forcing; regenerating them does not rebuild the model
+or change its forcing. Source and model-grid maps use independent color limits, so compare their
+colorbar values when assessing differences.
+
 ## Configuration
 
 The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, the `basin` definition and `output_locations`, `climate.selected` and `climate.window`, and `model.outvars`. Its `workflows.build_model` stanza enables this workflow and points to its YAML file through `config_path`.

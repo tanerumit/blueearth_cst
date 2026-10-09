@@ -67,6 +67,8 @@ DECLARED_PLOT_OUTPUTS = (
     # Rule 1.12's basin map. PNG only since 2026-08-10; the vector deliverable
     # was dropped because nothing read it.
     "data/spatial/plots/elevation_basin.png",
+    "models/hydrology/wflow/forcing/plots/figure_captions.md",
+    "models/hydrology/wflow/forcing/plots/_engine/figure_captions.json",
 ) + tuple(
     f"models/hydrology/wflow/forcing/plots/{name}" for name in _figure_names("forcing")
 )

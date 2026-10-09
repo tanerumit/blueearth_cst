@@ -500,7 +500,10 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
                 ms=MS_LINE,
             )
         )
-        top = max(top, float(np.nanmax(c["p90"])))
+        finite = c["p90"].to_numpy()
+        finite = finite[np.isfinite(finite)]
+        if finite.size:
+            top = max(top, float(finite.max()))
     month_axis(ax, v.m0)
     if zero:
         ax.set_ylim(0, max(top * 1.08, 1))
@@ -1124,7 +1127,13 @@ def slopes(v: View) -> Figure:
     return fig
 
 
-def series(v: View) -> Figure:
+def series(
+    v: View,
+    ylabel: str = UNITS["mm_year"],
+    trend_unit: str = UNITS["mm_decade"],
+    digits: int = 0,
+) -> Figure:
+    """Annual basin series; defaults retain the reviewed precipitation figure."""
     fig, axs = new_fig(H_SINGLE)
     ax = axs[0, 0]
     for s in v.sources:
@@ -1134,8 +1143,8 @@ def series(v: View) -> Figure:
         )
     year_ticks(ax, v.years)
     ax.margins(y=0.08)
-    _annual_trends(ax, v, "annual", "total", "total", UNITS["mm_decade"])
-    ax.set_ylabel(UNITS["mm_year"])
+    _annual_trends(ax, v, "annual", "total", "total", trend_unit, digits)
+    ax.set_ylabel(ylabel)
     top_legend(fig, identity_row(v))
     ygrid(ax)
     return fig

@@ -184,11 +184,27 @@ was compared* -- an empty scope, or a fixture it cannot resolve). Treat 2 as "no
 evidence", never as a pass: `--workflow generate_scenarios` declares no
 non-figure target, so it reaches 2 by construction.
 
-**The baseline manifest is BEHIND the baseline config, on purpose (`t2608222155`).** On 2026-09-07 the baseline set moved to a nine-year `simulation_window` (2046-2054) and the matching `mid` horizon; `dev/baseline/manifest.json` was deliberately NOT re-recorded, because the saving is 4-8% and a re-record costs a full run that repays after 10 to 25 gates.
+**The baseline manifest is stale after the P-drive catalog and GlobCover switch.** Its last fresh-root
+record (2026-10-04) used the prior local-data baseline. Regenerate `test_case/test_local` from the revised
+baseline config and re-record `dev/baseline/manifest.json` before using `check_baseline.py check` as a
+numerical gate. Do not mistake agreement with an old manifest for acceptance of current inputs.
 
-**The standing tree is not an R12 migration reference.** It still contains the pre-2026-09-07 run and its matching manifest. Re-execution changes the configured years and projection horizon; R12 also changes scenario/metric paths, keys and ownership. Use the separately captured fresh P0 reference and GF-9 crosswalk for R12 acceptance. Do not interpret agreement between the old standing tree and its old manifest as evidence about the current configuration, or re-record it before scientific acceptance.
+The standing tree is the R12 successor, not a migration reference: predecessor/successor comparisons
+also change the 2026-09-07 configuration, confounding layout and settings. R12 acceptance uses the
+separately captured fresh P0 reference and signed GF-9 crosswalk under matched settings. The preserved
+predecessor is at `blueearth_cst-artifacts/r12/predecessor-test_local-2026-09-15` outside this checkout.
+
+`test_case/test_local` is untracked and independent in each worktree. Inspect its provenance before
+reuse: older seeds may still contain predecessor output. Re-seed or regenerate each affected worktree;
+repairing one does not repair the others. `project_dir` resolves from the run directory.
+
+Run WF1 with `--notemp` when feeding the baseline checker. Rule 1.13 otherwise removes its `temp()`
+target `run_default/output.csv`, which the manifest needs. Rounded `output_q.csv` is not a substitute.
 
 ## Read the CI run after you push
+
+GitHub does not allow self-approval of a PR. If enabling merge-on-green, make both platform test
+checks required first: auto-merge without required checks merges immediately.
 
 Install the pre-push hook once per clone — cloning does not install it:
 

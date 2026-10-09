@@ -25,8 +25,7 @@ updated: 2026-10-09
 `dev/tasks/t2608191733/sample-dataset-design.md`.
 Input contract, already authored: `dev/scripts/sample_bundle.yml`.
 
-The backing files are migrated on `chore/maintainance` and await approved landing.
-Until then, retrieve them from commit `21c81ac915577293ab5a35403a19cf93621726dc`:
+The backing files are available on `main`. Their original migrated versions remain in commit `21c81ac915577293ab5a35403a19cf93621726dc`:
 
 ```powershell
 git show 21c81ac915577293ab5a35403a19cf93621726dc:dev/tasks/t2608191733/sample-dataset-design.md

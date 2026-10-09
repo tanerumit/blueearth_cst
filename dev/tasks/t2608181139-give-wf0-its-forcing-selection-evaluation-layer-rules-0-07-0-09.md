@@ -75,7 +75,7 @@ wanted, it takes its own note.
 
 ## Refs
 
-The retained split design is on `chore/maintainance` until approved landing. Retrieve it with:
+The retained split design is available on `main`. Retrieve its original migrated version with:
 
 ```powershell
 git show d166df9ecd17e4fc0bf66b00dad040f8e6bc212a:dev/records/reviews/climate-workflow-split-2026-08-14.md

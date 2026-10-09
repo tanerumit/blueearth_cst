@@ -7,7 +7,7 @@ area: plotting
 queue: 1
 created: 2026-10-08
 updated: 2026-10-10
-doc: t2610082103/landscape-and-plan.md
+doc: dev/tasks/t2610082103/landscape-and-plan.md
 branch: chore/minor-fixes
 ---
 
@@ -66,3 +66,7 @@ then reusable chart interfaces, a separately scoped map-reference producer, and 
 The [landscape and development plan](t2610082103/landscape-and-plan.md) preserves the full assessment.
 Start with a bounded foundations design and focused specialist handoffs. Implementation remains in
 the pinned session branch; board and planning records stay on main.
+
+The first foundations design passed internal and independent review with no findings.
+Its exact-revision approval is pending; 167 baseline figures are captured. See
+[review state](t2610082103/design-runs/rendering-foundations/status.md) and the prepared implementation brief.

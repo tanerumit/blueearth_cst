@@ -42,6 +42,7 @@ both legs, so an import-time error fails the suite.
 | [`inspect_weathergenr.R`](inspect_weathergenr.R) | The installed weathergenr's exports and the signatures the workflow calls; run after an upgrade. |
 | [`pixi_activate.bat`](pixi_activate.bat) | Activate the pixi env in a cmd shell. |
 | [`setup-board-view.ps1`](setup-board-view.ps1) | Give a session worktree an Explorer path to the canonical board on `main`; run by the post-checkout and post-merge hooks. |
+| [Navigation setup](setup-worktree-navigation.ps1) | Preview or create Explorer shortcuts. |
 | [`check_activation.py`](check_activation.py) | Drift between `dev/reference/agent-activation.md` and the untracked agent manifest. |
 
 ## Data staging and catalogs

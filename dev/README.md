@@ -70,7 +70,8 @@ code change, not a documentation change:
 | `baseline/` | Replication baseline fingerprints and the discharge reference series; `MANIFEST_PATH_DEFAULT` hardcodes `dev/baseline/manifest.json` |
 
 **Scratch lives outside `dev/`.** Disposable machine-local output goes in the
-repo-root `.tmp/` — one ignored directory for everything: probe output,
+worktree-root `.tmp/` — task scratch under `scratchpad/<task-id-or-purpose>/`, tool state in named
+subdirectories, and no loose files at its root. It contains probe output,
 `scaffold_project_tree.py`'s default target (`.tmp/scaffold`), and any
 `pytest --basetemp`. `dev/tmp/` was merged into it on 2026-08-02; there is no
 second scratch location, and nothing in `dev/` is a place to park disposables.
@@ -81,6 +82,85 @@ Shard `tasks/` or `records/reviews/` into `<year>/` subfolders only if a flat fo
 ever grows unwieldy. Generated results, figures, and model outputs go in the
 project-root `output/` (gitignored), not `dev/`. Create optional folders only
 when first needed — and put new ones in the table above when you do.
+
+## Worktree coordination
+
+This is maintained-current guidance. Centralise task coordination on `main`; keep files whose
+contents depend on a branch in that branch. Never mirror all of `dev/` or share a writable `.tmp/`.
+
+| Content | Handling |
+|---|---|
+| Board notes, plans, handoffs, ledger | Main's `dev/`; use the board wrapper and current-board view |
+| References, records, baseline manifests, developer scripts | Branch-local; integrate through Git |
+| Code, tests, configuration, lockfiles | Branch-local; integrate through Git |
+| Agent configuration | Existing configured shared links |
+| Scratch, caches, environments, mutable outputs | Local to their owning worktree |
+| Immutable input data | Shared external location when consumers cannot modify it |
+
+The `00-current-board-main` junction exposes **all of main's `dev/`**, not only the board. It is a
+coordination and integrated-reference view. Use local references and scripts when changing a branch's
+contracts. Do not edit branch implementation through the junction. Local `tasks/` and `TODO.md`
+snapshots should be excluded from session working directories; Git still retains them for merges.
+
+### One task, one locator
+
+Keep the existing `branch:` field current. For work that needs tracking, add this compact section to
+the central task note; update it when ownership, location, verification or the next action changes.
+Do not duplicate it in a separate status file. Use logical checkout names and relative paths rather
+than machine-specific absolute paths in tracked notes. Discover actual roots with `git worktree list`.
+
+```markdown
+## Work location
+
+- Owner: session-N; branch: <branch>; implementation commit: <SHA or uncommitted>.
+- Implementation: session-N :: <repo-relative paths>.
+- Coordination: main :: dev/tasks/<task-id>/ (only if backing material is needed).
+- Scratch: session-N :: .tmp/scratchpad/<task-id-or-purpose>/.
+- Outputs: <configured project_dir; identify its owning checkout if relative>.
+- Verification: <tested SHA, exact command, result, environment, input/config, output root>.
+- Retention: <needed artifact, reason, event that permits cleanup>.
+- Next action: <one concrete action>; blockers: <none or explicit condition>.
+```
+
+Assign one implementation owner at a time. If a task spans sessions, list each contributor's distinct
+paths and artifacts here. Never create an independent task note in another checkout.
+
+### Local scratch and navigation
+
+Put disposable task files under `.tmp/scratchpad/<task-id-or-purpose>/` in the owning worktree.
+Leave tool caches in their configured `.tmp/` subdirectories. Keep the `.tmp/` root free of loose
+files. Before cleaning a task folder, preserve needed evidence, check active writers and links,
+and verify its exact containment; age and ignore status do not establish deletion authority.
+Existing loose files require classification before moving or deleting them.
+
+From main, preview and then apply Explorer navigation for every registered worktree:
+
+```powershell
+pwsh -NoProfile -File dev/scripts/setup-worktree-navigation.ps1
+pwsh -NoProfile -File dev/scripts/setup-worktree-navigation.ps1 -Apply -ExcludeSnapshots
+```
+
+Each worktree gets ignored `.tmp/navigation/` shortcuts to main, the sessions, main's `dev/`, and
+its own scratchpad. Pin that folder in Explorer Quick access. Shortcuts do not share file contents.
+Rerun setup after worktrees are added or recreated. Snapshot exclusion requires clean sessions and
+refuses custom sparse layouts. Existing checkout/merge hooks preserve the current-board junction.
+Use main's setup script until a session has integrated the new script through Git.
+
+### Handoff and synchronisation
+
+1. Commit verified implementation in its owning branch; record unfinished work explicitly.
+2. Update the central locator with the tested commit, results, decisions, next action and blockers.
+3. Identify required untracked artifacts by source checkout, relative path, purpose and destination.
+   Verify the destination before copying only those artifacts; compare hashes after transfer.
+   Keep original evidence until the recipient confirms it is readable and sufficient.
+4. The recipient verifies the branch and artifact locations before editing. Re-entering the same
+   session is preferred; switching sessions or branches remains the user's decision.
+
+At a new session's entry, synchronise a clean, local, unpushed branch with local `main` using the
+existing Git workflow. Published branches use a merge unless rewriting is authorised. Dirty state
+and conflicts require resolution first; do not automatically stash or reset. Synchronise again at
+approved landing, not on every follow-up. Do not background-sync tracked folders or scratch.
+At closure, promote required evidence to its retained home before removing completed scratch.
 
 ## Exceptions
 

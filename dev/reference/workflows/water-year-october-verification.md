@@ -9,4 +9,7 @@ Verified 2026-09-28 on the rapid basin with the two configured CMIP6 models, `ss
 
 The effective reference window and year count appear for both resolved model rows in `summary/provenance.json`; `summary/cmip6_change_factors_annual.csv` reports the same windows. All 12 annual factor rows changed between the controlled runs. For example, GFDL-ESM4 mean precipitation change was 3.859% (Jan) versus 2.771% (Oct); INM-CM4-8 was 6.165% versus 4.862%. The October result includes exactly 14 complete October–September years, confirming the boundary behavior previously flagged in the [R08 finding](../../records/milestones/r08/2026-07-30_wf2-5f-hydyear-offbyone.md).
 
-The disposable run trees and output tables are in `session-1/.tmp/scratchpad/2026-09-28_2134/wf2-oct/` while that worktree exists. They are not a retained project dataset. This check establishes the WF2 arithmetic and reporting for this rapid fixture; it does not inventory production projects or test other water-year start months.
+The disposable run trees and output tables were removed during scratch cleanup on 2026-10-09.
+They were not a retained project dataset; the verification results above remain the record of this check.
+This check establishes the WF2 arithmetic and reporting for this rapid fixture; it does not inventory
+production projects or test other water-year start months.

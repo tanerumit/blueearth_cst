@@ -74,6 +74,16 @@ are supplied, summary panels use paired valid dates. Flow-duration curves rank v
 values; the log panel preserves exceedance positions, displays the full positive range and reports
 zero-flow frequency. These plotting choices do not change the simulation or performance metrics.
 
+When observations are available, the performance sheet compares daily discharge pairs, cumulative
+paired-day volumes and the exported daily/monthly metrics. All use the same finite, nonnegative
+concurrent dates. Omitted dates and invalid values exclude both members of the pair; cumulative curves
+break at those gaps and integrate only retained days, without estimating missing flow. Monthly metrics
+use means over paired days, independently of the hydrograph completeness thresholds. Undefined metrics
+are shown as unavailable. Sample counts and squared Pearson correlation are retained in JSON metadata.
+The scatter and cumulative-volume panels are labelled a) and b), with the observed/simulated legend
+inside the upper-left of panel a). Publication captions describe both panels and the metrics table,
+and are stored beside the station figures; the figures have no displayed titles.
+
 Each configured hydrological zonal output has two standard figures: a basin-average annual series
 and seasonal cycle. The basin combines daily native zonal means using fixed model-cell counts.
 Set `evaluation.subbasin_plots: true` in the build-model workflow YAML to also generate both types

@@ -1022,6 +1022,8 @@ def _draw_metrics_table(ax, metrics):
     whether Pbias wants 0 or 1, and the group band says which direction each
     block is read in.
     """
+    import numpy as np
+
     ax.axis("off")
     names = [
         name for _, group in METRIC_GROUPS for name in group if name in metrics.index
@@ -1100,7 +1102,11 @@ def _draw_metrics_table(ax, metrics):
             ax.text(
                 centres[name],
                 _TABLE_ROWS[row],
-                ideal if muted else template.format(metrics.loc[name, row]),
+                ideal
+                if muted
+                else template.format(metrics.loc[name, row])
+                if np.isfinite(metrics.loc[name, row])
+                else "—",
                 transform=ax.transAxes,
                 ha="center",
                 va="center",
@@ -1118,75 +1124,274 @@ def _draw_metrics_table(ax, metrics):
     )
 
 
+def _performance_pairs(simulated, observed):
+    """Regular daily calendar with one shared finite, nonnegative pair mask."""
+    import numpy as np
+    import pandas as pd
+
+    def clean(data):
+        if data.dims != ("time",) or not data.time.size:
+            raise ValueError(
+                "Performance discharge requires a nonempty one-dimensional daily series"
+            )
+        dates = pd.DatetimeIndex(data.time.values)
+        if (
+            dates.hasnans
+            or not dates.is_unique
+            or not dates.is_monotonic_increasing
+            or not dates.equals(dates.normalize())
+        ):
+            raise ValueError(
+                "Performance dates require increasing, unique midnight timestamps"
+            )
+        values = np.asarray(data.values, dtype=float)
+        calendar = pd.date_range(dates[0], dates[-1], freq="D")
+        return pd.Series(values, index=dates), {
+            "input_period": [str(dates[0].date()), str(dates[-1].date())],
+            "input_days": len(dates),
+            "omitted_dates": len(calendar) - len(dates),
+            "negative_values": int((np.isfinite(values) & (values < 0)).sum()),
+            "nonfinite_values": int((~np.isfinite(values)).sum()),
+        }
+
+    sim, sim_info = clean(simulated)
+    obs, obs_info = clean(observed)
+    start, end = max(sim.index[0], obs.index[0]), min(sim.index[-1], obs.index[-1])
+    calendar = (
+        pd.date_range(start, end, freq="D") if start <= end else pd.DatetimeIndex([])
+    )
+    pairs = pd.DataFrame(
+        {"simulated": sim.reindex(calendar), "observed": obs.reindex(calendar)}
+    )
+    valid = np.isfinite(pairs).all(axis=1) & (pairs >= 0).all(axis=1)
+    pairs = pairs.where(valid, np.nan)
+    monthly = pairs.resample("ME").mean().dropna() if len(calendar) else pairs.copy()
+    return pairs, {
+        "comparison_period": [str(start.date()), str(end.date())]
+        if len(calendar)
+        else None,
+        "calendar_days": len(calendar),
+        "paired_days": int(valid.sum()),
+        "missing_comparison_days": int((~valid).sum()),
+        "paired_months": len(monthly),
+        "simulated": sim_info,
+        "observed": obs_info,
+    }
+
+
+def _performance_r_squared(pairs):
+    """Squared Pearson correlation on pairs, undefined for constant operands."""
+    import numpy as np
+
+    valid = pairs.dropna()
+    if len(valid) < 2 or (valid.nunique() < 2).any():
+        return float("nan")
+    return float(np.corrcoef(valid["observed"], valid["simulated"])[0, 1] ** 2)
+
+
 def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=None):
-    """Goodness of fit: the daily scatter, the cumulative volume, the table.
-
-    ``metrics`` is this station's block of ``performance_metrics.csv``, indexed
-    by metric with ``daily`` and ``monthly`` columns — rendered, not recomputed,
-    so the figure and the table cannot disagree.
-
-    The cumulative panel is the one that says WHEN a bias accrues. Pbias and VE
-    in the table give its size; a curve that separates in one season and tracks
-    in another is telling a different story from one that drifts throughout, and
-    no single number carries that.
-    """
+    """Paired-day scatter and cumulative volume, with the supplied CSV metrics."""
+    import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
     import numpy as np
-    from matplotlib import gridspec, rc_context
+    from matplotlib import gridspec
 
-    with rc_context(_rc()):
+    from blueearth_cst.climate_analysis import diagnostic_figures as artists
+
+    pairs, support = _performance_pairs(simulated, observed)
+    finite = pairs.dropna()
+    with plt.rc_context(artists.STYLE):
         fig = plt.figure(
             figsize=_figure_size(HEIGHT_PERFORMANCE_MM), layout="constrained"
         )
-        # The two pictures first, side by side; the table full width beneath
-        # them. A reader meets the scatter and the volume curve, then reads the
-        # numbers that summarise them — rather than the other way round.
+        fig.get_layout_engine().set(
+            w_pad=artists.OUTER_PAD_X_MM * artists.MM,
+            h_pad=artists.OUTER_PAD_Y_MM * artists.MM,
+        )
         grid = gridspec.GridSpec(2, 2, figure=fig, height_ratios=[2.0, 1.0])
         ax_scatter = fig.add_subplot(grid[0, 0])
         ax_volume = fig.add_subplot(grid[0, 1])
         ax_table = fig.add_subplot(grid[1, :])
 
-        high = float(np.ceil(max(observed.max(), simulated.max())))
+        high = 1.04 * (
+            max(float(np.ceil(finite.to_numpy().max())), 1.0) if len(finite) else 1.0
+        )
         ax_scatter.plot(
-            observed,
-            simulated,
+            finite["observed"],
+            finite["simulated"],
             "o",
-            ms=1.6,
+            ms=artists.MS_POINT,
             mfc=COLOR_SIMULATED,
             mec="none",
-            alpha=0.5,
+            alpha=0.45,
             ls="none",
             zorder=2,
         )
         _reference_line(ax_scatter, high)
-        _panel(ax_scatter, "a", "Daily discharge")
-        ax_scatter.set_xlabel("observed (m$^3$ s$^{-1}$)")
-        ax_scatter.set_ylabel("simulated (m$^3$ s$^{-1}$)")
-        _score_box(
-            ax_scatter,
-            f"R$^2$ = {r_squared(observed, simulated):.2f}\nn = {simulated.time.size:,}",
-        )
+        ax_scatter.set_xlabel("Observed (m³ s⁻¹)")
+        ax_scatter.set_ylabel("Simulated (m³ s⁻¹)")
+        for ax, label in ((ax_scatter, "a)"), (ax_volume, "b)")):
+            ax.text(
+                0.025,
+                0.975,
+                label,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=artists.FS_LABEL,
+                fontweight="bold",
+                bbox=artists.LABEL_BOX,
+                zorder=5,
+            )
+        ax_scatter.grid(alpha=0.7)
 
-        # A real volume: cumulative daily mean discharge times a day, in 10^6 m3.
-        # Its predecessor plotted the bare cumsum and labelled it m3 s-1.
-        scale = SECONDS_PER_DAY / 1e6
-        _draw_series(
-            ax_volume,
-            simulated.cumsum("time") * scale,
-            observed.cumsum("time") * scale,
-            x_sim=simulated["time"],
-            x_obs=observed["time"],
+        # Pandas cumsum resumes after missing dates while retaining NaN gaps.
+        # Both curves integrate the exact same valid days; no infilling occurs.
+        cumulative = pairs.cumsum() * (SECONDS_PER_DAY / 1e6)
+        lines = []
+        for key, color, style, label in (
+            ("observed", COLOR_OBSERVED, DASH_OBSERVED, "Observed"),
+            ("simulated", COLOR_SIMULATED, "-", "Simulated"),
+        ):
+            (line,) = ax_volume.plot(
+                cumulative.index,
+                cumulative[key],
+                color=color,
+                ls=style,
+                lw=artists.LW_LINE,
+                label=label,
+            )
+            lines.append(line)
+        ax_volume.set_ylabel("10⁶ m³")
+        volumes = cumulative.to_numpy()
+        volumes = volumes[np.isfinite(volumes)]
+        top = float(volumes.max()) if volumes.size else 0.0
+        ax_volume.set_ylim(0, top * 1.08 if top > 0 else 1.0)
+        ax_volume.set_xlabel("")
+        ax_volume.yaxis.get_major_formatter().set_useOffset(False)
+        ax_volume.xaxis.set_major_locator(
+            mdates.AutoDateLocator(minticks=3, maxticks=6)
         )
-        _panel(ax_volume, "b", "Cumulative volume")
-        ax_volume.set_ylabel("V (10$^6$ m$^3$)")
+        ax_volume.xaxis.set_major_formatter(
+            mdates.ConciseDateFormatter(ax_volume.xaxis.get_major_locator())
+        )
+        if len(pairs) and pairs.index[-1].year - pairs.index[0].year >= 3:
+            import pandas as pd
+
+            step = 10 if pairs.index[-1].year - pairs.index[0].year > 35 else 5
+            first = pairs.index[0].year // step * step
+            ax_volume.set_xlim(pd.Timestamp(first, 1, 1), pairs.index[-1])
+            ax_volume.xaxis.set_major_locator(mdates.YearLocator(step))
+            ax_volume.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+            ax_volume.xaxis.set_minor_locator(mdates.YearLocator())
+        elif not len(pairs):
+            from matplotlib.ticker import NullFormatter
+
+            ax_volume.set_xticks([])
+            ax_volume.xaxis.set_major_formatter(NullFormatter())
+        ax_volume.grid(axis="y", alpha=0.7)
         ax_volume.margins(x=0.01)
-
-        _panel(ax_table, "c", "Goodness of fit")
+        ax_scatter.legend(
+            handles=lines,
+            loc="upper left",
+            bbox_to_anchor=(0.025, 0.89),
+            borderaxespad=0,
+            ncols=1,
+            frameon=True,
+            facecolor="white",
+            edgecolor="none",
+            framealpha=0.88,
+            borderpad=0.6,
+            labelspacing=0.5,
+            handletextpad=0.5,
+        )
+        if not len(finite):
+            for ax in (ax_scatter, ax_volume):
+                ax.text(
+                    0.5,
+                    0.5,
+                    "No valid concurrent discharge",
+                    transform=ax.transAxes,
+                    ha="center",
+                    va="center",
+                    fontsize=artists.FS_NOTE,
+                    color=artists.MUTED,
+                )
         _draw_metrics_table(ax_table, metrics)
-
-        _identity(fig, station, "performance", ax_volume)
-        _caveat(fig, caveat)
+        for text in ax_table.texts:
+            text.set_fontsize(
+                artists.FS_TICK
+                if text.get_text() in ("EFFICIENCY", "ERROR")
+                else artists.FS_LABEL
+            )
+        score = _performance_r_squared(pairs)
+        support["squared_pearson_r"] = float(score) if np.isfinite(score) else None
+        _performance_caption(support, station, plot_dir, caveat)
         return _save(fig, plot_dir, f"performance_{station.wflow_id}")
+
+
+def _performance_caption(support, station, plot_dir, caveat):
+    """External performance caption, preserving the other station figures."""
+    import json
+    from pathlib import Path
+
+    root = Path(plot_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    period = support["comparison_period"]
+    span = "–".join(period) if period else "no overlapping record"
+    caption = (
+        f"Discharge performance at {station.caption}, {span}. "
+        "(a) Simulated versus observed daily discharge; dashed line denotes 1:1 agreement. "
+        "(b) Cumulative volume over paired valid days, retaining data gaps. "
+        "The table summarises daily and monthly performance; dashes denote undefined values. "
+        + (f"{caveat}" if caveat else "")
+    )
+    engine = root / "_engine"
+    engine.mkdir(exist_ok=True)
+    path = engine / "figure_captions.json"
+    inventory = (
+        json.loads(path.read_text(encoding="utf-8"))
+        if path.exists()
+        else {"schema_version": 1, "figures": {}}
+    )
+    inventory["figures"][f"performance_{station.wflow_id}.png"] = {
+        "caption": caption.strip(),
+        "sources": ["simulated", "observed"],
+        "period": period,
+        "support": f"wflow_id {station.wflow_id}",
+        "encoding": "performance",
+        "availability": "available"
+        if support["paired_days"]
+        else "unavailable: no valid concurrent discharge",
+        "captioned_path": None,
+        "comparison": support,
+        "methods": {
+            "paired_nonnegative_discharge": True,
+            "volume": "paired days × 86400 s",
+            "monthly": "available paired-day means",
+            "infill": False,
+            "correlation": "squared Pearson r",
+            "volume_gap_handling": "missing paired days remain gaps; cumulative paired-only totals resume without infilling",
+            "undefined_scores": "constant/fewer than two pairs yield undefined correlation; zero observed denominators yield undefined efficiencies",
+            "caveat": caveat,
+        },
+    }
+    inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_captions.md",
+        "_engine/figure_captions.json",
+    ]
+    path.write_text(
+        json.dumps(inventory, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (root / "figure_captions.md").write_text(
+        "# Figure captions\n\n"
+        + "\n\n".join(
+            f"## {name}\n\n{record['caption']}"
+            for name, record in inventory["figures"].items()
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def r_squared(observed, simulated):

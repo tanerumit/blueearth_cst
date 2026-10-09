@@ -282,6 +282,68 @@ def test_r_squared_is_nan_when_there_is_nothing_to_regress():
     assert np.isnan(r_squared(np.array([np.nan]), np.array([1.0])))
 
 
+def test_performance_pairs_align_dates_and_cumulative_volume_breaks_at_gaps(
+    monkeypatch, tmp_path
+):
+    sim = _series([99, 2, 4, 6, np.nan, 10, 0, 14], start="2001-01-30")
+    obs = _series([1, 2, 3, 4, -1, 0, 7, np.inf], start="2001-01-31").drop_sel(
+        time="2001-02-02"
+    )
+    pairs, support = plot_evaluation._performance_pairs(sim, obs)
+    np.testing.assert_allclose(
+        pairs["simulated"], [2, 4, np.nan, np.nan, np.nan, 0, 14], equal_nan=True
+    )
+    assert support["paired_days"] == 4
+    assert plot_evaluation._performance_r_squared(pairs) == pytest.approx(1.0)
+    from blueearth_cst.shared.func_plot_signature import compute_metrics
+
+    metrics = compute_metrics(sim, obs, "S")["S"].unstack("time_type")
+    captured = []
+    monkeypatch.setattr(
+        plot_evaluation, "_save", lambda fig, directory, stem: captured.append(fig)
+    )
+    plot_evaluation.plot_performance(sim, obs, Station(1010), tmp_path, metrics)
+    figure = captured[0]
+    scatter, volume, _ = figure.axes
+    np.testing.assert_allclose(scatter.lines[0].get_xdata(), [1, 2, 0, 7])
+    np.testing.assert_allclose(scatter.lines[0].get_ydata(), [2, 4, 0, 14])
+    observed_curve, simulated_curve = volume.lines
+    assert observed_curve.get_ydata()[-1] == pytest.approx(10 * 86400 / 1e6)
+    assert simulated_curve.get_ydata()[-1] == pytest.approx(20 * 86400 / 1e6)
+    assert np.isnan(observed_curve.get_ydata()[2:5]).all()
+    assert np.isnan(simulated_curve.get_ydata()[2:5]).all()
+    assert volume.get_ylim()[0] == 0
+    assert volume.get_ylim()[1] > 20 * 86400 / 1e6
+    assert all(
+        not ax.get_title() and not ax.get_title(loc="left") for ax in figure.axes
+    )
+    # Figure titles/footer are also absent; score/legend/table remain inside axes.
+    assert not figure.texts
+    from matplotlib import pyplot as plt
+
+    plt.close(figure)
+
+
+def test_performance_correlation_is_undefined_for_constant_or_insufficient_pairs():
+    for values in ([0.0, 0.0], [1.0, 1.0], [1.0]):
+        pairs, _ = plot_evaluation._performance_pairs(_series(values), _series(values))
+        assert np.isnan(plot_evaluation._performance_r_squared(pairs))
+
+
+@pytest.mark.parametrize("case", ["zero", "disjoint"])
+def test_performance_exports_undefined_and_empty_comparisons(tmp_path, case):
+    from blueearth_cst.shared.func_plot_signature import compute_metrics
+
+    sim = _series([0.0, 0.0, 0.0])
+    obs = sim if case == "zero" else _series([1.0, 2.0, 3.0], start="2002-01-01")
+    metrics = compute_metrics(sim, obs, "S")["S"].unstack("time_type")
+    result = plot_evaluation.plot_performance(
+        sim, obs, Station(1010), tmp_path, metrics
+    )
+    assert (tmp_path / "performance_1010.png").is_file()
+    assert result.endswith("performance_1010.png")
+
+
 # --- the sheets ---------------------------------------------------------------
 
 

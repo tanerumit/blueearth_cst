@@ -37,7 +37,7 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
 - Use `Precip.`, `Temp.` and `PET` when abbreviated variable names are needed. Display `CHIRPS` in legends
   and plot labels; retain version metadata in source records where relevant.
 - Keep grid lines subtle and partly transparent. Avoid competing with the data or annotations.
-- Use short panel titles prefixed `a)`, `b)`, etc.; explain methodological details in the caption.
+- Always label multiple plotting panels `a)`, `b)`, etc.; explain panel contents in the caption.
 - Do not display figure titles inside or above the plotting area. Identify the variable, spatial
   support and plot type in the caption and review-page heading. Preserve explicitly agreed panel labels.
 
@@ -106,6 +106,17 @@ valid values and positions `rank / (n + 1)`. Retain zeros on the linear panel, o
 axis without changing exceedance positions, and report their frequency. The log range includes all
 positive values from both series, without percentile clipping. These choices affect hydrograph
 summaries only; performance metrics and other evaluation sheets retain their own methods.
+
+WF1 performance sheets use the same finite, nonnegative paired daily support for the scatter, sample
+count, cumulative volumes and exported metrics. Align dates before pairing and retain gaps in the
+cumulative curves. These volumes integrate paired days only and do not estimate missing-day flow.
+Monthly metrics compare means over the same paired days within each month; hydrograph calendar
+completeness thresholds do not gate metric rows. Undefined scores remain unavailable.
+Keep squared Pearson correlation and sample counts in JSON metadata, without displaying them on the
+performance plot. Label the scatter `a)` and cumulative volume `b)`, with the stacked observed/simulated
+line legend inside the upper-left of the scatter, below its panel label. Keep table values identical to
+`performance_metrics.csv`. Use common typography, soft frames/grids and a concise publication caption
+that explains each labelled panel, without displayed titles or figure footers.
 
 WF1 hydrological output figures default to two single-axis products per variable: a basin-average
 annual series and seasonal cycle. Optional subbasin figures repeat both products individually, never

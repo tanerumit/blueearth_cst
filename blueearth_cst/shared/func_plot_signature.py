@@ -51,9 +51,11 @@ def compute_metrics(
     station_name: str = "station",
 ) -> pd.DataFrame:
     """
-    Compute performance metrics.
+    Compute metrics on concurrent finite, nonnegative discharge pairs.
 
-    Calculated metrics for daily and montly timeseries are:
+    Monthly values are available-day means of the same daily pairs, without
+    infilling or a completeness threshold. Undefined denominators yield NaN.
+    Calculated metrics for daily and monthly timeseries are:
     - Nash-Sutcliffe efficiency (NSE)
     - Nash-Sutcliffe efficiency on log-transformed data (NSElog)
     - Kling-Gupta efficiency (KGE)
@@ -82,67 +84,47 @@ def compute_metrics(
     pd.DataFrame
         Dataframe with performance metrics for this station.
     """
-    ### 1. Calculate performance metrics based on daily and monthly timeseries ###
-    # Initialize performance array
+    from blueearth_cst.shared.plot_evaluation import _performance_pairs
+
+    pairs, support = _performance_pairs(qsim, qobs)
     metrics = ["KGE", "NSE", "NSElog", "RMSE", "MSE", "Pbias", "VE"]
-    time_type = ["daily", "monthly"]
     da_perf = xr.DataArray(
-        np.zeros((len(metrics), len(time_type))),
-        coords=[metrics, time_type],
+        np.full((len(metrics), 2), np.nan),
+        coords=[metrics, ["daily", "monthly"]],
         dims=["metrics", "time_type"],
     )
-
-    # Select data and resample to monthly timeseries as well
-    qsim_monthly = qsim.resample(time="ME").mean("time")
-    qobs_monthly = qobs.resample(time="ME").mean("time")
-
-    # compute perf metrics
-    # nse
-    nse = skills.nashsutcliffe(qsim, qobs)
-    da_perf.loc[dict(metrics="NSE", time_type="daily")] = nse
-    nse_m = skills.nashsutcliffe(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="NSE", time_type="monthly")] = nse_m
-
-    # nse logq
-    nselog = skills.lognashsutcliffe(qsim, qobs)
-    da_perf.loc[dict(metrics="NSElog", time_type="daily")] = nselog
-    nselog_m = skills.lognashsutcliffe(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="NSElog", time_type="monthly")] = nselog_m
-
-    # kge
-    kge = skills.kge(qsim, qobs)
-    da_perf.loc[dict(metrics="KGE", time_type="daily")] = kge["kge"]
-    kge_m = skills.kge(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="KGE", time_type="monthly")] = kge_m["kge"]
-
-    # rmse
-    rmse = skills.rmse(qsim, qobs)
-    da_perf.loc[dict(metrics="RMSE", time_type="daily")] = rmse
-    rmse_m = skills.rmse(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="RMSE", time_type="monthly")] = rmse_m
-
-    # mse
-    mse = skills.mse(qsim, qobs)
-    da_perf.loc[dict(metrics="MSE", time_type="daily")] = mse
-    mse_m = skills.mse(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="MSE", time_type="monthly")] = mse_m
-
-    # pbias
-    pbias = skills.percentual_bias(qsim, qobs)
-    da_perf.loc[dict(metrics="Pbias", time_type="daily")] = pbias
-    pbias_m = skills.percentual_bias(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="Pbias", time_type="monthly")] = pbias_m
-
-    # ve (volumetric efficiency)
-    ve = skills.volumetric_error(qsim, qobs)
-    da_perf.loc[dict(metrics="VE", time_type="daily")] = ve
-    ve_m = skills.volumetric_error(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="VE", time_type="monthly")] = ve_m
-
-    ### 2. Convert to dataframe ###
-    df_perf = da_perf.to_dataframe(name=station_name)
-
-    return df_perf
+    daily = pairs.dropna()
+    monthly = pairs.resample("ME").mean().dropna() if len(pairs) else pairs
+    for time_type, table in (("daily", daily), ("monthly", monthly)):
+        if table.empty:
+            continue
+        sim = xr.DataArray(
+            table["simulated"].to_numpy(), dims="time", coords={"time": table.index}
+        )
+        obs = xr.DataArray(
+            table["observed"].to_numpy(), dims="time", coords={"time": table.index}
+        )
+        # Errors remain defined for valid zero-flow pairs. Efficiencies whose
+        # observed denominator is zero remain NaN; HydroMT's logarithmic NSE
+        # zero-flow convention is retained without introducing a new epsilon.
+        scores = {"RMSE": skills.rmse(sim, obs), "MSE": skills.mse(sim, obs)}
+        if float(obs.sum()) > 0:
+            scores.update(
+                Pbias=skills.percentual_bias(sim, obs),
+                VE=skills.volumetric_error(sim, obs),
+            )
+        if len(table) >= 2 and float(obs.std()) > 0:
+            scores.update(
+                NSE=skills.nashsutcliffe(sim, obs),
+                NSElog=skills.lognashsutcliffe(sim, obs),
+            )
+            if float(sim.std()) > 0:
+                scores["KGE"] = skills.kge(sim, obs)["kge"]
+        for metric, score in scores.items():
+            da_perf.loc[dict(metrics=metric, time_type=time_type)] = score
+    result = da_perf.to_dataframe(name=station_name)
+    result.attrs["comparison_support"] = support
+    return result
 
 
 def _basavg_daily(series, cell_counts=None):

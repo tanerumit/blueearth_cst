@@ -208,6 +208,53 @@ def test_both_operands_are_resampled_not_just_the_simulation():
     assert monthly_rmse == pytest.approx(expected, rel=1e-6)
 
 
+def test_metrics_use_concurrent_nonnegative_finite_days_before_monthly_means():
+    sim = _daily([99, 2, 4, 6, np.nan, 10, 0, 14], start="2001-01-30")
+    obs = _daily([1, 2, 3, 4, -1, 0, 7, np.inf], start="2001-01-31").drop_sel(
+        time="2001-02-02"
+    )
+    result = compute_metrics(sim, obs, "S")
+    # Four pairs: obs[1,2,0,7],sim[2,4,0,14]. January has one pair;
+    # February's three pairs average3/6. Independent daily/monthly MSE oracles
+    # distinguish pairing-before-resampling from each series' available means.
+    assert result.loc[("MSE", "daily"), "S"] == pytest.approx(13.5)
+    assert result.loc[("RMSE", "daily"), "S"] == pytest.approx(np.sqrt(13.5))
+    assert result.loc[("NSE", "daily"), "S"] == pytest.approx(-25 / 29)
+    assert result.loc[("KGE", "daily"), "S"] == pytest.approx(1 - np.sqrt(2))
+    assert result.loc[("MSE", "monthly"), "S"] == pytest.approx(5.0)
+    assert result.loc[("NSE", "monthly"), "S"] == pytest.approx(-4.0)
+    assert result.loc[("Pbias", "daily"), "S"] == pytest.approx(100.0)
+    assert result.loc[("VE", "daily"), "S"] == pytest.approx(0.0)
+    log_obs = np.log(np.array([1.0, 2.0, 0.0, 7.0]) + 1e-6)
+    log_sim = np.log(np.array([2.0, 4.0, 0.0, 14.0]) + 1e-6)
+    expected_log = (
+        1 - ((log_sim - log_obs) ** 2).sum() / ((log_obs - log_obs.mean()) ** 2).sum()
+    )
+    assert result.loc[("NSElog", "daily"), "S"] == pytest.approx(expected_log)
+    support = result.attrs["comparison_support"]
+    assert support["paired_days"] == 4
+    assert support["paired_months"] == 2
+    assert support["observed"]["omitted_dates"] == 1
+
+
+def test_metrics_handle_zero_denominators_and_no_concurrent_pairs():
+    zero = _daily(np.zeros(45))
+    result = compute_metrics(zero, zero, "S")
+    for metric in ("RMSE", "MSE"):
+        assert result.loc[metric, "S"].tolist() == pytest.approx([0.0, 0.0])
+    for metric in ("KGE", "NSE", "NSElog", "Pbias", "VE"):
+        assert result.loc[metric, "S"].isna().all()
+    disjoint = compute_metrics(zero, _daily(np.ones(5), start="2002-01-01"), "S")
+    assert disjoint["S"].isna().all()
+    assert disjoint.attrs["comparison_support"]["paired_days"] == 0
+    invalid = compute_metrics(
+        _daily([1.0, np.inf, -1.0, 4.0]), _daily([1.0, 2.0, 3.0, 4.0]), "S"
+    )
+    assert invalid.loc[("MSE", "daily"), "S"] == pytest.approx(0.0)
+    assert invalid.loc[("NSE", "daily"), "S"] == pytest.approx(1.0)
+    assert invalid.attrs["comparison_support"]["paired_days"] == 2
+
+
 # ---------------------------------------------------------------------------
 # plot_basavg — structure
 # ---------------------------------------------------------------------------

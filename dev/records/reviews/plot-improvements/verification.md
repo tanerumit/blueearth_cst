@@ -419,3 +419,58 @@ The work remains on the pinned session branch; landing and pushing require separ
 
 Verified implementation commit: `75183c20` (`feat(plots): standardize hydrological output summaries`).
 It contains the executable candidate covered by the focused checks and inspected renders above.
+
+## Performance sheet revision — 2026-10-09
+
+The active, uncommitted candidate revises WF1 performance scatter, cumulative volume and metrics
+tables. It applies canonical typography, colours, light frames and grids, inside legends, no displayed
+titles, and short external captions bounded by measured plotting edges. Daily scatter, sample counts,
+volume and exported metrics share concurrent finite, nonnegative daily discharge pairs. Monthly
+metrics use means over those same paired days. Missing days interrupt both cumulative curves without
+infilling; undefined scores remain NaN in CSV and appear as dashes in the figure. Squared Pearson
+correlation is identified as r². The existing 14-row metric export schema remains unchanged.
+
+Review inputs use the read-only Liberia `run_default/output_q.csv`, excluding its first year, and
+explicitly synthetic observations. No observed discharge record was supplied. The five-case review
+under `.tmp/scratchpad/wf1-evaluation-style/performance/comparison.html` covers a complete record,
+gaps/invalid values, a ten-day gap close-up, all-zero flows and non-overlapping dates. The complete
+case retains its original figure for comparison; edge cases carry honest unavailable-predecessor
+placeholders. All five revised cases were rendered; complete, zero and disjoint renders were inspected,
+and the gap close-up visibly breaks both volume curves on the same ten days. Retain this scratch for
+the owner's visual review. No production files were modified and no files were deleted.
+
+Validation in the session's default Pixi environment:
+
+```text
+pixi run pytest tests/test_func_plot_signature.py tests/test_plot_evaluation.py -q
+pixi run python .tmp/scratchpad/wf1-evaluation-style/performance/probe_clean_metrics.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/performance/render_revision.py
+pixi run ruff check blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/plot_evaluation.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py
+pixi run ruff format --check blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/plot_evaluation.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py
+```
+
+The focused suite passed 46 tests. Two short-date locator warnings prompted a locator adjustment;
+five final affected cases then passed without warnings, including real PNG export of zero/disjoint
+records. The independent complete-record probe preserved all 14 original metric values within
+1e-12 and the CSV shape. Touched-file Ruff checks passed. Logs are retained in the performance scratch.
+Pytest required approved external temporary-fixture access. Broader batch/landing gates remain
+deferred; this candidate changes metric handling for incomplete or invalid WF1 inputs as well as
+terminal figures, and is covered here by independent paired-date numerical checks. Await owner
+visual approval and an explicit commit instruction; no landing or push is authorized.
+
+The owner then requested panel labels, publication captions and relocation of the line legend.
+Performance panels now carry `a)` and `b)`; the observed/simulated legend occupies the upper-left
+of panel a), below its label. Correlation and sample counts are not displayed; both remain in JSON
+metadata. Captions explain the labelled panels, paired-day volume and undefined table values in
+publication prose. The five-case review was rerendered using `render_revision.py`, with measured
+caption bounds preserved. This revision changes decorations and captions only; numerical tests are
+reused, with further focused checks deferred until the owner's commit instruction.
+
+### Performance commit checks
+
+The owner approved this family for commit. The final executable candidate passed all 48 tests in
+`pixi run pytest tests/test_func_plot_signature.py tests/test_plot_evaluation.py -q` without warnings
+(24.67 s), recorded in `performance/tests-commit.log`. Ruff lint and format checks passed on the four
+touched Python files listed above; `git diff --check` passed. The revised five-case review retains
+its original comparison image and measured caption bounds. No files were deleted. This scoped
+commit does not land the batch or push it.

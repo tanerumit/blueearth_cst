@@ -89,7 +89,6 @@ dev/records/milestones/r12/gf15-alternative-estimator-design.md -text -whitespac
 dev/records/milestones/r12/implementation/gf15-lmoments-readiness-brief.md -text -whitespace
 dev/records/milestones/r12/gf15-production-adapter-review/** -text -whitespace
 dev/records/milestones/r12/gf15-production-adapter-design.md -text -whitespace
-dev/working/design-runs/gf15-production-adapter/** -text -whitespace
 dev/records/milestones/r12/implementation/evidence/gf15-production-integration/** -text -whitespace
 
 # Relocated legacy evidence retains the exact original Git bytes on every platform.

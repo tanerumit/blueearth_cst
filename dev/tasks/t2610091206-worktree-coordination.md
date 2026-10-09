@@ -29,7 +29,7 @@ updated: 2026-10-09
 - Owner: session-1; branch: feat/worktree-policy-improvements; implementation: in progress.
 - Implementation: session-1 :: dev/scripts/, tests/test_activation_links.py, coordination docs and policy.
 - Coordination: main :: dev/tasks/t2610091206-worktree-coordination.md.
-- Scratch: session-1 :: .tmp/scratchpad/worktree-coordination/; retained through approved landing.
+- Scratch: session-1 :: .tmp/scratchpad/worktree-coordination-r2/; retained through approved landing.
 - Verification: Windows 11 / PowerShell 7 / Pixi; no run configs or scientific outputs.
 - Next action: finish the authorized branch changes; landing and other-session changes require owner action.
 

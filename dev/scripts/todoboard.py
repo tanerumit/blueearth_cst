@@ -34,15 +34,20 @@ import subprocess
 import sys
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
+_INFRA_ROOT = pathlib.Path(
+    os.environ.get(
+        "BRAIN_INFRA_ROOT", pathlib.Path.home() / "workspace" / "brain-infrastructure"
+    )
+).expanduser()
 
 #: Ordered candidates for the skill bundle holding the `todoboard/` package.
 #: `.claude` / `.agents` first: in a worktree those are symlinks to the primary's
-#: copies, which are themselves symlinks into ~/workspace/brain/artifacts, so a
+#: copies, which are themselves symlinks into BRAIN_INFRA_ROOT/artifacts, so a
 #: repo-relative hit is the same file the session's skills came from.
 _CANDIDATES = (
     _REPO_ROOT / ".claude" / "skills" / "todo-board",
     _REPO_ROOT / ".agents" / "skills" / "todo-board",
-    pathlib.Path.home() / "workspace" / "brain" / "artifacts" / "skills" / "todo-board",
+    _INFRA_ROOT / "artifacts" / "skills" / "todo-board",
     pathlib.Path.home() / ".claude" / "skills" / "todo-board",
 )
 
@@ -77,8 +82,7 @@ def resolve_skill_dir() -> pathlib.Path:
         "which is per-user state and not committed here. Tried:\n  "
         + "\n  ".join(tried)
         + "\n\nFix: re-link the agent-config dirs into this worktree\n"
-        "  python ~/workspace/brain/artifacts/skills/git-workflow/scripts/"
-        "worktree-session.py sync\n"
+        f'  python "{_INFRA_ROOT / "artifacts/skills/git-workflow/scripts/worktree-session.py"}" sync\n'
         "or point TODOBOARD_SKILL_DIR at the skill directory."
     )
 

@@ -105,8 +105,14 @@ the wrapper. If this policy blocks a board operation, revert its separate policy
 
 ### One task, one locator
 
+Allocate a session with `gw new` / `task-start`; that operation records its allocation. A hand-made
+branch must be adopted before an agent starts: preview with `gw adopt`, then record the reviewed
+identity with `gw adopt --confirm`. At entry, `gw check` / `session-check` must report `Session ok`.
+Adoption records ownership; it does not resolve content conflicts or prove the implementation.
+
 Keep the existing `branch:` field current. For work that needs tracking, add this compact section to
-the central task note; update it when ownership, location, verification or the next action changes.
+the central task note in a board-only commit on main; update it when ownership, location,
+verification or the next action changes.
 Do not duplicate it in a separate status file. Use logical checkout names and relative paths rather
 than machine-specific absolute paths in tracked notes. Discover actual roots with `git worktree list`.
 
@@ -125,6 +131,12 @@ than machine-specific absolute paths in tracked notes. Discover actual roots wit
 
 Assign one implementation owner at a time. If a task spans sessions, list each contributor's distinct
 paths and artifacts here. Never create an independent task note in another checkout.
+
+At handoff and approved landing, run `python dev/scripts/todoboard.py worktrees`; resolve or explain
+every untracked or missing row. For a parked branch with no worktree, keep its note `status: blocked`
+with `branch:` and explain the parking reason in Progress and Work location. The current CLI reports
+that existing branch as missing and exits 1; this row is expected until the branch resumes or lands.
+An absent branch or an unexplained ownership row still needs resolution.
 
 ### Local scratch and navigation
 

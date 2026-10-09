@@ -90,7 +90,15 @@ plot's physical geometry and wrap to the drawn axes. All 79 caption variants pas
 and visual inspection; maximum drift was about 0.0042 mm. See
 [caption completion and contract](t2610082103/caption-layout/completion.md).
 
-Next packet: prepared-input annual-series and monthly-cycle chart interfaces for WF0/WF1.
+The next chart-interface design is saved as
+[design-v2](t2610082103/design-runs/prepared-charts/design-v2.md).
+Scientific and risk reviews approved it with zero findings; v2 preserves the reviewed draft bytes.
+It proposes one new prepared-chart module and migration of three WF0/WF1 callers, including
+hydrological summaries. Existing scientific preparation, appearance and outputs remain constraints.
+The independent headless review has not run: automatic approval review rejected sending private
+design/repository context without payload-specific authorization. The next action is that explicit
+authorization, then independent review and exact-version implementation approval. See
+[review state](t2610082103/design-runs/prepared-charts/status.md). No source changes in this design packet.
 Remaining visual issues: very long records crowd year labels; all-missing maps retain a default scale
 with little interpretive value; the soil-clay colourbar title clips the upper canvas edge.
 Map-reference production, R/WF3 and external packaging remain later work.

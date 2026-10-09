@@ -80,10 +80,12 @@ records and the stale numerical baseline manifest remain unchanged.
 
 ## JSON placement
 
-Machine plot manifests belong in `plots/_engine/`; internal analysis records in `analysis/_engine/`.
+This migration placed machine plot manifests in `plots/_engine/` and internal analysis records in
+`analysis/_engine/`. The subsequently approved [output naming rule](naming.md#generated-outputs-under-project_dir)
+adopts one root `_engine/` per cohesive output unit; consolidation of these existing paths is pending.
 Readable captions remain at `plots/figure_captions.md`. JSON is a format, not a placement rule:
 user-facing data and provenance deliverables remain with their owning data products, including
-`summary/provenance.json`. Engine records unrelated to plotting retain their existing owners.
+`summary/provenance.json`.
 
 ## Verification status
 

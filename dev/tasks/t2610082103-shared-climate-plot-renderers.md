@@ -4,9 +4,9 @@ type: todo-item
 status: backlog
 effort: 2
 area: plotting
-queue: 8
+queue: 7
 created: 2026-10-08
-updated: 2026-10-08
+updated: 2026-10-09
 ---
 
 > [!note] Overview

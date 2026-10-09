@@ -254,8 +254,12 @@ in this visual review.
   repeated figure-name text beneath the plots.
 - Include caption and canvas-boundary toggles, plus the overlay comparison control. Preserve consistent
   physical image scaling so fonts do not grow when the canvas gets smaller and both figures fit together.
-- Below the figures, display only `Path:` followed on a new line by the original figure's parent directory.
-  Keep the full selected file path in the page data so the source remains identifiable.
+- Use the explicit side-by-side/wipe modes and linked zoom/pan controls. Unequal canvases require opting
+  into top-left-aligned wipe; pad at a common scale without stretching either image. The overview uses
+  the pair's declared export dpi (600 by default); both images must use that dpi.
+- Below the figures, display `Path:` followed on a new line by the original figure's parent directory.
+  Keep the full selected file path in the page data so the source remains identifiable. Compact keyboard
+  hints and collapsible control help may follow the path.
 - Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
   applicable plots, and render all affected callers when a shared figure helper changes.
 - Keep figure-specific tests and plotting-only probes temporary under `.tmp/scratchpad/`, outside the

@@ -1,6 +1,130 @@
-<!doctype html><meta charset="utf-8"><title>Scientific figure comparison</title>
-<style>body{margin:24px;font:15px system-ui;background:#edf0f4;color:#182330}header{display:flex;align-items:center;gap:20px}select,button{padding:8px}main{display:grid;grid-template-columns:1fr 1fr;gap:18px}article{background:white;border-radius:8px;padding:12px}h2{font-size:16px}img{width:100%;display:block}#overlay{display:none;position:relative;background:white;max-width:1100px;margin:auto}#overlay img{width:100%}#newlayer{position:absolute;inset:0;clip-path:inset(0 50% 0 0)}body.wipe main{display:none}body.wipe #overlay{display:block}input{width:250px}.note{color:#526173}.figure-caption{display:none;font-size:12px;line-height:1.5;color:#68717b;text-align:left;margin-top:10px;margin-bottom:4px}body.captions-on .figure-caption{display:block}#caption-toggle{width:auto}header{flex-wrap:wrap}body.canvas-on main img,body.canvas-on #overlay{outline:1px dashed #697b8c;outline-offset:0}body.canvas-on article{background:#e4e9ef}#canvas-toggle{width:auto}main{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}article{min-width:0}main img{width:auto;max-width:100%;max-height:60vh;height:auto;margin:0 auto}#overlay{width:fit-content;max-width:100%}#overlay img{width:auto;max-width:100%;max-height:60vh;height:auto}#newlayer{width:100%!important;height:100%!important;object-fit:contain}body.canvas-on main img{outline:none}body.canvas-on .figure-canvas{outline:1px dashed #697b8c}.figure-canvas{background:white;margin:0 auto;max-width:100%;display:flow-root}.figure-canvas img{width:100%;max-height:none}.figure-canvas .figure-caption{padding-bottom:10px}#overlay{display:none}body.wipe #overlay{display:flow-root}#overlay-caption{padding-bottom:10px}#newlayer{height:auto!important;object-fit:initial}.review-controls{display:flex;align-items:center;flex-wrap:wrap;gap:16px;margin:0 0 18px}header h1{margin-top:0}main article h2{margin-top:0}</style>
-<header><h1>Scientific figure comparison</h1></header><div class="review-controls"><select id="choice"></select><button id="mode">Overlay comparison</button><input id="slider" type="range" value="50" min="0" max="100"><label><input id="caption-toggle" type="checkbox"> Show captions</label><label><input id="canvas-toggle" type="checkbox" checked> Show canvas boundary</label></div>
-<main><article><h2 id="before-title"></h2><div class="figure-canvas"><img id="before"><p class="figure-caption" id="before-caption"></p></div></article><article><h2 id="after-title"></h2><div class="figure-canvas"><img id="after"><p class="figure-caption" id="after-caption"></p></div></article></main>
-<div id="overlay"><img id="oldlayer"><img id="newlayer"><p class="figure-caption" id="overlay-caption"></p></div>
-<p style="overflow-wrap:anywhere">Path:<br><code id="existing-path"></code></p><script>const items=[];const select=document.querySelector('#choice');items.forEach((x,i)=>select.add(new Option(x.label,i)));function show(){if(!items.length){document.getElementById('before-title').textContent='Add figure records to const items to begin.';return;}const x=items[select.value];const chart=x.label.replace(' · ',' - ');document.getElementById('before-title').textContent=chart+' (existing)';document.getElementById('after-title').textContent=chart+' (revised)';before.src=oldlayer.src=x.before;setCaption('before-caption',x.before_caption,x.before_edges);setCaption('after-caption',x.after_caption,x.after_edges);setCaption('overlay-caption',x.after_caption,x.after_edges);after.src=newlayer.src=x.after+(x.after.includes('?')?'&':'?')+'v='+(x.version||'');document.querySelector('#existing-path').textContent=x.existing_path.slice(0,Math.max(x.existing_path.lastIndexOf(String.fromCharCode(92)),x.existing_path.lastIndexOf('/'))+1);}select.onchange=show;document.querySelector('#mode').onclick=()=>document.body.classList.toggle('wipe');slider.oninput=()=>newlayer.style.clipPath=`inset(0 ${100-slider.value}% 0 0)`;function setCaption(id,text="",edges=[0,1]){const el=document.getElementById(id);el.textContent=text;el.style.marginLeft=(edges[0]*100)+'%';el.style.marginRight=((1-edges[1])*100)+'%';}document.getElementById('caption-toggle').onchange=e=>document.body.classList.toggle('captions-on',e.target.checked);document.body.classList.add('canvas-on');document.getElementById('canvas-toggle').onchange=e=>document.body.classList.toggle('canvas-on',e.target.checked);show();function sizeCanvases(){const imgs=['before','after'].map(id=>document.getElementById(id)).filter(img=>img.naturalWidth);if(!imgs.length)return;const available=Math.min(...imgs.map(img=>img.closest('article').clientWidth-24));const scale=Math.min(available/(140/25.4*600),innerHeight*0.6/(80/25.4*600),...imgs.map(img=>available/img.naturalWidth),...imgs.map(img=>innerHeight*0.6/img.naturalHeight));for(const img of imgs){img.parentElement.style.width=(img.naturalWidth*scale)+'px';img.parentElement.querySelector('.figure-caption').style.fontSize=(6/72*600*scale)+'px';}document.getElementById('overlay-caption').style.fontSize=(6/72*600*scale)+'px';}for(const id of ['before','after'])document.getElementById(id).addEventListener('load',sizeCanvases);window.addEventListener('resize',sizeCanvases);sizeCanvases();</script>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scientific figure comparison</title>
+<style>
+:root{color-scheme:light;--ink:#203344;--muted:#526778;--line:#bdcbd4;--accent:#176287;--paper:#fff;--desk:#e8edf0}
+*{box-sizing:border-box}body{margin:0;background:var(--desk);color:var(--ink);font:14px/1.5 'Segoe UI',sans-serif}
+header{padding:20px 28px 12px;display:flex;align-items:baseline;gap:16px}h1{font-size:23px;font-weight:650;letter-spacing:-.5px;margin:0}.tag{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 28px;background:#f7f9fa;border-block:1px solid var(--line)}
+button,select{font:inherit;color:inherit;background:white;border:1px solid #9bafbd;border-radius:5px;min-height:36px;padding:6px 12px}button{cursor:pointer}button:hover:not(:disabled){background:#e9f2f7}button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:white}button:disabled{opacity:.45;cursor:not-allowed}:focus-visible{outline:3px solid #b2601e;outline-offset:3px}
+.group{display:flex;gap:5px;align-items:center}.divider{border-left:1px solid var(--line);padding-left:12px;margin-left:2px}label{display:inline-flex;gap:6px;align-items:center}input[type=range]{width:120px;accent-color:var(--accent)}input[type=checkbox]{accent-color:var(--accent)}output,.mono{font:12px Consolas,monospace}#counter{min-width:46px;text-align:center}#choice{max-width:290px}
+.context{padding:12px 28px 0;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}.context p{margin:0}.notice{margin:12px 28px 0;padding:10px 14px;border-left:3px solid #ac651f;background:#fff5e6;color:#684319}.notice label{margin-left:12px}.status{padding:8px 28px;color:var(--muted);min-height:37px}.error{color:#a02a21}
+main{padding:0 28px 20px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}article{min-width:0;background:#f7f9fa;border:1px solid var(--line);border-radius:7px;overflow:hidden}h2{font-size:14px;margin:0;padding:12px 16px;border-bottom:1px solid var(--line);font-weight:600}.meta{float:right;font:11px/21px Consolas,monospace;color:var(--muted)}
+.viewport{height:55vh;min-height:220px;position:relative;overflow:hidden;touch-action:none;cursor:grab}.viewport:active{cursor:grabbing}.figure{position:absolute;transform-origin:0 0;background:white;left:0;top:0}.boundary .figure{outline:1px dashed #728998;outline-offset:1px}.figure img{display:block;pointer-events:none;user-select:none}.caption{margin:0;padding:10px 0;background:white;color:#394c58;line-height:1.5}.caption[hidden]{display:none}.viewhint{margin:0;padding:7px 16px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+#wipe-card{grid-column:1/-1}#wipe-stage{position:relative;background:white}#new-wrap{position:absolute;inset:0;overflow:hidden}#wipe-new{position:absolute;left:0;top:0}#handle{position:absolute;top:0;bottom:0;left:50%;width:3px;background:var(--accent);cursor:ew-resize;touch-action:none}#handle::after{content:'↔';position:absolute;top:45%;left:-17px;width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;text-align:center;line-height:36px;box-shadow:0 1px 5px #0003}
+.wipe-labels{display:flex;justify-content:space-between;font-size:12px;padding:6px 16px;background:#f1f5f7}#peek{user-select:none}footer{padding:0 28px 24px;color:var(--muted)}footer code{overflow-wrap:anywhere}details{margin-top:14px}summary{cursor:pointer;width:fit-content}details p{max-width:850px}.keys{font-size:12px;margin-top:8px}kbd{font:12px Consolas,monospace;background:white;padding:2px 5px;border:1px solid var(--line);border-radius:3px}[hidden]{display:none!important}
+@media(max-width:760px){header{padding:16px;display:block}.toolbar{padding:10px 16px;gap:8px}.context,.status{padding-left:16px;padding-right:16px}.notice{margin-left:16px;margin-right:16px}main{padding:0 16px 16px;grid-template-columns:1fr}.viewport{height:40vh}footer{padding:0 16px 20px}.divider{border:0;margin:0;padding:0}.meta{float:none;display:block}#choice{max-width:210px}}
+</style>
+</head>
+<body class="boundary">
+<header><h1>Scientific figure comparison</h1></header>
+<div class="toolbar" aria-label="Figure review controls">
+ <div class="group"><button id="prev" aria-label="Previous figure">←</button><label for="choice">Figure</label><select id="choice"></select><button id="next" aria-label="Next figure">→</button><output id="counter"></output></div>
+ <div class="group divider" aria-label="Comparison mode"><button id="side" aria-pressed="true">Side by side</button><button id="wipe" aria-pressed="false">Wipe</button></div>
+ <div class="group divider"><label for="zoom">Zoom</label><input id="zoom" type="range" min="100" max="500" step="25" value="100"><output id="zoom-value">1×</output><button id="reset">Reset view</button></div>
+ <label><input id="captions" type="checkbox">Captions</label><label><input id="boundary" type="checkbox" checked>Canvas boundary</label>
+ <div class="group" id="wipe-controls" hidden><label for="reveal">Revised visible</label><input id="reveal" type="range" min="0" max="100" value="50"><output id="reveal-value">50%</output><button id="peek">Hold to peek existing</button></div>
+</div>
+
+<div id="mismatch" class="notice" hidden>Canvas sizes differ. Side by side preserves their relative size.
+ <label><input type="checkbox" id="allow-wipe">Allow wipe aligned at canvas top-left</label>
+ <div>Wipe keeps a common scale and pads the smaller canvas; plotting areas may not line up.</div>
+</div>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<main id="workspace" aria-busy="true">
+ <article id="before-card"><h2><span id="before-title"></span><span id="before-meta" class="meta"></span></h2><div class="viewport" id="before-port"><div class="figure" id="before-figure"><img id="before-image" alt=""><p class="caption" id="before-caption" hidden></p></div></div><p class="viewhint">Drag to pan · zoom and position are linked</p></article>
+ <article id="after-card"><h2><span id="after-title"></span><span id="after-meta" class="meta"></span></h2><div class="viewport" id="after-port"><div class="figure" id="after-figure"><img id="after-image" alt=""><p class="caption" id="after-caption" hidden></p></div></div><p class="viewhint">Shared physical scale · no stretching</p></article>
+ <article id="wipe-card" hidden><h2><span id="wipe-title"></span><span class="meta">Common scale · top-left canvas alignment</span></h2><div class="wipe-labels"><span>Revised ←</span><span>→ Existing</span></div><div class="viewport" id="wipe-port"><div class="figure" id="wipe-figure"><div id="wipe-stage"><img id="wipe-old" alt="Existing figure"><div id="new-wrap"><img id="wipe-new" alt="Revised figure"></div><div id="handle" role="slider" tabindex="0" aria-label="Revised visible percentage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div></div><p class="caption" id="wipe-caption" hidden></p></div></div><p class="viewhint">Drag divider to compare · drag elsewhere to pan · hold E to peek existing</p></article>
+</main>
+<footer>Path:<br><code id="source"></code>
+ <div class="keys"><kbd>←</kbd> <kbd>→</kbd> figures · <kbd>W</kbd> comparison mode · <kbd>+</kbd> <kbd>−</kbd> zoom · <kbd>0</kbd> reset · <kbd>E</kbd> hold to peek</div>
+ <details><summary>Review controls</summary><p>Zoom 1× is the shared overview scale, not actual screen millimetres. Captions scale with the figure. Navigation resets the view and waits for both images. No review decisions are stored. This page opens offline with no server or external dependencies.</p><button id="retry">Reload current pair</button></details>
+</footer>
+<script>
+'use strict';
+const items=[];
+const $=id=>document.getElementById(id);
+let index=0,mode='side',loaded=null,generation=0,zoom=1,pan={x:0,y:0},base=1,peek=false,unequal=false;
+items.forEach((x,i)=>$('choice').add(new Option(x.label,String(i))));
+function setCaption(id,text='',edges=[0,1]){
+ const caption=$(id);caption.textContent=text || '';
+ const valid=Array.isArray(edges)&&edges.length===2&&edges.every(Number.isFinite)&&edges[0]>=0&&edges[1]<=1&&edges[0]<edges[1];
+ const [left,right]=valid?edges:[0,1];
+ caption.style.paddingLeft=(left*100)+'%';caption.style.paddingRight=((1-right)*100)+'%';
+}
+function message(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
+function loadImage(url){return new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>resolve(img);img.onerror=()=>reject(new Error(`Could not load ${url}. Check the assets folder, then use Reload current pair.`));img.src=url;});}
+async function show(){
+ const token=++generation;loaded=null;pan={x:0,y:0};setZoom(1);$('allow-wipe').checked=false;$('mismatch').hidden=true;
+ setMode('side');$('workspace').style.visibility='hidden';$('workspace').setAttribute('aria-busy','true');$('wipe').disabled=true;
+ $('prev').disabled=!items.length||index===0;$('next').disabled=!items.length||index===items.length-1;
+ $('choice').disabled=$('retry').disabled=!items.length;$('choice').value=String(index);$('counter').textContent=`${items.length?index+1:0} / ${items.length}`;
+ if(!items.length){message('No figures in this review group. Copy this template into scratch and add figure records to const items=[].');$('workspace').setAttribute('aria-busy','false');return;}
+ const x=items[index];message(`Loading both ${x.label.toLowerCase()} figures…`);
+ const source=String(x.existing_path || x.before || '');
+ $('source').textContent=source.slice(0,Math.max(source.lastIndexOf('/'),source.lastIndexOf(String.fromCharCode(92)))+1);
+ const dpi=Number(x.dpi ?? 600);
+ try{
+  if(!Number.isFinite(dpi)||dpi<=0)throw new Error('Figure dpi must be a positive number.');
+  const revised=new URL(x.after,document.baseURI);
+  if(x.version!==undefined)revised.searchParams.set('v',String(x.version));
+  const pair=await Promise.all([loadImage(x.before),loadImage(revised.href)]);if(token!==generation)return;loaded=pair;
+  for(const [i,name] of ['before','after'].entries()){
+   const img=pair[i];$(name+'-image').src=img.src;$(name+'-image').alt=`${x.label}, ${name==='before'?'existing':'revised'}`;
+   $(name+'-title').textContent=`${x.label} (${name==='before'?'existing':'revised'})`;
+   $(name+'-meta').textContent=`${img.naturalWidth} × ${img.naturalHeight} px`;
+   setCaption(name+'-caption',x[name+'_caption'],x[name+'_edges']);
+  }
+  $('wipe-old').src=pair[0].src;$('wipe-new').src=pair[1].src;$('wipe-title').textContent=x.label+' (existing / revised)';setCaption('wipe-caption',x.after_caption,x.after_edges);
+  unequal=pair[0].naturalWidth!==pair[1].naturalWidth||pair[0].naturalHeight!==pair[1].naturalHeight;
+  $('mismatch').hidden=!unequal;$('wipe').disabled=unequal;
+  $('workspace').style.visibility='visible';message(`Both figures loaded · ${dpi} dpi · shared physical scale.`);layout();
+ }catch(e){if(token!==generation)return;message(e.message,true);}
+ finally{if(token===generation)$('workspace').setAttribute('aria-busy','false');}
+}
+function setMode(next){if(next==='wipe'&&(!loaded||(unequal&&!$('allow-wipe').checked)))return;mode=next;peek=false;
+ $('side').setAttribute('aria-pressed',String(mode==='side'));$('wipe').setAttribute('aria-pressed',String(mode==='wipe'));
+ $('before-card').hidden=$('after-card').hidden=mode==='wipe';$('wipe-card').hidden=mode!=='wipe';$('wipe-controls').hidden=mode!=='wipe';pan={x:0,y:0};layout();reveal();}
+function setZoom(value){zoom=Math.max(1,Math.min(5,value));$('zoom').value=String(Math.round(zoom*100));$('zoom-value').textContent=`${Number(zoom.toFixed(2))}×`;layout();}
+function layout(){if(!loaded)return;const widths=loaded.map(x=>x.naturalWidth),heights=loaded.map(x=>x.naturalHeight);
+ const ports=mode==='side'?[$('before-port'),$('after-port')]:[$('wipe-port')];
+ base=Math.min((Math.min(...ports.map(x=>x.clientWidth))-40)/Math.max(...widths,140/25.4*(items[index].dpi ?? 600)),(ports[0].clientHeight-48)/Math.max(...heights), (ports[0].clientHeight-48)/(80/25.4*(items[index].dpi ?? 600)));
+ base=Math.max(.001,base);
+ for(const [i,name] of ['before','after'].entries()){
+  const fig=$(name+'-figure');fig.style.width=widths[i]*base+'px';$(name+'-image').style.width=widths[i]*base+'px';
+  const cap=$(name+'-caption');cap.hidden=!$('captions').checked||!cap.textContent;cap.style.fontSize=6/72*(items[index].dpi ?? 600)*base+'px';
+ }
+ const w=Math.max(...widths)*base,h=Math.max(...heights)*base;
+ $('wipe-figure').style.width=w+'px';$('wipe-stage').style.width=w+'px';$('wipe-stage').style.height=h+'px';
+ $('wipe-old').style.width=widths[0]*base+'px';$('wipe-new').style.width=widths[1]*base+'px';
+ $('wipe-caption').hidden=!$('captions').checked||!$('wipe-caption').textContent;$('wipe-caption').style.fontSize=6/72*(items[index].dpi ?? 600)*base+'px';
+ for(const name of mode==='side'?['before','after']:['wipe']){
+  const port=$(name+'-port'),fig=$(name+'-figure');fig.style.transform=`translate(${(port.clientWidth-fig.offsetWidth*zoom)/2+pan.x}px,${20+pan.y}px) scale(${zoom})`;
+ }
+}
+function reveal(){const value=peek?0:Number($('reveal').value);$('new-wrap').style.clipPath=`inset(0 ${100-value}% 0 0)`;$('handle').style.left=value+'%';$('handle').setAttribute('aria-valuenow',String(value));$('reveal-value').textContent=value+'%';}
+function move(delta){if(!items.length)return;const target=Math.max(0,Math.min(items.length-1,index+delta));if(target!==index){index=target;show();}}
+$('prev').onclick=()=>move(-1);$('next').onclick=()=>move(1);$('choice').onchange=()=>{index=Number($('choice').value);show();};
+$('side').onclick=()=>setMode('side');$('wipe').onclick=()=>setMode('wipe');$('allow-wipe').onchange=()=>{$('wipe').disabled=!$('allow-wipe').checked;if(!$('allow-wipe').checked)setMode('side');};
+$('zoom').oninput=()=>setZoom(Number($('zoom').value)/100);$('reset').onclick=()=>{pan={x:0,y:0};setZoom(1);};
+$('captions').onchange=layout;$('boundary').onchange=()=>document.body.classList.toggle('boundary',$('boundary').checked);$('reveal').oninput=reveal;
+for(const port of document.querySelectorAll('.viewport')){let start=null;
+ port.onpointerdown=e=>{if(e.target===$('handle')||e.button!==0)return;start={x:e.clientX,y:e.clientY,px:pan.x,py:pan.y};port.setPointerCapture(e.pointerId);};
+ port.onpointermove=e=>{if(!start)return;pan={x:start.px+e.clientX-start.x,y:start.py+e.clientY-start.y};layout();};port.onpointerup=port.onpointercancel=()=>start=null;
+}
+let sliding=false;const slide=e=>{const box=$('wipe-stage').getBoundingClientRect();$('reveal').value=String(Math.round(Math.max(0,Math.min(100,(e.clientX-box.left)/box.width*100))));reveal();};
+$('handle').onpointerdown=e=>{e.preventDefault();sliding=true;$('handle').setPointerCapture(e.pointerId);slide(e);};$('handle').onpointermove=e=>{if(sliding)slide(e);};$('handle').onpointerup=$('handle').onpointercancel=()=>sliding=false;
+$('handle').onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();$('reveal').value=String(e.key==='Home'?0:e.key==='End'?100:Number($('reveal').value)+(e.key==='ArrowLeft'?-5:5));reveal();}};
+function stopPeek(){peek=false;reveal();}
+$('peek').onpointerdown=e=>{peek=true;$('peek').setPointerCapture(e.pointerId);reveal();};$('peek').onpointerup=$('peek').onpointercancel=stopPeek;
+$('peek').onkeydown=e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();peek=true;reveal();}};$('peek').onkeyup=stopPeek;$('peek').onblur=stopPeek;
+document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||/INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)||e.target===$('handle'))return;
+ if(e.key==='ArrowLeft'){e.preventDefault();move(-1);}if(e.key==='ArrowRight'){e.preventDefault();move(1);}if(e.key.toLowerCase()==='w')setMode(mode==='side'?'wipe':'side');
+ if(e.key==='+'||e.key==='=')setZoom(zoom+.25);if(e.key==='-')setZoom(zoom-.25);if(e.key==='0')$('reset').click();if(e.key.toLowerCase()==='e'&&mode==='wipe'){peek=true;reveal();}
+});document.addEventListener('keyup',e=>{if(e.key.toLowerCase()==='e')stopPeek();});window.addEventListener('blur',stopPeek);window.addEventListener('resize',layout);$('retry').onclick=show;show();
+</script>
+</body>
+</html>

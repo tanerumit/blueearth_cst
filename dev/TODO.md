@@ -7,7 +7,7 @@ cssclasses: [todo-board]
 
 | #      | ID                       | Item                                                         | Area        | Status       |
 | ------ | ------------------------ | ------------------------------------------------------------ | ----------- | ------------ |
-| 1      | [t2610091518][]          | Review and migrate legacy development files                  | maintenance | active (0/5) |
+| 1      | [t2610091518][]          | Review and migrate legacy development files                  | maintenance | active (3/5) |
 | 2      | [t2610062309][]          | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2         | active (3/5) |
 | 3      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1         | blocked      |
 | 4      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs        | blocked      |

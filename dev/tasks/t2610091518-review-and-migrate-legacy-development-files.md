@@ -17,8 +17,13 @@ updated: 2026-10-09
 
 ## Progress
 
-- [ ] Inventory all 101 files, including sparse-excluded citations.
-- [ ] Classify contents, archival copies and retention constraints.
-- [ ] Commit the per-file migration plan on chore/maintainance.
+- [x] Inventory all 101 files, including sparse-excluded citations — complete; exact blobs verified.
+- [x] Classify contents, archival copies and retention constraints — 101 dispositions recorded.
+- [x] Commit the per-file migration plan on chore/maintainance — ebc53054.
 - [ ] Obtain approval for exact moves and deletions.
 - [ ] Apply approved batches with citation fixes and focused checks.
+
+## Refs
+
+Review and exact per-file plan: commit `ebc53054` on `chore/maintainance`, under
+`dev/tasks/t2610091518/`. Migration is awaiting owner approval; no legacy file changed.

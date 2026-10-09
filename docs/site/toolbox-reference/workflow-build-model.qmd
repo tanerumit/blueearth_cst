@@ -61,6 +61,19 @@ The figures describe the post-processed model forcing; regenerating them does no
 or change its forcing. Source and model-grid maps use independent color limits, so compare their
 colorbar values when assessing differences.
 
+Rule 1.15 writes station hydrographs under `models/hydrology/wflow/evaluation/plots/stations/`.
+Each sheet shows daily discharge, annual means, the seasonal cycle and linear/log flow-duration
+curves in the common scientific style. Captions in `figure_captions.md` and
+`_engine/figure_captions.json` record station identity, dates and data support.
+Simulation-only sheets describe model output; they do not establish model skill.
+
+Annual and monthly summaries exclude partial boundary periods and apply the default completeness
+tolerances of three missing days per month and fifteen per year. Discharge means use valid days
+without infilling; seasonal cycles average eligible monthly means across years. When observations
+are supplied, summary panels use paired valid dates. Flow-duration curves rank valid, nonnegative
+values; the log panel preserves exceedance positions, displays the full positive range and reports
+zero-flow frequency. These plotting choices do not change the simulation or performance metrics.
+
 ## Configuration
 
 The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, the `basin` definition and `output_locations`, `climate.selected` and `climate.window`, and `model.outvars`. Its `workflows.build_model` stanza enables this workflow and points to its YAML file through `config_path`.

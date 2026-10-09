@@ -274,3 +274,67 @@ The nine approved PNGs and two caption records were copied into the actual Liber
 directory after inspection. Before replacing each PNG, its bytes were checked against the preserved
 original to reject concurrent edits. The forcing NetCDF size and modification time were unchanged
 across publication. No files were deleted. No branch landing or push occurred.
+
+## WF1 station hydrograph review — 2026-10-09 (approved)
+
+The owner requested plot-type iteration, methodology suggestions before revisions, and commits only
+on an explicit `commit` instruction. The hydrograph renderer now uses the common style, five titled
+panels and separate station captions. The owner subsequently authorized completeness-aware means,
+paired comparison dates, valid-value FDC ranks and explicit zero-flow handling. Panel b includes
+the preceding calendar-grid label (2000 for Liberia); preview captions use measured axes edges.
+
+The retained Liberia `models/hydrology/wflow/run_default/output_q.csv` supplies all eleven station
+series. The native `output.csv` was absent, so these read-only review renders use the retained
+five-decimal discharge export. Both versions use the same input and exclude the first simulation
+year as the production adapter does. The remaining daily span is 2001-01-02 through 2016-12-31.
+The new annual boundary policy excludes partial 2001, leaving 2002–2016; it also excludes January
+2001 from the monthly climatology. Other full months remain eligible independently of annual support.
+
+Analytical assertions passed for omitted leap dates, paired support, negative-value exclusion,
+monthly/yearly completeness, partial boundary periods, equal-weight monthly means, valid-day Weibull
+positions, zero-flow mass, an observed 1e-8 positive tail, all-zero flows and disjoint records.
+The former method retains the partial boundary year and hides that low tail, discriminating the
+revised cases from the predecessor. Numeric regression cases were added to the existing evaluation
+test module and passed through standalone invocation (see `regression-probe.log` in the review
+scratch folder), including rejection of sixteen distributed missing days in one year. Formal
+test/lint gates remain deferred during the active visual iteration.
+
+```text
+pixi run python .tmp/scratchpad/wf1-evaluation-style/probe_methods.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py before --all
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py after --all
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py before --synthetic
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py after --synthetic
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py before --all --geometry-only
+pixi run python .tmp/scratchpad/wf1-evaluation-style/review.py
+```
+
+All render/probe commands passed. The same Pixi environment as the forcing task was used.
+The review page contains eleven real before/after pairs and a synthetic paired-series example with
+deliberate missing observations and omitted timestamps, explicitly identified as synthetic.
+Measured caption bounds are strictly inside the canvas for all eleven station renders. Exported
+outlet, upstream and synthetic figures were inspected for panel/legend readability; the updated
+outlet includes the requested 2000 tick, all positive flow tails and zero-flow frequency.
+
+Retain `.tmp/scratchpad/wf1-evaluation-style/` for the active owner's review, baseline recovery,
+numeric probe evidence and caption geometry. No production evaluation files were overwritten,
+no performance metrics or other evaluation figure methods changed, and no files were deleted.
+The owner approved committing this plot type. The work stays on the pinned session branch;
+landing and pushing remain separate decisions.
+
+### Commit checks
+
+```text
+pixi run pytest tests/test_plot_evaluation.py tests/test_func_plot_signature.py tests/test_wf1_plot_outputs.py -q
+pixi run ruff check blueearth_cst/shared/plot_evaluation.py tests/test_plot_evaluation.py
+pixi run ruff format --check blueearth_cst/shared/plot_evaluation.py tests/test_plot_evaluation.py
+git diff --check
+```
+
+All 49 focused tests passed in 37.84 seconds; touched-file lint, formatting and whitespace checks
+passed. The focused suite includes the three new numeric cases and the existing evaluation sheet,
+station identity, metric and declared-output contracts. Pytest ran outside the sandbox to permit
+its external temporary fixtures, as in the forcing task. Logs remain under the retained review root.
+The changed renderer has only the WF1 station-evaluation caller; other evaluation sheet methods
+were retained and checked by the focused suite. No Snakefile or public script signature changed.
+Full-suite, baseline and all-five gates are omitted for this confined terminal-figure change.

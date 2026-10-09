@@ -1,6 +1,6 @@
 # Scientific plot style and visual review
 
-This shared reference records the agreed WF0, WF1 forcing and WF2 styles and defaults for subsequent figure
+This shared reference records the agreed WF0, WF1 and WF2 styles and defaults for subsequent figure
 revisions. Apply relevant defaults across plot types; preserve the explicit exceptions below. New visual
 decisions belong here, alongside changes to the plotting code. A style decision does not authorize changing
 the underlying calculation or statistical interpretation.
@@ -87,6 +87,25 @@ Use WF0's start-year reporting labels, completeness handling, Sen trends and mon
 per reporting year, independently of whether WF0 runs. Temperature uses means; precipitation and PET
 use totals. Keep model corrections and statistical caveats in separate captions, without plot footers.
 These summaries describe forcing QA; they do not modify the forcing or simulation calculations.
+
+WF1 station hydrographs retain the five-panel layout: daily discharge, annual means, seasonal cycle,
+and linear/log flow-duration curves. Apply the common typography, frames, soft horizontal grids,
+short panel titles and inside legend. Observations remain blue and dashed; simulation remains
+vermillion and solid. Use discharge units alone on vertical axes, three-letter months and percentage
+exceedance labels. Annual labels start at the preceding five-year grid mark (ten years for records
+longer than 35 years), retaining annual minor ticks so the left edge has a nearby calendar label.
+Station identity, dates, support and methods
+belong in separate station captions, bounded by the plotting area's left and right edges in previews.
+
+Annual means require full calendar-year bounds, at most three missing days in each month and fifteen
+in total. Seasonal cycles average eligible monthly means equally across years; full calendar months
+allow at most three missing days. Reindex to daily dates so absent timestamps count as missing.
+Use finite, nonnegative discharge without infilling. With observations, summary panels use paired
+valid dates; the daily panel retains the available series for context. Flow-duration ranks use only
+valid values and positions `rank / (n + 1)`. Retain zeros on the linear panel, omit them from the log
+axis without changing exceedance positions, and report their frequency. The log range includes all
+positive values from both series, without percentile clipping. These choices affect hydrograph
+summaries only; performance metrics and other evaluation sheets retain their own methods.
 
 | Figure type | Agreed treatment |
 |---|---|

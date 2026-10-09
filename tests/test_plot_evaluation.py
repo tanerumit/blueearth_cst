@@ -51,6 +51,89 @@ def _indexed(indices, names):
     )
 
 
+def test_hydrograph_comparisons_count_omitted_leap_days_and_reject_incomplete_years():
+    calendar = pd.date_range("2000-01-01", "2002-12-31")
+    values = np.where(
+        calendar.year == 2000, 1.0, np.where(calendar.year == 2001, 3.0, 5.0)
+    )
+    simulated = _series(values, start="2000-01-01")
+    observed = (simulated * 2).drop_sel(time="2000-02-29")
+    observed.loc[{"time": pd.date_range("2001-01-01", periods=4)}] = np.nan
+    observed.loc[{"time": "2002-06-01"}] = -1
+    prepared = plot_evaluation._hydrograph_data(simulated, observed)
+    # 1096 calendar days less one omitted leap day, four NaNs and one negative.
+    assert prepared["calendar_days"] == 1096
+    assert prepared["simulated"]["fdc"].size == prepared["observed"]["fdc"].size == 1090
+    sim_annual = prepared["simulated"]["annual"]
+    obs_annual = prepared["observed"]["annual"]
+    np.testing.assert_allclose(sim_annual, [1, np.nan, 5], equal_nan=True)
+    np.testing.assert_allclose(obs_annual, [2, np.nan, 10], equal_nan=True)
+    # January2001 fails the monthly three-day limit; the other two Januaries
+    # contribute equally to the cycle, even though the invalid year has data.
+    assert prepared["simulated"]["cycle"].sel(month=1).item() == pytest.approx(3)
+    assert prepared["observed"]["metadata"]["negative_values"] == 1
+    distributed = simulated.sel(time="2002").copy(deep=True)
+    missing = pd.to_datetime(
+        [f"2002-{month:02d}-{day:02d}" for month in range(1, 9) for day in (1, 2)]
+    )
+    distributed.loc[{"time": missing}] = np.nan
+    yearly_limit = plot_evaluation._hydrograph_data(distributed)
+    # Sixteen gaps pass every monthly limit but fail the annual fifteen-day limit.
+    assert np.isnan(yearly_limit["simulated"]["annual"].item())
+    np.testing.assert_allclose(yearly_limit["simulated"]["cycle"], [5] * 12)
+
+
+def test_hydrograph_means_require_full_period_bounds_and_equal_monthly_weights():
+    calendar = pd.date_range("2000-01-01", "2002-12-31")
+    values = np.where(
+        calendar.year == 2000, 1.0, np.where(calendar.year == 2001, 3.0, 5.0)
+    )
+    simulated = _series(values, start="2000-01-01").sel(time=slice("2000-01-02", None))
+    prepared = plot_evaluation._hydrograph_data(simulated)
+    annual, cycle = prepared["simulated"]["annual"], prepared["simulated"]["cycle"]
+    assert annual.year.values.tolist() == [2001, 2002]
+    np.testing.assert_allclose(annual, [3, 5])
+    # Partial January2000 is excluded; complete February2000 remains eligible.
+    # Equal weighting of February means differs from weighting its leap day.
+    assert cycle.sel(month=1).item() == pytest.approx(4)
+    assert cycle.sel(month=2).item() == pytest.approx(3)
+    assert cycle.sel(month=2).item() != pytest.approx((29 + 28 * 3 + 28 * 5) / 85)
+    disjoint = plot_evaluation._hydrograph_data(
+        simulated.sel(time="2001"), simulated.sel(time="2002")
+    )
+    assert disjoint["comparison_period"] is None
+    assert disjoint["simulated"]["fdc"].size == 0
+
+
+def test_hydrograph_fdc_preserves_zero_positions_and_observed_low_tails():
+    import matplotlib.pyplot as plt
+
+    simulated = _series([0, 0, 1, 2, np.nan])
+    observed = _series([0, 0, 1e-8, 1, np.nan])
+    prepared = plot_evaluation._hydrograph_data(simulated, observed)
+    np.testing.assert_allclose(prepared["simulated"]["fdc"], [2, 1, 0, 0])
+    np.testing.assert_allclose(
+        prepared["simulated"]["probability"], [0.2, 0.4, 0.6, 0.8]
+    )
+    fig, ax = plt.subplots()
+    try:
+        plot_evaluation._hydrograph_fdc(ax, prepared, log_scale=True)
+        assert ax.get_ylim()[0] == 1e-8
+        for line in ax.lines:
+            np.testing.assert_allclose(line.get_xdata(), [0.2, 0.4])
+        np.testing.assert_allclose(ax.lines[0].get_ydata(), [1, 1e-8])
+    finally:
+        plt.close(fig)
+    zeros = plot_evaluation._hydrograph_data(_series([0, 0, 0, 0]))
+    fig, ax = plt.subplots()
+    try:
+        plot_evaluation._hydrograph_fdc(ax, zeros, log_scale=True)
+        assert not ax.lines
+        assert any("No positive discharge" in text.get_text() for text in ax.texts)
+    finally:
+        plt.close(fig)
+
+
 @pytest.fixture
 def registry(tmp_path):
     """A two-subbasin location registry, in the shape ``spatial.products`` writes."""

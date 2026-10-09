@@ -76,7 +76,8 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
 
 | Figure type | Agreed treatment |
 |---|---|
-| Climate maps | Extent exactly matches the gridded layer; no surrounding blank map area. |
+| Historical climate maps | Extent exactly matches the native gridded layer's outer cell edges. |
+| Wflow forcing maps | Use the selected historical grid's exact frame, with no added padding. |
 | Map coordinates | Axis titles include degrees; tick labels are numeric, signed, without N/S/E/W. |
 | Annual series | Trend line and slope annotation on every applicable series; y-axis shows units only. |
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |

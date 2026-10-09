@@ -647,7 +647,9 @@ keep the locator inset. See `shared/plot_spatial_maps.py`.
 #### 1.12 · `plot_model_forcing`
 
 **Does.** Draws the climate figure set for the model's own forcing.
-Source-grid diagnostics belong exclusively to WF0.
+Source-grid diagnostics belong exclusively to WF0. Map bounds follow the selected historical
+extraction's native cell edges, matching WF0 with no additional padding. Model-grid values and
+the basin mask are unchanged.
 
 **Writes.** `<model>/forcing/plots/` — the full variable × kind cross-product
 from `climate_figures.figure_names("forcing")`, all declared.

@@ -72,6 +72,18 @@ def _edges(x, resolution=None):
     return np.r_[x[0] - half, (x[:-1] + x[1:]) / 2, x[-1] + half]
 
 
+def native_grid_extent(field):
+    """Return exact native cell edges as west, east, south, north, without padding."""
+    xedges = _edges(field.longitude, field.attrs.get("longitude_resolution"))
+    yedges = _edges(field.latitude, field.attrs.get("latitude_resolution"))
+    return [
+        float(xedges.min()),
+        float(xedges.max()),
+        float(yedges.min()),
+        float(yedges.max()),
+    ]
+
+
 def visible_values(field, basin_path):
     """Cell values intersecting the displayed basin extent, including padding."""
     import geopandas as gpd
@@ -208,8 +220,9 @@ def draw_map(field, variable, source, overlays, limits, counts):
                         ]
                     )
         # Cell edges, rather than padded basin bounds, fill the entire map frame.
-        ax.set_xlim(float(xedges.min()), float(xedges.max()))
-        ax.set_ylim(float(yedges.min()), float(yedges.max()))
+        west, east, south, north = native_grid_extent(field)
+        ax.set_xlim(west, east)
+        ax.set_ylim(south, north)
         lat = float(field.latitude.mean())
         ax.set_aspect(1 / math.cos(math.radians(lat)))
         ax.set_xlabel("Longitude (°)")

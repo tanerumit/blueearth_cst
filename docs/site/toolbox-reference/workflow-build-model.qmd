@@ -47,6 +47,10 @@ flowchart LR
 
 The figure branches are terminal products; the historical simulation uses the completed model and forcing.
 
+Forcing maps use the selected historical climate extraction's outer cell edges as their exact frame,
+matching WF0's historical maps. The forcing values and basin mask retain their model-grid resolution;
+changing the frame does not interpolate or expand the forcing data.
+
 ## Configuration
 
 The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, the `basin` definition and `output_locations`, `climate.selected` and `climate.window`, and `model.outvars`. Its `workflows.build_model` stanza enables this workflow and points to its YAML file through `config_path`.

@@ -32,11 +32,14 @@ from os.path import join
 from pathlib import Path
 from typing import Optional, Union
 
+import xarray as xr
+
 from blueearth_cst.climate_analysis.climate_figures import (
     CLIMATE_VARS,
     load_spatial_overlays,
     plot_climate_figures,
 )
+from blueearth_cst.climate_analysis.diagnostic_maps import native_grid_extent
 from blueearth_cst.shared.snake_utils import DEFAULT_WATER_YEAR_ANCHOR
 
 #: Rendered on every forcing figure, so it survives the file being copied out.
@@ -53,6 +56,7 @@ def plot_forcing(
     gauges_fn: Optional[Union[str, Path]] = None,
     geoms_dir: Optional[Union[str, Path]] = None,
     anchor: str = DEFAULT_WATER_YEAR_ANCHOR,
+    source_nc: Optional[Union[str, Path]] = None,
 ):
     """Write the canonical climate figure set for the wflow forcing.
 
@@ -73,6 +77,9 @@ def plot_forcing(
         families read it so the two differ only in the raster underneath, which
         is what makes "what did downscaling change?" answerable by putting the
         two directories side by side.
+    source_nc : str | Path, optional
+        Selected historical climate extraction. Its native cell edges define
+        the map frame, matching WF0. Omitted by legacy direct callers only.
     """
     from hydromt_wflow import WflowSbmModel
 
@@ -96,6 +103,15 @@ def plot_forcing(
     inside = staticmaps["subcatchment"] >= 0
     ds = forcing[list(CLIMATE_VARS)].where(inside)
 
+    extent = None
+    if source_nc is not None:
+        with xr.open_dataset(source_nc) as source:
+            field = source["precip"].assign_attrs(
+                longitude_resolution=abs(source.raster.res[0]),
+                latitude_resolution=abs(source.raster.res[1]),
+            )
+            extent = native_grid_extent(field)
+
     return plot_climate_figures(
         ds,
         plot_dir,
@@ -103,6 +119,7 @@ def plot_forcing(
         anchor=anchor,
         caveat=_CAVEAT,
         overlays=load_spatial_overlays(geoms_dir),
+        map_extent=extent,
     )
 
 
@@ -128,6 +145,7 @@ if __name__ == "__main__":
                 gauges_fn=getattr(sm.input, "output_locations", None),
                 geoms_dir=sm.params.geoms_dir,
                 anchor=water_year_end_anchor(sm.params.water_year_start),
+                source_nc=sm.input.source_climate,
             )
     else:
         plot_forcing(

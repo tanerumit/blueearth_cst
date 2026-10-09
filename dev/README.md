@@ -98,6 +98,11 @@ The `main-dev.lnk` shortcut opens main's `dev/` without a traversable directory 
 Use branch-local references and scripts when changing its contracts. Local `tasks/` and `TODO.md`
 snapshots should be excluded from session working directories; Git still retains them for merges.
 
+Primary-checkout maintenance is limited to `dev/tasks/`, generated `dev/TODO.md` and `dev/LOG.md`.
+References and developer scripts are branch-local implementation and integrate through Git. Native
+edit guards accept the named file scopes as well as the task directory; board operations still use
+the wrapper. If this policy blocks a board operation, revert its separate policy commit alone.
+
 ### One task, one locator
 
 Keep the existing `branch:` field current. For work that needs tracking, add this compact section to

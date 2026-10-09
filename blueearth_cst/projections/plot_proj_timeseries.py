@@ -150,12 +150,20 @@ def figure_counts(filename, tables, window_id=""):
 
 
 def render_suite(
-    tables, record, plots_root, *, captioned_figures=False, scenarios=None
+    tables,
+    record,
+    plots_root,
+    *,
+    captioned_figures=False,
+    scenarios=None,
+    captions_json=None,
 ):
     """Assert ordinary keys and optional captioned_path metadata bijections.
 
     Manifest keys identify ordinary figures. Optional copies are identified by
     each entry's captioned_path, relative to plots_root, rather than extra keys.
+    The manifest defaults to the output unit's root _engine directory; the
+    workflow supplies its declared captions_json output explicitly.
     """
     if not isinstance(captioned_figures, bool):
         raise TypeError("captioned_figures must be bool")
@@ -261,11 +269,13 @@ def render_suite(
             raise RuntimeError(
                 f"captioned PNGs differ from caption metadata: extra={copies - declared_copies}, missing={declared_copies - copies}"
             )
-    engine = root / "_engine"
-    engine.mkdir(parents=True, exist_ok=True)
-    (engine / "figure_captions.json").write_text(
-        json.dumps(manifest, indent=2), encoding="utf-8"
+    manifest_path = (
+        Path(captions_json)
+        if captions_json is not None
+        else root.parent / "_engine" / "figure_captions.json"
     )
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     markdown = [
         "# Projection figure captions",
         "",
@@ -311,6 +321,7 @@ def run(sm):
         root,
         captioned_figures=sm.params.captioned_figures,
         scenarios=getattr(sm.params, "scenarios", None),
+        captions_json=sm.output.captions_json,
     )
 
 

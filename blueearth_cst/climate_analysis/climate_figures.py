@@ -452,6 +452,7 @@ def _render_map(
     caveat,
     overlays,
     extent_policy="basin",
+    extent=None,
     anchor=DEFAULT_WATER_YEAR_ANCHOR,
     scale=None,
     **_,
@@ -521,13 +522,15 @@ def _render_map(
         # either product instead of silently flattening to one weight.
         river_order_column=_river_order_column(rivers),
         style=style,
-        # Per family — see MAP_EXTENT for why the two differ. ``None`` lets the
-        # template frame on the raster's own footprint, which is what the source
-        # side wants; the forcing side crops to the basin as before.
+        # The selected historical grid overrides the legacy basin framing.
         extent=(
-            extent_from_layer(basins)
-            if extent_policy == "basin" and has_basins
-            else None
+            extent
+            if extent is not None
+            else (
+                extent_from_layer(basins)
+                if extent_policy == "basin" and has_basins
+                else None
+            )
         ),
         # No figure title. A published figure carries its title in the caption,
         # and nothing is lost here: the colourbar names the quantity and the
@@ -808,6 +811,7 @@ def plot_climate_figures(
     clim_source: Optional[str] = None,
     area_masks: Optional[Mapping] = None,
     subbasin_dir: Optional[Union[str, Path]] = None,
+    map_extent: Optional[Sequence[float]] = None,
 ) -> list[Path]:
     """Write the canonical figure set for one gridded climate dataset.
 
@@ -830,6 +834,9 @@ def plot_climate_figures(
         ``{"basins": gdf, "rivers": gdf, ...}`` drawn on the MAP figures only.
         Absent or empty entries are skipped, so a caller without a model simply
         passes nothing.
+    map_extent : sequence of float, optional
+        Exact west, east, south, north bounds for map figures. WF1 supplies the
+        selected historical climate grid's cell edges to match WF0 framing.
     clim_source : str, optional
         The source id. Present ⇒ the SOURCE family, named under the WF0 grammar
         with this as the ``dataset_scope``; absent ⇒ the legacy
@@ -901,6 +908,7 @@ def plot_climate_figures(
                     caveat,
                     overlays,
                     extent_policy=extent_policy,
+                    extent=map_extent,
                     anchor=anchor,
                     # Absent for this (var, kind) -> the renderer classifies
                     # from its own data, right for a single-source run.

@@ -134,11 +134,21 @@ Do not rename existing `dev/` docs.
 
 Locally minted file and directory names are lowercase `snake_case`: no hyphens, no capitals, no spaces. Two exemptions, both narrow, both stated so a reader does not "correct" them:
 
-Generated graphics use `plots/`. Readable captions belong to `plots/figure_captions.md`; internal plot
-manifests belong to `plots/_engine/`. Other engine JSON records live under their owning stage's
-`_engine/`, while user-facing JSON data and provenance remain with their data products. WF0 and WF2
+Adopt one `_engine/` per cohesive output unit, directly beneath that unit's root. A cohesive unit is
+a set of products managed and consumed together, such as `data/climate/projections/cmip6/`.
+Keep its internal settings, analysis records and machine plot manifests in that single `_engine/`;
+do not create additional `_engine/` folders beneath its `analysis/` or `plots/` directories.
+This rule does not imply one project-wide `_engine/`: independently managed output units retain
+their own engine directory. Document the base directory used to resolve relative paths in each record.
+
+Generated graphics use `plots/`. Readable captions belong to `plots/figure_captions.md`, while
+user-facing JSON data and provenance remain with their data products. WF0 and WF2
 figure names follow dataset/variable/context/spatial fields; WF2's controlled mapping lives in
 `projection_figures.FIGURE_FILENAMES`. See [plot path migration](migration_plot_paths.md).
+
+WF2 uses `data/climate/projections/cmip6/_engine/` for `stage_b_settings.json`, `analysis_record.json`
+and `figure_captions.json`; manifest figure paths resolve relative to the sibling `plots/` directory.
+Existing WF0 nested engine paths await explicit migration.
 
 1. **Upstream-owned names pass through verbatim.** Engine-mandated filenames (`wflow_sbm.toml`, `staticmaps.nc`, `instates.nc`, `hydromt_data.yml`) and upstream identifiers embedded in a path — CMIP model IDs such as `NOAA-GFDL/GFDL-ESM4`, carrying hyphens, slashes and mixed case — are never normalized. These are §6 tier-1 identifiers.
 2. **Config keys and data labels are out of reach.** The rule governs file and directory names only. Column and row labels (`BFI`, `T10`) and config keys keep their domain spelling (§7).

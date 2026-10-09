@@ -449,7 +449,12 @@ def build_project_tree_rules(
     for tier in ("raw", "scalar", "summary", "analysis", "plots"):
         same(f"data/climate/projections/{clim_project}/{tier}/")
     same(f"data/climate/projections/{clim_project}/report.md")
-    same(f"data/climate/projections/{clim_project}/_engine/stage_b_settings.json")
+    for leaf in (
+        "stage_b_settings.json",
+        "analysis_record.json",
+        "figure_captions.json",
+    ):
+        same(f"data/climate/projections/{clim_project}/_engine/{leaf}")
 
     # -- models/ --------------------------------------------------------------
     wflow = "models/hydrology/wflow"

@@ -8,8 +8,10 @@ the underlying calculation or statistical interpretation.
 ## Output paths
 
 Use `plots/` for generated graphics throughout the toolbox. Keep readable captions in
-`plots/figure_captions.md` and machine plot manifests in `plots/_engine/figure_captions.json`.
-Internal analysis records belong to `analysis/_engine/`; JSON containing user-facing data stays with
+`plots/figure_captions.md`. Machine plot manifests and internal analysis records belong in the cohesive
+output unit's single root `_engine/`, following [the output naming rule](naming.md#generated-outputs-under-project_dir).
+WF2 uses the ensemble root's `_engine/`, with manifest figure paths relative to `plots/`.
+Existing WF0 `plots/_engine/` paths await explicit migration. JSON containing user-facing data stays with
 its owning data product. Generated filenames and directories use lowercase snake_case, including
 `full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
 with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the rename mapping.
@@ -74,7 +76,8 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
 
 | Figure type | Agreed treatment |
 |---|---|
-| Climate maps | Extent exactly matches the gridded layer; no surrounding blank map area. |
+| Historical climate maps | Extent exactly matches the native gridded layer's outer cell edges. |
+| Wflow forcing maps | Use the selected historical grid's exact frame, with no added padding. |
 | Map coordinates | Axis titles include degrees; tick labels are numeric, signed, without N/S/E/W. |
 | Annual series | Trend line and slope annotation on every applicable series; y-axis shows units only. |
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |

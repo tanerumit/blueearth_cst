@@ -68,7 +68,7 @@ WF2 retains the acquired slices and basin monthly series, a change-factor produc
 The `analysis/` tables use 30 complete water years around each configured future horizon. The reference is
 the last 30 complete configured water years, or the historical fallback (January: WY 1985–2014; October:
 WY 1984–2013). These windows are separate from the configured windows of the overlay CSVs. The
-`analysis/_engine/analysis_record.json` records shifts, historical joins, eligibility, equal-model reductions
+`_engine/analysis_record.json` records shifts, historical joins, eligibility, equal-model reductions
 and product availability. Seasonal precipitation changes use weighted mean rates; this differs from the lab's
 total-based percentages. Precipitation CV uses period integrals. Analysis arithmetic uses float64 inputs;
 the aligned change-factor arithmetic retains its existing precision and dry-reference rule.
@@ -80,7 +80,7 @@ strips, monthly cycles, sign agreement and change-factor clouds. A combined clou
 at least two distinct windows have paired changes. Missing products carry reasons rather than blank PNGs.
 
 `plots/figure_captions.md` describes every produced figure and lists unavailable and retired products;
-`plots/_engine/figure_captions.json` maps ordinary PNG paths to captions and counts. Set
+`_engine/figure_captions.json` maps ordinary PNG paths to captions and counts. Set
 `captioned_figures: true` in the workflow YAML for copies under `plots/captioned/`, recorded by each
 manifest entry's `captioned_path`. Spread describes the ensemble, not a confidence interval; sign
 counts are diagnostic agreement, not likelihood. The predecessor `plots/overview/` and `plots/windows/`

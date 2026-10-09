@@ -647,7 +647,9 @@ keep the locator inset. See `shared/plot_spatial_maps.py`.
 #### 1.12 · `plot_model_forcing`
 
 **Does.** Draws the climate figure set for the model's own forcing.
-Source-grid diagnostics belong exclusively to WF0.
+Source-grid diagnostics belong exclusively to WF0. Map bounds follow the selected historical
+extraction's native cell edges, matching WF0 with no additional padding. Model-grid values and
+the basin mask are unchanged.
 
 **Writes.** `<model>/forcing/plots/` — the full variable × kind cross-product
 from `climate_figures.figure_names("forcing")`, all declared.
@@ -766,7 +768,7 @@ CMIP6 store → 2.03 fetch_cmip6_projections ←┤
                   2.07 gather_benchmarks · 2.08 gather_logs
 ```
 
-Rule 2.05b branches independently from 2.04 into `analysis/*.csv` and `analysis/_engine/analysis_record.json`.
+Rule 2.05b branches independently from 2.04 into `analysis/*.csv` and `_engine/analysis_record.json`.
 Both gather rules wait for its record. It has no dependency on any 2.05 output.
 
 The region polygon feeds **five** rules — 2.02, 2.03, 2.04, 2.05 and 2.05b all declare
@@ -892,9 +894,10 @@ Availability controls the PNG set; unavailable products have reasons, never plac
 cloud needs at least two distinct windows with paired changes. No scalar inputs or numerical reductions.
 
 **Writes.** Owned directories `<proj>/plots/full_period/` and `period_<start>_<end>/`, plus
-`figure_captions.md` and `_engine/figure_captions.json`. Ordinary PNG paths and manifest keys form a
-bijection. Optional `captioned_figures: true` adds owned `captioned/` copies, identified by manifest
-`captioned_path` metadata. Predecessor `overview/` and `windows/` products are retired; existing files
+`plots/figure_captions.md` and `<proj>/_engine/figure_captions.json`. Ordinary PNG paths and manifest keys
+form a bijection, with manifest paths relative to `<proj>/plots/`. Optional `captioned_figures: true`
+adds owned `captioned/` copies, identified by manifest `captioned_path` metadata.
+Predecessor `overview/` and `windows/` products are retired; existing files
 are retained but untargeted and listed in the captions.
 
 The optional baseline figure targets now select the annual precipitation overview and the baseline's

@@ -72,6 +72,18 @@ def _edges(x, resolution=None):
     return np.r_[x[0] - half, (x[:-1] + x[1:]) / 2, x[-1] + half]
 
 
+def native_grid_extent(field):
+    """Return exact native cell edges as west, east, south, north, without padding."""
+    xedges = _edges(field.longitude, field.attrs.get("longitude_resolution"))
+    yedges = _edges(field.latitude, field.attrs.get("latitude_resolution"))
+    return [
+        float(xedges.min()),
+        float(xedges.max()),
+        float(yedges.min()),
+        float(yedges.max()),
+    ]
+
+
 def visible_values(field, basin_path):
     """Cell values intersecting the displayed basin extent, including padding."""
     import geopandas as gpd
@@ -90,13 +102,23 @@ def visible_values(field, basin_path):
 
 
 def draw_map(
-    field, variable, source, overlays, limits, counts, *, cell_edges=True, inside=None
+    field,
+    variable,
+    source,
+    overlays,
+    limits,
+    counts,
+    *,
+    cell_edges=True,
+    inside=None,
+    extent=None,
 ):
     """Native cells, overlays and discrete colourbar.
 
     Defaults preserve source-grid maps. Dense model grids can suppress cell
     edges and supply a basin mask: outside cells are white, while unavailable
     values within the basin retain the shared gray missing-data color.
+    An explicit extent can align model maps with historical source-grid edges.
     """
     with plt.rc_context(STYLE):
         fig, ax = plt.subplots(figsize=(180 / 25.4, 113 / 25.4), layout="constrained")
@@ -228,8 +250,11 @@ def draw_map(
                         ]
                     )
         # Cell edges, rather than padded basin bounds, fill the entire map frame.
-        ax.set_xlim(float(xedges.min()), float(xedges.max()))
-        ax.set_ylim(float(yedges.min()), float(yedges.max()))
+        west, east, south, north = (
+            extent if extent is not None else native_grid_extent(field)
+        )
+        ax.set_xlim(west, east)
+        ax.set_ylim(south, north)
         lat = float(field.latitude.mean())
         ax.set_aspect(1 / math.cos(math.radians(lat)))
         ax.set_xlabel("Longitude (°)")

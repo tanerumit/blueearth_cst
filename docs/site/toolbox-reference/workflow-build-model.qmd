@@ -61,6 +61,10 @@ The figures describe the post-processed model forcing; regenerating them does no
 or change its forcing. Source and model-grid maps use independent color limits, so compare their
 colorbar values when assessing differences.
 
+Forcing maps use the selected historical climate extraction's outer cell edges as their exact frame,
+matching WF0's historical maps. The forcing values and basin mask retain their model-grid resolution;
+changing the frame does not interpolate or expand the forcing data.
+
 Rule 1.15 writes station hydrographs under `models/hydrology/wflow/evaluation/plots/stations/`.
 Each sheet shows daily discharge, annual means, the seasonal cycle and linear/log flow-duration
 curves in the common scientific style. Captions in `figure_captions.md` and

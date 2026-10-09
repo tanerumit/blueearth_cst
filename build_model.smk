@@ -1181,6 +1181,7 @@ rule plot_model_forcing:
     message: PLOT_MODEL_FORCING.banner()
     input:
         forcing_path = f"{basin_dir}/forcing/inmaps_historical.nc",
+        source_climate = CLIMATE_STORE.outputs["climate_nc"],
         # ADR 0004; see rule 1.13.
         model_final = ancient(f"{basin_dir}/.model_final"),
         **_locations_input,

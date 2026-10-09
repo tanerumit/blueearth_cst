@@ -141,8 +141,9 @@ def render_forcing_figures(
     plot_dir: str | Path,
     overlays: dict[str, str | Path],
     m0: int,
+    map_extent: list[float] | None = None,
 ) -> list[Path]:
-    """Write nine canonical PNGs and separate, recoverable caption records."""
+    """Write nine canonical figures, optionally framed on historical cell edges."""
     fields, results, years = prepare_forcing(ds, inside, m0)
     map_inside = inside.rename(
         {
@@ -202,6 +203,7 @@ def render_forcing_figures(
                         fields[f"{variable}_valid_years"],
                         cell_edges=False,
                         inside=map_inside,
+                        extent=map_extent,
                     )
                     encoding = (
                         "Mean of eligible reporting-year means"
@@ -301,6 +303,7 @@ def render_forcing_figures(
                     "max_missing_days_year": max_year,
                     "trend": "Theil–Sen",
                     "monthly_spread": "p10–p90",
+                    "map_extent": map_extent if kind == "map" else None,
                 },
             }
             written.append(path)

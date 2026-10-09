@@ -88,7 +88,7 @@ user-facing data and provenance deliverables remain with their owning data produ
 ## Verification status
 
 Final integration verification is recorded in
-[`../tasks/plot-improvements/verification.md`](../tasks/plot-improvements/verification.md), including
+[`../records/reviews/plot-improvements/verification.md`](../records/reviews/plot-improvements/verification.md), including
 WF0 source/comparison and optional subbasin paths, WF2 availability-to-output mappings, caption manifests,
 and affected workflow declarations. Earlier deferral applied only to visual iteration.
 

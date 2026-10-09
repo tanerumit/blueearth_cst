@@ -27,6 +27,7 @@ from blueearth_cst.shared.plot_evaluation import STATION_PLOT_DIRNAME
 # so an unset observation key never becomes a declared input.
 from blueearth_cst.shared.gauges import is_unset
 from blueearth_cst.shared.wflow_outputs import CODES as WFLOW_OUTPUT_CODES
+from blueearth_cst.shared.wflow_outputs import BASAVG_FIGURE_STEMS, SUBBASIN_PLOT_DIRNAME
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -915,15 +916,29 @@ rule extract_climate_datasets:
 #    (plot_results.py, `drop_vars("precipitation_basavg")`), so the figure is
 #    never written. The SCRIPT keeps its name -- R10 renamed rule identifiers,
 #    not modules.
-# The filename is the CSV column name verbatim (func_plot_signature.plot_basavg
-# writes f"{dvar}.png"), which is why it carries the config's spelling, spaces
-# included.
+# Canonical variable tokens identify the annual and seasonal basin products.
+_evaluation_cfg = get_config(my_cfg, "evaluation", {})
+if not isinstance(_evaluation_cfg, dict):
+    raise ValueError("build_model.evaluation must be a mapping")
+_subbasin_plots = get_config(_evaluation_cfg, "subbasin_plots", False)
+if not isinstance(_subbasin_plots, bool):
+    raise ValueError("build_model.evaluation.subbasin_plots must be a boolean")
 _WFLOW_OUTVARS_WITHOUT_BASAVG_PLOT = ("river discharge", "precipitation")
 _basavg_pngs = [
-    f"{basin_dir}/evaluation/plots/{WFLOW_OUTPUT_CODES[var]}_subcatchment.png"
+    f"{basin_dir}/evaluation/plots/wflow_{BASAVG_FIGURE_STEMS[WFLOW_OUTPUT_CODES[var]]}_{kind}_basin_avg.png"
     for var in wflow_outvars
     if var not in _WFLOW_OUTVARS_WITHOUT_BASAVG_PLOT
+    for kind in ("annual_ts", "monthly_clim_band")
 ]
+# Caption records exist only when the configured basin-average family is drawn.
+_basavg_captions = (
+    [
+        f"{basin_dir}/evaluation/plots/figure_captions.md",
+        f"{basin_dir}/evaluation/plots/_engine/figure_captions.json",
+    ]
+    if _basavg_pngs
+    else []
+)
 
 # The COMPLETE set of tables rule 1.14 writes, derived from the same config
 # key. Rule 1.08 declares exactly two kinds of `[output.csv]` column, and both
@@ -1013,12 +1028,12 @@ rule plot_model_evaluation:
        location_registry = f"{spatial_dir}/location_registry.csv",
        script = "blueearth_cst/model/plot_results.py"
    # R07 B10 + O-24. The artifacts move into the engine subtree, split by KIND
-   # (P1): figures under evaluation/plots/, the metrics table one level up in
-   # evaluation/, because plots/ holds figures only.
+   # (P1): figures and captions under evaluation/plots/, the metrics table one
+   # level up in evaluation/.
    #
    # O-24, restated 2026-08-01 after checking what is actually derivable.
    #
-   # DECLARED: the config-invariant subset below, plus `_basavg_pngs` — one PNG
+   # DECLARED: the config-invariant subset below, plus `_basavg_pngs` — two PNGs
    # per basin-average entry in wflow_outvars, a pure function of config.
    #
    # AND the per-station bin as a DIRECTORY (t2608071206, 2026-08-18). Its
@@ -1061,6 +1076,11 @@ rule plot_model_evaluation:
    output:
        metrics_csv = f"{basin_dir}/evaluation/performance_metrics.csv",
        basavg_pngs = _basavg_pngs,
+       basavg_captions = _basavg_captions,
+       subbasin_figures = (
+           [directory(f"{basin_dir}/evaluation/plots/{SUBBASIN_PLOT_DIRNAME}")]
+           if _subbasin_plots and _basavg_pngs else []
+       ),
        station_plots = directory(
            f"{basin_dir}/evaluation/plots/{STATION_PLOT_DIRNAME}"
        ),
@@ -1071,6 +1091,7 @@ rule plot_model_evaluation:
        # which made the model's location a fact spelled in two places; this move
        # is what forced the question, and passing it is the answer.
        model_dir = basin_dir,
+       subbasin_plots = _subbasin_plots,
    log:
        PLOT_MODEL_EVALUATION.log(),
    benchmark:

@@ -21,7 +21,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from blueearth_cst.model.plot_results import resolve_stations
+from blueearth_cst.model.plot_results import resolve_stations, subcatchment_cell_counts
 from blueearth_cst.shared import plot_evaluation
 from blueearth_cst.shared.plot_evaluation import (
     Station,
@@ -29,6 +29,20 @@ from blueearth_cst.shared.plot_evaluation import (
     r_squared,
     wettest_and_driest_year,
 )
+
+
+def test_native_subcatchment_weights_count_only_output_cells():
+    maps = xr.Dataset(
+        {"subcatchment": (("y", "x"), [[101, 101, 102], [102, 0, np.nan]])}
+    )
+    assert subcatchment_cell_counts(maps) == {101: 2, 102: 2}
+
+
+def test_native_subcatchment_weights_reject_fractional_ids():
+    maps = xr.Dataset({"subcatchment": (("y", "x"), [[101, 101.5]])})
+    with pytest.raises(ValueError, match="integer"):
+        subcatchment_cell_counts(maps)
+
 
 #: Every test in this module that saves a figure asserts its STRUCTURE — which
 #: sheets exist, what they are named, which panels they carry. None asserts on

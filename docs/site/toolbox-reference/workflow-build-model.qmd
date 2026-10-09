@@ -74,6 +74,20 @@ are supplied, summary panels use paired valid dates. Flow-duration curves rank v
 values; the log panel preserves exceedance positions, displays the full positive range and reports
 zero-flow frequency. These plotting choices do not change the simulation or performance metrics.
 
+Each configured hydrological zonal output has two standard figures: a basin-average annual series
+and seasonal cycle. The basin combines daily native zonal means using fixed model-cell counts.
+Set `evaluation.subbasin_plots: true` in the build-model workflow YAML to also generate both types
+individually under `evaluation/plots/subbasins/`. Captions are stored beside each figure family in
+`figure_captions.md` and `_engine/figure_captions.json`.
+
+All hydrological summaries exclude the same first simulation year when the run exceeds one year.
+Full calendar months permit at most three missing days; years require all months eligible and at most
+fifteen missing days. Flux amounts use totals, filling eligible missing days with their month's mean;
+flow rates and stored quantities use means without infilling. Negative recharge remains valid.
+Seasonal cycles give equal weight to eligible monthly aggregates across years and show 10–90th
+percentile bands for interannual variability. Annual trends use Sen slopes per decade. Snow represents
+snowpack liquid-water depth in mm. Precipitation figures remain in the forcing figure family.
+
 ## Configuration
 
 The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, the `basin` definition and `output_locations`, `climate.selected` and `climate.window`, and `model.outvars`. Its `workflows.build_model` stanza enables this workflow and points to its YAML file through `config_path`.

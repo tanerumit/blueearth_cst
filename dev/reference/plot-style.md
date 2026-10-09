@@ -38,8 +38,8 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
   and plot labels; retain version metadata in source records where relevant.
 - Keep grid lines subtle and partly transparent. Avoid competing with the data or annotations.
 - Use short panel titles prefixed `a)`, `b)`, etc.; explain methodological details in the caption.
-- Align panel labels and titles with the plotting pane's left border in all multi-panel figures.
-  For labels above a Matplotlib pane, use axes-relative x = 0 and left horizontal alignment.
+- Do not display figure titles inside or above the plotting area. Identify the variable, spatial
+  support and plot type in the caption and review-page heading. Preserve explicitly agreed panel labels.
 
 ## Legends, labels and points
 
@@ -106,6 +106,23 @@ valid values and positions `rank / (n + 1)`. Retain zeros on the linear panel, o
 axis without changing exceedance positions, and report their frequency. The log range includes all
 positive values from both series, without percentile clipping. These choices affect hydrograph
 summaries only; performance metrics and other evaluation sheets retain their own methods.
+
+WF1 hydrological output figures default to two single-axis products per variable: a basin-average
+annual series and seasonal cycle. Optional subbasin figures repeat both products individually, never
+as panels. These figures have no displayed titles. Reconstruct the basin's native grid-cell mean from
+daily zonal means using fixed cell-count
+weights; missing zones invalidate that basin day rather than changing its spatial support.
+
+Apply the same first-year warm-up exclusion and calendar completeness rules to all hydrological
+variables. Eligible months allow three missing days; eligible years have full calendar bounds, all
+months eligible and at most fifteen missing days. Flux amounts use monthly/annual totals, with eligible
+missing days filled by that month's available-day mean. Rates and stored quantities use means without
+infilling. Keep physically valid negative recharge. Seasonal cycles show equal-year monthly means and
+10–90th percentile bands, describing interannual variability rather than uncertainty in the mean.
+Annual series use Sen slopes per decade and the shared WF0 trend treatment. Snow plots represent the
+native snowpack liquid-water depth, a stored quantity in mm, rather than an accumulated flux.
+Captions use concise publication prose: quantity, support, period and visual encodings. Keep numerical
+support counts, completeness thresholds and exclusion lists in the machine-readable methods metadata.
 
 | Figure type | Agreed treatment |
 |---|---|

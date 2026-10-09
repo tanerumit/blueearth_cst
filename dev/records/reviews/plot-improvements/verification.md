@@ -342,3 +342,77 @@ Full-suite, baseline and all-five gates are omitted for this confined terminal-f
 Verified implementation commit: `c7ddb673` (`feat(plots): standardize Wflow evaluation hydrographs`).
 It contains the unchanged executable candidate covered by the checks above; the following evidence
 update changes this review record only. The worktree was clean immediately after that commit.
+
+## WF1 hydrological output figures — active owner review
+
+The owner approved two standard single-axis products per configured zonal hydrological variable:
+basin-average annual series and seasonal cycles. Individual subbasin versions of both products are
+optional through `evaluation.subbasin_plots` in the WF1 workflow YAML, defaulting to false.
+The native discharge station family and the forcing precipitation family retain their separate homes.
+
+The adapter excludes the first simulation year once, before both discharge and zonal summaries.
+The same WF0 calendar-completeness choices apply throughout: full boundary periods, three missing
+days per month and fifteen per year. Flux amounts use monthly mean gap adjustment and totals;
+rates and stored quantities use available-day means. Negative recharge is retained. Snow is native
+snowpack liquid-water depth and now uses means in mm. Annual trends use the WF0 Sen treatment;
+seasonal bands use the owner-approved 10th–90th percentiles of equally weighted eligible months.
+
+Daily basin values reconstruct Wflow's native mean reducer using the cell counts of the disjoint
+`subcatchment` raster. The Liberia zones contain 20,983 cells. Every zone must have finite daily
+support; weights never renormalize around missing zones. These are model-cell means, with no claim
+of physical-area weighting. Numeric probes cover unequal weights, absent zones, omitted leap dates,
+partial calendar boundaries, completeness thresholds, stock/rate means and caption-inventory refresh.
+
+The read-only Liberia AET/recharge exports produced four standard basin and 44 optional individual
+figures under `.tmp/scratchpad/wf1-evaluation-style/basavg/basin-after/`. Ten explicitly synthetic
+figures under `synthetic-all-variables/` cover all five zonal quantity types, including rate/state
+handling not represented in Liberia's configured outputs. The HTML review holds these 58 records;
+previous seasonal panel sheets serve as context, while new annual products have no predecessor.
+Captions use measured horizontal plotting bounds. All four standard Liberia renders and an
+individual recharge example were inspected. A synthetic near-constant rate exposed a y-axis offset
+overlapping the support title; absolute tick labels fixed it, and all affected drafts were rerendered.
+Final inventories contain 4 basin, 44 individual and 10 synthetic records. Production outputs and
+previous review renders remain
+intact; no files were deleted. Retain this scratch for the owner's active visual review.
+
+Focused checks in the session's default Pixi environment passed:
+
+```text
+pixi run pytest tests/test_wf1_plot_outputs.py tests/test_indicator_glossary.py tests/test_plot_evaluation.py -q
+pixi run pytest tests/test_func_plot_signature.py -q
+pixi run python .tmp/scratchpad/wf1-evaluation-style/basavg/probe_basin.py
+```
+
+The suites passed 55 and 16 tests respectively; the standalone probe passed six acceptance cases.
+Pytest required external temporary-fixture access, granted through the sandbox escalation mechanism.
+Touched-file Ruff lint and formatting checks passed. The full suite, numerical baseline and all-five
+execution are deferred under the confined figure validation policy. The owner approved committing
+this plot family after the caption and title revisions.
+
+The owner requested publication-style captions during review. The renderer now uses short prose
+covering quantity, spatial support, eligible period and visual encodings, with a brief warm-up note.
+Detailed aggregation, cell counts, completeness thresholds and exclusions remain in JSON methods
+metadata. Caption-only review refreshes regenerated all 58 records without rewriting the inspected
+PNGs; the HTML keeps the same measured caption bounds.
+
+The owner clarified that no titles should be displayed. Annual and seasonal basin/subbasin figures
+therefore have no titles, inside or above the axes; captions and review-page headings identify them.
+The temporary header padding was removed, restoring the canonical data limits and adaptive inside
+legend. All 58 review figures were rerendered and their caption geometry refreshed. Touched-file Ruff
+lint and formatting checks passed; the scientific calculations were unchanged. Render logs are
+`no-title-render.log` and `no-title-synthetic.log` in the active review scratch.
+
+### Commit checks
+
+```text
+pixi run pytest tests/test_cli.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py tests/test_wf1_plot_outputs.py tests/test_indicator_glossary.py -q
+pixi run ruff check blueearth_cst/model/plot_results.py blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/wflow_outputs.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py tests/test_wf1_plot_outputs.py
+pixi run ruff format --check blueearth_cst/model/plot_results.py blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/wflow_outputs.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py tests/test_wf1_plot_outputs.py
+git diff --check
+```
+
+All 91 focused tests passed; touched-file lint, formatting and whitespace checks passed. The CLI and
+declared-output checks cover the new optional WF1 setting, script parameter and annual/seasonal output
+inventory. The default Pixi environment and Liberia/synthetic review inputs described above were used.
+Logs remain under the retained review root. No production output files were modified or deleted.
+The work remains on the pinned session branch; landing and pushing require separate instructions.

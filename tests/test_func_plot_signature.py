@@ -26,6 +26,8 @@ Two halves, and they are tested differently.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -217,7 +219,7 @@ def captured(monkeypatch):
 
     ``plot_basavg`` writes through the module-level ``save_figure`` binding and
     returns nothing, so the figure is only reachable at save time. Patching the
-    binding is also what keeps these tests off the disk.
+    binding avoids PNG writes; caption inventories still use the test directory.
     """
     saves: list[tuple[str, plt.Figure]] = []
 
@@ -252,130 +254,134 @@ def _basavg(codes, indices=None, years=2, value=1.0):
     return xr.Dataset(data)
 
 
-def test_one_file_is_written_per_variable_named_after_it(captured, tmp_path):
-    """``_basavg_pngs`` declares one output per variable; the writer must match.
-
-    A file per SUBCATCHMENT could not be declared, because the subcatchment
-    count is unknown at DAG-parse time — hence faceting.
-    """
-    plot_basavg(_basavg(["gwr", "aet", "p"], indices=[101, 102]), str(tmp_path))
-
-    assert [path for path, _ in captured] == [
-        str(tmp_path / "gwr_subcatchment.png"),
-        str(tmp_path / "aet_subcatchment.png"),
-        str(tmp_path / "p_subcatchment.png"),
+def test_basin_and_optional_individual_inventory(captured, tmp_path):
+    ds = _basavg(["gwr"], indices=[103, 101, 102])
+    plot_basavg(
+        ds, str(tmp_path), cell_counts={101: 1, 102: 2, 103: 3}, subbasin_plots=True
+    )
+    names = [Path(path).name for path, _ in captured]
+    assert names == [
+        f"wflow_gwr_{kind}_{support}.png"
+        for support in ("basin_avg", "subbasin_101", "subbasin_102", "subbasin_103")
+        for kind in ("annual_ts", "monthly_clim_band")
     ]
+    assert all(len(fig.axes) == 1 for _, fig in captured)
+    assert all("subbasins" in Path(path).parts for path, _ in captured[2:])
+    assert (tmp_path / "_engine/figure_captions.json").exists()
+    assert (tmp_path / "subbasins/_engine/figure_captions.json").exists()
 
 
-def test_every_subcatchment_gets_its_own_panel(captured, tmp_path):
-    """The 2026-08-10 defect, directly.
+def test_weighted_daily_support_is_fixed_and_complete():
+    time = pd.date_range("2000-01-01", periods=3)
+    series = xr.DataArray(
+        [[2.0, 10.0], [4.0, np.nan], [-2.0, -10.0]],
+        dims=("time", "index"),
+        coords={"time": time, "index": [101, 102]},
+    )
+    daily, _, _ = fps._basavg_daily(series, {101: 1, 102: 3})
+    assert daily.iloc[0] == pytest.approx(8.0)
+    assert np.isnan(daily.iloc[1])  # Never renormalize onto the remaining zone.
+    assert daily.iloc[2] == pytest.approx(-8.0)
+    with pytest.raises(ValueError, match="require exact"):
+        fps._basavg_daily(series)
+    for weights in ({101: 1}, {101: 1, 102: 0}, {101: 1, 102: np.inf}):
+        with pytest.raises(ValueError):
+            fps._basavg_daily(series, weights)
 
-    Four subcatchments must yield four axes. Drawn as one object the array
-    arrives 2-D, ``.plot()`` dispatches to ``pcolormesh``, and ``fill_between``
-    would break next because it assumes exactly 12 values.
-    """
-    plot_basavg(_basavg(["gwr"], indices=[103, 101, 104, 102]), str(tmp_path))
 
-    ((_, fig),) = captured
-    assert len(fig.axes) == 4
-
-
-def test_the_panels_read_in_sorted_subcatchment_order(captured, tmp_path):
-    """Not wflow's internal order, which was measured as [103, 101, 104, 102].
-
-    The annotations identify the sorted panels, and a reader who
-    cannot trust them has to cross-reference every panel against the map.
-    """
-    plot_basavg(_basavg(["gwr"], indices=[103, 101, 104, 102]), str(tmp_path))
-
-    ((_, fig),) = captured
-    assert [ax.texts[-1].get_text() for ax in fig.axes] == [
-        "subcatchment 101",
-        "subcatchment 102",
-        "subcatchment 103",
-        "subcatchment 104",
+def test_calendar_gaps_leap_amounts_and_completeness():
+    time = pd.date_range("2000-01-01", "2000-12-31")
+    daily = pd.Series(2.0, index=time).drop(pd.Timestamp("2000-02-29"))
+    annual, cycle, info = fps._basavg_statistics(daily, "amount")
+    assert annual.loc[2000] == pytest.approx(732.0)
+    assert cycle.loc[2, "mean"] == pytest.approx(58.0)
+    assert info["omitted_dates"] == 1
+    # Four absent March dates exceed the per-month tolerance even though the
+    # year as a whole has only five missing days.
+    daily = daily.drop(pd.date_range("2000-03-01", periods=4))
+    annual, cycle, _ = fps._basavg_statistics(daily, "amount")
+    assert np.isnan(annual.loc[2000])
+    assert np.isnan(cycle.loc[3, "mean"])
+    # Sixteen missing days, never more than two per month, fail annual tolerance.
+    removed = [
+        pd.Timestamp(2000, month, day) for month in range(1, 9) for day in (3, 4)
     ]
+    annual, cycle, _ = fps._basavg_statistics(
+        pd.Series(2.0, index=time).drop(removed), "amount"
+    )
+    assert np.isnan(annual.loc[2000])
+    assert cycle["mean"].notna().all()
 
 
-def test_a_series_without_an_index_dimension_still_draws_exactly_one_panel(
-    captured, tmp_path
-):
-    """The single-subcatchment path: ``plot_results`` squeezes a size-1 index away.
-
-    That squeeze is what made the old one-object implementation look correct, so
-    the fix must not have broken the case it accidentally worked for. The lone
-    panel carries no subcatchment annotation, because there is no id to name.
-    """
-    plot_basavg(_basavg(["gwr"], indices=None), str(tmp_path))
-
-    ((_, fig),) = captured
-    assert len(fig.axes) == 1
-    assert fig.axes[0].get_title() == ""
-
-
-def test_a_single_subcatchment_keeps_its_id_in_an_annotation(captured, tmp_path):
-    """A size-1 index that survived the squeeze is still identified."""
-    plot_basavg(_basavg(["gwr"], indices=[101]), str(tmp_path))
-
-    ((_, fig),) = captured
-    assert [ax.texts[-1].get_text() for ax in fig.axes] == ["subcatchment 101"]
+def test_partial_periods_equal_year_month_weight_and_quantiles():
+    time = pd.date_range("2001-01-02", "2005-12-31")
+    daily = pd.Series(time.year - 2000, index=time, dtype=float)
+    annual, cycle, info = fps._basavg_statistics(daily, "amount")
+    assert np.isnan(annual.loc[2001])
+    assert info["partial_years"] == [2001]
+    assert info["partial_months"] == ["2001-01"]
+    # February remains eligible in2001. Calendar-month years have equal weight.
+    assert cycle.loc[2, "mean"] == pytest.approx((28 + 56 + 84 + 116 + 140) / 5)
+    full = pd.date_range("2001-01-01", "2005-12-31")
+    _, cycle, _ = fps._basavg_statistics(
+        pd.Series(full.year - 2000, index=full, dtype=float), "amount"
+    )
+    assert cycle.loc[1, ["mean", "p10", "p90"]].values == pytest.approx(
+        [93.0, 43.4, 142.6]
+    )
 
 
-# ---------------------------------------------------------------------------
-# plot_basavg — the resample rule
-# ---------------------------------------------------------------------------
+def test_stock_rate_means_and_warmup_not_cut_twice(captured, tmp_path):
+    time = pd.date_range("2001-01-02", "2002-12-31")
+    daily = pd.Series(7.0, index=time)
+    for kind in ("stock", "rate"):
+        annual, cycle, _ = fps._basavg_statistics(daily, kind)
+        assert annual.loc[2002] == pytest.approx(7.0)
+        assert cycle["mean"].values == pytest.approx(np.full(12, 7.0))
+    ds = xr.Dataset({"swe_subcatchment": ("time", daily.values)}, coords={"time": time})
+    plot_basavg(ds, str(tmp_path), warmup_excluded=True)
+    annual = captured[0][1].axes[0].lines[0]
+    assert list(annual.get_xdata()) == [2001, 2002]
+    assert annual.get_ydata()[1] == pytest.approx(7.0)
+    assert captured[0][1].axes[0].get_ylabel() == "mm"
+    assert Path(captured[0][0]).name == "wflow_snow_annual_ts_basin_avg.png"
+    assert captured[1][1].axes[0].get_ylabel() == "mm"
 
 
-def test_a_flux_variable_is_SUMMED_within_the_month(captured, tmp_path):
-    """``gwr`` is mm month-1: a constant 1 mm/day must plot as ~30, not as 1.
-
-    This is the arithmetic PLOT_META's ``resample`` key exists to select, and it
-    is invisible in a rendered figure unless you read the axis.
-    """
-    plot_basavg(_basavg(["gwr"], indices=[101], value=1.0), str(tmp_path))
-
-    ((_, fig),) = captured
-    plotted = fig.axes[0].lines[0].get_ydata()
-    assert len(plotted) == 12
-    assert plotted.min() >= 28.0
-    assert plotted.max() <= 31.0
-
-
-def test_a_rate_variable_is_AVERAGED_within_the_month(captured, tmp_path):
-    """``qof`` is m3 s-1: a constant 1 must stay 1, not become ~30."""
-    plot_basavg(_basavg(["qof"], indices=[101], value=1.0), str(tmp_path))
-
-    ((_, fig),) = captured
-    assert fig.axes[0].lines[0].get_ydata() == pytest.approx(np.full(12, 1.0))
-
-
-def test_the_y_label_is_the_declared_legend_for_the_variable(captured, tmp_path):
-    """One table (``PLOT_META``) keys both the resample rule and the axis text."""
-    plot_basavg(_basavg(["aet"], indices=[101, 102]), str(tmp_path))
-
-    ((_, fig),) = captured
-    assert {ax.get_ylabel() for ax in fig.axes} == {
-        "Actual Evapotranspiration (mm month$^{-1}$)"
-    }
-
-
-def test_the_x_axis_is_twelve_months_labelled_by_initial(captured, tmp_path):
-    """A climatology panel, so the axis is months — never the raw time index."""
-    plot_basavg(_basavg(["gwr"], indices=[101]), str(tmp_path))
-
-    ((_, fig),) = captured
-    bottom = fig.axes[-1]
-    assert list(bottom.get_xticks()) == list(range(1, 13))
-    assert [t.get_text() for t in bottom.get_xticklabels()] == list("JFMAMJJASOND")
-
-
-def test_an_unsupported_variable_fails_loud_rather_than_drawing_a_blank_panel(
-    captured, tmp_path
-):
-    """``PLOT_META`` is the closed set of plottable outputs.
-
-    A variable outside it has no resample rule and no axis legend, so guessing
-    one would produce a figure that looks finished and means nothing.
-    """
+def test_unsupported_variable_fails_loud(captured, tmp_path):
     with pytest.raises(KeyError):
-        plot_basavg(_basavg(["not_a_wflow_output"], indices=[101]), str(tmp_path))
+        plot_basavg(_basavg(["not_a_wflow_output"]), str(tmp_path))
+
+
+def test_caption_inventory_tracks_current_request(captured, tmp_path):
+    import json
+
+    weights = {101: 1, 102: 2}
+    plot_basavg(
+        _basavg(["aet", "gwr"], indices=[101, 102]),
+        str(tmp_path),
+        cell_counts=weights,
+        subbasin_plots=True,
+    )
+    path = tmp_path / "_engine/figure_captions.json"
+    inventory = json.loads(path.read_text(encoding="utf-8"))
+    inventory["figures"]["unrelated.png"] = {
+        "caption": "Retain another figure family's caption."
+    }
+    path.write_text(json.dumps(inventory), encoding="utf-8")
+    plot_basavg(
+        _basavg(["gwr"], indices=[101, 102]), str(tmp_path), cell_counts=weights
+    )
+    inventory = json.loads(path.read_text(encoding="utf-8"))
+    assert set(inventory["figures"]) == {
+        "unrelated.png",
+        "wflow_gwr_annual_ts_basin_avg.png",
+        "wflow_gwr_monthly_clim_band_basin_avg.png",
+    }
+    assert not any("aet" in name for name in inventory["produced_paths"])
+    optional = json.loads(
+        (tmp_path / "subbasins/_engine/figure_captions.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert optional["figures"] == {}

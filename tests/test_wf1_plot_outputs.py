@@ -143,18 +143,19 @@ def test_delete_all_output_removes_the_declared_plot_outputs(fabricated_project)
     )
 
 
-#: What rule 1.11 derives from wflow_outvars: the CSV column name verbatim,
-#: spaces and all (func_plot_signature.plot_basavg writes f"{dvar}.png").
-_BASAVG_REL = "models/hydrology/wflow/evaluation/plots/aet_subcatchment.png"
+#: The standard annual and seasonal basin products declared by rule 1.15.
+_BASAVG_RELS = (
+    "models/hydrology/wflow/evaluation/plots/wflow_aet_annual_ts_basin_avg.png",
+    "models/hydrology/wflow/evaluation/plots/wflow_aet_monthly_clim_band_basin_avg.png",
+)
 
 
-@pytest.fixture()
-def project_with_basavg_outvar(tmp_path):
+@pytest.fixture(params=[False, True], ids=["basin-only", "with-subbasins"])
+def project_with_basavg_outvar(tmp_path, request):
     """A project whose wflow_outvars asks for a basin-average output.
 
     The seed config is discharge-only, so nothing in the suite would otherwise
-    exercise the derivation — or the fact that the derived filename contains a
-    SPACE, which every consumer of a declared output has to survive.
+    exercise the basin derivation and optional runtime-dependent subbasin bin.
     """
     cfg = load_composed_config(CONFIG_FN)
     project_dir = tmp_path / "proj"
@@ -167,11 +168,26 @@ def project_with_basavg_outvar(tmp_path):
         "river discharge",
         "actual evapotranspiration",
     ]
+    cfg["workflows"]["build_model"]["evaluation"] = {"subbasin_plots": request.param}
     cfg_path = write_config(tmp_path, cfg, stem="project_config_basavg")
 
-    basavg = project_dir / _BASAVG_REL
+    basin_figures = [project_dir / rel for rel in _BASAVG_RELS]
+    basavg = basin_figures[0]
     basavg.parent.mkdir(parents=True, exist_ok=True)
-    basavg.write_bytes(b"placeholder")
+    for figure in basin_figures:
+        figure.write_bytes(b"placeholder")
+    if request.param:
+        optional = basavg.parent / "subbasins/wflow_aet_annual_ts_subbasin_101.png"
+        optional.parent.mkdir(parents=True, exist_ok=True)
+        optional.write_bytes(b"placeholder")
+        basin_figures.append(optional)
+    captions = [
+        basavg.parent / "figure_captions.md",
+        basavg.parent / "_engine/figure_captions.json",
+    ]
+    for caption in captions:
+        caption.parent.mkdir(parents=True, exist_ok=True)
+        caption.write_bytes(b"placeholder")
     # Same control as the fixture above: an undeclared sibling must survive.
     # A stray directly in plots/ -- that directory is NOT declared, only the
     # basavg files and the stations/ bin inside it are, so this survives.
@@ -181,13 +197,13 @@ def project_with_basavg_outvar(tmp_path):
         project_dir / "models/hydrology/wflow/evaluation/plots/legacy_leftover.png"
     )
     undeclared.write_bytes(b"placeholder")
-    return cfg_path, basavg, undeclared
+    return cfg_path, basin_figures, captions, undeclared
 
 
 @pytest.mark.skipif(shutil.which("snakemake") is None, reason="snakemake not on PATH")
 @pytest.mark.workflow_contract
 def test_delete_all_output_removes_a_basavg_figure(project_with_basavg_outvar):
-    cfg_path, basavg, undeclared = project_with_basavg_outvar
+    cfg_path, basin_figures, captions, undeclared = project_with_basavg_outvar
 
     result = subprocess.run(
         "snakemake all --delete-all-output --workflow-profile none -c 1 "
@@ -199,9 +215,9 @@ def test_delete_all_output_removes_a_basavg_figure(project_with_basavg_outvar):
     )
     combined = (result.stdout or "") + (result.stderr or "")
     assert result.returncode == 0, combined[-4000:]
-    assert not basavg.exists(), (
-        f"{basavg.name} survived --delete-all-output, so rule 1.11 is not "
-        "really declaring the wflow_outvars-derived figures"
+    assert all(not figure.exists() for figure in basin_figures)
+    assert all(not caption.exists() for caption in captions), (
+        "Basin-average captions survived --delete-all-output"
     )
     assert undeclared.is_file(), (
         "the undeclared control file was removed too — the assertion above no "

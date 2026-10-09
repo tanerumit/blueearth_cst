@@ -7,15 +7,15 @@ cssclasses: [todo-board]
 
 | #      | ID                       | Item                                                         | Area       | Status       |
 | ------ | ------------------------ | ------------------------------------------------------------ | ---------- | ------------ |
-| 1      | [t2610062309][]          | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2        | active (3/5) |
-| 2      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1        | blocked      |
-| 3      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs       | blocked      |
-| 4      | [t2608202351][]          | Publish the technical note as site chapters                  | docs       | blocked      |
-| 5      | [t2608091730][]          | Make waterbody layers for the basin map                      | plotting   | blocked      |
-| 6      | [t2608071207][]          | Prove wflow log check fails without path_log                 | wf3        | blocked      |
-| 7      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4          | wf4        | backlog      |
-| 8      | [t2610091622][]          | Triage unresolved geographic robustness findings             | validation | backlog      |
-| 9      | [t2610082103][]          | Share plot renderers across climate workflows                | plotting   | backlog      |
+| 1      | [t2610082103][]          | Share plot renderers across climate workflows                | plotting   | active (0/6) |
+| 2      | [t2610062309][]          | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2        | active (3/5) |
+| 3      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1        | blocked      |
+| 4      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs       | blocked      |
+| 5      | [t2608202351][]          | Publish the technical note as site chapters                  | docs       | blocked      |
+| 6      | [t2608091730][]          | Make waterbody layers for the basin map                      | plotting   | blocked      |
+| 7      | [t2608071207][]          | Prove wflow log check fails without path_log                 | wf3        | blocked      |
+| 8      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4          | wf4        | backlog      |
+| 9      | [t2610091622][]          | Triage unresolved geographic robustness findings             | validation | backlog      |
 | 10     | [t2610032349][]          | Number experiments and add a new-experiment flag             | wf4        | backlog      |
 | 11     | [t2610022259][]          | Scope conceptual workflow improvements                       | methods    | backlog      |
 | 12     | [t2609251520][]          | Decide naming of generation_inputs snapshots                 | wf3        | backlog      |
@@ -35,6 +35,7 @@ cssclasses: [todo-board]
 | 26     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog      |
 | 27     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog      |
 
+[t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
 [t2610062309]: tasks/t2610062309-snakemake-scheduler-stalls-mid-run-on-long-wf2-fetch-batches.md
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
@@ -43,7 +44,6 @@ cssclasses: [todo-board]
 [t2608071207]: tasks/t2608071207-r7-8.md
 [t2610091737]: tasks/t2610091737-bounded-window-forcing.md
 [t2610091622]: tasks/t2610091622-triage-unresolved-geographic-robustness-findings.md
-[t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
 [t2610032349]: tasks/t2610032349-number-experiments-and-add-a-new-experiment-flag.md
 [t2610022259]: tasks/t2610022259-conceptual-workflow-improvements.md
 [t2609251520]: tasks/t2609251520-open-question-flat-hash-suffixed-names-for-generation-inputs-snapshots.md

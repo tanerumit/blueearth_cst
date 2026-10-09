@@ -1,12 +1,14 @@
 ---
 title: Share plot renderers across climate workflows
 type: todo-item
-status: backlog
+status: active
 effort: 2
 area: plotting
-queue: 9
+queue: 1
 created: 2026-10-08
-updated: 2026-10-09
+updated: 2026-10-10
+doc: t2610082103/landscape-and-plan.md
+branch: chore/minor-fixes
 ---
 
 > [!note] Overview
@@ -57,3 +59,10 @@ frames, grids and colorbars under matched inputs. Changing source set or policy 
 reference. Use one-time checks and visual inspection; do not add these checks to the testing suite.
 Keep workflow-specific scientific preparation unchanged. The Liberia output corrections prompted
 this requirement; shared-producer implementation remains deferred.
+## Agreed direction (2026-10-10)
+
+The user approved Python rendering first, an internal core with a portable dependency boundary,
+then reusable chart interfaces, a separately scoped map-reference producer, and later external packaging.
+The [landscape and development plan](t2610082103/landscape-and-plan.md) preserves the full assessment.
+Start with a bounded foundations design and focused specialist handoffs. Implementation remains in
+the pinned session branch; board and planning records stay on main.

@@ -1,0 +1,3 @@
+manager: pixi
+environment: default
+manifest: pixi.toml

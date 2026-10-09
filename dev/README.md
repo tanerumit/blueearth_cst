@@ -218,7 +218,7 @@ is gitignored and one `git clean -fdX` from gone.
 
 ## The retention rule
 
-Only `records/reviews/` is prunable. A process review or a post-milestone self-check is
+Among retained records, only `records/reviews/` is prunable. A process review or a post-milestone self-check is
 a snapshot of a system that keeps moving, so the folder would otherwise
 accumulate thousands of lines describing a repository that no longer exists.
 
@@ -283,9 +283,11 @@ failure this file already records. The other half of the safeguard: the item IDs
 are cited from code, tests and Snakefiles, so the archive keeps every ID rather
 than merging items away.
 
-Nothing outside `records/reviews/` is prunable. `records/decisions/` is permanent by
-construction, `records/milestones/` and `tasks/` are identity-indexed records, and
-`reference/` describes the current system.
+Do not prune retained records outside `records/reviews/`. `records/decisions/` and
+`records/milestones/` preserve decisions and milestone evidence; `reference/` is maintained as the current system.
+Live `tasks/` notes and sidecars follow the task-closure procedure above: promote needed material,
+then remove the eligible task files through the board workflow. Legacy `working/` files follow the promotion
+rule, with citations and owners migrated together. Neither procedure is routine record pruning.
 
 ### The cap on `LOG.md` rows — the same rule, applied before the fact
 

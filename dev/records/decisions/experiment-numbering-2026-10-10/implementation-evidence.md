@@ -219,7 +219,7 @@ These are compatibility adaptations to main's existing contracts; scientific alg
 Combined gate results and the final landing candidate will be appended after verification.
 
 
-## Authorized landing verification — 2026-10-10
+## Authorized landing verification â€” 2026-10-10
 
 The owner subsequently authorized merging and landing this branch. The earlier task-local sections
 record the state before that authorization. No additional design review was performed.

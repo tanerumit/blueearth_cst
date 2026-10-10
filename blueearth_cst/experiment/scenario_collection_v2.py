@@ -1,4 +1,4 @@
-"""Strict, additive reader for model-independent scenario-collection/2 records."""
+"""Strict, additive reader for model-independent scenario-collection/3 records."""
 
 import csv
 import math
@@ -176,7 +176,7 @@ def _profile(intent: dict[str, Any]) -> None:
         "collection intent",
     )
     if (
-        intent["schema_version"] != "scenario-collection-intent/2"
+        intent["schema_version"] != "scenario-collection-intent/3"
         or intent["canonicalization_id"] != "collection-canon/1"
         or intent["scenario_type"] != "stochastic"
     ):
@@ -424,7 +424,7 @@ def _rows(rows: list[dict[str, str]], intent: dict[str, Any]) -> None:
         for point in range(n_points + 1):
             expected.append(
                 {
-                    "run_id": f"{len(expected) + 1:0{width}d}",
+                    "run_id": f"run_{len(expected) + 1:0{width}d}",
                     "evaluate": "true",
                     "type": "stochastic",
                     "rlz": f"{realization:0{len(str(n_realizations))}d}",
@@ -519,11 +519,13 @@ def read_collection_v2(marker_path: Path) -> dict[str, Any]:
         "collection marker",
     )
     if (
-        marker["schema_version"] != "scenario-collection/2"
+        marker["schema_version"] != "scenario-collection/3"
         or marker["canonicalization_id"] != "collection-canon/1"
         or marker["status"] != "ready"
     ):
-        raise ValueError("unsupported or unready collection marker")
+        raise ValueError(
+            "unsupported or unready collection marker; legacy numeric run-ID collections must be regenerated"
+        )
     full_id = _digest(marker["collection_id"], "collection_id")
     segment = identity_segment(full_id, "collection_id")
     if record_dir.name != segment or marker["data_root"] != f"scenarios/{segment}":
@@ -579,7 +581,7 @@ def read_collection_v2(marker_path: Path) -> dict[str, Any]:
         _fields(entry, {"run_id", "file", "descriptor"}, "series entry")
         _series_descriptor(entry["descriptor"])
         path = resolve_file_reference(entry["file"], anchors)
-        if path != data_root / "series" / f"run_{entry['run_id']}.nc":
+        if path != data_root / "series" / f"{entry['run_id']}.nc":
             raise ValueError("series path does not match its run ID")
     products = marker["provider_products"]
     if [entry["role"] for entry in products] != [

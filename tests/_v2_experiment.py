@@ -33,7 +33,7 @@ import yaml
 FIXTURE_ENVIRONMENT = {"packages": {"numpy": "fixture"}}
 
 EXPERIMENT = "metric_experiment"
-RUN_IDS = ("1", "2")
+RUN_IDS = ("run_1", "run_2")
 INVOCATION_ID = "f" * 32
 CLIMATE_SOURCE = "era5"
 
@@ -226,7 +226,7 @@ def collection_intent_v2(capacity: int = 2) -> dict:
         },
     }
     intent = {
-        "schema_version": "scenario-collection-intent/2",
+        "schema_version": "scenario-collection-intent/3",
         "canonicalization_id": "collection-canon/1",
         "collection_id": digest,
         "provider": {"name": "weathergenr", "revision": content_sha256(code)},
@@ -352,7 +352,7 @@ def _archive(
 
 
 def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
-    """Write a ready scenario-collection/2 the way WF3 publication does."""
+    """Write a ready scenario-collection/3 the way WF3 publication does."""
     from blueearth_cst.experiment.content_identity import (
         atomic_record,
         collection_revision_v2,
@@ -396,7 +396,7 @@ def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
     atomic_record(record / "collection_intent.json", intent)
     lookup = data / "scenario_run_lookup.csv"
     lookup.write_text(
-        "run_id,evaluate,type,rlz,st_id\n1,true,stochastic,1,\n2,true,stochastic,1,1\n",
+        "run_id,evaluate,type,rlz,st_id\nrun_1,true,stochastic,1,\nrun_2,true,stochastic,1,1\n",
         encoding="utf-8",
     )
     perturbation = data / "perturbation_lookup.csv"
@@ -407,7 +407,7 @@ def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
     )
     series = []
     for run_id in RUN_IDS:
-        path = data / "series" / f"run_{run_id}.nc"
+        path = data / "series" / f"{run_id}.nc"
         path.write_bytes(run_id.encode())
         series.append(
             {
@@ -427,7 +427,7 @@ def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
             }
         )
     marker = {
-        "schema_version": "scenario-collection/2",
+        "schema_version": "scenario-collection/3",
         "canonicalization_id": "collection-canon/1",
         "status": "ready",
         "collection_id": intent["collection_id"],
@@ -565,9 +565,9 @@ def native_runs(root: Path) -> dict:
     wflow = Path(root) / "hydrology/wflow"
     return {
         run: NativeRunArtifacts(
-            wflow / f"output/run_{run}.csv",
-            wflow / f"run_settings/run_{run}.toml",
-            wflow / f"run_settings/run_{run}.temporal.json",
+            wflow / f"output/{run}.csv",
+            wflow / f"run_settings/{run}.toml",
+            wflow / f"run_settings/{run}.temporal.json",
         )
         for run in RUN_IDS
     }

@@ -134,7 +134,7 @@ def test_the_downscale_rule_reads_only_its_own_member(downscale, monkeypatch, tm
         path = Path(selector(wc))
         # Each member resolves to its own series in the selected collection
         # (`scenarios/<collection>/series/run_<id>.nc` since 2026-09-24).
-        assert path.name == f"run_{run_id}.nc", path
+        assert path.name == f"{run_id}.nc", path
         assert path.parent.name == "series", path
         selected.append(path)
     assert len(set(selected)) == len(rows)

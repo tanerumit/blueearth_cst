@@ -226,11 +226,17 @@ generation command required to resolve it; no directory scan or latest fallback
 is used.
 
 Each `experiments/<experiment_name>/` retains `_engine/simulation.json`, its native
-`hydrology/wflow/output/run_<run_id>.csv` responses and
+`hydrology/wflow/output/<run_id>.csv` responses and
 `_engine/response_inventory.json`. Metric sets live in
-`results/metric_sets/<metric_set_id>/`; their tables contain
-`metric,location,run_group_id,value`, joined through `metric_run_lookup.csv`
-to the collection's `scenario_run_lookup.csv` and `perturbation_lookup.csv`.
+`results/metric_sets/<metric_set_id>/`. Each variable has separate
+`<token>_run_indicators.csv` (`metric,location,run_id,value`) and
+`<token>_group_indicators.csv` (`metric,location,group_id,value`) tables.
+Text IDs such as `run_01` and `group_01` use independent namespaces.
+`group_members.csv` records every group member, including singleton groups;
+`group_metadata.csv` joins groups to `perturbation_lookup.csv` through `st_id`.
+Run tables join directly to the collection's `scenario_run_lookup.csv`.
+Group summaries give equal weight to each realization's run metric; return levels retain
+pooled-sample estimation. See [Reading the outputs](docs/site/guide/outputs.qmd) for validity and migration.
 Collection inventories live in `scenarios/_engine/collections/<collection_id>/`;
 metric metadata lives in the experiment's `_engine/metric_sets/<metric_set_id>/`.
 Model-grid forcing and per-run catalogs are temporary. Collection forcing and

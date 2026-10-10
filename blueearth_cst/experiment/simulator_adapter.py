@@ -375,10 +375,15 @@ def batch_arguments(batch_id: str, runs: Sequence[PreparedRun]) -> list[str]:
     ids = [run.run_id for run in runs]
     if not ids or len(set(ids)) != len(ids):
         raise ValueError("batch requires nonempty, unique run ids")
-    if any(not value.isdecimal() for value in ids) or list(map(int, ids)) != sorted(
-        map(int, ids)
-    ):
-        raise ValueError("batch run ids must be in increasing numeric order")
+    if any(
+        not value.startswith("run_")
+        or not value[4:].isascii()
+        or not value[4:].isdecimal()
+        for value in ids
+    ) or ids != sorted(ids):
+        raise ValueError(
+            "batch run ids must be prefixed and in increasing collection order"
+        )
     arguments = [batch_id]
     for run in runs:
         arguments.extend([run.run_id, str(run.toml_path), str(run.native_output_path)])

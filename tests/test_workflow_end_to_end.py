@@ -149,7 +149,8 @@ def test_all_five_workflows_run_end_to_end_from_a_fresh_root(tmp_path):
     marker = _one(project.glob("scenarios/_engine/collections/*/collection.json"))
     assert read_collection_v2(marker)["status"] == "ready"
     # WF4: a ready simulation and one published, readable metric set.
-    experiment = project / "experiments" / "experiment_rapid"
+    # The rapid config chooses a family; a fresh root gets its first number.
+    experiment = project / "experiments" / "experiment_rapid_01"
     assert read_simulation_v2(experiment)["status"] == "ready"
     metrics = _one(experiment.glob("_engine/metric_sets/*/metrics.json"))
     manifest = read_metric_set(experiment, metrics)

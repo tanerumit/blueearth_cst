@@ -36,9 +36,9 @@ if (is.na(rlz_index_width) || is.na(st_index_width) ||
 # region polygon.
 basin_cells_path   <- args[[5]]
 root_run_ids <- strsplit(args[[6]], ",", fixed = TRUE)[[1]]
-if (length(root_run_ids) == 0L || any(!grepl("^[0-9]+$", root_run_ids)) ||
+if (length(root_run_ids) == 0L || any(!grepl("^run_[0-9]+$", root_run_ids)) ||
     anyDuplicated(root_run_ids)) {
-  stop("root_run_ids must be a nonempty, comma-separated list of unique numeric run IDs")
+  stop("root_run_ids must be a nonempty, comma-separated list of unique prefixed run IDs")
 }
 
 yaml <- yaml::read_yaml(weathergen_config_path)
@@ -185,7 +185,8 @@ for (n in 1:historical_realizations_num) {
         signif_digits = wnc$signif_digits,
         verbose       = wnc$verbose,
         file_prefix   = "run",
-        file_suffix   = root_run_ids[[n]]
+        # Upstream joins prefix and suffix with '_'; IDs already contain it.
+        file_suffix   = sub("^run_", "", root_run_ids[[n]])
   )
 
   # A `spatial_ref` re-patching block stood here until the weathergenr 2.0.0

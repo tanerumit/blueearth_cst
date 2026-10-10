@@ -80,8 +80,8 @@ def _copy_model_toml(model_toml: Path, out_dir: Path, years: int | None) -> Path
 def _launch(tag, count, threads, model_toml, root, years, julia):
     records = [tag]
     for index in range(1, count + 1):
-        run = f"{index:02d}"
-        out = root / tag / f"run_{run}"
+        run = f"run_{index:02d}"
+        out = root / tag / run
         out.mkdir(parents=True, exist_ok=True)
         toml = _copy_model_toml(model_toml, out, years)
         records += [run, str(toml), str(out / "output.csv")]

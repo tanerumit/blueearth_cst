@@ -253,7 +253,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         "| `data/climate/projections/` | GCM change-factor tables under `summary/` and figures under `plots/` (WF2) |\n"
         "| `scenarios/<collection_id>/` | Generated climate series under `series/`, scenario and perturbation lookup tables (WF3) |\n"
         "| `experiments/<name>/hydrology/wflow/output/` | Retained model responses to the climate scenarios (WF4) |\n"
-        "| `experiments/<name>/results/metric_sets/<id>/` | Indicator tables and `metric_run_lookup.csv` (WF4) |\n"
+        "| `experiments/<name>/results/metric_sets/<id>/` | Run/group indicator tables, `group_members.csv`, and `group_metadata.csv` (WF4) |\n"
         "| `logs/` | Workflow messages and failure details |\n"
         "| `benchmarks/` | Step timings and resource use |\n\n"
         "Collection inventories are in `scenarios/_engine/collections/<collection_id>/collection.json`. "

@@ -512,9 +512,9 @@ def automatic_seed_v2(material: Mapping[str, Any]) -> int:
 
 
 def collection_id_v2(intent: Mapping[str, Any]) -> str:
-    """Hash only the declared scenario-collection/2 scientific dependencies."""
-    if intent.get("schema_version") != "scenario-collection-intent/2":
-        raise ValueError("expected scenario-collection-intent/2")
+    """Hash only the declared scenario-collection/3 scientific dependencies."""
+    if intent.get("schema_version") != "scenario-collection-intent/3":
+        raise ValueError("expected scenario-collection-intent/3")
     if intent.get("canonicalization_id") != "collection-canon/1":
         raise ValueError("expected collection-canon/1")
     capacity = intent["run_group_id_capacity"]
@@ -530,7 +530,7 @@ def collection_id_v2(intent: Mapping[str, Any]) -> str:
         raise ValueError("collection identity_digests has unexpected fields")
     return content_sha256(
         {
-            "schema_version": "scenario-collection-identity/2",
+            "schema_version": "scenario-collection-identity/3",
             "scenario_spec": intent["scenario_spec"],
             "scenario_semantics_sha256": _digest(
                 intent["scenario_semantics_sha256"], "scenario_semantics_sha256"
@@ -560,7 +560,7 @@ def collection_revision_v2(marker: Mapping[str, Any], intent: Mapping[str, Any])
         raise ValueError("provider date products must have fixed order")
     return content_sha256(
         {
-            "schema_version": "collection-revision/2",
+            "schema_version": "collection-revision/3",
             "collection_id": _digest(marker["collection_id"], "collection_id"),
             "scenario_semantics_sha256": _digest(
                 intent["scenario_semantics_sha256"], "scenario_semantics_sha256"

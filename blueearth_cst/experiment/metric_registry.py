@@ -22,6 +22,21 @@ from blueearth_cst.shared import metrics_definition as md
 GEV_SCREENING_BLOCK_FLOOR = 10
 SCREENING_POLICY_STATUS = "provisional_operational"
 
+# Reviewed run-reduction statistics that have equal-weight realization means.
+# A newly declared statistic needs a deliberate group policy before publication.
+GROUP_MEAN_STATISTICS = {
+    "mean",
+    "sum",
+    "max",
+    "min",
+    "q95",
+    "Q7day_max",
+    "Q7day_min",
+    "BaseFlowIndex",
+    "wetmonth_mean",
+    "drymonth_mean",
+}
+
 
 @dataclass(frozen=True)
 class DeclaredBundle:
@@ -55,7 +70,7 @@ def metric_unit_index(
         raise ValueError("unit_id_capacity must be a positive integer")
     width = len(str(unit_id_capacity))
     if tuple(all_run_ids) != tuple(
-        f"{number:0{width}d}" for number in range(1, len(all_run_ids) + 1)
+        f"run_{number:0{width}d}" for number in range(1, len(all_run_ids) + 1)
     ):
         raise ValueError(
             "run ids must preserve the complete collection's order and width"
@@ -69,18 +84,16 @@ def metric_unit_index(
     keys = [(bundle.bundle_by, bundle.canonical_key) for bundle in bundles]
     if len(set(keys)) != len(keys):
         raise ValueError("duplicate declared grouping key")
-    required = len(all_run_ids) + len(bundles)
+    required = max(len(all_run_ids), len(bundles))
     if required > unit_id_capacity:
         raise UnitNamespaceCapacityError(
             f"capacity={unit_id_capacity}, runs={len(all_run_ids)}, bundles={len(bundles)}, "
             f"required={required}, minimum replacement={required}"
         )
-    result = [
-        UnitIndexRow(run, "run", run) for run in sorted(evaluated_run_ids, key=int)
-    ]
+    result = [UnitIndexRow(run, "run", run) for run in sorted(evaluated_run_ids)]
     for number, bundle in enumerate(
         sorted(bundles, key=lambda item: (item.bundle_by, item.canonical_key)),
-        start=len(all_run_ids) + 1,
+        start=1,
     ):
         members = bundle.member_run_ids
         if (
@@ -91,8 +104,8 @@ def metric_unit_index(
         ):
             raise ValueError("bundle must name unique evaluated members and a grouping")
         result.extend(
-            UnitIndexRow(f"{number:0{width}d}", "bundle", run)
-            for run in sorted(members, key=int)
+            UnitIndexRow(f"group_{number:0{width}d}", "bundle", run)
+            for run in sorted(members)
         )
     return tuple(result)
 
@@ -126,6 +139,7 @@ class MetricDeclaration:
     blocks_per_return_period: float | None
     implementation_revision: str
     value_validity: str
+    group_reduction: str
 
 
 def declarations(tokens: Sequence[str]) -> tuple[MetricDeclaration, ...]:
@@ -171,6 +185,11 @@ def declarations(tokens: Sequence[str]) -> tuple[MetricDeclaration, ...]:
                         "finite required; reject invalid GEV fit; no clipping"
                         if kind == "B"
                         else "finite or native-reduction NaN; refuse infinity; no clipping"
+                    ),
+                    group_reduction=(
+                        "pooled-member-local-blocks/1"
+                        if kind == "B"
+                        else "equal-weight-run-reductions-propagate-nan/1"
                     ),
                 )
             )
@@ -257,7 +276,7 @@ def resolve_month_reference(
         )
     compatible_bundle(first)
     location = first[0].location_id
-    ordered = sorted(first, key=lambda item: int(item.run_id))
+    ordered = sorted(first, key=lambda item: item.run_id)
     pooled = pd.concat([pd.Series(item.values, index=item.time) for item in ordered])
     monthly = pooled.groupby(pooled.index.month).sum()
     month = int(monthly.idxmax() if which == "wet" else monthly.idxmin())
@@ -320,29 +339,48 @@ def reduce_run(
     return values
 
 
-class InsufficientReturnLevelBlocks(ValueError):
-    """Operational screening refused a location before fitting."""
-
-
-def project_legacy_month(
+def reduce_group_mean(
     metric: MetricDeclaration,
     series: Sequence[ResponseSeries],
     *,
-    reference: MonthReference,
+    expected_run_ids: Sequence[str],
     anchor: str,
+    reference: MonthReference | None = None,
 ) -> pd.Series:
-    """Preserve P1's pooled Class-C table carrier until P2 changes result grain.
+    """Average run reductions with equal realization weights and NaN propagation.
 
-    Per-run scientific values come from reduce_run. This compatibility projection
-    preserves the predecessor's pooling order and missing-value weighting exactly.
-    It receives neutral responses and contains no native reader or scenario logic.
+    Member length never changes its weight. Class-C reductions use the same
+    resolved reference month as their individual-run products. Return levels
+    must use reduce_bundle, including for singleton groups.
     """
-    validate_requirement(metric, series)
-    frames = []
-    for run_id in sorted({item.run_id for item in series}, key=int):
-        frame = response_frame([item for item in series if item.run_id == run_id])
-        frames.append(frame[frame.index.month == reference.month])
-    return pd.concat(frames).resample(anchor).mean().mean()
+    if (
+        metric.statistic not in GROUP_MEAN_STATISTICS
+        or metric.group_reduction != "equal-weight-run-reductions-propagate-nan/1"
+    ):
+        raise ValueError(f"{metric.name}: no reviewed group mean policy")
+    if not expected_run_ids or len(set(expected_run_ids)) != len(expected_run_ids):
+        raise ValueError(f"{metric.name}: group needs unique evaluated members")
+    if {item.run_id for item in series} != set(expected_run_ids):
+        raise ValueError(f"{metric.name}: group membership differs from declaration")
+    values = [
+        reduce_run(
+            metric,
+            [item for item in series if item.run_id == run],
+            anchor=anchor,
+            reference=reference,
+        )
+        for run in expected_run_ids
+    ]
+    if any(set(value.index) != set(values[0].index) for value in values):
+        raise ValueError(f"{metric.name}: group location sets differ")
+    ordered = [value.reindex(values[0].index).to_numpy() for value in values]
+    # np.mean deliberately propagates NaN; pandas' default skipna would give
+    # invalid members zero weight and change the declared realization mean.
+    return pd.Series(np.mean(np.stack(ordered), axis=0), index=values[0].index)
+
+
+class InsufficientReturnLevelBlocks(ValueError):
+    """Operational screening refused a location before fitting."""
 
 
 class InvalidReturnLevelFit(ValueError):
@@ -531,7 +569,7 @@ def reduce_bundle(
     for location in sorted(location_sets[0]):
         members = sorted(
             [item for item in series if item.location_id == location],
-            key=lambda item: int(item.run_id),
+            key=lambda item: item.run_id,
         )
         compatible_bundle(members)
         samples, counts = [], []

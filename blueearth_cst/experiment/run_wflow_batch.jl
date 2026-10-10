@@ -13,10 +13,10 @@ function parse_batch(args)
     members = [(run_id=args[i], toml_path=args[i+1], native_output_path=args[i+2])
                for i in 2:3:length(args)]
     ids = [member.run_id for member in members]
-    all(id -> !isempty(id) && all(isdigit, id), ids) ||
-        error("Batch run ids must be explicit numeric identifiers")
+    all(id -> occursin(r"^run_[0-9]+$", id), ids) ||
+        error("Batch run ids must be explicit prefixed identifiers")
     length(unique(ids)) == length(ids) || error("Duplicate run id in batch")
-    issorted(parse.(BigInt, ids)) || error("Batch run ids must be in increasing numeric order")
+    issorted(ids) || error("Batch run ids must be in increasing collection order")
     outputs = [member.native_output_path for member in members]
     length(unique(outputs)) == length(outputs) || error("Duplicate native output in batch")
     return batch_id, members
@@ -46,8 +46,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
                 error("Missing native output $(member.native_output_path)")
             if !isempty(staging)
                 # CSV first, marker second: an `.ok` always has its CSV.
-                mv(member.native_output_path, joinpath(staging, "run_$(tag).csv"); force=true)
-                mv(joinpath(staging, "run_$(tag).expect"), joinpath(staging, "run_$(tag).ok"); force=true)
+                mv(member.native_output_path, joinpath(staging, "$(tag).csv"); force=true)
+                mv(joinpath(staging, "$(tag).expect"), joinpath(staging, "$(tag).ok"); force=true)
             end
         catch e
             row("FAILED [$(k)/$(total)] Run $(tag) batch=$(batch_id)  $(sprint(showerror, e))")

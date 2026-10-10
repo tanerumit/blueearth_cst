@@ -15,9 +15,8 @@ edit, or a toolbox commit would leave stale outputs matching a fresh record and
 reading as current. Both fields are written -- the narrow one answers "same
 settings?", the wide one "same settings, code and inputs?".
 
-The sidecar is a NEW declared output, never an addition to an existing table:
-WF3's ``results/q_indicators.csv`` is baseline-fingerprinted, so writing into it
-would falsify the design's no-re-record claim.
+The sidecar is a separate declared output; it never adds metadata columns to
+scientific indicator tables or changes their retained numerical values.
 """
 
 import json

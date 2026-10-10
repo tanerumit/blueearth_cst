@@ -329,14 +329,9 @@ TARGETS: list[tuple[str, str, str]] = [
         "run_record",
         "{project_dir}/config/runs/analyze_projections/run_record.yml",
     ),
-    # run_stress_test.smk. R9 P3 renames the two tables and moves them
-    # from indicators/ to results/. The wf3 config snapshot does NOT join
-    # config/runs/: it stays inside the experiment (arch-10), content only.
-    # R11 CR-2: ONE table per output variable, so this set follows the SEED
-    # config's `workflows.build_model.wflow_outvars`, which is
-    # `["river discharge"]` -> `q_indicators.csv` alone. `basin_indicators.csv`
-    # no longer exists; its contents are now per-variable tables, and the seed
-    # requests no basin variables.
+    # WF4 emits separate run/group tables. The seed requests only discharge;
+    # both scopes are numerical baseline targets. The existing recorded mixed-ID
+    # manifest remains stale and must be regenerated, never renamed in place.
     #
     # Pinned here rather than read from a config, deliberately: this file already
     # pins EXPERIMENT_NAME and CLIM_PROJECT the same way, because it describes the
@@ -348,7 +343,8 @@ TARGETS: list[tuple[str, str, str]] = [
     # on numeric noise that indicates no defect. Compared against a stored
     # reference table with a per-group tolerance instead -- see the indicator
     # block and INDICATOR_ATOL_FRAC.
-    ("simulate_system", "indicator", "{metric_set_dir}/q_indicators.csv"),
+    ("simulate_system", "indicator", "{metric_set_dir}/q_run_indicators.csv"),
+    ("simulate_system", "indicator", "{metric_set_dir}/q_group_indicators.csv"),
     # `{exp_dir}/config/simulation.json` was a target here until 2026-09-17 and
     # must not come back (`t2609171739`). It records an ABSOLUTE PATH
     # (`collection.manifest_path`) and a CODE FINGERPRINT
@@ -555,12 +551,14 @@ def resolve_metric_set_dir(project_dir: str) -> str:
             "select a dedicated baseline fixture (legacy tables are not a successor baseline)"
         )
     plan = read_canonical_json(plans[0])
-    # The v2 layout: the ready marker sits under `_engine/metric_sets/`, the
-    # tables it certifies under `results/metric_sets/`. The pre-release /1
-    # layout is not read (t2610041227); no release wrote it.
+    if plan.get("schema_version") != "metric-request/3":
+        raise BaselineFixtureError(
+            "baseline requires metric-request/3; regenerate the legacy fixture and re-record the baseline"
+        )
+    # The /3 split-table layout retains the engine/results separation. Legacy
+    # numeric-ID plans and mixed-table sets must be regenerated before recording.
     if (
-        plan.get("schema_version") != "metric-request/2"
-        or content_sha256(
+        content_sha256(
             {key: value for key, value in plan.items() if key != "request_sha256"}
         )
         != plan.get("request_sha256")
@@ -581,9 +579,12 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     marker = read_canonical_json(
         experiment / "_engine/metric_sets" / segment / "metrics.json"
     )
+    if marker.get("schema_version") != "metric-set/3":
+        raise BaselineFixtureError(
+            "baseline requires metric-set/3; regenerate the legacy fixture and re-record the baseline"
+        )
     if (
-        marker.get("schema_version") != "metric-set/2"
-        or marker.get("status") != "ready"
+        marker.get("status") != "ready"
         or marker.get("metric_set_id") != identity
         or content_sha256(
             {

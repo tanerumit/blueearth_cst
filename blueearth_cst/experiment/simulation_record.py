@@ -125,10 +125,18 @@ def simulation_intent_v2(
     if (
         type(runs) is not list
         or not runs
-        or any(type(run) is not str or not run.isdecimal() for run in runs)
-        or runs != sorted(set(runs), key=int)
+        or any(
+            type(run) is not str
+            or not (
+                run.startswith("run_") and run[4:].isascii() and run[4:].isdecimal()
+            )
+            for run in runs
+        )
+        or runs != sorted(set(runs))
     ):
-        raise ValueError("simulation run IDs must be unique and numerically ordered")
+        raise ValueError(
+            "simulation run IDs must be unique and ordered prefixed IDs (legacy numeric IDs require a new simulation)"
+        )
     _v2_fields(simulator, {"name", "revision"}, "simulator")
     if simulator["name"] != "wflow":
         raise ValueError("unsupported simulator")
@@ -169,7 +177,7 @@ def simulation_intent_v2(
         "preparation": preparation_identity,
     }
     intent = {
-        "schema_version": "simulation-intent/1",
+        "schema_version": "simulation-intent/2",
         "canonicalization_id": "collection-canon/1",
         "simulation_id": "",
         "experiment_name": experiment_name,
@@ -217,7 +225,7 @@ def read_simulation_intent_v2(experiment_root):
         "simulation intent",
     )
     if (
-        intent["schema_version"] != "simulation-intent/1"
+        intent["schema_version"] != "simulation-intent/2"
         or intent["canonicalization_id"] != "collection-canon/1"
         or intent["experiment_name"] != root.name
     ):
@@ -587,7 +595,7 @@ def read_simulation_v2(experiment_root):
         "simulation readiness",
     )
     if (
-        marker["schema_version"] != "simulation/2"
+        marker["schema_version"] != "simulation/3"
         or marker["canonicalization_id"] != "collection-canon/1"
         or marker["status"] != "ready"
     ):
@@ -639,7 +647,7 @@ def publish_simulation_v2(experiment_root, inventory):
     if archive["owner"] != {"kind": "experiment", "id": intent["simulation_id"]}:
         raise SimulationFrozenError("creator archive owner differs")
     marker = {
-        "schema_version": "simulation/2",
+        "schema_version": "simulation/3",
         "canonicalization_id": "collection-canon/1",
         "status": "ready",
         "simulation_id": intent["simulation_id"],

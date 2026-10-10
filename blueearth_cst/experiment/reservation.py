@@ -528,10 +528,16 @@ def _resolution(value: Any, root: Path, *, verify: bool = False) -> None:
     if (
         type(runs) is not list
         or not runs
-        or any(type(v) is not str or re.fullmatch(r"[0-9]+", v) is None for v in runs)
-        or [int(v) for v in runs] != sorted({int(v) for v in runs})
+        or any(
+            type(v) is not str or re.fullmatch(r"run_[0-9]+", v) is None for v in runs
+        )
+        or len({len(v) for v in runs}) != 1
+        or any(int(v[4:]) < 1 for v in runs)
+        or [int(v[4:]) for v in runs] != sorted({int(v[4:]) for v in runs})
     ):
-        raise ValueError("run_ids must be unique decimal strings in numeric order")
+        raise ValueError(
+            "run_ids must be unique, consistently padded run_ IDs in numeric order"
+        )
     if verify:
         from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
 

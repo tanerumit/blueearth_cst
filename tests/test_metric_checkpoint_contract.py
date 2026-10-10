@@ -1,4 +1,4 @@
-"""The production metric checkpoint under real Snakemake, over a retained v2 run.
+"""The production metric checkpoint under real Snakemake, over a retained simulation.
 
 `simulate_system.smk` plans metrics through `checkpoint prepare_indicator_plan`
 and publishes an immutable set. These cases pin what a Snakemake upgrade or a
@@ -62,7 +62,7 @@ def _published(root):
 
 def _tamper_keeping_timestamps(root):
     """Change a retained response in place without moving its mtime."""
-    native = root / f"hydrology/wflow/output/run_{RUN_IDS[0]}.csv"
+    native = root / f"hydrology/wflow/output/{RUN_IDS[0]}.csv"
     stat = native.stat()
     native.write_bytes(native.read_bytes().replace(b",3\n", b",4\n"))
     os.utime(native, ns=(stat.st_atime_ns, stat.st_mtime_ns))
@@ -102,7 +102,12 @@ def test_a_published_set_is_reused_byte_for_byte_under_forceall(tmp_path):
     assert code == 0, output
     published = _published(root)
     assert len(list((root / "_engine/metric_sets").glob("*/metrics.json"))) == 1
-    assert any(path.name == "gwr_indicators.csv" for path in published)
+    assert {
+        "gwr_run_indicators.csv",
+        "gwr_group_indicators.csv",
+        "group_members.csv",
+        "group_metadata.csv",
+    } <= {path.name for path in published}
 
     code, output = _simulate(experiment, "--forceall")
     assert code == 0, output

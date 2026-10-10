@@ -74,7 +74,7 @@ def test_simulation_intent_binds_prep_and_selected_runs():
         "inputs": entries,
     }
     request = make_response_request(
-        ["01"],
+        ["run_01"],
         [
             {
                 "variable": "q",
@@ -110,7 +110,7 @@ def test_simulation_intent_binds_prep_and_selected_runs():
         "manifest": {"path": "scenarios/_engine/collections/a/collection.json"},
         "collection_id": "a" * 64,
         "collection_revision": "b" * 64,
-        "run_ids": ["01"],
+        "run_ids": ["run_01"],
     }
     intent = simulation_intent_v2(
         "experiment",
@@ -329,6 +329,6 @@ def test_the_live_input_planner_applies_the_prepared_clock_once(
         assert q["end"] == "2054-12-31 00:00:00"
         assert q["calendar"] == "standard"
         assert q["locations"] == ["9", "2"]
-        assert request["run_ids"] == ["1", "2"]
+        assert request["run_ids"] == ["run_1", "run_2"]
     assert len(calls) == 1
     assert toml.read_bytes() == original

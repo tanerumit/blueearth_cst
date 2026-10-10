@@ -1,7 +1,7 @@
 # Master Brief — Experiment identity and user-selected output roots
 
-Date: 2026-10-10. Status: ready for inventory/design phase; implementation not started.
-Executor: repository contributor/agent using PowerShell and Pixi. This brief does not launch work.
+Date: 2026-10-10. Status: P0–P4 implemented and task-locally verified; pending approved batch landing.
+Executor: repository contributor/agent using PowerShell and Pixi. Owner authorized this branch's work.
 
 ### Goal
 
@@ -31,7 +31,7 @@ Keep every intermediate commit usable; P2 must not activate new resolution befor
 - Follow root `AGENTS.md`, the canonical naming plan and both existing tasks. Keep their identities:
   [naming](../t2610032349-number-experiments-and-add-a-new-experiment-flag.md) and
   [output folders](../t2610101521-drop-active-output-folder.md). Do not dissolve or duplicate them.
-- This is a future assignment. It grants no landing, push, release, output migration or deletion.
+- Implementation is authorized. It grants no landing, push, release, output migration or deletion.
   Follow the assigned session/lane; commit verified units separately. Board maintenance stays on main.
 - Reconcile the concurrent WF3 run-id work at P0; never silently absorb another session's unlanded work.
 - Preserve scenario-neutral generation, immutable collections and existing frozen simulation schemas.
@@ -73,8 +73,27 @@ identities and retained responses rather than inferring scientific equivalence f
 
 | Phase | State | Last durable marker | Blocked on | Next action |
 |---|---|---|---|---|
-| [P0](phase-0-contract.md) | not started | Plan: `52211d3c` | — | Inventory consumers and record schemas |
-| [P1](phase-1-output-root.md) | not started | — | — | Inspect scaffolding and case guidance |
-| [P2](phase-2-allocation.md) | not started | — | P0 contract | Implement reviewed allocation |
-| [P3](phase-3-runner-binding.md) | not started | — | — | After P2, integrate runner binding |
-| [P4](phase-4-docs-acceptance.md) | not started | — | — | After P1–P3, reconcile docs and evidence |
+| [P0](phase-0-contract.md) | done | G2 `2111cae7`, v3 | — | Accepted capped review |
+| [P1](phase-1-output-root.md) | done | `3bea47b9`; cases `cdaad63` | — | Await toolbox landing |
+| [P2](phase-2-allocation.md) | done | `ea125361` | — | Await batch gates |
+| [P3](phase-3-runner-binding.md) | done | `4e409685` | — | Await batch gates |
+| [P4](phase-4-docs-acceptance.md) | done | `a83f5b12`, docs `12f43c00` | — | Await batch gates |
+
+Implementation and evidence remain on `feat/minor-improvements`; no landing or push occurred.
+Task-local evidence: `dev/tasks/t2610032349/implementation-evidence.md` in feature commit `a83f5b12`.
+The final runtime candidate is `4e409685`; later commits add tested inspection/docs/evidence only.
+One combined review round was used, as authorized; no further review or convergence claim was added.
+
+Task-local acceptance passed: allocation/recovery/freeze/guard tests, 263 CLI/config/consumer tests,
+259 inspection tests, 12 link checks, final lint/format, and matched explicit/automatic generation.
+Fresh 02 and interrupted/resumed 03 each match all ten reference native tables and three metric tables.
+Resume retained five completed checkpoints; completed rerun and preview preserve all 292 allocation/
+experiment files. Changed complete/incomplete requests refuse before producers.
+
+Existing native hard-stop/restoration limitations remain explicit in the retained evidence and live docs;
+reservation recovery does not repair partial native outputs. Partial WF3 generation is not auto-resumed.
+Three existing metric evidence leaves remain unmapped by the current tree inspector; new reservation
+paths all map. No output migration, native repair or file deletion was performed.
+
+Next boundary: user-approved landing, then the existing combined `test-full` and fresh all-five
+`test-e2e` gates. Both task identities stay active on main until verified integration.

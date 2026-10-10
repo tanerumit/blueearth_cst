@@ -7,7 +7,7 @@ area: wf1
 branch: feat/model-upgrading
 created: 2026-09-28
 updated: 2026-10-09
-queue: 3
+queue: 5
 ---
 
 > [!note] Overview

@@ -1,89 +1,105 @@
-"""HM-7 for metric-set/2 (`interchange_contracts.validate_hm7_v2`, t2609241852)."""
+"""HM-7 independently verifies scoped metric tables and explicit group members."""
 
-from __future__ import annotations
+from copy import deepcopy
 
 import pandas as pd
 import pytest
 
-from blueearth_cst.shared import interchange_contracts as ic
-
-RUNS = ["01", "02"]
-GROUPS = [
-    {"run_group_id": "01", "grain": "run", "run_id": "01"},
-    {"run_group_id": "02", "grain": "run", "run_id": "02"},
-    {"run_group_id": "", "grain": "bundle", "run_id": "01"},
-    {"run_group_id": "", "grain": "bundle", "run_id": "02"},
-]
-SERIES = [{"variable": "q", "location_id": loc} for loc in ("101", "102")]
+from blueearth_cst.shared.interchange_contracts import validate_hm7_v2
 
 
-def _contract():
-    rows = [("q_mean", loc, g, "1.5") for loc in ("101", "102") for g in ("01", "02")]
-    rows += [("q_rl", loc, "", "2.0") for loc in ("101", "102")]
-    table = pd.DataFrame(rows, columns=list(ic.HM7_V2_COLUMNS))
+def contract():
+    runs = ["run_01", "run_02", "run_03"]
+    memberships = [
+        ("group_01", "run_01"),
+        ("group_01", "run_02"),
+        ("group_02", "run_03"),
+    ]
+    lookup = pd.DataFrame(memberships, columns=["group_id", "run_id"])
     manifest = {
-        "schema_version": "metric-set/2",
-        "run_groups": GROUPS,
-        "tables": [{"token": "q"}],
+        "schema_version": "metric-set/3",
+        "run_groups": [
+            {"run_group_id": g, "grain": "bundle", "run_id": r} for g, r in memberships
+        ],
+        "declarations": [
+            {"name": "q_mean", "grain": "run", "required_responses": {"variable": "q"}},
+            {
+                "name": "q_rl",
+                "grain": "bundle",
+                "required_responses": {"variable": "q"},
+            },
+        ],
+        "tables": [{"token": "q", "scope": scope} for scope in ("run", "group")],
     }
-    lookup = pd.DataFrame(GROUPS)[list(ic.HM7_V2_LOOKUP_COLUMNS)]
-    return manifest, {"q": table}, lookup
+    tables = {
+        "q_run": pd.DataFrame(
+            [("q_mean", "101", r, 1.5) for r in runs],
+            columns=["metric", "location", "run_id", "value"],
+        ),
+        "q_group": pd.DataFrame(
+            [
+                (m, "101", g, 2.0)
+                for m in ("q_mean", "q_rl")
+                for g in ("group_01", "group_02")
+            ],
+            columns=["metric", "location", "group_id", "value"],
+        ),
+    }
+    series = [{"variable": "q", "location_id": "101", "run_id": r} for r in runs]
+    return manifest, tables, lookup, series, runs
 
 
-def _check(manifest, tables, lookup):
-    return ic.validate_hm7_v2(
-        manifest, tables, lookup=lookup, series=SERIES, collection_run_ids=RUNS
+def check(values):
+    manifest, tables, lookup, series, runs = values
+    return validate_hm7_v2(
+        manifest, tables, lookup=lookup, series=series, collection_run_ids=runs
     )
 
 
-def test_a_complete_metric_set_passes():
-    assert _check(*_contract()) == []
+def test_scoped_tables_and_singletons_resolve_independently():
+    assert check(contract()) == []
+    values = contract()
+    values[-1].append("run_04")
+    assert check(values) == []
+    manifest, tables, lookup, series, runs = contract()
+    manifest["declarations"] = manifest["declarations"][1:]
+    tables["q_run"] = tables["q_run"].iloc[:0]
+    tables["q_group"] = tables["q_group"].query("metric == 'q_rl'")
+    assert check((manifest, tables, lookup, series, runs)) == []
 
 
 @pytest.mark.parametrize(
-    ("break_it", "expected"),
+    "defect",
     [
-        (
-            lambda m, t, lk: t.__setitem__("q", t["q"].iloc[1:]),
-            "every location x run group",
-        ),
-        (
-            lambda m, t, lk: t.__setitem__("q", pd.concat([t["q"], t["q"].iloc[:1]])),
-            "duplicate keys",
-        ),
-        (
-            lambda m, t, lk: t["q"].__setitem__(
-                "location", t["q"]["location"].replace("102", "103")
-            ),
-            "locations differ",
-        ),
-        (
-            lambda m, t, lk: t["q"].__setitem__(
-                "value", t["q"]["value"].replace("1.5", "x")
-            ),
-            "non-numeric",
-        ),
-        (lambda m, t, lk: m.__setitem__("run_groups", GROUPS[:3]), "lookup differs"),
-        (lambda m, t, lk: m.__setitem__("tables", [{"token": "gwr"}]), "tables differ"),
+        "missing_metric",
+        "duplicate",
+        "bad_member",
+        "missing_member",
+        "scope",
+        "invalid_fit",
+        "missing_scope",
+        "legacy",
     ],
 )
-def test_each_break_is_named(break_it, expected):
-    manifest, tables, lookup = _contract()
-    break_it(manifest, tables, lookup)
-    assert any(expected in diff for diff in _check(manifest, tables, lookup))
-
-
-def test_a_run_outside_the_collection_is_refused():
-    manifest, tables, lookup = _contract()
-    assert any(
-        "outside the collection" in diff
-        for diff in ic.validate_hm7_v2(
-            manifest, tables, lookup=lookup, series=SERIES, collection_run_ids=["01"]
+def test_corrupted_contract_is_refused(defect):
+    values = deepcopy(contract())
+    manifest, tables, lookup, series, runs = values
+    if defect == "missing_metric":
+        tables["q_group"] = tables["q_group"].iloc[1:]
+    elif defect == "duplicate":
+        tables["q_run"] = pd.concat([tables["q_run"], tables["q_run"].iloc[:1]])
+    elif defect == "bad_member":
+        lookup.loc[0, "run_id"] = "run_99"
+    elif defect == "missing_member":
+        lookup.drop(index=0, inplace=True)
+    elif defect == "scope":
+        tables["q_group"].loc[0, "group_id"] = "run_01"
+    elif defect == "invalid_fit":
+        tables["q_group"].loc[tables["q_group"]["metric"] == "q_rl", "value"] = float(
+            "nan"
         )
-    )
-
-
-def test_a_metric_set_1_marker_is_not_accepted():
-    manifest, tables, lookup = _contract()
-    manifest["schema_version"] = "metric-set/1"
-    assert _check(manifest, tables, lookup) == ["HM-7: not a metric-set/2 marker"]
+    elif defect == "missing_scope":
+        del tables["q_run"]
+    else:
+        manifest["schema_version"] = "metric-set/2"
+    assert check(values)

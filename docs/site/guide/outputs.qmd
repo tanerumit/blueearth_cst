@@ -20,7 +20,7 @@ use a directory outside the toolbox checkout.
   scenarios/<id>/                generated climate series
     scenario_run_lookup.csv      generated series and their relationships
     perturbation_lookup.csv      monthly temperature and precipitation changes
-    series/run_<run_id>.nc        generated climate series
+    series/<run_id>.nc            generated climate series, e.g. run_01.nc
   experiments/<name>/
     _engine/simulation.json      simulation settings used
     hydrology/wflow/output/      retained model responses
@@ -28,18 +28,21 @@ use a directory outside the toolbox checkout.
       metrics.json              indicator definitions and source records
       return_level_benchmark.json  scope of return-level checks
     results/metric_sets/<id>/
-      metric_run_lookup.csv     links indicator rows to simulations
-      <token>_indicators.csv     metric,location,run_group_id,value
+      group_members.csv         group_id,run_id (including singleton groups)
+      group_metadata.csv        group_id,st_id,is_reference
+      <token>_run_indicators.csv    metric,location,run_id,value
+      <token>_group_indicators.csv  metric,location,group_id,value
   logs/
   benchmarks/
 ```
 
 Two experiments can use the same generated climate series, but each experiment
 keeps its own model responses and indicators. To relate an indicator to the
-climate change that produced it, match its `run_group_id` to `metric_run_lookup.csv`, then
-match its `run_id` to `scenario_run_lookup.csv`, then its `st_id` to
-`perturbation_lookup.csv`.
-The scenario with an empty `st_id` is the unperturbed reference case.
+climate change that produced it, join a run table by `run_id` to `scenario_run_lookup.csv`,
+then by `st_id` to `perturbation_lookup.csv`. For a group response surface, join the group table
+by `group_id` directly to `group_metadata.csv`, then by `st_id` to `perturbation_lookup.csv`.
+`group_members.csv` records the contributing runs. Reference groups have `is_reference=true`
+and an empty `st_id`; retain them explicitly rather than losing them in an inner coordinate join.
 
 ### Climate extent and basin cells
 
@@ -102,50 +105,43 @@ Read `experiments/<name>/_engine/metric_sets/<id>/metrics.json` before
 its tables. It identifies the
 indicators, the model responses they came from, and the files in the set.
 
-Some indicators have one value per simulation. Return levels are fitted from
-groups of simulations; wet- and dry-month indicators use a shared reference
-month. The set records the group members and reference location. Numerical
-values are stored to four significant digits, so retain the underlying model
-responses if you need more detailed analysis.
+Run tables contain one value per simulation for run-level metrics. Group tables contain one value
+per design point for those metrics and pooled return levels. Both tables are written for every selected
+variable; a scope without applicable metrics has a header-only table. Group membership remains explicit
+even for one-member groups and selections without return levels.
+
+Each run-level group summary is an equal-weight mean of the realization-level values, including annual
+mean, extrema, quantiles, seven-day extrema, baseflow index, basin reductions and wet/dry-month means.
+Unequal record lengths do not change realization weights. A NaN member propagates to the group summary;
+infinite values are refused. Existing per-run reduction rules remain in force. Wet- and dry-month metrics
+use the same month selected from the unperturbed reference and first native discharge location.
+Their new group means can differ from the former pooled-month carrier when records or missingness differ.
+
+Return levels retain pooled estimation from member-local annual blocks, with the existing sample screening
+and estimator validity rules. A singleton group uses those same rules, not a substitute run statistic.
+The set records the members and reference location. Values are stored to four significant digits;
+retain the underlying model responses for more detailed analysis.
 
 ### Opening a metric table in Excel
 
-`run_group_id` in `<token>_indicators.csv`, and `run_group_id` and `run_id` in
-`metric_run_lookup.csv`, are **fixed-width zero-padded text**, not numbers. With a
-collection of 10 or more runs they read `01`, `02`, ...; with 100 or more,
-`001`. The width is a property of the collection's capacity, and the padding is
-what makes the id joinable.
+Run IDs such as `run_01` and group IDs such as `group_01` are prefixed strings, so ordinary CSV opening
+preserves them as text. Their suffix padding is consistent within the owning namespace. Groups are
+numbered independently of run count and selected metrics. Matching labels in different collections or
+metric sets do not establish matching inputs or membership.
 
-Excel converts them to numbers on a plain double-click, dropping the padding and
-turning `01` into `1`. Microsoft 365 announces this in a "Data conversion"
-notification; **older Excel does it silently.** Either way, a file re-saved
-afterwards has lost the join key: `run_group_id` no longer matches `metric_run_lookup.csv`,
-and the toolbox's own readers refuse the mismatch rather than guess which unit a
-row means.
+When reading in pandas, preserve identifiers explicitly with `dtype=str` on lookup tables and
+`keep_default_na=False` to retain the empty reference `st_id`. Indicator `value` columns remain numeric.
+Perturbation `st_id` values still require text-preserving import in Excel and code.
 
-There is no way to write a CSV that prevents this. Excel's CSV parser ignores
-quoting for type inference, so a file that Excel opens correctly on a
-double-click is one that is no longer a plain CSV. Use one of these instead:
+### Migrating existing outputs
 
-- **Import rather than open** (works everywhere, changes no settings). Excel →
-  *Data* → *From Text/CSV* → *Transform Data*, set the `run_group_id` and
-  `run_id` columns to *Text*, then *Close & Load*. This is the only route
-  that is correct on every Excel version.
-- **Turn the conversion off** (Microsoft 365 and Excel 2021+, per machine).
-  *File* → *Options* → *Data* → *Automatic Data Conversion* → clear **"Remove
-  leading zeros from numeric text and convert to a number"**. Double-click then
-  works, but the setting does not travel with the file, so a collaborator opening
-  the same table still needs it.
-- **Read it in code**, preserving each table's identifiers explicitly. In
-  pandas, use `pd.read_csv(path, dtype={"run_group_id": str})` for indicator
-  tables, `dtype={"run_group_id": str, "run_id": str}` for the metric lookup,
-  and `dtype={"run_id": str, "st_id": str}` for the scenario lookup. Read the
-  perturbation lookup with `dtype={"st_id": str}`. `read_csv` with no dtype has
-  the same failure mode as Excel.
-
-If a table's ids have already been flattened, do not repair them by re-padding to
-the width of the longest value --- that is a guess. Re-export the metric set, or
-recover the file from the set, which is immutable.
+The prefixed collection and split metric contracts use new schema revisions. Numeric-ID collections
+and mixed `<token>_indicators.csv` / `metric_run_lookup.csv` products are not silently reinterpreted.
+Keep old output roots for provenance; regenerate scenarios, then simulate under a new experiment name
+to produce the new contract. Existing files are not migrated in place. `metrics-only` is for responses
+whose retained collection and simulation records already satisfy the new contract.
+Automatic weather seeds include provider-code identity, so regeneration after this update may resolve
+a different seed. Use the same explicit seed and matched inputs when comparing generated samples.
 
 ## Return levels and their limits
 

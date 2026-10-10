@@ -255,12 +255,13 @@ WG-3 is the *current* generator's contract, not a universal one.
 
 ## WG-4 — durable generated forcing
 
-- **Path:** `<collection>/series/run_<run_id>.nc`, exactly one inventoried
+- **Path:** `<collection>/series/<run_id>.nc`, exactly one inventoried
   forcing artifact per scenario row, including unperturbed rows.
 - **Producer:** WF3 provider generation/perturbation followed by
   `publish_generation`; members are written directly to retained series paths.
 - **Consumer:** WF4's preparation adapter. `run_id` is opaque, textual and
-  zero-padded; ancestry and design keys come from `scenario_run_lookup.csv`.
+  prefixed (`run_01`) with a consistently padded suffix; ancestry and design keys come from
+  `scenario_run_lookup.csv`. Collection schema `/3` refuses old numeric-ID inventories.
 - **Content:** the existing daily `(time, lat, lon)` raster with at least
   `precip` and `temp`, plus adapter-required variables. EPSG:4326 is carried
   through `spatial_ref`; global `crs`/`category` attributes are checked if
@@ -273,10 +274,10 @@ WG-3 is the *current* generator's contract, not a universal one.
 
 ## WG-5 — per-run HydroMT catalog
 
-- **Path:** `<exp>/hydrology/wflow/run_settings/run_<run_id>.yml`, one per evaluated run.
+- **Path:** `<exp>/hydrology/wflow/run_settings/<run_id>.yml`, one per evaluated run.
 - **Producer/consumer:** WF4 `downscale_scenario_series`; the catalog points
   to retained collection forcing for that run.
-- **Pinned emitted subset:** exactly one `run_<run_id>` entry containing `uri`,
+- **Pinned emitted subset:** exactly one `<run_id>` entry containing `uri`,
   `driver.name: raster_xarray`, `driver.options.preprocess: harmonise_dims`,
   `driver.options.lock: false`, `metadata.crs: 4326`, `metadata.category: meteo`,
   and `data_type: RasterDataset`. HydroMT owns the schema and interpretation.
@@ -290,7 +291,7 @@ WG-3 is the *current* generator's contract, not a universal one.
 
 ## WG-6 — prepared Wflow forcing (WF4)
 
-- **Path:** `<exp>/hydrology/wflow/forcing/inmaps_run_<run_id>.nc`.
+- **Path:** `<exp>/hydrology/wflow/forcing/inmaps_<run_id>.nc`.
 - **Producer:** WF4 `downscale_scenario_series`.
 - **Consumer:** WF4 Wflow batches.
 - **Content:** the model-grid forcing contract in [HM-2](hydrological-model-seam.md#hm-2--wflow-forcing-inmaps):

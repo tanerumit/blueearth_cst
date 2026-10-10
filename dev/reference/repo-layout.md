@@ -46,6 +46,9 @@ select the highest allocation regardless of completion. Only `--new-experiment` 
 A custom base selects its own family; an exact numbered name pins it. Existing owned dated or unnumbered
 experiments remain explicit legacy selections. The resolver lives in `experiment/reservation.py`.
 
+Accepted design, retained review context and landing verification:
+[experiment numbering](../records/reviews/experiment-numbering-2026-10-10/implementation-evidence.md).
+
 ## dev/
 
 Planning, audits, design docs, conventions, roadmap, the baseline manifest, and helpers under `dev/scripts/`. Not shipped.

@@ -36,8 +36,10 @@ SOURCE = DRIVER.read_text(encoding="utf-8")
 #: The rows the driver prints, as they reach the tee. Kept beside the assertions
 #: rather than derived from the source: a test that re-derived the format from
 #: the file it is checking would pass on any format.
-OK_ROW = "08:03:16 - wflow - Run 01  ━━━━━━━━━━  100.0%  0:00:01 elapsed  [1/3]"
-FAIL_ROW = "08:03:16 - wflow - FAILED [2/3] Run 02 batch=b1  boom: forcing not found"
+OK_ROW = "08:03:16 - wflow - Run run_01  ━━━━━━━━━━  100.0%  0:00:01 elapsed  [1/3]"
+FAIL_ROW = (
+    "08:03:16 - wflow - FAILED [2/3] Run run_02 batch=b1  boom: forcing not found"
+)
 
 
 def _code_lines():
@@ -124,9 +126,9 @@ def test_a_finished_member_is_staged_before_its_marker():
     """The CSV moves first and the marker second, so an `.ok` implies its CSV."""
     code = chr(10).join(_code_lines())
     move_csv = code.index(
-        'mv(member.native_output_path, joinpath(staging, "run_$(tag).csv")'
+        'mv(member.native_output_path, joinpath(staging, "$(tag).csv")'
     )
-    promote = code.index('joinpath(staging, "run_$(tag).ok")')
+    promote = code.index('joinpath(staging, "$(tag).ok")')
     assert move_csv < promote
     assert 'get(ENV, "CST_BATCH_STAGING", "")' in code
 
@@ -139,13 +141,14 @@ def test_explicit_batch_parser_in_julia():
     code = """
 include(ARGS[1])
 using Test
-batch, members = parse_batch(["b4", "007", "z.toml", "a.csv", "012", "q.toml", "b.csv"])
+batch, members = parse_batch(["b4", "run_007", "z.toml", "a.csv", "run_012", "q.toml", "b.csv"])
 @test batch == "b4"
-@test members[1] == (run_id="007", toml_path="z.toml", native_output_path="a.csv")
-@test members[2].run_id == "012"
-@test_throws ErrorException parse_batch(["b4", "012", "z.toml", "a.csv", "007", "q.toml", "b.csv"])
-@test_throws ErrorException parse_batch(["b4", "007", "z.toml"])
-@test_throws ErrorException parse_batch(["b4", "007", "z.toml", "a.csv", "007", "q.toml", "b.csv"])
+@test members[1] == (run_id="run_007", toml_path="z.toml", native_output_path="a.csv")
+@test members[2].run_id == "run_012"
+@test_throws ErrorException parse_batch(["b4", "run_012", "z.toml", "a.csv", "run_007", "q.toml", "b.csv"])
+@test_throws ErrorException parse_batch(["b4", "run_007", "z.toml"])
+@test_throws ErrorException parse_batch(["b4", "run_007", "z.toml", "a.csv", "run_007", "q.toml", "b.csv"])
+@test_throws ErrorException parse_batch(["b4", "007", "z.toml", "a.csv"])
 """
     result = subprocess.run(
         [julia, "--startup-file=no", "-e", code, str(DRIVER)],

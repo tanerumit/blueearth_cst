@@ -135,21 +135,21 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
             "scenario_semantics_sha256": "0" * 64,
         },
         "rows": [
-            {"run_id": "01", "rlz": "1", "st_id": None},
-            {"run_id": "02", "rlz": "1", "st_id": "1"},
+            {"run_id": "run_01", "rlz": "1", "st_id": None},
+            {"run_id": "run_02", "rlz": "1", "st_id": "1"},
         ],
         "outputs": {
             "data_root": "scenarios/collection",
             "series": [
                 {
                     "run_id": run_id,
-                    "path": f"scenarios/collection/series/run_{run_id}.nc",
+                    "path": f"scenarios/collection/series/{run_id}.nc",
                 }
-                for run_id in ("01", "02")
+                for run_id in ("run_01", "run_02")
             ],
             "temporary_members": [
                 {
-                    "run_id": "01",
+                    "run_id": "run_01",
                     "path": "scenarios/collection/weathergenr/output/run_01.nc",
                 }
             ],
@@ -178,7 +178,7 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
         cells=cells,
         generator_yaml=generator_yaml,
         lookup=lookup,
-        root_run_ids=["01"],
+        root_run_ids=["run_01"],
         output_dir=output_dir,
     )
     assert (
@@ -191,7 +191,7 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
         )
     with pytest.raises(ValueError, match="root argument"):
         publication.validate_provider_inputs(
-            plan, root, **{**arguments, "root_run_ids": ["02"]}
+            plan, root, **{**arguments, "root_run_ids": ["run_02"]}
         )
     with pytest.raises(ValueError, match="root argument"):
         publication.validate_provider_inputs(
@@ -214,13 +214,15 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
         "root_run_ids": None,
         "output_dir": None,
         "ancestor": output_dir / "run_01.nc",
-        "row_id": "02",
+        "row_id": "run_02",
         "output": series_dir / "run_02.nc",
     }
     publication.validate_provider_inputs(plan, root, **derived)
     # t2608151154: the root is transformed too, from its own raw series.
     publication.validate_provider_inputs(
-        plan, root, **{**derived, "row_id": "01", "output": series_dir / "run_01.nc"}
+        plan,
+        root,
+        **{**derived, "row_id": "run_01", "output": series_dir / "run_01.nc"},
     )
     series_dir.mkdir(parents=True, exist_ok=True)
     (series_dir / "run_01.nc").write_bytes(b"published root")

@@ -500,7 +500,7 @@ def build_candidate_intent(settings: dict) -> dict:
         },
     }
     intent = {
-        "schema_version": "scenario-collection-intent/2",
+        "schema_version": "scenario-collection-intent/3",
         "canonicalization_id": "collection-canon/1",
         "collection_id": "0" * 64,
         "provider": {
@@ -561,13 +561,13 @@ def build_create_plan(settings: dict, intent: dict) -> dict:
         "scenario_run_lookup": f"{data}/scenario_run_lookup.csv",
         "perturbation_lookup": f"{data}/perturbation_lookup.csv",
         "series": [
-            {"run_id": row.run_id, "path": f"{data}/series/run_{row.run_id}.nc"}
+            {"run_id": row.run_id, "path": f"{data}/series/{row.run_id}.nc"}
             for row in rows
         ],
         "temporary_members": [
             {
                 "run_id": row.run_id,
-                "path": f"{data}/weathergenr/output/run_{row.run_id}.nc",
+                "path": f"{data}/weathergenr/output/{row.run_id}.nc",
             }
             for row in rows
             if not row.derived_from

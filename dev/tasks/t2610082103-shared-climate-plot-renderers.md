@@ -24,7 +24,7 @@ branch: refactor/t2610082103-shared-plotting
 - [ ] Agree the target appearance and shared renderer inputs through a reviewed design.
 - [x] Consolidate style, sizing, export and caption placement; migrate WF2's common helper imports.
 - [ ] Share raster-map drawing and an input-identified reference producer; migrate WF0/WF1 adapters.
-- [ ] Share equivalent annual-series and monthly-distribution renderers with workflow-specific preparation.
+- [x] Share equivalent annual-series and monthly-distribution renderers with workflow-specific preparation.
 - [ ] Verify prepared values and WF0-to-WF1 versus WF1-only equivalence; inspect affected rapid renders.
 - [ ] Remove replaced drawing paths, correct stale claims and document the resulting ownership.
 
@@ -96,9 +96,14 @@ Scientific and risk reviews approved it with zero findings; v2 preserves the rev
 It proposes one new prepared-chart module and migration of three WF0/WF1 callers, including
 hydrological summaries. Existing scientific preparation, appearance and outputs remain constraints.
 After explicit payload authorization, the independent headless review also approved v2 with no
-findings. All three reviews are complete; the exact reviewed design remains unchanged. The next action
-is owner approval of v2 for implementation, then the bounded engineering handoff. See
-[review state](t2610082103/design-runs/prepared-charts/status.md). No source changes in this design packet.
+findings. The owner approved its exact bytes, and implementation is complete in `22fbe441`.
+WF0 wrappers and WF1 forcing/hydrological summaries now share prepared annual/monthly charts.
+All 109 matched render pairs preserved values, artists and saved geometry; 18 caption/metadata
+files also matched. API probes, visual inspection, repository lint and formatting passed.
+Post-implementation verification was root-owned after the worker service hit its usage limit.
+See [completion evidence](t2610082103/design-runs/prepared-charts/completion.md) and
+[review state](t2610082103/design-runs/prepared-charts/status.md).
+The next packet is the separately reviewed shared map-reference producer design.
 Remaining visual issues: very long records crowd year labels; all-missing maps retain a default scale
 with little interpretive value; the soil-clay colourbar title clips the upper canvas edge.
 Map-reference production, R/WF3 and external packaging remain later work.

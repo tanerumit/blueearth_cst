@@ -7,7 +7,7 @@ cssclasses: [todo-board]
 
 | #      | ID                       | Item                                                         | Area       | Status       |
 | ------ | ------------------------ | ------------------------------------------------------------ | ---------- | ------------ |
-| 1      | [t2610082103][]          | Share plot renderers across climate workflows                | plotting   | active (1/6) |
+| 1      | [t2610082103][]          | Share plot renderers across climate workflows                | plotting   | active (2/6) |
 | 2      | [t2610062309][]          | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2        | active (3/5) |
 | 3      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1        | blocked      |
 | 4      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs       | blocked      |

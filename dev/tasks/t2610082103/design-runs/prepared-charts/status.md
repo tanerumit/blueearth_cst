@@ -5,13 +5,13 @@ genre: decision-record
 author-binding: cst-architect
 started: 2026-10-10
 variant: lean
-stage: G2
+stage: 7
 external-rounds-completed: 1
 allocation: "Frontier allocation below"
-dispatches: 7
+dispatches: 8
 gates:
   G1: approved 2026-10-10
-  G2: pending
+  G2: approved 2026-10-10
 flags: [canonical-board-on-main, same-provider-review, external-review-owner-authorized]
 ---
 
@@ -70,10 +70,12 @@ Nearby documentation and evidence are root-owned. No dispatch inherits permissio
 - [done] 5-convergence-r1 — external verdict names v2; all internal/external findings lists empty.
   Domain correction changes only the premise-disposition wording, not design or findings.
   No findings need disposition; explicit empty closure verified, no ledger or revision required.
-- [open] G2 — owner approval of exact reviewed v2 is pending. Implementation has not started.
+- [done] G2 — owner answered "yes" to implementing the linked unchanged v2 after all three approvals.
+- [done] 7-finalize — exact retained v2 identity below is accepted, unchanged; implementation-brief.md
+  derives the bounded handoff. Review is terminal; implementation remains active.
 
 Scientific, risk and independent external reviews contain zero findings. Design review has converged.
-No exact-design implementation approval is recorded; no empty ledger is created.
+Exact-design implementation approval is recorded; no empty ledger is created.
 
 Stage 3 allocation narrowed after empty reviews: a byte-identical capture needs no conceptual work.
 Request cst-architect on gpt-6-luna/low, fallback gpt-6.1-sol/low; no edits to approved framing or text.
@@ -105,7 +107,9 @@ Independent report: approve, doc_version design-v2.md, findings empty. Internal 
 and domain supplement were reconciled; no contested premises remain except future empirical parity,
 explicitly a falsifiable implementation hypothesis rather than a validated runtime claim.
 No stage-6 revision or second external round is needed after an approval with empty findings.
-Next action: owner approves these exact bytes for implementation, then claim-to-falsifier handoff.
+Owner approved these exact bytes for implementation on 2026-10-10. No editorial delta was requested.
+Implementation completed in `22fbe441`; see completion.md and validation-manifest.json.
+Next packet: separately reviewed map-reference producer design.
 
 ## Allocation diagnostics — external review completed
 
@@ -173,3 +177,15 @@ Resume selects these recorded bytes; host permissions still apply.
 | references/journey-and-sketch.md | c53f7ae05e2711db959b507f2ccb4ffe923d1facb92eea04a3c8c0740ae14022 |
 | references/findings-and-closure.md | 55f23a42ffc4ef1ad0cfbe38b87af54b49c1c652038bb51d726cb987b263dbc1 |
 | references/external-review-brief.md | 0d8a7a3ef805af02c74c0a97bf1dd1c2cfe20b2d1c59dcf1eb66f632613cfbcf |
+
+## Implementation execution and allocation diagnostics
+
+Owner-approved implementation completed in `22fbe441` on 2026-10-10.
+One additional python-engineer dispatch requested Sol/medium; it produced a partial harness
+then hit its service usage limit before source edits. Effective settings and usage unknown.
+Owner directed continuation; root completed the source, scientific and visual checks inline.
+No independent post-implementation review is claimed. All 109 pairs and 18 metadata files
+passed comparisons; root inspected all 14 sheets and three full-size examples.
+API probes, repo lint and format checks passed. No design change, merge or push.
+The earlier metadata-save quota failure is resolved by this retention step.
+See completion.md for commands, limits, rework and retained output locations.

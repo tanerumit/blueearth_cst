@@ -73,7 +73,7 @@ identities and retained responses rather than inferring scientific equivalence f
 
 | Phase | State | Last durable marker | Blocked on | Next action |
 |---|---|---|---|---|
-| [P0](phase-0-contract.md) | in progress | reservation-lifecycle/status.md | — | Review v1 |
+| [P0](phase-0-contract.md) | in progress | `cabe44bd`; reservation-lifecycle/status.md | G2 | Approve v3 |
 | [P1](phase-1-output-root.md) | done | `3bea47b9`; cases `cdaad63` | — | Await toolbox landing |
 | [P2](phase-2-allocation.md) | not started | — | P0 contract | Implement reviewed allocation |
 | [P3](phase-3-runner-binding.md) | not started | — | — | After P2, integrate runner binding |

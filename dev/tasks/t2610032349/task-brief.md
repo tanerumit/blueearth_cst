@@ -1,7 +1,7 @@
 # Master Brief — Experiment identity and user-selected output roots
 
-Date: 2026-10-10. Status: ready for inventory/design phase; implementation not started.
-Executor: repository contributor/agent using PowerShell and Pixi. This brief does not launch work.
+Date: 2026-10-10. Status: P0 review in progress; P1 implemented and verified on the feature branch.
+Executor: repository contributor/agent using PowerShell and Pixi. Owner authorized this branch's work.
 
 ### Goal
 
@@ -73,8 +73,10 @@ identities and retained responses rather than inferring scientific equivalence f
 
 | Phase | State | Last durable marker | Blocked on | Next action |
 |---|---|---|---|---|
-| [P0](phase-0-contract.md) | not started | Plan: `52211d3c` | — | Inventory consumers and record schemas |
-| [P1](phase-1-output-root.md) | not started | — | — | Inspect scaffolding and case guidance |
+| [P0](phase-0-contract.md) | in progress | reservation-lifecycle/status.md | — | Review v1 |
+| [P1](phase-1-output-root.md) | done | `3bea47b9`; cases `cdaad63` | — | Await toolbox landing |
 | [P2](phase-2-allocation.md) | not started | — | P0 contract | Implement reviewed allocation |
 | [P3](phase-3-runner-binding.md) | not started | — | — | After P2, integrate runner binding |
 | [P4](phase-4-docs-acceptance.md) | not started | — | — | After P1–P3, reconcile docs and evidence |
+
+P0 run files are under this task's `design-runs/` on `feat/minor-improvements`; they are not yet landed.

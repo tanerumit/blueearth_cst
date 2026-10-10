@@ -1,10 +1,10 @@
 ---
 title: Number experiments and add a new-experiment flag
 type: todo-item
-status: backlog
+status: active
 effort: 2
 area: wf4
-queue: 11
+queue: 4
 doc: dev/tasks/t2610032349/task-brief.md
 created: 2026-10-03
 updated: 2026-10-10
@@ -31,14 +31,10 @@ updated: 2026-10-10
 
 ## Decisions
 
-Plain runs continue the highest number regardless of completion; the runner flag creates another.
-Existing dated folders remain unchanged (2026-10-03 agreement).
-
 The [plan](t2610032349/experiment-naming-plan.md) owns behavior, compatibility and acceptance cases.
-Implementation remains in backlog.
+Implementation authorized on `feat/minor-improvements`; reservation contract review is in progress.
 
-Start with the [combined brief](t2610032349/task-brief.md), including output-folder task `t2610101521`.
-Both tasks remain open until verified.
+Start with the [combined brief](t2610032349/task-brief.md); both task IDs remain open until landing.
 
-The output-folder decision removes the `active/` default. Numbering belongs to the chosen output root;
-it does not version or archive the whole assessment.
+P1: toolbox `3bea47b9`, cases `cdaad63`. Reservation review: task-owned
+`design-runs/reservation-lifecycle/` on this branch.

@@ -26,6 +26,9 @@ def main(argv=None):
     parser.add_argument("--cores", type=int, default=3)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--forceall", action="store_true")
+    parser.add_argument("--new-experiment", action="store_true")
+    parser.add_argument("--note")
+    parser.add_argument("--recover-reservation", action="store_true")
     args, extra = parser.parse_known_args(argv)
     if extra[:1] == ["--"]:
         extra = extra[1:]
@@ -33,6 +36,9 @@ def main(argv=None):
         extra.append("--dry-run")
     if args.forceall:
         extra.append("--forceall")
+    preview = args.dry_run or any(
+        flag in extra for flag in ("-n", "--dry-run", "--unlock")
+    )
     if args.cores < 1:
         parser.error("--cores must be positive")
     if args.project_dir is None:
@@ -58,7 +64,7 @@ def main(argv=None):
             *extra,
         ],
         targets=list(args.target),
-        mode="dry_run" if args.dry_run else "execute",
+        mode="dry_run" if preview else "execute",
         contract_mode="new_schema",
         invocation_id=os.environ.get(invocation_history.INVOCATION_ENV),
         parent_invocation_id=os.environ.get(invocation_history.PARENT_ENV),
@@ -72,23 +78,37 @@ def main(argv=None):
             args.config, args.target, args.cores, extra
         )
         record["configuration"]["source_config_sha256"] = file_sha256(Path(args.config))
-        if not args.dry_run and settings["operation"] == "simulate-and-metrics":
-            capture = capture_simulation_sources_v2(
-                args.config, root, record["invocation_id"]
-            )
-            environment["CST_SIMULATION_CAPTURE"] = str(capture)
-            record["configuration"]["archive_state"] = "pending"
-        else:
-            record["configuration"]["archive_state"] = "not_applicable"
-        environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
-        invocation_history.update(record_path, record)
-        print("simulate_system: " + " ".join(args.target), flush=True)
         with archive_lock(root, "project-execution"):
+            from blueearth_cst.experiment.reservation_context import admit_context_owned
+
+            context = admit_context_owned(
+                Path(args.config),
+                Path(__file__).resolve().parents[1],
+                root,
+                record["invocation_id"],
+                new_experiment=args.new_experiment,
+                note=args.note,
+                recover=args.recover_reservation,
+                preview=preview,
+            )
+            if not preview and settings["operation"] == "simulate-and-metrics":
+                context.bind_selection()
+                capture = capture_simulation_sources_v2(
+                    args.config, root, record["invocation_id"]
+                )
+                environment["CST_SIMULATION_CAPTURE"] = str(capture)
+                record["configuration"]["archive_state"] = "pending"
+            else:
+                record["configuration"]["archive_state"] = "not_applicable"
+            environment.update(context.environment())
+            environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
+            invocation_history.update(record_path, record)
+            print("simulate_system: " + " ".join(args.target), flush=True)
             result = run_project_child(
                 command,
                 env=environment,
                 cwd=Path(__file__).resolve().parents[1],
-                writing=not args.dry_run,
+                writing=not preview,
             )
         invocation_history.finish(record_path, record, exit_code=result)
         return result

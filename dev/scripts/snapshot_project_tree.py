@@ -59,6 +59,7 @@ sys.path.insert(0, str(HERE))
 
 import semantic_tree_diff as std  # noqa: E402
 
+from blueearth_cst.experiment.reservation import preview_experiment  # noqa: E402
 from blueearth_cst.shared.config_composition import (  # noqa: E402
     load_composed_config,
 )
@@ -71,7 +72,7 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
 EXCLUDED_DIRS = frozenset({".snakemake"})
 
 
-def map_parameters(config: dict) -> dict:
+def map_parameters(config: dict, project_dir: Path | None = None) -> dict:
     """Derive every path-map parameter from the config.
 
     Built the same way the workflows build them, so a snapshot cannot disagree
@@ -93,14 +94,35 @@ def map_parameters(config: dict) -> dict:
     # same rule, free to drift, and the symptom would be a snapshot that never
     # matches a tree.
     start, end = historical_window_bounds(climate["window"])
+    root = project_dir or resolve_project_dir(project["project_dir"])
+    selected = preview_experiment(root, experiment.get("experiment_name"))
+    if selected.action in {"refuse", "missing"}:
+        raise ValueError(f"cannot select inspected experiment: {selected.reason}")
     return {
-        "project_dir": project["project_dir"],
-        "experiment_name": experiment.get("experiment_name", "experiment"),
+        "project_dir": root.as_posix()
+        if project_dir is not None
+        else project["project_dir"],
+        "experiment_name": selected.name,
         # `C-44`: the selected source. `C-25`: `clim_project` is `ensemble`.
         "dataset_key": f"{climate['selected']}_"
         + slugify_window(start.isoformat(), end.isoformat()),
         "clim_project": projections.get("ensemble", "cmip6"),
     }
+
+
+def retained_experiment_names(project_dir: Path) -> tuple[str, ...]:
+    """Recognize owned retained names; unknown occupants remain inventory orphans."""
+    directory = project_dir / "experiments"
+    if not directory.is_dir():
+        return ()
+    names = []
+    for child in sorted(directory.iterdir()):
+        if not child.is_dir():
+            continue
+        selected = preview_experiment(project_dir, child.name)
+        if selected.name == child.name and selected.action in {"continue", "legacy"}:
+            names.append(child.name)
+    return tuple(names)
 
 
 def list_tree(project_dir: Path) -> list[str]:
@@ -235,21 +257,23 @@ def main(argv: list[str] | None = None) -> int:
     # defaults -- silently, which is the failure mode this tool has no way to
     # report.
     config = load_composed_config(args.config)
-    params = map_parameters(config)
-
     project_dir = (
         args.project_dir
         if args.project_dir is not None
-        else resolve_project_dir(params["project_dir"])
+        else resolve_project_dir(config["project"]["project_dir"])
     )
     if not project_dir.is_dir():
         parser.error(
             f"project_dir does not exist: {project_dir}\n"
-            f"  (config says {params['project_dir']!r}; a relative path "
+            f"  (config says {config['project']['project_dir']!r}; a relative path "
             f"resolves against the current directory, {Path.cwd()}). "
             "Run from the checkout the workflows ran from, or pass "
             "--project-dir."
         )
+    try:
+        params = map_parameters(config, project_dir)
+    except ValueError as error:
+        parser.error(str(error))
 
     paths = list_tree(project_dir)
     print(f"project_dir   : {project_dir}")
@@ -269,7 +293,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     path_map = std.build_project_tree_rules(
-        params["experiment_name"], params["dataset_key"], params["clim_project"]
+        params["experiment_name"],
+        params["dataset_key"],
+        params["clim_project"],
+        retained_experiment_names=retained_experiment_names(project_dir),
     )
     # No DELETED class: the one that existed (`indicators/RT_*.csv`, deleted
     # rather than migrated) belonged to the retired R9 map. The inventory is

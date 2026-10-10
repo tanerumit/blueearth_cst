@@ -105,7 +105,12 @@ def metrics_only_configuration(config_path):
         (path.parent / descriptor["config_path"]).read_text(encoding="utf-8")
     )
     project_root = Path(project["project"]["project_dir"]).resolve()
-    name = validate_experiment_name(workflow["experiment_name"], project_root)
+    from blueearth_cst.experiment.reservation_context import resolve_experiment_name
+
+    name = validate_experiment_name(
+        resolve_experiment_name(project_root, workflow.get("experiment_name")),
+        project_root,
+    )
     root = project_root / "experiments" / name
     _require_v2(root)
     read_simulation_v2(root)

@@ -77,6 +77,12 @@ COVERED: dict[str, list[str]] = {
         f"benchmarks/_parts/generate_scenarios/{PK}/3.08_perturb_climate_realizations.tsv",
     ],
     "config": [
+        "config/experiments/allocation.json",
+        f"config/experiments/_engine/transactions/{'a' * 32}/transaction.json",
+        f"config/experiments/_engine/transactions/{'a' * 32}/sources/project.bin",
+        f"config/experiments/_engine/transactions/{'a' * 32}/sources/catalog_0.bin",
+        f"config/experiments/_engine/transactions/{'a' * 32}/experiment/experiment.yml",
+        f"config/experiments/_engine/transactions/{'a' * 32}/experiment/_engine/reservation.json",
         "config/runs/build_model/sources/project_config_baseline.yml",
         "config/runs/analyze_projections/sources/project_config_baseline.yml",
         "config/runs/_engine/execution-configs/build_model/abc/project_config_baseline.yml",
@@ -184,6 +190,15 @@ COVERED: dict[str, list[str]] = {
         "models/hydrology/wflow/hydromt_update_waterbodies.yml",
     ],
     "experiments": [
+        f"experiments/{E}/experiment.yml",
+        f"experiments/{E}/_engine/reservation.json",
+        f"experiments/{E}/_engine/simulation-freeze.json",
+        f"experiments/{E}/_engine/freeze-payloads/run_record.yml",
+        f"experiments/{E}/_engine/freeze-payloads/sources/project.yml",
+        f"experiments/{E}/_engine/freeze-payloads/sources/catalogs/custom-catalog.yml",
+        f"experiments/{E}/_engine/batch_staging/run_01.csv",
+        f"experiments/{E}/_engine/batch_staging/run_01.expect",
+        f"experiments/{E}/_engine/batch_staging/run_01.ok",
         f"experiments/{E}/.model_reference_ok",
         f"experiments/{E}/_engine/simulation.json",
         f"experiments/{E}/_engine/simulation_intent.json",
@@ -289,6 +304,16 @@ def test_coverage_is_not_trivially_satisfied():
 #: point, and each one sits under a root the inventory DOES cover, so a prefix
 #: written one level too broad would swallow it silently.
 UNDECLARED = [
+    "config/experiments/unknown.json",
+    f"config/experiments/_engine/transactions/{'a' * 31}/transaction.json",
+    f"config/experiments/_engine/transactions/{'a' * 32}/sources/unknown_role.bin",
+    f"config/experiments/_engine/transactions/{'a' * 32}/sources/catalog_00.bin",
+    f"config/experiments/_engine/transactions/{'a' * 32}/sources/project.bin.bak",
+    f"config/experiments/_engine/transactions/{'a' * 32}/experiment/_engine/unknown.json",
+    f"experiments/{E}/_engine/freeze-payloads/unknown.json",
+    f"experiments/{E}/_engine/freeze-payloads/sources/nested/orphan.json",
+    f"experiments/{E}/_engine/batch_staging/run_01.unknown",
+    "experiments/unknown_run/_engine/reservation.json",
     "data/climate/historical/_engine/unknown.json",
     f"scenarios/{PK}/unknown.csv",
     f"scenarios/{PK}/series/run_01.tmp.nc",
@@ -405,14 +430,18 @@ def test_a_pre_migration_path_is_unmapped_rather_than_quietly_accepted():
     assert _kind("spatial/spatial_maps.nc") == "UNMAPPED"
 
 
-def test_other_experiments_are_covered_but_not_the_project_root():
-    """A tree may hold several experiments; all are legitimate.
-
-    The catch-all is scoped INSIDE `experiments/`, so it cannot reach anything
-    else — checked by the undeclared cases above, which include a project-root
-    stray.
-    """
-    assert _kind("experiments/another_run/results/q_indicators.csv") == "IDENTITY"
+def test_retained_experiments_use_the_same_closed_inventory():
+    """Verified retained names admit current leaves, while junk still fails."""
+    rules = std.build_project_tree_rules(
+        E, KEY, CP, retained_experiment_names=("stress_test_01", "stress_test_02")
+    )
+    for name in ("stress_test_01", "stress_test_02"):
+        path = f"experiments/{name}/_engine/reservation.json"
+        assert std.apply_path_map_matched(path, rules) == (path, True)
+        orphan = f"experiments/{name}/orphan_table.csv"
+        assert std.apply_path_map_matched(orphan, rules) == (orphan, False)
+    unknown = "experiments/another_run/_engine/reservation.json"
+    assert std.apply_path_map_matched(unknown, rules) == (unknown, False)
     assert _kind(f"experiments/{E}/results/q_indicators.csv") == "UNMAPPED"
 
 

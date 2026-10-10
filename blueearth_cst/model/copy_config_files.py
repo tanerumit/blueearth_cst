@@ -280,9 +280,8 @@ def copy_config_files(
         # Comments are lost, deliberately. This bin is "written by the run;
         # editing any of it changes nothing", the run record beside it is
         # already dumped rather than copied, and the SOURCE files remain the
-        # annotated artifact. That is the same source-versus-record trade
-        # `suggest_experiment_name` refuses for the source config, for the
-        # same reason and in the opposite direction.
+        # annotated artifact. Name previews likewise leave those source bytes
+        # intact; execution owns the separate retained records.
         current_config_path.write_text(
             yaml.safe_dump(dict(composed_config), sort_keys=True),
             encoding="utf-8",

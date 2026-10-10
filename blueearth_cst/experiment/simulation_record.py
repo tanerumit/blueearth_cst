@@ -469,6 +469,17 @@ def freeze_simulation_v2(experiment_root, intent, *, invocation_id, command):
     root = Path(experiment_root).resolve()
     project = root.parent.parent
     path = _simulation_path(root, "_engine/simulation_intent.json")
+    reserved = (root / "_engine/reservation.json").exists()
+    recipe_path = root / "_engine/simulation-freeze.json"
+    if reserved and recipe_path.exists():
+        from blueearth_cst.experiment.reservation_freeze import finish_freeze_owned
+
+        recipe = read_canonical_json(recipe_path)
+        if canonical_json_bytes(recipe["intent"]) != canonical_json_bytes(intent):
+            raise SimulationFrozenError(
+                "experiment freeze recipe differs; use a new experiment"
+            )
+        return finish_freeze_owned(root)
     if path.exists():
         retained = read_simulation_intent_v2(root)
         if canonical_json_bytes(retained) != canonical_json_bytes(intent):
@@ -492,13 +503,21 @@ def freeze_simulation_v2(experiment_root, intent, *, invocation_id, command):
     )
     if Path(loaded["project"]["project_dir"]).resolve() != project:
         raise SimulationFrozenError("captured WF4 project root differs")
-    if not path.exists():
+    if not reserved and not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         atomic_record(path, intent)
+    intent_bytes = canonical_json_bytes(intent)
+    intent_reference = {
+        "schema_version": "artifact-reference/1",
+        "path_base": "project_root",
+        "path": path.relative_to(project).as_posix(),
+        "sha256": hashlib.sha256(intent_bytes).hexdigest(),
+        "size_bytes": len(intent_bytes),
+    }
     generated = [
         {
             "role": "simulation_intent",
-            "file": file_reference(path, "project_root", project),
+            "file": intent_reference,
         },
         {
             "role": "model_reference",
@@ -532,6 +551,14 @@ def freeze_simulation_v2(experiment_root, intent, *, invocation_id, command):
         referenced_inputs=[],
         generated_inputs=generated,
     )
+    if reserved:
+        from blueearth_cst.experiment.reservation_freeze import (
+            finish_freeze_owned,
+            prepare_freeze_owned,
+        )
+
+        prepare_freeze_owned(root, intent, record, payloads)
+        return finish_freeze_owned(root, recover=True)
     publish_archive(
         project,
         intent["simulation_id"][:12],

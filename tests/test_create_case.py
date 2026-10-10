@@ -58,10 +58,11 @@ def args(cases: Path) -> list[str]:
 
 @pytest.mark.parametrize("dry_run", [False, True])
 def test_create_preserves_template_and_leaves_inventory(
-    cases: Path, dry_run: bool
+    cases: Path, dry_run: bool, capsys: pytest.CaptureFixture[str]
 ) -> None:
     before = (cases / "cst-applications.md").read_bytes()
     assert main(args(cases) + (["--dry-run"] if dry_run else [])) == 0
+    assert f"Outputs: {cases / 'runs/new-basin'}\n" in capsys.readouterr().out
     application = cases / "applications" / "new-basin"
     assert not (cases / "runs").exists()
     if dry_run:
@@ -70,9 +71,7 @@ def test_create_preserves_template_and_leaves_inventory(
         return
     config_text = (application / "project_config.yml").read_text()
     config = yaml.safe_load(config_text)
-    assert (
-        config["project"]["project_dir"] == (cases / "runs/new-basin/active").as_posix()
-    )
+    assert config["project"]["project_dir"] == (cases / "runs/new-basin").as_posix()
     assert (
         config["basin"]["output_locations"]
         == (application / "data/output_locations.csv").as_posix()
@@ -88,6 +87,7 @@ def test_create_preserves_template_and_leaves_inventory(
     created = next(line for line in instructions.splitlines() if "| Created |" in line)
     datetime.strptime(created.split("|")[2].strip(), "%Y-%m-%d %H:%M:%S")
     assert "| Status |" not in instructions
+    assert f'$projectDir = "{cases.as_posix()}/runs/new-basin"' in instructions
     assert instructions.rsplit("\n## ", 1)[1].startswith("Output folder and results")
     notes = (application / "notes.md").read_text(encoding="utf-8")
     assert "Purpose: Test | basin" in notes
@@ -95,6 +95,52 @@ def test_create_preserves_template_and_leaves_inventory(
     # Cases are registered by hand only after every workflow completes.
     assert (cases / "cst-applications.md").read_bytes() == before
     assert main(args(cases)) == 2
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_create_preserves_existing_output_tree(cases: Path, dry_run: bool) -> None:
+    output_root = cases / "runs/new-basin"
+    old_output = output_root / "active" / "retained-response.csv"
+    old_output.parent.mkdir(parents=True)
+    old_output.write_bytes(b"retained native response\n")
+    before = {
+        item.relative_to(output_root): item.read_bytes()
+        for item in output_root.rglob("*")
+        if item.is_file()
+    }
+
+    assert main(args(cases) + (["--dry-run"] if dry_run else [])) == 0
+
+    after = {
+        item.relative_to(output_root): item.read_bytes()
+        for item in output_root.rglob("*")
+        if item.is_file()
+    }
+    assert after == before
+
+
+@pytest.mark.parametrize("relative", ["runs", "runs/new-basin"])
+@pytest.mark.parametrize("link_check", ["is_symlink", "is_junction"])
+def test_output_root_link_is_refused(
+    cases: Path,
+    relative: str,
+    link_check: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    linked = cases / relative
+    original = getattr(Path, link_check)
+
+    def is_link(path: Path) -> bool:
+        return path == linked or original(path)
+
+    monkeypatch.setattr(Path, link_check, is_link)
+
+    assert main(args(cases)) == 2
+    assert (
+        "Destination must not be a symbolic link or junction" in capsys.readouterr().err
+    )
+    assert not (cases / "applications/new-basin").exists()
 
 
 @pytest.mark.parametrize(

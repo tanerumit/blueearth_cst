@@ -11,8 +11,9 @@
 #  EXPERIMENT
 # -----------------------------------------------------------------------------
 
-# Name of the experiment folder. Default: project name plus the date of the
-# first run, reused afterwards. To pick one: scripts/suggest_experiment_name.py
+# Default family: stress_test, initially stress_test_01. Plain reruns retain the
+# highest allocated number; --new-experiment creates the next one. A custom base
+# selects its own numbered family; an exact numbered name pins that experiment.
 #experiment_name: my_experiment
 
 # simulate-and-metrics | metrics-only (retained completed responses)

@@ -893,6 +893,9 @@ def run(
     *,
     simulation_targets=("all",),
     project_dir: Path | None = None,
+    new_experiment: bool = False,
+    note: str | None = None,
+    recover_reservation: bool = False,
 ) -> int:
     """Hold project ownership and record explicit-root validation failures."""
     history_pair = None
@@ -932,6 +935,9 @@ def run(
                 flags=flags,
                 project_dir=resolved_root,
                 history_pair=history_pair,
+                new_experiment=new_experiment,
+                note=note,
+                recover_reservation=recover_reservation,
             )
     except BaseException as error:
         if history_pair is not None and history_pair[1]["status"] == "running":
@@ -951,6 +957,9 @@ def _run_owned(
     flags: Mapping[str, bool],
     project_dir: Path,
     history_pair: tuple[Path, dict[str, Any]] | None = None,
+    new_experiment: bool = False,
+    note: str | None = None,
+    recover_reservation: bool = False,
 ) -> int:
     """Invoke each enabled workflow in fixed order; stop on first nonzero exit
     and return that code (contract (d)). Returns 0 if all enabled workflows
@@ -978,6 +987,31 @@ def _run_owned(
         requested_workflows=[name for name in WORKFLOW_ORDER if flags[name]],
     )
     manifest_path = history_path
+    reservation_context = None
+    try:
+        if not flags["simulate_system"]:
+            if new_experiment or note is not None or recover_reservation:
+                raise ValueError("experiment flags require enabled simulate_system")
+        else:
+            from blueearth_cst.experiment.reservation_context import admit_context_owned
+            from blueearth_cst.experiment.simulation_runner import simulation_command
+
+            simulation_command(config_path, list(simulation_targets), cores, extra)
+            reservation_context = admit_context_owned(
+                Path(config_path),
+                REPO_ROOT,
+                project_dir,
+                history["invocation_id"],
+                execute_generation=flags["generate_scenarios"],
+                execute_model=flags["build_model"],
+                new_experiment=new_experiment,
+                note=note,
+                recover=recover_reservation,
+                preview=manifest["dry_run"] or "--unlock" in extra,
+            )
+    except BaseException as exc:
+        invocation_history.finish(history_path, history, exit_code=None, error=exc)
+        raise
     history["requested_workflows"] = [name for name in WORKFLOW_ORDER if flags[name]]
     history["configuration"].update(
         source_config_sha256=manifest["source_config"]["sha256"],
@@ -1034,6 +1068,8 @@ def _run_owned(
                 # No row: the opening block's sequence diagram already named
                 # every disabled workflow, once, before anything started.
                 continue
+            if reservation_context is not None:
+                reservation_context.recheck()
             position += 1
             tag = f"[{position}/{total}]  {_handoff_label(name)}"
             cmd = build_command(name, config_path, cores, extra)
@@ -1089,6 +1125,10 @@ def _run_owned(
                     cmd, environment = simulation_command(
                         config_path, list(simulation_targets), cores, extra
                     )
+                    if reservation_context is not None:
+                        if not manifest["dry_run"]:
+                            reservation_context.bind_selection()
+                        environment.update(reservation_context.environment())
                     workflow["command"] = sanitize_argv(cmd)
                     child_path, child_record = invocation_history.start(
                         project_dir,
@@ -1212,6 +1252,7 @@ def _run_owned(
                                 extra,
                                 invocation_id=child_id,
                                 history_pair=(child_path, child_record),
+                                reservation_context=reservation_context,
                             ),
                         )
                     else:
@@ -1629,6 +1670,9 @@ def main(argv: list[str] | None = None) -> int:
         nargs=argparse.REMAINDER,
         help="args after `--` are appended verbatim to every invocation",
     )
+    ap.add_argument("--new-experiment", action="store_true")
+    ap.add_argument("--note")
+    ap.add_argument("--recover-reservation", action="store_true")
     args = ap.parse_args(argv)
 
     # argparse.REMAINDER captures the leading `--` sentinel; strip it.
@@ -1643,6 +1687,9 @@ def main(argv: list[str] | None = None) -> int:
             extra,
             simulation_targets=args.simulation_target,
             project_dir=args.project_dir,
+            new_experiment=args.new_experiment,
+            note=args.note,
+            recover_reservation=args.recover_reservation,
         )
     except (ConfigError, PrerequisiteError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)

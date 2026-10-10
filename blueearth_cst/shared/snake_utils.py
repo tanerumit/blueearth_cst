@@ -327,11 +327,8 @@ _WINDOWS_RESERVED_NAMES = frozenset(
 def project_slug(project_dir, reserve: int = 0) -> str:
     """Slugify ``project_dir``'s basename into an experiment-name stem.
 
-    The shared stem behind both naming paths: ``suggest_experiment_name``
-    (which appends a date and writes the result into a config) and the
-    workflow's own unset-key default (which appends a date only when no dated
-    experiment for this project exists yet). Extracted so the two cannot derive
-    a different stem from one ``project_dir``.
+    Legacy stem for dated-name utilities. Current runners select numbered
+    families independently of the project directory's basename.
 
     ``reserve`` is how many characters the caller will append afterwards; the
     stem is truncated to leave room, so the total still fits the length limit.
@@ -352,18 +349,9 @@ def project_slug(project_dir, reserve: int = 0) -> str:
 def suggest_experiment_name(project_dir, today: str) -> str:
     """Suggest an ``experiment_name`` from ``project_dir`` and a date stamp.
 
-    R07 B8. A *suggestion writer*, never a runtime generator: a name derived
-    fresh on every run would make each invocation target a new
-    ``experiments/<id>/``, so nothing would ever be up to date, incremental
-    reruns would be impossible, ``--dry-run`` would mislead, and the baseline
-    gate would have no fixed path. The helper is invoked once, deliberately,
-    and the value it writes is then read as an ordinary config key.
-
-    The workflow's unset-key default (``allocate.resolve_default_experiment_name``)
-    reaches the same name without a config edit, and avoids the trap by
-    **reusing** an existing dated experiment instead of minting today's. This
-    command remains the way to pin a deliberate name, choose one with
-    ``--name``, or start a fresh experiment beside an existing one.
+    This pure legacy utility is retained for callers working with dated names.
+    Execution runners and the suggestion CLI now use numbered reservation
+    selection; they do not call this helper or write a date into configuration.
 
     ``project_dir``'s basename is **slugified**, because it is not guaranteed
     to satisfy the grammar ``validate_experiment_name`` enforces (repo-7):

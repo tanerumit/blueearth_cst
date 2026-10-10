@@ -1,0 +1,154 @@
+{
+  "repository": "blueearth_cst",
+  "commit": "12f43c00398df70d1c8867904dce73239ed749b1",
+  "original_parent": "dev/tasks",
+  "task_id": "t2610032349",
+  "task_tree": "71afebefbfcada4a23eef54f514918a4342472ae",
+  "entries": [
+    {
+      "relative_path": "design-runs/reservation-lifecycle/allocation.md",
+      "sha256": {
+        "git-bytes": "a6ec30934ce24be27f6dffe98da967fed8f1b67ffc83615ac1d37f02c1e57637",
+        "windows-bytes": "26291207b85d4efe5f392ea5512f4de38cd1fc3c639bba1012503b2534bac424"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/combined-review-r1.md",
+      "sha256": {
+        "git-bytes": "355cddddd05bc6976dfd6eaea28a0deb516a9d1ef27aa611a3e1707f2e6c689e",
+        "windows-bytes": "cfd9ca0c70d28a29c6ffd890abda201459f3fdec1a5e3d0a89333adc1f206b6c"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/consumer-inventory.md",
+      "sha256": {
+        "git-bytes": "a8cb9e2b490f0a277475f29ca009bfcbb718fa0454b67a7de0a89f0e515e3b39",
+        "windows-bytes": "88e15860c37ddd4224e82f9240b3df5044a35b6cae9ade75a9b15e07201006ee"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/design-v1.md",
+      "sha256": {
+        "git-bytes": "d061e5ee1f1bc9d3f342a075abd64212bff42562ea12aa6b02036cfa925bf08a",
+        "windows-bytes": "66adc711fd77e2ca610329e857e93e62f1fc4012e1c6f759c3d183d5112bafee"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/design-v2.md",
+      "sha256": {
+        "git-bytes": "f088018393299c5105f26aa2294f3a51d5c77d6de11de1738c53a1d19ee428a5",
+        "windows-bytes": "956af067b4a3f46b0293c03a8082df9e902d82170d29aa2db7f94897313ced99"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/design-v3.md",
+      "sha256": {
+        "git-bytes": "4d1a9a62c8d4e7735dbaccffb2d48115e8dae29a464957bf9015d0f67a76c894",
+        "windows-bytes": "0b0d8b8bcccc363fd74f23994848f910ed2b2dc653a1a0e7c41c391e4ed78106"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/intake.md",
+      "sha256": {
+        "git-bytes": "573dba3f0bdb3688a2db7f33f7d547f3b42200c39e6d1002cb85d2c1da2be155",
+        "windows-bytes": "eb672a32c76ac7a21c1745a575865049bc7b1723f813804ea1155f90165f3f48"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/internal-review-domain.md",
+      "sha256": {
+        "git-bytes": "b706dbfff7475e48c449e949fa2e658e60dd48b9fbe1585eaed3b419b0fe9cad",
+        "windows-bytes": "0205602e8ba3002c837eb57e9fe9e57e6199d09b900a8c416b4f7de3d908c37d"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/internal-review-index.md",
+      "sha256": {
+        "git-bytes": "60028e5ca2775cb32c2828482b38f2b65085e3caafaccacfef786987554aab61",
+        "windows-bytes": "304e6e60291318d850be2e644506a77a042e35300e5b97ef3920bf51cd16b9af"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/ledger.md",
+      "sha256": {
+        "git-bytes": "f1944a249fb90133113dd354783199b863240bef26c1187278f30fa839084e62",
+        "windows-bytes": "bd89e99c7ad7e9133aaafecd89ec681ea764a81a7c30c7f3b97bdfd40ad27813"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/observations.md",
+      "sha256": {
+        "git-bytes": "1f89b2df0dd3348cba253962b40c6eb0924e28f66dff5b907e5d231e74e50400",
+        "windows-bytes": "1cea53a5a01eac283a5a3bb2bc89f6d38f507a587f15a64022165a3ab0551de5"
+      }
+    },
+    {
+      "relative_path": "design-runs/reservation-lifecycle/status.md",
+      "sha256": {
+        "git-bytes": "b65a765cc2ca59c6bf53f93b325c5a70755f760a936898918c0400fead60de39",
+        "windows-bytes": "b9a2a42291434eab09d619c62a92f4c3cf0cfce3e879c22860cab470c414735f"
+      }
+    },
+    {
+      "relative_path": "experiment-naming-plan.md",
+      "sha256": {
+        "git-bytes": "ec1b090e32bb298de6c49e5dc793c2ec2dc0035a3716513f1666db56e434e3c8",
+        "windows-bytes": "82a6a9b1ce28049a7be2df12300f4e0ce084d7bf400391e6293118ce62f1af44"
+      }
+    },
+    {
+      "relative_path": "implementation-evidence.md",
+      "sha256": {
+        "git-bytes": "90c40d43223537114e0edf9fea49831a0534a51b56514132bd4b5590fb8895bb",
+        "windows-bytes": "e373d2361a207b50bb88448a5fc98920b723a87ffba682e1377e2e7bfafac2ba"
+      }
+    },
+    {
+      "relative_path": "phase-0-contract.md",
+      "sha256": {
+        "git-bytes": "98b0eec50c5e5b4591d217585d0e1be4a27c32eaa70c2a9f8590d37acf384490",
+        "windows-bytes": "8bd7d453cd59796bdd25f47275a8e74af24e9074824d49c322bf2e11952e39e8"
+      }
+    },
+    {
+      "relative_path": "phase-1-output-root.md",
+      "sha256": {
+        "git-bytes": "05bc2ba6ee775b11e5264d810070549f0a75cbe4ddd35494d42b5b61cd65ce5b",
+        "windows-bytes": "7e37704f3d535c20d5e0129327ad71bd5ea2b52b82d904e673b4a594c525aa2e"
+      }
+    },
+    {
+      "relative_path": "phase-2-allocation.md",
+      "sha256": {
+        "git-bytes": "5eb9d72b815eac2322993d3dde70bf8e9b251ec4d8973bf6a11d1a62f0428a65",
+        "windows-bytes": "c59af81a1d15e98599179ff8f38abbb6a866655fce2699e9705a9cb9eb3c6ca8"
+      }
+    },
+    {
+      "relative_path": "phase-3-runner-binding.md",
+      "sha256": {
+        "git-bytes": "551ce4d7dae07ee2b3429c3c2a7336254d6e6de41e50f4b6f8dcb0a00c4fae4f",
+        "windows-bytes": "334ca23021397f9552fcd077d08bee4f8b0b4df344215ad03fbf43b07d379c81"
+      }
+    },
+    {
+      "relative_path": "phase-4-docs-acceptance.md",
+      "sha256": {
+        "git-bytes": "9e686a997265960ea0810f2a38cd4575f85e6027a592caad85f4506b0e2d947a",
+        "windows-bytes": "43bd6ecbbe38e1d20576556c671e8ecf0e8b1207050b64c4d40d9d006e05a11c"
+      }
+    },
+    {
+      "relative_path": "task-brief.md",
+      "sha256": {
+        "git-bytes": "b39e246dea00eeba9463926a055f2fd5851b1fa19337b68968276b0f9458337a",
+        "windows-bytes": "111394493fb514ab73ff8cc746308cbf51c33a562b870482b6cb8a33a5bdd92e"
+      }
+    }
+  ],
+  "archive": "original-context.zip",
+  "archive_sha256": "1663e9da4416e88d2178237cd7e3d59b3bbdc6ecf698739678242fb59ffb41d6",
+  "navigation": "dev/reference/repo-layout.md",
+  "accepted_report": "design-runs/reservation-lifecycle/design-v3.md",
+  "acceptance_status": "design-runs/reservation-lifecycle/status.md"
+}

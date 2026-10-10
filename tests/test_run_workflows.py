@@ -24,6 +24,26 @@ class FakeResult:
         self.stdout = stdout
 
 
+@pytest.fixture(autouse=True)
+def wrapper_only_admission(monkeypatch):
+    """Keep these minimal orchestration fixtures outside scientific admission."""
+    from types import SimpleNamespace
+
+    from blueearth_cst.experiment import reservation_context
+
+    monkeypatch.setattr(
+        reservation_context,
+        "admit_context_owned",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            name="test",
+            reservation_id=None,
+            recheck=lambda: None,
+            bind_selection=lambda: None,
+            environment=lambda: {},
+        ),
+    )
+
+
 def _write_cfg(path, flags, project_dir=None):
     """Write a full-orchestration config with the given enabled flags dict.
 

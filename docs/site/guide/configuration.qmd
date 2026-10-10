@@ -210,18 +210,19 @@ data-catalog paths differ from Windows.
 ## Naming an experiment
 
 `experiment_name` in the simulation settings file is optional. If omitted, the
-toolbox assigns a name based on the project and the date of its first run, and
-reuses that experiment for later runs with the same settings.
+first experiment is `stress_test_01`. A custom base such as `dry_scenario` starts
+at `dry_scenario_01`; a numbered name selects that exact experiment.
 
-To choose a name for a new experiment, run this **before its first simulation**:
+Preview selection without changing configuration or reserving a name:
 
 ```bash
 pixi run python scripts/suggest_experiment_name.py <your project file> --name dry_scenario
 ```
 
-The command adds `experiment_name` to the simulation settings file. Use a new
-name when changing the collection, model, or simulation settings; an existing
-experiment keeps the inputs that produced its results.
+Plain execution selects the highest allocated number in the chosen family.
+Use `--new-experiment` on an execution runner to advance it. Changed collection,
+model, or scientific settings require a new experiment; omission of the flag
+refuses the request before producers run. See [running](running.qmd#select-resume-or-create-an-experiment).
 
 ## Next
 

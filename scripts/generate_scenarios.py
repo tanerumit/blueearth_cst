@@ -84,6 +84,7 @@ def run_owned(
     *,
     invocation_id: str,
     history_pair: tuple[Path, dict[str, Any]] | None = None,
+    reservation_context=None,
 ) -> int:
     """Run while the caller holds project-execution ownership."""
     if cores < 1:
@@ -98,6 +99,8 @@ def run_owned(
         "CST_GENERATION_INVOCATION_ID": invocation_id,
     }
     source_env = {**base_env, "CST_GENERATION_PHASE": "source"}
+    if reservation_context is not None:
+        reservation_context.recheck()
     if dry_run:
         source_code = run_project_child(
             command, cwd=REPO_ROOT, env=source_env, writing=False
@@ -123,8 +126,42 @@ def run_owned(
         )
     if Path(config["project"]["project_dir"]).resolve() != project_root:
         raise ValueError("WF3 config project root differs from owned root")
-    settings, candidate, plan = _plan_quietly(config)
-    plan_path, plan_sha256 = publish_plan_pointer(settings, plan)
+    if (
+        reservation_context is None
+        or reservation_context.reservation_id is None
+        or reservation_context.request is None
+    ):
+        settings, candidate, plan = _plan_quietly(config)
+        plan_path, plan_sha256 = publish_plan_pointer(settings, plan)
+    else:
+        from blueearth_cst.experiment.reservation_generation import (
+            select_reserved_plan_owned,
+        )
+
+        reservation_context.recheck()
+        with captured_output():
+            settings, plan, plan_path, plan_sha256, ready = select_reserved_plan_owned(
+                config,
+                REPO_ROOT,
+                project_root,
+                reservation_context.name,
+            )
+        if ready:
+            if history_pair is not None:
+                history_path, history = history_pair
+                history["plan"] = {
+                    "generation_request_id": plan["generation_request_id"],
+                    "plan_sha256": plan_sha256,
+                    "decision": plan["decision"],
+                    "collection_id": plan["collection_id"],
+                }
+                history["configuration"]["archive_state"] = "retained_creator"
+                invocation_history.update(history_path, history)
+            print(
+                f"WF3: retained ready collection {plan['collection_id']}; no generation needed",
+                flush=True,
+            )
+            return 0
     lookup_path = (
         Path(settings["request_path"]).parent
         / "generation/config/stress_test_lookup.csv"
@@ -161,6 +198,8 @@ def run_owned(
         "CST_GENERATION_PLAN_SHA256": plan_sha256,
         "CST_GENERATION_RECEIPT_PATH": str(receipt_path),
     }
+    if reservation_context is not None:
+        reservation_context.recheck()
     return run_project_child(command, cwd=REPO_ROOT, env=generation_env)
 
 

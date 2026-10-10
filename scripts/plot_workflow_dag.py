@@ -119,17 +119,21 @@ def plot_relpath(
     filename are built together because for WF4 they are one decision: the id
     has to appear in exactly one of them, and it is the name.
 
-    A WF4 config carrying no experiment name yields the plain ``_wf4_`` stem:
-    the render is a convenience artifact and must not fail a user's command over
-    a missing optional key.
+    WF4 uses the same advisory numbered selection as the execution runner.
+    Rendering never reserves that selection.
     """
     stem = f"{project_name}_wf{number}"
     if number == 4:
-        experiment = ((config.get("workflows") or {}).get("simulate_system") or {}).get(
-            "experiment_name"
-        )
-        if experiment:
-            stem = f"{stem}_{experiment}"
+        configured_name = (
+            (config.get("workflows") or {}).get("simulate_system") or {}
+        ).get("experiment_name")
+        from blueearth_cst.experiment.reservation_context import resolve_experiment_name
+
+        project_root = Path(
+            (config.get("project") or {}).get("project_dir", project_name)
+        ).resolve()
+        experiment = resolve_experiment_name(project_root, configured_name)
+        stem = f"{stem}_{experiment}"
     return PLOT_SUBDIR / f"{stem}_{mode}.{image_format}"
 
 

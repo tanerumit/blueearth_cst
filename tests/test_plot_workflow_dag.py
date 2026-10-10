@@ -231,7 +231,7 @@ def test_rulegraph_mode_and_format_reach_the_filename(tmp_path, monkeypatch):
     assert pwd.main() == 0
     assert "--rulegraph" in seen["snakemake"]
     assert seen["out"] == str(
-        project_dir / "logs" / "dag" / "gabon_0108_wf4_experiment_rulegraph.svg"
+        project_dir / "logs" / "dag" / "gabon_0108_wf4_experiment_01_rulegraph.svg"
     )
 
 
@@ -278,7 +278,7 @@ def test_wf4_render_carries_its_experiment_in_the_name():
     by name rather than by directory -- as the merged log and benchmark table
     are. Without the id, two experiments in one project overwrite one file."""
     cfg = {"workflows": {"simulate_system": {"experiment_name": "gabon_dry"}}}
-    assert _rel(4, cfg).name == "test_wf4_gabon_dry_dag.png"
+    assert _rel(4, cfg).name == "test_wf4_gabon_dry_01_dag.png"
     other = {"workflows": {"simulate_system": {"experiment_name": "gabon_wet"}}}
     assert _rel(4, cfg) != _rel(4, other)
 
@@ -287,7 +287,7 @@ def test_the_mode_and_format_reach_the_filename():
     cfg = {"workflows": {"simulate_system": {"experiment_name": "gabon_dry"}}}
     assert (
         pwd.plot_relpath(4, "test", cfg, "rulegraph", "svg").name
-        == "test_wf4_gabon_dry_rulegraph.svg"
+        == "test_wf4_gabon_dry_01_rulegraph.svg"
     )
     assert pwd.plot_relpath(1, "test", cfg, "rulegraph", "svg").name == (
         "test_wf1_rulegraph.svg"
@@ -303,10 +303,10 @@ def test_the_mode_and_format_reach_the_filename():
         {"workflows": {"simulate_system": {}}},
     ],
 )
-def test_wf4_falls_back_to_the_bare_name_without_an_experiment_name(cfg):
+def test_wf4_uses_numbered_default_without_an_experiment_name(cfg):
     """A convenience render must not fail a user's command over a missing
     optional key -- including the several ways YAML spells "absent"."""
-    assert _rel(4, cfg) == pwd.Path("logs") / "dag" / "test_wf4_dag.png"
+    assert _rel(4, cfg) == pwd.Path("logs") / "dag" / "test_wf4_stress_test_01_dag.png"
 
 
 def test_the_render_never_lands_under_the_editable_config_root():

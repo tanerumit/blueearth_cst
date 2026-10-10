@@ -8,6 +8,8 @@ make that placement safe -- the snapshot is unreferenced, so no identity moves
 """
 
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -16,6 +18,7 @@ import yaml
 from blueearth_cst.shared.workflow_config_snapshot import (
     SCHEMA_VERSION,
     SNAPSHOT_NAME,
+    archive_lock,
     composed_workflow_section,
     render_snapshot,
     snapshot_bytes,
@@ -28,6 +31,38 @@ from dev.scripts.semantic_tree_diff import (
 )
 
 REPO = Path(__file__).resolve().parents[1]
+
+
+def test_project_lock_contender_waits_without_reading_owned_byte(tmp_path):
+    """A second process waits for ownership instead of failing on Windows read."""
+    code = (
+        "import sys; from pathlib import Path; "
+        "from blueearth_cst.shared.workflow_config_snapshot import archive_lock; "
+        "print('waiting', flush=True); "
+        "\nwith archive_lock(Path(sys.argv[1]), 'project-execution'):"
+        "\n print('owned', flush=True)"
+    )
+    process = None
+    try:
+        with archive_lock(tmp_path, "project-execution"):
+            process = subprocess.Popen(
+                [sys.executable, "-c", code, str(tmp_path)],
+                cwd=REPO,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            assert process.stdout.readline().strip() == "waiting"
+            with pytest.raises(subprocess.TimeoutExpired):
+                process.communicate(timeout=0.5)
+        stdout, stderr = process.communicate(timeout=15)
+        assert process.returncode == 0, stderr
+        assert stdout.strip() == "owned"
+    finally:
+        if process is not None and process.poll() is None:
+            process.kill()
+            process.communicate()
+
 
 PROJECT = {
     "schema_version": 2,

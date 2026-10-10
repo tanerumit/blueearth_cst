@@ -85,7 +85,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     if not root.is_absolute() or not root.is_dir():
         raise ValueError("--cases-root must name an existing absolute directory")
     root = root.resolve()
-    for relative in ("applications", "runs", f"runs/{slug}", f"runs/{slug}/active"):
+    for relative in ("applications", "runs", f"runs/{slug}"):
         candidate = root / relative
         if candidate.is_symlink() or candidate.is_junction():
             raise ValueError(
@@ -101,7 +101,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     if destination.exists() or destination.is_symlink():
         raise ValueError(f"Application already exists: {destination}")
     _confined(destination, root)
-    outputs = _confined(root / "runs" / slug / "active", root)
+    outputs = _confined(root / "runs" / slug, root)
     files: dict[Path, bytes] = {}
     for source in template.rglob("*"):
         if source.is_symlink() or source.is_junction():
@@ -241,7 +241,10 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         "Use `analyze_climate.smk` or `analyze_projections.smk` to preview WF0 or WF2. "
         "Record your configuration choices, commands, and checks in [notes.md](notes.md).\n\n"
         f"## Output folder and results\n\nResults are written to `{outputs.as_posix()}` "
-        "as you run the workflows. Configuration files remain in this application folder.\n\n"
+        "as you run the workflows. Choose another output root with "
+        "`project.project_dir` or `--project-dir` when retaining a separate assessment. "
+        "Existing output folders are not moved or archived. "
+        "Configuration files remain in this application folder.\n\n"
         "| Folder within the output directory | What you will find |\n|---|---|\n"
         "| `config/runs/` | Configuration snapshots and workflow attempt records |\n"
         "| `data/spatial/` | Basin geometry, output locations, and maps |\n"
@@ -309,9 +312,7 @@ def main(argv: list[str] | None = None) -> int:
                     raise
         verb = "Would create" if args.dry_run else "Created"
         print(f"{verb} {destination}")
-        print(
-            f"Outputs: {Path(args.cases_root).resolve() / 'runs' / args.case_slug / 'active'}"
-        )
+        print(f"Outputs: {Path(args.cases_root).resolve() / 'runs' / args.case_slug}")
         print("Next: review settings and preview WF0 from the toolbox root:")
         print(
             f'pixi run python scripts/run_workflows.py --config "{destination.as_posix()}/project_config.yml" --cores 3 -- --dry-run'

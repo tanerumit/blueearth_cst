@@ -7,15 +7,14 @@ and captions live separately beside the nine figures.
 """
 
 import os
-from os.path import join
 from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
 import xarray as xr
 
-from blueearth_cst.climate_analysis.diagnostic_maps import native_grid_extent
 from blueearth_cst.model.forcing_figures import render_forcing_figures
+from blueearth_cst.shared.map_reference import load_reference, reference_arguments
 from blueearth_cst.shared.snake_utils import DEFAULT_WATER_YEAR_ANCHOR
 
 
@@ -25,7 +24,8 @@ def plot_forcing(
     gauges_fn: Optional[Union[str, Path]] = None,
     geoms_dir: Optional[Union[str, Path]] = None,
     anchor: str = DEFAULT_WATER_YEAR_ANCHOR,
-    source_nc: Optional[Union[str, Path]] = None,
+    map_reference: Optional[Union[str, Path]] = None,
+    map_reference_params: Optional[dict] = None,
 ):
     """Write the canonical climate figure set for the wflow forcing.
 
@@ -49,10 +49,30 @@ def plot_forcing(
     anchor : str, optional
         Year-end reporting anchor. The figures use WF0's start-year labels,
         full-year coverage and default tolerated gaps (3 days/month, 15/year).
-    source_nc : str | Path, optional
-        Selected historical climate extraction, whose native cell edges define
-        the map frame. Omitted by legacy direct callers only.
+    map_reference : str | Path
+        Declared historical reference JSON, required before figure publication.
+    map_reference_params : dict
+        Executable params from the shared historical reference rule factory.
     """
+    if map_reference is None or map_reference_params is None:
+        raise ValueError(
+            "Forcing figures require the declared historical map reference"
+        )
+    arguments = reference_arguments(map_reference_params)
+    reference = None
+
+    def validate_current():
+        current = load_reference(map_reference, **arguments)
+        if (
+            reference is not None
+            and current["reference_id"] != reference["reference_id"]
+        ):
+            raise ValueError(
+                "Historical map reference changed during forcing figure preparation"
+            )
+        return current
+
+    reference = validate_current()
     from hydromt_wflow import WflowSbmModel
 
     mod = WflowSbmModel(str(wflow_root), mode="r")
@@ -85,17 +105,15 @@ def plot_forcing(
     if not isinstance(offset, pd.offsets.YearEnd):
         raise ValueError(f"Expected a year-end reporting anchor, got {anchor!r}")
     m0 = offset.month % 12 + 1
-    extent = None
-    if source_nc is not None:
-        with xr.open_dataset(source_nc) as source:
-            field = source["precip"].assign_attrs(
-                longitude_resolution=abs(source.raster.res[0]),
-                latitude_resolution=abs(source.raster.res[1]),
-            )
-            extent = native_grid_extent(field)
     with xr.open_mfdataset(str(forcing_path), chunks={"time": 365}) as forcing:
         return render_forcing_figures(
-            forcing, inside, plot_dir, overlays, m0, map_extent=extent
+            forcing,
+            inside,
+            plot_dir,
+            overlays,
+            m0,
+            reference=reference,
+            validate_current=validate_current,
         )
 
 
@@ -121,9 +139,6 @@ if __name__ == "__main__":
                 gauges_fn=getattr(sm.input, "output_locations", None),
                 geoms_dir=sm.params.geoms_dir,
                 anchor=water_year_end_anchor(sm.params.water_year_start),
-                source_nc=sm.input.source_climate,
+                map_reference=sm.input.map_reference,
+                map_reference_params=dict(sm.params.map_reference_params),
             )
-    else:
-        plot_forcing(
-            wflow_root=join(os.getcwd(), "test_case", "my_project", "hydrology_model")
-        )

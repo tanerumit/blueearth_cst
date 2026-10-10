@@ -1032,6 +1032,7 @@ def save_figure(path, module="plot", fig=None, **kwargs):
     ``Figure.savefig`` (e.g. ``dpi``, ``bbox_inches``). matplotlib is
     imported lazily so this module stays light for the Snakefiles that import it
     only for ``get_config`` / ``stress_test_grid``.
+    The neutral exporter owns parent creation and the explicit-figure save.
 
     **One row per DIRECTORY, not per figure.** A single wf0 plotting rule
     writes 33 figures, and a row each made the figures the bulk of the whole
@@ -1069,10 +1070,16 @@ def save_figure(path, module="plot", fig=None, **kwargs):
     """
     import matplotlib.pyplot as plt
 
-    parent = os.path.dirname(path)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
-    (fig if fig is not None else plt.gcf()).savefig(path, **kwargs)
+    from blueearth_cst.plotting.export import export_figure
+
+    if fig is None:
+        # Preserve failure before gcf creates an implicit figure. The exporter
+        # repeats this idempotent parent creation after resolving the figure.
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        fig = plt.gcf()
+    export_figure(fig, path, **kwargs)
     # Grouped by ABSOLUTE directory, so two callers spelling one directory
     # differently (relative vs absolute, `./plots` vs `plots`) still group. The
     # row is printed from this spelling and relativized by the tee like any

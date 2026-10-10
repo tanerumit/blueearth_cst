@@ -8,6 +8,9 @@ from os.path import join
 from pathlib import Path
 from typing import Union
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd

@@ -11,6 +11,7 @@ from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis.diagnostic_captions import caption
 from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_json
 from blueearth_cst.climate_analysis.figure_naming import figure_filename
+from blueearth_cst.plotting.fundamentals import STYLE, add_caption
 
 
 def render_subbasins(sm, settings, sources):
@@ -117,7 +118,7 @@ def render_subbasins(sm, settings, sources):
             carriers = [s for s, r in results.items() if r["tclim"] is not None]
             if variable == "temp" and len(carriers) < (2 if comparison else 1):
                 continue
-            with plt.rc_context(artists.STYLE):
+            with plt.rc_context(STYLE):
                 fig = artists.CHARTS[form](view)
                 name = figure_filename(dataset, variable, context, f"{id_}_avg")
                 fig.savefig(target / name, dpi=600)
@@ -129,7 +130,7 @@ def render_subbasins(sm, settings, sources):
                 if settings["captioned_figures"]:
                     folder = Path(sm.output.captioned_subbasins)
                     folder.mkdir(parents=True, exist_ok=True)
-                    artists.add_caption(fig, text)
+                    add_caption(fig, text)
                     fig.savefig(folder / name, dpi=600)
                     captioned = f"plots/captioned/subbasins/{name}"
                 plt.close(fig)

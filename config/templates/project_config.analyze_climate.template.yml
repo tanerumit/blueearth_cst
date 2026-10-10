@@ -3,6 +3,8 @@
 subbasin_figures: false
 
 # Optional settings (omitted periods use climate.window):
+# Custom completeness must also be set in the project's climate.map_reference.
+# Shared maps require matching tolerances and at most 27 missing days per month.
 # diagnostics:
 #   reference_period: {start: 1991, end: 2020}
 #   comparison_period: {start: 1991, end: 2020}

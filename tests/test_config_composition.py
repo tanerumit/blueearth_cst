@@ -758,6 +758,17 @@ def test_a_shared_key_planted_in_a_t2_file_is_refused(tmp_path):
     assert "`climate:`" in message
 
 
+@pytest.mark.parametrize("workflow", ["analyze_climate", "build_model"])
+def test_map_reference_policy_is_refused_in_workflow_files(tmp_path, workflow):
+    """Historical map policy is project-owned even when omitted from the project."""
+    project = write_split(
+        tmp_path / "cfg",
+        bodies={workflow: {"map_reference": {"max_missing_days_month": 3}}},
+    )
+    with pytest.raises(ValueError, match="map_reference"):
+        compose(project, workflow)
+
+
 def test_a_frozen_seam_key_absent_from_this_t1_is_still_refused(tmp_path):
     """Why ``SHARED_SEAM_KEYS`` exists rather than deriving from T1 alone.
 

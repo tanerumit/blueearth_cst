@@ -260,8 +260,9 @@ def plot_basavg(
     import json
     from pathlib import Path
 
-    from blueearth_cst.climate_analysis import diagnostic_figures as artists
     from blueearth_cst.climate_analysis import diagnostics as dg
+    from blueearth_cst.plotting import fundamentals
+    from blueearth_cst.plotting import prepared_charts as pc
     from blueearth_cst.shared.plot_evaluation import COLOR_SIMULATED
     from blueearth_cst.shared.wflow_outputs import (
         BASAVG_FIGURE_STEMS,
@@ -303,46 +304,35 @@ def plot_basavg(
             annual, climatology, info = _basavg_statistics(one, meta["kind"])
             trend = dg.sen_trend(annual)
             years = annual.index.to_numpy()
-            view = artists.View(
-                sources=["model"],
-                labels={"model": "Mean"},
-                styles={"model": (COLOR_SIMULATED, "o")},
-                results={
-                    "model": {
-                        "annual": pd.DataFrame({"total": annual}),
-                        "climatology": climatology,
-                        "trends": {"total": trend},
-                    }
-                },
-                years=years,
-                m0=1,
-                reference=(int(years[0]), int(years[-1])),
-                wet_mm=1.0,
-                agreement=pd.DataFrame(),
-                common_years=years,
-            )
+            segments = []
+            eligible = annual.reindex(years).dropna().index.to_numpy()
+            if np.isfinite(trend["slope"]) and eligible.size:
+                span = np.array([eligible[0], eligible[-1]], dtype=float)
+                fitted = trend["intercept"] + trend["slope"] / 10 * span
+                slope_label = f"{trend['slope']:+.1f}".replace("-", "−")
+                segments.append(
+                    pc.TrendSegment(
+                        COLOR_SIMULATED,
+                        tuple(span),
+                        tuple(fitted),
+                        f"{slope_label} {meta['trend_units']}",
+                    )
+                )
             for kind in ("annual_ts", "monthly_clim_band"):
-                with plt.rc_context(artists.STYLE):
+                with plt.rc_context(fundamentals.STYLE):
                     if kind == "annual_ts":
-                        fig, axes = artists.new_fig(artists.H_SINGLE)
+                        fig, axes = fundamentals.new_fig(fundamentals.H_SINGLE)
                         ax = axes[0, 0]
-                        (line,) = ax.plot(
-                            years,
-                            annual,
-                            color=COLOR_SIMULATED,
-                            lw=artists.LW_LINE,
-                            marker="o",
-                            ms=artists.MS_LINE,
-                        )
-                        artists._annual_trends(
+                        (line,) = pc.draw_annual_lines(
                             ax,
-                            view,
-                            "annual",
-                            "total",
-                            "total",
-                            meta["trend_units"],
-                            digits=1,
+                            years,
+                            [
+                                pc.AnnualLine(
+                                    "Mean", COLOR_SIMULATED, "o", annual.to_numpy()
+                                )
+                            ],
                         )
+                        pc.draw_annual_trends(ax, segments, label_x=years[-1] - 0.4)
                         step = 10 if years.size > 35 else 5
                         first = int(years[0] // step * step)
                         ax.set_xlim(first - 0.5, years[-1] + 0.5)
@@ -350,17 +340,30 @@ def plot_basavg(
                         ax.set_xticks(np.arange(first, years[-1] + 1), minor=True)
                         ax.set_ylabel(meta["annual_units"])
                         ax.yaxis.get_major_formatter().set_useOffset(False)
-                        artists.ygrid(ax)
+                        fundamentals.ygrid(ax)
                         line.set_label(
                             "Annual total"
                             if meta["kind"] == "amount"
                             else "Annual mean"
                         )
-                        artists.inside_legend(fig, ax, [line], lines=[line])
+                        fundamentals.inside_legend(fig, ax, [line], lines=[line])
                         available = annual.notna().any()
                     else:
-                        fig = artists._climatology(
-                            view, "climatology", meta["monthly_units"], zero=False
+                        fig = pc.monthly_cycle(
+                            [
+                                pc.MonthlyBand(
+                                    "Mean",
+                                    COLOR_SIMULATED,
+                                    "o",
+                                    climatology["mean"].to_numpy(),
+                                    climatology["p10"].to_numpy(),
+                                    climatology["p90"].to_numpy(),
+                                )
+                            ],
+                            month_labels=fundamentals.MONTH_ABBR,
+                            ylabel=meta["monthly_units"],
+                            band_label="10–90th percentile",
+                            zero=False,
                         )
                         ax = fig.axes[0]
                         available = climatology["mean"].notna().any()

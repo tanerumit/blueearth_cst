@@ -6,7 +6,6 @@ No lab input, page, runner, or output-path machinery is used here.
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
-from textwrap import fill
 
 import matplotlib
 
@@ -21,36 +20,143 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 from blueearth_cst.climate_analysis.diagnostics import SPI_SCALES, month_order
-
-W_COL1, W_PANEL, W_MID, W_FULL = 88.0, 120.0, 140.0, 180.0
-
-
-MM = 1 / 25.4
-
-
-H_SINGLE, H_STACK2, H_SIDE2, H_ROW3, H_GRID4 = 80.0, 110.0, 86.0, 80.0, 142.0
-
-
-OUTER_PAD_X_MM, OUTER_PAD_Y_MM = 4.0, 3.0
-
-
-FS_LABEL, FS_TICK, FS_NOTE = 7, 6, 6
-
-
-INK = "#17303c"
-
-
-MUTED = "#536875"
-
-
-AXIS = "#82939b"
-
-
-GRID = "#e6edef"
-
-
-BOUNDARY = "#c6d2d8"
-
+from blueearth_cst.plotting import prepared_charts as pc
+from blueearth_cst.plotting.fundamentals import (
+    AXIS as AXIS,
+)
+from blueearth_cst.plotting.fundamentals import (
+    BAND_ALPHA as BAND_ALPHA,
+)
+from blueearth_cst.plotting.fundamentals import (
+    BOUNDARY as BOUNDARY,
+)
+from blueearth_cst.plotting.fundamentals import (
+    FS_LABEL as FS_LABEL,
+)
+from blueearth_cst.plotting.fundamentals import (
+    FS_NOTE as FS_NOTE,
+)
+from blueearth_cst.plotting.fundamentals import (
+    FS_TICK as FS_TICK,
+)
+from blueearth_cst.plotting.fundamentals import (
+    GRID as GRID,
+)
+from blueearth_cst.plotting.fundamentals import (
+    H_GRID4 as H_GRID4,
+)
+from blueearth_cst.plotting.fundamentals import (
+    H_ROW3 as H_ROW3,
+)
+from blueearth_cst.plotting.fundamentals import (
+    H_SIDE2 as H_SIDE2,
+)
+from blueearth_cst.plotting.fundamentals import (
+    H_SINGLE as H_SINGLE,
+)
+from blueearth_cst.plotting.fundamentals import (
+    H_STACK2 as H_STACK2,
+)
+from blueearth_cst.plotting.fundamentals import (
+    INK as INK,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LABEL_BOX as LABEL_BOX,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_BOUNDARY as LW_BOUNDARY,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_EDGE as LW_EDGE,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_IQR as LW_IQR,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_LINE as LW_LINE,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_MEAN as LW_MEAN,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_RANGE as LW_RANGE,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_REF as LW_REF,
+)
+from blueearth_cst.plotting.fundamentals import (
+    LW_STEM as LW_STEM,
+)
+from blueearth_cst.plotting.fundamentals import (
+    MM as MM,
+)
+from blueearth_cst.plotting.fundamentals import (
+    MONTH_ABBR as MONTH_ABBR,
+)
+from blueearth_cst.plotting.fundamentals import (
+    MS_LINE as MS_LINE,
+)
+from blueearth_cst.plotting.fundamentals import (
+    MS_POINT as MS_POINT,
+)
+from blueearth_cst.plotting.fundamentals import (
+    MUTED as MUTED,
+)
+from blueearth_cst.plotting.fundamentals import (
+    OUTER_PAD_X_MM as OUTER_PAD_X_MM,
+)
+from blueearth_cst.plotting.fundamentals import (
+    OUTER_PAD_Y_MM as OUTER_PAD_Y_MM,
+)
+from blueearth_cst.plotting.fundamentals import (
+    S_SCATTER as S_SCATTER,
+)
+from blueearth_cst.plotting.fundamentals import (
+    STYLE as STYLE,
+)
+from blueearth_cst.plotting.fundamentals import (
+    W_COL1 as W_COL1,
+)
+from blueearth_cst.plotting.fundamentals import (
+    W_FULL as W_FULL,
+)
+from blueearth_cst.plotting.fundamentals import (
+    W_MID as W_MID,
+)
+from blueearth_cst.plotting.fundamentals import (
+    W_PANEL as W_PANEL,
+)
+from blueearth_cst.plotting.fundamentals import (
+    add_caption as add_caption,
+)
+from blueearth_cst.plotting.fundamentals import (
+    blank as blank,
+)
+from blueearth_cst.plotting.fundamentals import (
+    colourbar as colourbar,
+)
+from blueearth_cst.plotting.fundamentals import (
+    five_year_ticks as five_year_ticks,
+)
+from blueearth_cst.plotting.fundamentals import (
+    heatmap_frame as heatmap_frame,
+)
+from blueearth_cst.plotting.fundamentals import (
+    inside_legend as inside_legend,
+)
+from blueearth_cst.plotting.fundamentals import (
+    new_fig as new_fig,
+)
+from blueearth_cst.plotting.fundamentals import (
+    top_legend as top_legend,
+)
+from blueearth_cst.plotting.fundamentals import (
+    year_ticks as year_ticks,
+)
+from blueearth_cst.plotting.fundamentals import (
+    ygrid as ygrid,
+)
+from blueearth_cst.plotting.prepared_charts import TREND_DASH as TREND_DASH
 
 MISSING = "#a0a0a0"
 
@@ -62,31 +168,6 @@ SOURCE_STYLE = {"era5": ("#236b8e", "o"), "chirps": ("#bf6a3c", "o")}
 
 
 FREE_SLOTS = (("#009E73", "o"), ("#CC79A7", "o"))
-
-
-LW_LINE, LW_MEAN, LW_REF, LW_EDGE, LW_RANGE, LW_IQR, LW_STEM = (
-    1.2,
-    1.5,
-    0.8,
-    0.6,
-    0.8,
-    3.0,
-    1.6,
-)
-
-
-LW_BOUNDARY = 0.9
-
-
-MS_LINE, MS_POINT, S_SCATTER = 3.0, 4.5, 16
-
-
-BAND_ALPHA = 0.18
-
-LABEL_BOX = {"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2}
-
-
-TREND_DASH = (0, (5, 2.5))
 
 
 DODGE = 0.2
@@ -109,60 +190,6 @@ UNITS = {
     "days_decade": "days decade⁻¹",
     "mm_day": "mm d⁻¹",
     "degc": "°C",
-}
-
-
-MONTH_ABBR = (
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-)
-
-
-STYLE = {
-    "font.family": "DejaVu Sans",
-    "mathtext.fontset": "dejavusans",
-    "font.size": FS_LABEL,
-    "axes.titlesize": FS_LABEL,
-    "axes.titleweight": "normal",
-    "axes.titlelocation": "left",
-    "axes.titlecolor": INK,
-    "axes.labelsize": FS_LABEL,
-    "axes.labelcolor": INK,
-    "axes.edgecolor": BOUNDARY,
-    "axes.linewidth": LW_BOUNDARY,
-    "axes.spines.top": True,
-    "axes.spines.right": True,
-    "axes.axisbelow": True,
-    "xtick.color": AXIS,
-    "ytick.color": AXIS,
-    "xtick.labelcolor": MUTED,
-    "ytick.labelcolor": MUTED,
-    "xtick.labelsize": FS_TICK,
-    "ytick.labelsize": FS_TICK,
-    "xtick.major.size": 2.5,
-    "ytick.major.size": 2.5,
-    "xtick.major.width": LW_EDGE,
-    "ytick.major.width": LW_EDGE,
-    "grid.color": GRID,
-    "grid.linewidth": LW_EDGE,
-    "legend.frameon": False,
-    "legend.fontsize": FS_TICK,
-    "legend.title_fontsize": FS_TICK,
-    "legend.labelcolor": INK,
-    "legend.handlelength": 2.0,
-    "figure.facecolor": "white",
-    "savefig.facecolor": "white",
-    "savefig.dpi": 600,
 }
 
 
@@ -249,44 +276,8 @@ class View:
         return self.styles[s][1]
 
 
-def new_fig(
-    height_mm: float, nrows: int = 1, ncols: int = 1, width_mm: float = W_MID, **kw
-):
-    """Constrained-layout figure at its printed size."""
-    fig, axs = plt.subplots(
-        nrows,
-        ncols,
-        figsize=(width_mm * MM, height_mm * MM),
-        layout="constrained",
-        squeeze=False,
-        **kw,
-    )
-    fig.get_layout_engine().set(w_pad=OUTER_PAD_X_MM * MM, h_pad=OUTER_PAD_Y_MM * MM)
-    return fig, axs
-
-
 def dodge(j: int, n: int) -> float:
     return (j - (n - 1) / 2) * DODGE
-
-
-def ygrid(ax: plt.Axes) -> None:
-    ax.grid(axis="y")
-
-
-def year_ticks(ax: plt.Axes, years: np.ndarray, continuous: bool = False) -> None:
-    """Sparse year labels with finer ticks, thinning ticks for long records."""
-    if continuous:
-        ax.set_xlim(years[0], years[-1] + 1)
-    else:
-        ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)
-    step = 10 if years.size > 35 else 5 if years.size > 12 else 2
-    major = np.arange(years[0] + (-years[0]) % step, years[-1] + 1, step)
-    ax.set_xticks(major)
-    tick_step = max(1, int(np.ceil((years[-1] - years[0]) / 60)))
-    ticks = np.arange(years[0] + (-years[0]) % tick_step, years[-1] + 1, tick_step)
-    ax.set_xticks(np.setdiff1d(ticks, major), minor=True)
-    ax.tick_params(axis="x", which="major", length=3, width=LW_EDGE, color=AXIS)
-    ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
 
 
 def month_axis(ax: plt.Axes, m0: int) -> None:
@@ -297,32 +288,6 @@ def month_axis(ax: plt.Axes, m0: int) -> None:
 def heatmap_months(ax: plt.Axes, m0: int) -> None:
     ax.set_ylim(12.5, 0.5)
     ax.set_yticks(range(1, 13), [MONTH_ABBR[m - 1] for m in month_order(m0)])
-
-
-def five_year_ticks(ax: plt.Axes, years: np.ndarray, rotation: int = 0) -> None:
-    """Label five-year marks and show intervening years as short minor ticks."""
-    major = np.arange(years[0] + (-years[0]) % 5, years[-1] + 1, 5)
-    ax.set_xticks(major)
-    ax.set_xticks(np.setdiff1d(years, major), minor=True)
-    ax.tick_params(
-        axis="x",
-        which="major",
-        length=3,
-        width=LW_EDGE,
-        color=AXIS,
-        labelrotation=rotation,
-        labelsize=FS_TICK,
-    )
-    ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
-
-
-def heatmap_frame(ax: plt.Axes) -> None:
-    """Keep the shared soft plot boundary while suppressing heatmap tick marks."""
-    ax.tick_params(length=0)
-
-
-def blank() -> Line2D:
-    return Line2D([], [], lw=0, alpha=0, label=" ")
 
 
 def id_handles(
@@ -343,68 +308,10 @@ def id_handles(
     ]
 
 
-def top_legend(fig: Figure, *rows: list, handler_map: dict | None = None) -> None:
-    """Outside upper-left figure legend; each row stays a row (no column-major interleave)."""
-    rows = [r for r in rows if r]
-    if not rows:
-        return
-    ncols = max(len(r) for r in rows)
-    grid = [r + [blank()] * (ncols - len(r)) for r in rows]
-    handles = [grid[i][j] for j in range(ncols) for i in range(len(grid))]
-    fig.legend(
-        handles=handles,
-        loc="outside upper left",
-        ncols=ncols,
-        handler_map=handler_map,
-        columnspacing=1.2,
-        handletextpad=0.5,
-    )
-
-
 def identity_row(v: View, sources: Sequence[str] | None = None, **kw) -> list:
     """Identity entries, or none for a single source named by the page caption."""
     sources = v.sources if sources is None else sources
     return id_handles(v, sources, **kw) if len(sources) > 1 else []
-
-
-def colourbar(
-    fig: Figure,
-    mesh,
-    axes: list,
-    label: str,
-    ticks: Sequence[float],
-    stack_mm: float,
-    shrink: float = 0.68,
-) -> None:
-    cb = fig.colorbar(
-        mesh,
-        ax=axes,
-        ticks=ticks,
-        spacing="uniform",
-        extendrect=True,
-        pad=0.02,
-        shrink=shrink,
-        anchor=(0.0, 0.0),
-        aspect=max(stack_mm / 3.0, 8),
-    )
-    cb.ax.set_title(label, color=INK, fontsize=FS_TICK, pad=10)
-    cb.outline.set_edgecolor(AXIS)
-    cb.outline.set_linewidth(LW_EDGE)
-    cb.ax.tick_params(
-        labelsize=FS_TICK, labelcolor=MUTED, color=AXIS, width=LW_EDGE, length=2.5
-    )
-
-
-def add_caption(fig: Figure, text: str) -> None:
-    """Reserve a small bottom band for a journal-style caption on a PNG copy."""
-    width = max(75, int(fig.get_figwidth() * 21))
-    wrapped = fill(text, width=width)
-    lines = wrapped.count("\n") + 1
-    extra_mm = 6 + 3.5 * lines
-    fig.set_size_inches(fig.get_figwidth(), fig.get_figheight() + extra_mm * MM)
-    fig.supxlabel(
-        wrapped, x=0.04, ha="left", fontsize=FS_NOTE, color=MUTED, linespacing=1.3
-    )
 
 
 MISSING_KEY = Patch(facecolor=MISSING, edgecolor="none", label="Missing or unavailable")
@@ -477,95 +384,23 @@ def coverage(v: View) -> Figure:
 
 def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
     have = [s for s in v.sources if v.results[s][key] is not None]
-    fig, axs = new_fig(H_SINGLE)
-    ax = axs[0, 0]
-    x = np.arange(12)
-    top = 0.0
-    bands = []
-    lines = []
-    for s in have:
-        c = v.results[s][key]
-        bands.append(
-            ax.fill_between(
-                x, c["p10"], c["p90"], color=v.color(s), alpha=BAND_ALPHA, lw=0
+    return pc.monthly_cycle(
+        [
+            pc.MonthlyBand(
+                v.labels[s],
+                v.color(s),
+                v.marker(s),
+                v.results[s][key]["mean"].to_numpy(),
+                v.results[s][key]["p10"].to_numpy(),
+                v.results[s][key]["p90"].to_numpy(),
             )
-        )
-        lines.extend(
-            ax.plot(
-                x,
-                c["mean"],
-                color=v.color(s),
-                lw=LW_MEAN,
-                marker=v.marker(s),
-                ms=MS_LINE,
-            )
-        )
-        finite = c["p90"].to_numpy()
-        finite = finite[np.isfinite(finite)]
-        if finite.size:
-            top = max(top, float(finite.max()))
-    month_axis(ax, v.m0)
-    if zero:
-        ax.set_ylim(0, max(top * 1.08, 1))
-    else:
-        ax.margins(y=0.08)
-    ax.set_ylabel(ylabel)
-    ygrid(ax)
-    spread = Patch(facecolor=MUTED, alpha=BAND_ALPHA, edgecolor="none")
-    spread.set_label("10–90th percentile")
-    inside_legend(fig, ax, [*id_handles(v, have), spread], bands, lines)
-    return fig
-
-
-def inside_legend(
-    fig: Figure,
-    ax: plt.Axes,
-    handles: list,
-    bands: Sequence = (),
-    lines: Sequence = (),
-) -> None:
-    """Stack legend entries on translucent white in the less occupied top corner."""
-    if not handles:
-        return
-    legend = ax.legend(
-        handles=handles,
-        loc="upper right",
-        ncols=1,
-        frameon=True,
-        facecolor="white",
-        edgecolor="none",
-        framealpha=0.88,
-        borderpad=0.6,
-        labelspacing=0.5,
-        handletextpad=0.5,
+            for s in have
+        ],
+        month_labels=[MONTH_ABBR[m - 1] for m in month_order(v.m0)],
+        ylabel=ylabel,
+        band_label="10–90th percentile",
+        zero=zero,
     )
-    fig.canvas.draw()
-    renderer = fig.canvas.get_renderer()
-    scores = []
-    for location in ("upper right", "upper left"):
-        legend.set_loc(location)
-        box = legend.get_window_extent(renderer)
-        xx, yy = np.meshgrid(
-            np.linspace(box.x0, box.x1, 30), np.linspace(box.y0, box.y1, 20)
-        )
-        points = np.column_stack((xx.ravel(), yy.ravel()))
-        overlap = 0
-        for band in bands:
-            for path in band.get_paths():
-                overlap += path.contains_points(points, band.get_transform()).sum()
-        for line in lines:
-            path = line.get_transform().transform_path(line.get_path())
-            if path.intersects_bbox(box, filled=False):
-                overlap += points.shape[0]
-        for collection in ax.collections:
-            offsets = collection.get_offsets()
-            if offsets.size:
-                positions = collection.get_offset_transform().transform(offsets)
-                overlap += (
-                    sum(box.contains(x, y) for x, y in positions) * points.shape[0]
-                )
-        scores.append((overlap, location))
-    legend.set_loc(min(scores, key=lambda item: item[0])[1])
 
 
 def seasonal(v: View) -> Figure:
@@ -1134,20 +969,48 @@ def series(
     digits: int = 0,
 ) -> Figure:
     """Annual basin series; defaults retain the reviewed precipitation figure."""
-    fig, axs = new_fig(H_SINGLE)
-    ax = axs[0, 0]
+    return pc.annual_series(
+        v.years,
+        [
+            pc.AnnualLine(
+                v.labels[s],
+                v.color(s),
+                v.marker(s),
+                v.results[s]["annual"]["total"].reindex(v.years).to_numpy(),
+            )
+            for s in v.sources
+        ],
+        ylabel=ylabel,
+        trends=_prepared_trends(v, "annual", "total", "total", trend_unit, digits),
+    )
+
+
+def _prepared_trends(
+    v: View,
+    table: str,
+    column: str,
+    metric: str,
+    unit: str,
+    digits: int,
+) -> list[pc.TrendSegment]:
+    """Translate retained estimates using the original eligible endpoint rule."""
+    segments = []
     for s in v.sources:
-        y = v.results[s]["annual"]["total"].reindex(v.years)
-        ax.plot(
-            v.years, y, color=v.color(s), lw=LW_LINE, marker=v.marker(s), ms=MS_LINE
-        )
-    year_ticks(ax, v.years)
-    ax.margins(y=0.08)
-    _annual_trends(ax, v, "annual", "total", "total", trend_unit, digits)
-    ax.set_ylabel(ylabel)
-    top_legend(fig, identity_row(v))
-    ygrid(ax)
-    return fig
+        y = v.results[s][table][column].reindex(v.years)
+        t = v.results[s]["trends"][metric]
+        ok = y.dropna().index.to_numpy()
+        if np.isfinite(t["slope"]) and ok.size:
+            span = np.array([ok[0], ok[-1]], dtype=float)
+            line = t["intercept"] + t["slope"] / 10 * span
+            segments.append(
+                pc.TrendSegment(
+                    v.color(s),
+                    tuple(span),
+                    tuple(line),
+                    f"{fmt_signed(t['slope'], digits)} {unit}",
+                )
+            )
+    return segments
 
 
 def _annual_trends(
@@ -1160,40 +1023,11 @@ def _annual_trends(
     digits: int = 0,
 ) -> None:
     """Draw retained Sen estimates with separated, source-colored slope labels."""
-    labels = []
-    for s in v.sources:
-        y = v.results[s][table][column].reindex(v.years)
-        t = v.results[s]["trends"][metric]
-        ok = y.dropna().index.to_numpy()
-        if np.isfinite(t["slope"]) and ok.size:
-            span = np.array([ok[0], ok[-1]], dtype=float)
-            line = t["intercept"] + t["slope"] / 10 * span
-            ax.plot(span, line, color=v.color(s), lw=LW_REF, ls=TREND_DASH, alpha=0.6)
-            labels.append(
-                [
-                    line[-1],
-                    f"{fmt_signed(t['slope'], digits)} {unit}",
-                    v.color(s),
-                ]
-            )
-    ax.margins(y=0.08)
-    lo, hi = ax.get_ylim()
-    gap = (hi - lo) * 0.07  # keep end labels from overlapping
-    labels.sort(key=lambda r: r[0])
-    for i in range(1, len(labels)):
-        labels[i][0] = max(labels[i][0], labels[i - 1][0] + gap)
-    for y, text, color in labels:
-        ax.annotate(
-            text,
-            (v.years[-1] - 0.4, y),
-            xytext=(-3, 8),
-            textcoords="offset points",
-            ha="right",
-            va="bottom",
-            fontsize=FS_TICK,
-            color=color,
-            bbox=LABEL_BOX,
-        )
+    pc.draw_annual_trends(
+        ax,
+        _prepared_trends(v, table, column, metric, unit, digits),
+        label_x=v.years[-1] - 0.4,
+    )
 
 
 def sensitivity(v: View) -> Figure:

@@ -90,6 +90,12 @@ climate:
   # First month of the water year. Changes every annual statistic.
   #water_year_start: Jan                   # Jan..Dec
 
+  # Optional shared historical map policy. WF0 diagnostic tolerances must match.
+  # Monthly tolerance is an integer from 0 to 27; annual tolerance is nonnegative.
+  #map_reference:
+  #  max_missing_days_month: 3
+  #  max_missing_days_year: 15
+
 
 # -----------------------------------------------------------------------------
 #  MODEL

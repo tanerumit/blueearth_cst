@@ -6,13 +6,17 @@ import pandas as pd
 import xarray as xr
 
 from blueearth_cst.climate_analysis import diagnostics as dg
-from blueearth_cst.climate_analysis.diagnostic_maps import annual_fields
 from blueearth_cst.climate_analysis.diagnostic_outputs import diagnostic_source_outputs
 from blueearth_cst.climate_analysis.diagnostic_settings import carries_temp
 from blueearth_cst.climate_analysis.diagnostic_tables import (
     compute,
     daily_series,
     write_tables,
+)
+from blueearth_cst.climate_analysis.source_map_fields import prepare_source_map_fields
+from blueearth_cst.shared.map_reference import (
+    publish_source_fields,
+    source_spec_from_dict,
 )
 
 
@@ -35,29 +39,16 @@ def run(sm):
     )
     Path(paths["compute"]["daily"]).parent.mkdir(parents=True, exist_ok=True)
     daily.to_csv(paths["compute"]["daily"])
-    with xr.open_dataset(sm.input.climate_nc) as raw:
-        ds = raw
-        if carries_temp(source):
-            from blueearth_cst.climate_analysis.plot_climate_source import (
-                load_source_orography,
-                source_grid_climate,
-            )
-
-            dem = load_source_orography(
-                raw, oro_nc=sm.input.get("oro_nc"), data_sources=sm.params.data_sources
-            )
-            derived = source_grid_climate(raw, dem)
-            # Temporal precip/temp use raw extraction; only PET borrows the derivation.
-            ds = raw[["precip", "temp"]].assign(pet=derived.pet)
-            if not daily.temp.notna().any():
-                ds = ds.assign(
-                    temp=raw.temp * float("nan"), pet=derived.pet * float("nan")
-                )
-        fields = annual_fields(ds, m0, settings)
-        fields.attrs.update(
-            reporting_year_label="start", period_start=period[0], period_end=period[1]
-        )
-        fields.to_netcdf(paths["compute"]["maps"])
+    spec = source_spec_from_dict(sm.params.map_source_spec)
+    prepared = prepare_source_map_fields(spec, m0, dict(sm.params.map_completeness))
+    publish_source_fields(
+        paths["compute"]["maps"],
+        prepared.fields,
+        spec,
+        m0,
+        dict(sm.params.map_completeness),
+        prepared.preparation_identity,
+    )
     if settings["subbasin_figures"]:
         import geopandas as gpd
 

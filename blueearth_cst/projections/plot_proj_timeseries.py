@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from blueearth_cst.climate_analysis.diagnostic_figures import STYLE, add_caption
+from blueearth_cst.plotting.fundamentals import STYLE, add_caption
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
 from blueearth_cst.projections.projection_captions import caption
 from blueearth_cst.projections.projection_figures import (

@@ -38,6 +38,28 @@ Use a compact table in task designs:
 Completed design and review records describe the gates actually used. Their historical command lists
 do not prescribe future work; new tasks use this maintained guidance and the live `AGENTS.md` ladder.
 
+## Pytest temporary directories
+
+Bare `pytest` and Pixi test tasks load the test-directory plugin from `tests/conftest.py`.
+Each invocation creates `.tmp/pytest/run-<unique-id>/` in its own checkout; xdist places worker
+directories beneath that run. The reusable cache lives in `.tmp/pytest/cache/`. Concurrent runs
+never clear one another's default fixture directories. This covers `tmp_path`, `tmpdir` and
+`tmp_path_factory`, not application calls to Python's `tempfile` module.
+
+On Windows, the plugin creates these directories with inherited workspace ACLs. Python's `0700`
+directory mode installs a user/admin-only ACL that denies the restricted sandbox token access;
+moving that directory alone does not fix the failure. POSIX retains pytest's private permissions.
+The adapter uses pytest's internal factory integration; verify the fixture test with `-n 2` after
+pytest upgrades. Existing inaccessible temporary directories are left untouched.
+
+Default run directories remain available for debugging; the usual three-run retention count does
+not prune these unique roots. Review `.tmp/pytest/run-*` after finishing a task and remove only its
+completed runs, after verifying their resolved paths remain inside this checkout's `.tmp/pytest`
+and contain no links. Never clean an active run or delete the shared parent during testing.
+`--basetemp <path>` remains an explicit override with pytest's destructive semantics: pytest clears
+that exact directory before use. Give concurrent invocations different paths. Tests that require a
+path outside the checkout must explicitly choose one; ordinary fixtures now live inside it.
+
 ## Tiering
 
 `test-fast` deselects the `workflow_contract` and `process_isolation` markers. Those tests each spawn a fresh Python process and build a Snakemake DAG, so they cost around fifty times what an ordinary test costs: they are roughly 2% of the suite and the large majority of its runtime. Count them with

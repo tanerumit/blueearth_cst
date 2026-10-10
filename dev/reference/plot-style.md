@@ -79,8 +79,17 @@ temperature and PET. Read the actual model-grid forcing, mask to the model basin
 cell means for temporal figures. Keep the nine `forcing_<variable>_<kind>.png` filenames for now.
 Identify the data as Wflow forcing in legends and captions; use ERA5 blue for this forcing family.
 Maps retain their model-grid footprint and basin mask, with the reviewed coordinate labels, palettes,
-spatial overlays and gauge labels. Source and forcing maps retain independent color limits; identical
-colors alone do not establish equal values.
+spatial overlays and gauge labels. WF0 source and WF1 forcing maps share the historical reference at
+`data/climate/historical/_engine/map_reference.json`. The selected source's outer cell edges determine
+their frame, ticks and fixed midpoint-latitude aspect. Historical candidate cells intersecting this frame
+determine pooled classes; borrowed CHIRPS temperature/PET do not contribute. Native source fields and
+model-grid basin masks retain their scientific support. Common colors do not establish equal periods,
+eligibility policies or PET methods; captions state those differences.
+
+Every available reference colorbar shows both rectangular extensions and reports strict under/over counts
+in captions. The final class includes its upper boundary. Missing cells are gray, outside-model and
+uncovered areas white. With no finite historical scale, finite cells use an unscaled neutral hatch and
+there is no numerical colorbar. Never infer a scale from model forcing or invent a default 0–1 scale.
 Suppress individual model-cell outlines on the fine forcing grid so they do not obscure the field.
 Show cells outside the model basin in white and unavailable summaries inside it in gray.
 
@@ -235,6 +244,14 @@ in this visual review.
   area, slightly smaller than axis text, in gray.
 - Include captions inside the preview canvas when enabled. Add space below the image without resizing
   the plotting area or changing its proportions. Keep caption-to-axis font proportions consistent.
+- `plotting.fundamentals.add_caption(fig, text)` finalizes an already drawn figure for its captioned
+  export. Set `savefig.dpi` to the intended export resolution first. It freezes the drawn axes and
+  decorations, adds a measured bottom band, and restores the original figure DPI. Do not resume layout
+  or resize the figure after this step. Caption wording and metadata remain workflow-owned.
+- Wrap embedded captions to the span of the drawn axes, using measured text width and the existing
+  note font. Keep 3 mm below the caption and 3 mm between its top and the original canvas bottom.
+  Tight-cropped maps retain their original geometry and 2 mm export border; do not resize the map
+  canvas to make room for a caption.
 
 ## Interactive review process
 
@@ -254,8 +271,12 @@ in this visual review.
   repeated figure-name text beneath the plots.
 - Include caption and canvas-boundary toggles, plus the overlay comparison control. Preserve consistent
   physical image scaling so fonts do not grow when the canvas gets smaller and both figures fit together.
-- Below the figures, display only `Path:` followed on a new line by the original figure's parent directory.
-  Keep the full selected file path in the page data so the source remains identifiable.
+- Use the explicit side-by-side/wipe modes and linked zoom/pan controls. Unequal canvases require opting
+  into top-left-aligned wipe; pad at a common scale without stretching either image. The overview uses
+  the pair's declared export dpi (600 by default); both images must use that dpi.
+- Below the figures, display `Path:` followed on a new line by the original figure's parent directory.
+  Keep the full selected file path in the page data so the source remains identifiable. Compact keyboard
+  hints and collapsible control help may follow the path.
 - Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
   applicable plots, and render all affected callers when a shared figure helper changes.
 - Keep figure-specific tests and plotting-only probes temporary under `.tmp/scratchpad/`, outside the
@@ -267,10 +288,43 @@ in this visual review.
 
 ## Implementation entry points
 
-- WF0 artists and shared styles: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
+- Shared drawing fundamentals and reviewed CST preset: `blueearth_cst/plotting/fundamentals.py`.
+- Prepared annual lines, trend segments and monthly bands: `blueearth_cst/plotting/prepared_charts.py`.
+- Explicit-figure export without workflow logging: `blueearth_cst/plotting/export.py`.
+- Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
+- WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
+- Legacy cartographic/evaluation preset and runtime overrides: `blueearth_cst/shared/plot_style.py`.
 - WF0 maps: `blueearth_cst/climate_analysis/diagnostic_maps.py`.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.
+
+For export without workflow logging, pass the figure explicitly and retain the caller's save options:
+
+```python
+from blueearth_cst.plotting.export import export_figure
+
+export_figure(fig, "plots/precip_annual_ts.png", dpi=600, metadata={"Software": None})
+```
+
+The caller closes the figure after its final export. Existing workflow callers keep using `save_figure`.
+
+### Prepared annual and monthly charts
+
+`prepared_charts.annual_series` and `monthly_cycle` draw supplied arrays and return a `Figure`.
+Use `draw_annual_lines` and `draw_annual_trends` on an existing axis when a composition needs its own
+ticks or legend, as WF1 hydrological summaries do. Call within the existing `rc_context(STYLE)` and
+keep that context active through export. The module does not select a backend or install global styles.
+
+Adapters own aggregation, completeness, source order, units, reporting-year alignment and fitted trends.
+`AnnualLine` contains values aligned to the supplied years. `TrendSegment` contains already evaluated
+endpoints and the formatted label; drawing never fits a trend. `MonthlyBand` contains the mean and
+lower/upper arrays in the supplied twelve-month label order. Pass the band's statistical meaning through
+`band_label`; the current adapters use `10–90th percentile` for interannual spread. Drawing neither
+calculates quantiles nor rotates months. Missing values retain gaps; inputs are not mutated.
+
+WF0 keeps its compatible `View` wrappers. WF1 forcing and basin/subbasin summaries prepare the small
+records directly. Existing captions, export options, filenames and scientific calculations remain with
+their workflow adapters. These are internal reusable interfaces; external distribution is a later step.
 
 WF2 review uses the newer artists and retained tables in the `wf0-lab` ensemble outputs as its visual
 baseline. The annual overview, trajectories, change strips, split seasonal products, variability ratios,

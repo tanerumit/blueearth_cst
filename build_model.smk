@@ -377,6 +377,27 @@ SPATIAL_UNITS = spatial_units_rule(
     data_sources=DATA_SOURCES,
 )
 
+from blueearth_cst.shared.map_reference import historical_map_reference_rule
+from blueearth_cst.shared.wf3_science import water_year_start_number
+
+MAP_REFERENCE = historical_map_reference_rule(
+    project_dir=project_dir, model_region=model_region, climate=climate_cfg,
+    data_sources=DATA_SOURCES, region_geojson=REGION.outputs["region_geojson"],
+    basin_geojson=SPATIAL_UNITS.outputs["basins"],
+    m0=water_year_start_number(WATER_YEAR_START),
+    hydrography=basin_hydrography, basin_index=basin_index,
+)
+MAP_CANDIDATE_STORES = {
+    source: climate_store_rule(
+        project_dir=project_dir, model_region=model_region, clim_source=source,
+        historical_window=historical_window, data_sources=DATA_SOURCES,
+        hydrography=basin_hydrography, basin_index=basin_index,
+        enforce_min_years=False,
+        forcing_required=source not in {"chirps", "chirps_global"},
+    )
+    for source in dict.fromkeys(climate_cfg["sources"]) if source != clim_source
+}
+
 # Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` = the
 # rule's position in this workflow's LOGICAL order — data, then model build,
 # then run, then records. Contiguous, and every dependency points from a lower
@@ -460,6 +481,9 @@ LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("1.01", "delineate_region")
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("1.02", "delineate_subbasins_and_rivers")
 EXTRACT_CLIMATE_DATASETS = RULES.logged("1.03", "extract_climate_datasets", summary="clip the global climate dataset to the basin")
+if MAP_CANDIDATE_STORES:
+    EXTRACT_MAP_CANDIDATES = RULES.logged("1.03b", "extract_map_candidates")
+PRODUCE_MAP_REFERENCE = RULES.logged("1.03c", "produce_historical_map_reference")
 PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps")
 BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from global data")
 ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="add waterbodies to the model")
@@ -1175,13 +1199,35 @@ rule plot_basin_map:
         PLOT_BASIN_MAP.benchmark(),
     script: "blueearth_cst/shared/plot_spatial_maps.py"
 
-# 1.12  plot_model_forcing — the canonical climate set for the wflow forcing
-# (parallel leaf). Source-grid diagnostics are owned separately by WF0.
+# 1.03b  extract_map_candidates — native candidates for shared map scales.
+for _source, _spec in MAP_CANDIDATE_STORES.items():
+    rule:
+        name: EXTRACT_MAP_CANDIDATES.job_name(_source)
+        message: EXTRACT_MAP_CANDIDATES.banner(part=_source)
+        input: **_spec.inputs,
+        output: **_spec.outputs,
+        params: **_spec.params,
+        log: EXTRACT_MAP_CANDIDATES.log(_source),
+        benchmark: EXTRACT_MAP_CANDIDATES.benchmark(_source),
+        script: _spec.script
+
+# 1.03c  produce_historical_map_reference — also available with WF0 disabled.
+rule produce_historical_map_reference:
+    message: PRODUCE_MAP_REFERENCE.banner()
+    input: **MAP_REFERENCE.inputs,
+    output: **MAP_REFERENCE.outputs,
+    params: **MAP_REFERENCE.params,
+    log: PRODUCE_MAP_REFERENCE.log(),
+    benchmark: PRODUCE_MAP_REFERENCE.benchmark(),
+    script: MAP_REFERENCE.script
+
+# 1.12  plot_model_forcing — shared historical map display on model forcing.
 rule plot_model_forcing:
     message: PLOT_MODEL_FORCING.banner()
     input:
         forcing_path = f"{basin_dir}/forcing/inmaps_historical.nc",
-        source_climate = CLIMATE_STORE.outputs["climate_nc"],
+        map_reference = MAP_REFERENCE.outputs["reference"],
+        **{key: value for key, value in MAP_REFERENCE.inputs.items() if key != "basins"},
         # ADR 0004; see rule 1.13.
         model_final = ancient(f"{basin_dir}/.model_final"),
         **_locations_input,
@@ -1202,6 +1248,7 @@ rule plot_model_forcing:
         model_dir = basin_dir,
         geoms_dir = SPATIAL_UNITS.spatial_dir + "/geoms",
         water_year_start = WATER_YEAR_START,
+        map_reference_params = dict(MAP_REFERENCE.params),
     log:
         PLOT_MODEL_FORCING.log(),
     benchmark:

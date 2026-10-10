@@ -151,7 +151,7 @@ def test_snakefile_cli_build_model():
 
 
 @pytest.mark.workflow_contract
-def test_snakefile_cli_build_model_linux_config():
+def test_snakefile_cli_build_model_linux_config(tmp_path):
     """The Linux config must still build a DAG after O-01 retired `data/`.
 
     R07 deletes the tracked `data/` tree, whose only live consumers were this
@@ -161,7 +161,13 @@ def test_snakefile_cli_build_model_linux_config():
     config-declared path, so a dangling `gauge_points` would surface here.
     Runs on both CI legs.
     """
-    result = _dry_run("build_model.smk", cfg=linux_config_fn)
+    # Keep all Linux workflow/settings/path bindings; qualify the shared map
+    # producer against a real tiny local DEM rather than requiring the P-drive
+    # production mirror on both CI platforms.
+    cfg = load_composed_config(linux_config_fn)
+    cfg["project"]["catalog"] = "tests/data/tests_data_catalog.yml"
+    staged = write_config(tmp_path, cfg, stem="project_config_linux_parse")
+    result = _dry_run("build_model.smk", cfg=str(staged))
     assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
 
 

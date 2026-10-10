@@ -22,10 +22,9 @@
 # Where tests live, so a bare `pytest` behaves like the documented `pytest tests/`.
 testpaths = ["tests"]
 
-# Out of the repo root and into the one ignored scratch directory (.gitignore's
-# `.tmp/`), which is already where `pytest --basetemp` output goes. Keep in step
-# with [tool.ruff] `cache-dir` below.
-cache_dir = ".tmp/pytest_cache"
+# Tests load dev.scripts.pytest_temp through conftest: unique run directories
+# live beside this reusable cache. See dev/reference/validation-ladder.md.
+cache_dir = ".tmp/pytest/cache"
 
 # Repo root on sys.path. This is the supported declarative replacement for the
 # 29 `sys.path.insert(0, <repo root>)` lines in tests/ -- pytest prepends these

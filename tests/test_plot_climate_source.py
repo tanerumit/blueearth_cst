@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+import yaml
 
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
 from tests.conftest import write_config  # noqa: E402
@@ -174,10 +175,24 @@ def modelfree_project(tmp_path):
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
 
-    # The store producer declares the catalog as its sole input. The dry-run
-    # never opens it, so a minimal valid YAML mapping is sufficient.
+    # The shared reference declares source orography at DAG construction.
+    # Keep that input hermetic without introducing any model-build dependency.
+    orography = tmp_path / "orography.nc"
+    _orography().to_netcdf(orography)
     catalog = tmp_path / "catalog.yml"
-    catalog.write_text("{}\n", encoding="utf-8")
+    catalog.write_text(
+        yaml.safe_dump(
+            {
+                "meta": {"root": tmp_path.as_posix()},
+                "era5_orography": {
+                    "data_type": "RasterDataset",
+                    "uri": orography.name,
+                    "driver": "raster_xarray",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
 
     cfg = load_composed_config(CONFIG_FN)
     cfg["project"]["project_dir"] = project_dir.as_posix()

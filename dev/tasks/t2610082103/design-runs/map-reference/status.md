@@ -231,3 +231,11 @@ separately. Fresh author owned each design; no simultaneous writers, source edit
 Lean retained after the classified local bound correction; all domain/risk corrective deltas were covered
 by the independent review. Future implementation owes PET dependency qualification, full preparation
 closure/environment qualification and the recorded numerical, visual, route, repair and cost evidence.
+
+## Record-only verification
+
+Exact hashes match all frozen designs/reports. Source tree remains clean at 22fbe441.
+Canonical review checkpoint commit: cae00c7e. No software tests owed for task-record-only paths.
+`git diff --cached --check` reported one trailing-whitespace line in the verbatim external report
+(`verdict: approve` followed by the Markdown two-space hard break). Preserve immutable reviewer bytes;
+this record-format exception does not alter the verdict. No code failure or deletion.

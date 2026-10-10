@@ -295,13 +295,13 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             lookup=_v2_lookup.as_posix(),
             yaml=_v2_yaml.as_posix(),
         output:
-            (_v2_data / "series" / "run_{run_id}.nc").as_posix()
+            (_v2_data / "series" / "{run_id}.nc").as_posix()
         wildcard_constraints:
             run_id="|".join(_v2_root_ids + _v2_derived_ids),
         log:
-            PERTURB_CLIMATE_REALIZATIONS.log("run_{run_id}")
+            PERTURB_CLIMATE_REALIZATIONS.log("{run_id}")
         benchmark:
-            PERTURB_CLIMATE_REALIZATIONS.benchmark("run_{run_id}")
+            PERTURB_CLIMATE_REALIZATIONS.benchmark("{run_id}")
         run:
             validate_provider_inputs(
                 V2_PLAN, _v2_root,

@@ -80,7 +80,8 @@ rule derive_system_indicators:
         plan=_metric_set_plan,
     output:
         manifest=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metrics.json"),
-        units=update(f"{results_dir}/metric_sets/{{metric_set_id}}/metric_run_lookup.csv"),
+        units=update(f"{results_dir}/metric_sets/{{metric_set_id}}/group_members.csv"),
+        group_metadata=update(f"{results_dir}/metric_sets/{{metric_set_id}}/group_metadata.csv"),
         environment=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metric_environment.json"),
         # derive_system_indicators copies the checked benchmark report into the set so
         # a reader never needs the installed asset. Declared here because an
@@ -88,7 +89,7 @@ rule derive_system_indicators:
         # --forcerun or partial clean would leave a manifest whose
         # return_level_benchmark.sha256 binds a file that is gone.
         benchmark=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/return_level_benchmark.json"),
-        tables=[update(f"{results_dir}/metric_sets/{{metric_set_id}}/{token}_indicators.csv") for token in METRIC_TOKENS],
+        tables=[update(f"{results_dir}/metric_sets/{{metric_set_id}}/{token}_{scope}_indicators.csv") for token in METRIC_TOKENS for scope in ("run", "group")],
     wildcard_constraints:
         metric_set_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:

@@ -523,7 +523,7 @@ def _validate_catalog_entry(key: str, entry: Any, label: str) -> list[str]:
 
 
 def validate_wg5(cfg: Any) -> list[str]:
-    """WG-5 — a member's hydromt climate data catalog (``run_<run_id>.yml``).
+    """WG-5 — a member's hydromt climate data catalog (``<run_id>.yml``).
 
     One file per member since 2026-08-18, written by rule 3.14 beside that
     member's TOML as a ``temp()`` output. It was one
@@ -534,7 +534,7 @@ def validate_wg5(cfg: Any) -> list[str]:
     N-entry one.
 
     Pinned-as-reliance (design §5.2): OUR emitted subset of the hydromt
-    data-catalog schema — for every ``run_<run_id>`` entry the driver /
+    data-catalog schema — for every prefixed ``run_id`` entry the driver /
     metadata fields ``{uri, driver.name=raster_xarray,
     driver.options.preprocess=harmonise_dims, driver.options.lock=false,
     metadata.crs=4326, metadata.category=meteo, data_type=RasterDataset}``.
@@ -553,7 +553,7 @@ def validate_wg5(cfg: Any) -> list[str]:
         k: v for k, v in cfg.items() if isinstance(k, str) and k.startswith("run_")
     }
     if not entries:
-        diffs.append(f"{label}: no 'run_<run_id>' entries in catalog")
+        diffs.append(f"{label}: no prefixed run IDs in catalog")
     for key in sorted(entries):
         diffs += _validate_catalog_entry(key, entries[key], label)
     return diffs
@@ -812,15 +812,6 @@ def validate_hm5(df: Any) -> list[str]:
     return diffs
 
 
-#: HM-7 perturbation-axis columns, shared by both indicator tables and by the
-#: relational gauge-identity check (which derives its gauge set by subtracting
-#: them). Named once so the two validators cannot drift apart on a rename — they
-#: did not during the 2026-08-05 tavg/prcp rename only because both were edited
-#: in the same commit.
-from blueearth_cst.shared.indicator_tables import (  # noqa: E402
-    metric_grain,
-)
-
 #: The member-index padding width (C27). Imported rather than reimplemented so
 #: the catalog-key expectation below and the Snakefile's own filenames cannot
 #: disagree about how wide an index is. `snake_utils` does not import this
@@ -843,189 +834,15 @@ def validate_hm7(
     unit_id_capacity: int,
     response_request: Mapping,
 ) -> list[str]:
-    """HM-7: exact retained metric keys and stochastic membership (R12 Â§9.2).
-
-    All inputs are parsed retained artifacts. ``locations`` maps variable tokens
-    to the response request's locations, never locations inferred from results.
-    Declarations are the persisted complete metric declarations, as mappings.
-    """
-    import math
-
-    import pandas as pd
-
-    from blueearth_cst.experiment.response_inventory import validate_response_request
-    from blueearth_cst.shared.surface_axes import resolve_unit_design
-
-    label = "HM-7"
-    diffs = []
-    try:
-        validate_response_request(response_request)
-        design, width = resolve_unit_design(unit_index, scenario_table)
-    except (ValueError, KeyError, TypeError) as exc:
-        return [f"{label}: {exc}"]
-    if type(unit_id_capacity) is not int or unit_id_capacity < 1:
-        return [f"{label}: unit_id_capacity must be a positive integer"]
-    if any(int(unit) > unit_id_capacity for unit in design):
-        diffs.append(f"{label}: unit ids exceed collection capacity")
-    if list(scenario_table["run_id"]) != [
-        f"{number:0{width}d}" for number in range(1, len(scenario_table) + 1)
-    ]:
-        diffs.append(
-            f"{label}: scenario run domain is not the complete ordered collection"
-        )
-    if lookup is None:
-        return diffs + [f"{label}: stochastic lookup is required"]
-    diffs.extend(validate_wg2(lookup))
-    lookup_ids = set(lookup["st_id"]) if "st_id" in lookup else set()
-    if set(scenario_table["st_id"]) != lookup_ids | {""}:
-        diffs.append(
-            f"{label}: scenario design coverage differs from lookup plus empty baseline"
-        )
-
-    units = {key: group for key, group in unit_index.groupby("unit_id")}
-    grains = {key: group.iloc[0]["grain"] for key, group in units.items()}
-    evaluated = scenario_table[
-        scenario_table["evaluated"].map(lambda value: value is True or value == "true")
+    """Refuse the retired metric-set/1 surface with an explicit migration path."""
+    return [
+        "HM-7: legacy metric-set/1 artifacts are unsupported; regenerate the "
+        "collection, simulate under a new experiment name, and use metric-set/3"
     ]
-    response_variables = {
-        item["variable"]: item for item in response_request["variables"]
-    }
-    if response_request["run_ids"] != evaluated["run_id"].tolist():
-        diffs.append(f"{label}: response request differs from evaluated scenario rows")
-    if locations != {
-        token: item["locations"] for token, item in response_variables.items()
-    }:
-        diffs.append(
-            f"{label}: location domain differs from the retained response request"
-        )
-    definitions = {}
-    expected_tokens = set()
-    expected = set()
-    bundle_required = False
-    for declaration in declarations:
-        try:
-            name = declaration["name"]
-            token = declaration["required_responses"]["variable"]
-            grain = declaration["grain"]
-            policy = declaration["value_validity"]
-            required_locations = locations[token]
-            response = response_variables[token]
-        except (KeyError, TypeError) as exc:
-            diffs.append(
-                f"{label}: incomplete declaration or response locations: {exc}"
-            )
-            continue
-        requirement = declaration["required_responses"]
-        try:
-            physical_match = (
-                response["units"] == requirement["units"]
-                and response["calendar"] in requirement["calendars"]
-                and pd.Timedelta(response["timestep"]).total_seconds()
-                == requirement["timestep_seconds"]
-                and response["time_label"] == requirement["time_label"]
-                and pd.Timestamp(response["start"]) <= pd.Timestamp(response["end"])
-            )
-        except (ValueError, TypeError, KeyError):
-            physical_match = False
-        if not physical_match:
-            diffs.append(f"{label}: response physical/time basis differs for {name!r}")
-        if name in definitions or metric_grain(token, name) is None:
-            diffs.append(f"{label}: duplicate or unrecognised metric {name!r}")
-        if not name.startswith(token + "_"):
-            diffs.append(f"{label}: metric {name!r} disagrees with variable {token!r}")
-        if grain not in {"run", "bundle"}:
-            diffs.append(f"{label}: invalid declared grain {grain!r}")
-        if policy not in {
-            "finite required; reject invalid GEV fit; no clipping",
-            "finite or native-reduction NaN; refuse infinity; no clipping",
-        }:
-            diffs.append(f"{label}: unsupported value-validity policy {policy!r}")
-        if not required_locations or len(set(required_locations)) != len(
-            required_locations
-        ):
-            diffs.append(f"{label}: response locations must be nonempty and unique")
-        if grain == "bundle":
-            bundle_required = True
-            if declaration.get("bundle_by") not in {"same_design_point", "st_id"}:
-                diffs.append(f"{label}: unsupported stochastic bundle grouping")
-        definitions[name] = declaration
-        expected_tokens.add(token)
-        expected.update(
-            (name, location, unit)
-            for unit, unit_grain in grains.items()
-            if unit_grain == grain
-            for location in required_locations
-        )
-    if not definitions:
-        diffs.append(f"{label}: no selected metric declarations")
-    expected_bundles = {}
-    if bundle_required:
-        for number, (key, group) in enumerate(
-            evaluated.groupby("st_id", sort=True), start=len(scenario_table) + 1
-        ):
-            expected_bundles[f"{number:0{width}d}"] = set(group["run_id"])
-        if "" not in set(evaluated["st_id"]):
-            diffs.append(
-                f"{label}: stochastic bundle metrics require empty-key baseline members"
-            )
-    actual_bundles = {
-        key: set(group["member_run_id"])
-        for key, group in units.items()
-        if grains[key] == "bundle"
-    }
-    if actual_bundles != expected_bundles:
-        diffs.append(
-            f"{label}: bundle unit set or membership differs from selected declarations"
-        )
-    if set(tables) != expected_tokens:
-        diffs.append(f"{label}: indicator token inventory differs from declarations")
-    actual = []
-    for token, table in tables.items():
-        if _columns(table) != list(HM7_COLUMNS):
-            diffs.append(f"{label}: {token} header must be exactly {list(HM7_COLUMNS)}")
-            continue
-        seen_designs = set()
-        for row in table.itertuples(index=False):
-            key = (row.metric, row.location, row.unit_id)
-            actual.append(key)
-            definition = definitions.get(row.metric)
-            if not isinstance(row.unit_id, str) or row.unit_id not in design:
-                diffs.append(f"{label}: unresolved unit_id {row.unit_id!r}")
-                continue
-            seen_designs.add(design[row.unit_id])
-            if (
-                definition is None
-                or definition["required_responses"]["variable"] != token
-            ):
-                diffs.append(
-                    f"{label}: undeclared metric or wrong table for {row.metric!r}"
-                )
-                continue
-            if grains[row.unit_id] != definition["grain"]:
-                diffs.append(f"{label}: metric {row.metric!r} has the wrong unit grain")
-            try:
-                value = float(row.value)
-                finite_required = definition["value_validity"].startswith(
-                    "finite required"
-                )
-                invalid = math.isinf(value) or (finite_required and math.isnan(value))
-            except (ValueError, TypeError):
-                invalid = True
-            if invalid:
-                diffs.append(f"{label}: invalid value for {key!r}")
-        if seen_designs != lookup_ids | {""}:
-            diffs.append(f"{label}: {token} stochastic design coverage is incomplete")
-    if len(actual) != len(set(actual)):
-        diffs.append(f"{label}: globally duplicate result keys")
-    if set(actual) != expected:
-        diffs.append(
-            f"{label}: result keys differ from independent declaration/unit/location set"
-        )
-    return diffs
 
 
-HM7_V2_COLUMNS = ("metric", "location", "run_group_id", "value")
-HM7_V2_LOOKUP_COLUMNS = ("run_group_id", "grain", "run_id")
+HM7_V2_COLUMNS = ("metric", "location", "run_id", "value")
+HM7_V2_LOOKUP_COLUMNS = ("group_id", "run_id")
 
 
 def validate_hm7_v2(
@@ -1036,100 +853,98 @@ def validate_hm7_v2(
     series,
     collection_run_ids,
 ) -> list[str]:
-    """HM-7 for metric-set/2: exact keys and run-group membership.
+    """HM-7 for metric-set/3; table keys are ``<token>_<run|group>``.
 
-    ``manifest`` is the ready ``metrics.json``; ``tables`` maps each token to
-    its parsed ``<token>_indicators.csv``; ``lookup`` is ``metric_run_lookup.csv``.
-    Completeness is checked against sources other than the tables themselves:
-    run groups from the manifest, locations per variable from the response
-    inventory's ``series``, runs from the collection. Metric names cannot be
-    derived independently in /2, so each metric is held to a full
-    location x run-group rectangle for its one grain instead.
+    The historical function name remains for callers. Legacy /2 manifests are
+    refused. Declarations, retained locations and collection runs independently
+    determine exact coverage, including header-only run tables for bundle-only
+    selections and explicit singleton membership.
     """
     import math
 
     label = "HM-7"
-    diffs = []
-    if manifest.get("schema_version") != "metric-set/2":
-        return [f"{label}: not a metric-set/2 marker"]
+    if manifest.get("schema_version") != "metric-set/3":
+        return [
+            f"{label}: expected metric-set/3; legacy mixed-ID sets must be recomputed"
+        ]
     if tuple(lookup.columns) != HM7_V2_LOOKUP_COLUMNS:
-        return [f"{label}: lookup header is not {','.join(HM7_V2_LOOKUP_COLUMNS)}"]
+        return [f"{label}: lookup header is not group_id,run_id"]
+    diffs = []
     rows = [tuple(str(v) for v in row) for row in lookup.itertuples(index=False)]
     declared = [
-        (str(g["run_group_id"]), str(g["grain"]), str(g["run_id"]))
+        (str(g["run_group_id"]), str(g["run_id"]))
         for g in manifest.get("run_groups", [])
+        if g["grain"] == "bundle"
     ]
     if len(rows) != len(set(rows)):
-        diffs.append(f"{label}: duplicate lookup rows")
+        diffs.append(f"{label}: duplicate membership rows")
     if set(rows) != set(declared):
-        diffs.append(f"{label}: lookup differs from the manifest's run groups")
-    groups: dict[str, set] = {}
-    for group, grain, run in rows:
-        if grain not in ("run", "bundle"):
-            diffs.append(f"{label}: unknown grain {grain!r}")
-            continue
-        groups.setdefault((grain, group), set()).add(run)
-    runs = {str(run) for run in collection_run_ids}
-    members = {run for group_runs in groups.values() for run in group_runs}
-    if not members <= runs:
-        diffs.append(f"{label}: lookup names runs outside the collection")
-    run_groups = {g: r for (grain, g), r in groups.items() if grain == "run"}
-    if set(run_groups) != runs or any(r != {g} for g, r in run_groups.items()):
-        diffs.append(f"{label}: run grain is not exactly one group per collection run")
-    by_grain: dict[str, set] = {}
-    for grain, group in groups:
-        by_grain.setdefault(grain, set()).add(group)
-
-    expected_locations: dict[str, set] = {}
+        diffs.append(f"{label}: membership differs from manifest")
+    runs = {str(item["run_id"]) for item in series}
+    if not runs <= set(map(str, collection_run_ids)):
+        diffs.append(f"{label}: evaluated runs are outside the collection")
+    if any(not g.startswith("group_") or r not in runs for g, r in rows):
+        diffs.append(f"{label}: membership has invalid group or run references")
+    if {r for _, r in rows} != runs:
+        diffs.append(f"{label}: group membership does not cover all collection runs")
+    groups = {g for g, _ in rows}
+    expected_locations = {}
     for item in series:
         expected_locations.setdefault(str(item["variable"]), set()).add(
             str(item["location_id"])
         )
-    tokens = {str(entry["token"]) for entry in manifest.get("tables", [])}
-    if set(tables) != tokens:
-        diffs.append(f"{label}: tables differ from the manifest's tokens")
-    for token, table in tables.items():
-        if tuple(table.columns) != HM7_V2_COLUMNS:
-            diffs.append(f"{label}: {token} header is not {','.join(HM7_V2_COLUMNS)}")
+    entries = manifest.get("tables", [])
+    table_names = {f"{entry['token']}_{entry['scope']}" for entry in entries}
+    declarations = manifest.get("declarations", [])
+    tokens = {d["required_responses"]["variable"] for d in declarations}
+    if (
+        table_names != {f"{t}_{scope}" for t in tokens for scope in ("run", "group")}
+        or set(tables) != table_names
+        or len(entries) != len(table_names)
+    ):
+        diffs.append(f"{label}: tables differ from declared token scopes")
+    for entry in entries:
+        token, scope = entry["token"], entry["scope"]
+        table = tables.get(f"{token}_{scope}")
+        if table is None:
+            continue
+        if scope not in ("run", "group") or tuple(table.columns) != (
+            "metric",
+            "location",
+            f"{scope}_id",
+            "value",
+        ):
+            diffs.append(f"{label}: {token}/{scope} table schema differs")
             continue
         keys = [
-            (str(m), str(loc), str(g))
-            for m, loc, g in zip(
-                table["metric"], table["location"], table["run_group_id"]
+            (str(m), str(loc), str(unit))
+            for m, loc, unit in zip(
+                table["metric"], table["location"], table[f"{scope}_id"]
             )
         ]
-        if len(keys) != len(set(keys)):
-            diffs.append(f"{label}: {token} has duplicate keys")
-        locations = {loc for _, loc, _ in keys}
-        if locations != expected_locations.get(token, set()):
+        expected = {
+            (d["name"], loc, unit)
+            for d in declarations
+            if d["required_responses"]["variable"] == token
+            and (scope == "group" or d["grain"] == "run")
+            for loc in expected_locations.get(token, set())
+            for unit in (runs if scope == "run" else groups)
+        }
+        if len(keys) != len(set(keys)) or set(keys) != expected:
             diffs.append(
-                f"{label}: {token} locations differ from the response inventory"
+                f"{label}: {token}/{scope} keys differ from declarations, locations and membership"
             )
-        for metric in sorted({m for m, _, _ in keys}):
-            used = {g for m, _, g in keys if m == metric}
-            grains = [grain for grain, ids in by_grain.items() if used <= ids]
-            if not grains:
-                diffs.append(
-                    f"{label}: {token}/{metric} mixes or names unknown run groups"
-                )
-                continue
-            expected = {
-                (metric, loc, g)
-                for loc in expected_locations.get(token, set())
-                for g in by_grain[grains[0]]
-            }
-            if {k for k in keys if k[0] == metric} != expected:
-                diffs.append(
-                    f"{label}: {token}/{metric} does not cover every location x run group"
-                )
-        for value in table["value"]:
+        bundle_metrics = {d["name"] for d in declarations if d["grain"] == "bundle"}
+        for metric, value in zip(table["metric"], table["value"]):
             try:
-                number = float(value)
+                number = float(value) if value != "" else float("nan")
             except (TypeError, ValueError):
-                diffs.append(f"{label}: {token} has a non-numeric value {value!r}")
+                diffs.append(f"{label}: {token}/{scope} has a non-numeric value")
                 break
-            if math.isinf(number):
-                diffs.append(f"{label}: {token} has an infinite value")
+            if math.isinf(number) or (
+                metric in bundle_metrics and not math.isfinite(number)
+            ):
+                diffs.append(f"{label}: {token}/{scope} violates metric validity")
                 break
     return diffs
 
@@ -1160,7 +975,7 @@ def _st_sort_key(st_id: str):
 
 
 def validate_wg4(ds: Any) -> list[str]:
-    """WG-4 — durable collection forcing (``forcing/run_<run_id>.nc``).
+    """WG-4 — durable collection forcing (``series/<run_id>.nc``).
 
     Pinned surface (design §5.2): a ``(time, lat, lon)`` raster the hydromt
     catalog (WG-5) reads — at least ``precip`` and ``temp`` on an EPSG:4326 grid
@@ -1180,7 +995,7 @@ def validate_wg4(ds: Any) -> list[str]:
     attrs: its CRS travels the CF/rioxarray way, in the ``spatial_ref``
     coordinate's ``crs_wkt`` (``ID["EPSG",4326]``), while ``crs: 4326`` and
     ``category: meteo`` are supplied by the generated **data catalog** —
-    the member's own ``run_<run_id>.yml``, which is exactly where hydromt reads
+    the member's own ``<run_id>.yml``, which is exactly where hydromt reads
     them and exactly what ``validate_wg5`` already pins
     (``metadata.crs`` / ``metadata.category``). Requiring them as file-level
     global attrs asserted the right values on the wrong surface; the pipeline
@@ -1207,7 +1022,7 @@ def validate_wg4(ds: Any) -> list[str]:
 
 
 def validate_wg6(ds: Any) -> list[str]:
-    """WG-6 — prepared forcing content (``inmaps_run_<run_id>.nc``).
+    """WG-6 — prepared forcing content (``inmaps_<run_id>.nc``).
 
     The wf3 twin of ``inmaps_historical.nc`` — the SAME contract as HM-2 (design
     §5.2/§5.3): ``(time, latitude, longitude)`` ``float32`` ``precip`` / ``pet``
@@ -1222,7 +1037,7 @@ def validate_wg6(ds: Any) -> list[str]:
 
 
 def validate_hm6b(ds: Any) -> list[str]:
-    """HM-6b — simulator warm state content (``outstates_run_<run_id>.nc``).
+    """HM-6b — simulator warm state content (``outstates_<run_id>.nc``).
 
     THIN — an unconsumed named sink (design §5.3): nothing in-repo reads it, so
     the contract pins only that it is a wflow state **output** — an
@@ -1420,8 +1235,9 @@ def validate_wg5_catalog_runs(
         or any(
             not isinstance(run, str)
             or not run.isascii()
-            or not run.isdigit()
-            or int(run) < 1
+            or not run.startswith("run_")
+            or not run[4:].isdigit()
+            or int(run[4:]) < 1
             for run in expected
         )
     ):
@@ -1437,13 +1253,11 @@ def validate_wg5_catalog_runs(
         keys = [
             key for key in catalog if isinstance(key, str) and key.startswith("run_")
         ]
-        if keys != [f"run_{intended}"]:
+        if keys != [intended]:
             diffs.append(
-                f"{label}: catalog for {intended!r} must contain only run_{intended}"
+                f"{label}: catalog for {intended!r} must contain only {intended}"
             )
         present.extend(keys)
-    if len(present) != len(set(present)) or set(present) != {
-        f"run_{run}" for run in expected
-    }:
+    if len(present) != len(set(present)) or set(present) != {run for run in expected}:
         diffs.append(f"{label}: aggregate entry keys differ from evaluated run set")
     return diffs

@@ -28,14 +28,14 @@ def test_explicit_selector_uses_v2_reader(tmp_path, monkeypatch):
         collection_resolution,
         "resolve_explicit_collection_v2",
         lambda selector: (
-            (selection, {"schema_version": "scenario-collection/2"})
+            (selection, {"schema_version": "scenario-collection/3"})
             if selector == {"manifest_path": marker}
             else pytest.fail("wrong selector")
         ),
     )
     selected, record = simulation_runner.resolve_selected_collection("unused", tmp_path)
     assert selected == selection
-    assert record["schema_version"] == "scenario-collection/2"
+    assert record["schema_version"] == "scenario-collection/3"
 
 
 def test_project_selector_checks_pinned_candidate(tmp_path, monkeypatch):
@@ -252,7 +252,7 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
     monkeypatch.setattr(
         metric_plan,
         "read_simulation_v2",
-        lambda path: {"schema_version": "simulation/2"},
+        lambda path: {"schema_version": "simulation/3"},
     )
     monkeypatch.setattr(metric_plan, "read_simulation_intent_v2", lambda path: intent)
 

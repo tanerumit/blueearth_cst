@@ -2,7 +2,7 @@
 """Derive a response-surface axis from the stress-test lookup.
 
 **This module is the REFERENCE IMPLEMENTATION of HM-7, not its definition.** No
-rule in this repository calls it: WF3 ends at the reduction, and the consumers
+rule in this repository calls it: WF4 publishes run and group reductions, and the consumers
 that actually draw a surface are out-of-repo (CST-API, the frontend,
 ``csthelpers``). They re-implement from
 ``dev/reference/contracts/hydrological-model-seam.md``, as does this
@@ -282,7 +282,7 @@ DEFAULT_SURFACE = Surface(
 
 
 def read_lookup(lookup_path: Union[str, Path]) -> pd.DataFrame:
-    """Read ``stress_test_lookup.csv`` with ``st_id`` forced to TEXT.
+    """Read ``perturbation_lookup.csv`` with ``st_id`` forced to TEXT.
 
     The dtype is not optional and not defensive: ``pd.read_csv`` with no dtype
     returns ``01`` as ``1``, and under the ``st_0``-absent encoding the resulting
@@ -294,106 +294,58 @@ def read_lookup(lookup_path: Union[str, Path]) -> pd.DataFrame:
 
 
 def read_indicators(indicators_path: Union[str, Path]) -> pd.DataFrame:
-    """Read a successor indicator table with ``unit_id`` forced to TEXT.
+    """Read a group indicator table, preserving textual group and location IDs.
 
-    Sits beside :func:`read_lookup` so the library owns both reads. Consumers
-    preserve ids exactly; membership joins refuse lost padding rather than
-    guessing a different unit's identity.
+    Legacy mixed-ID and individual-run tables are refused by this surface reader.
     """
     import pandas as pd
 
-    return pd.read_csv(indicators_path, dtype={"unit_id": str})
+    table = pd.read_csv(indicators_path, dtype={"group_id": str, "location": str})
+    if list(table.columns) != ["metric", "location", "group_id", "value"]:
+        raise SurfaceMemberMismatchError(
+            "surface indicators must have metric,location,group_id,value; regenerate legacy tables"
+        )
+    return table
 
 
-def resolve_unit_design(unit_index, scenario_table):
-    """Resolve each unit through explicit membership, preserving textual ids.
+def resolve_group_design(group_metadata):
+    """Resolve group IDs directly to declared design keys and suffix width.
 
-    Returns ``(unit_id -> st_id, width)``. Width is discovered from the index,
-    never inferred from a count. A bundle may describe only one design point.
+    Membership is validated by the metric-set reader. This coordinate join does
+    not expand result rows into member runs or infer groups from numeric IDs.
     """
-    if list(unit_index.columns) != ["unit_id", "grain", "member_run_id"]:
+    if list(group_metadata.columns) != ["group_id", "st_id", "is_reference"]:
         raise SurfaceMemberMismatchError(
-            "unit index must have exactly unit_id,grain,member_run_id"
+            "group metadata must have exactly group_id,st_id,is_reference"
         )
-    if not {"run_id", "evaluated", "st_id"} <= set(scenario_table.columns):
-        raise SurfaceMemberMismatchError(
-            "scenario table lacks run_id, evaluated or st_id"
-        )
-    identifiers = list(unit_index["unit_id"])
+    identifiers = list(group_metadata["group_id"])
     if not identifiers or any(
-        not isinstance(value, str)
-        or not re.fullmatch(r"[0-9]+", value)
-        or int(value) < 1
+        not isinstance(value, str) or not re.fullmatch(r"group_0*[1-9][0-9]*", value)
         for value in identifiers
     ):
-        raise LookupKeyWidthError("unit ids must be nonempty positive decimal text")
-    widths = {len(value) for value in identifiers}
+        raise LookupKeyWidthError("group ids must be nonempty prefixed positive text")
+    if len(set(identifiers)) != len(identifiers):
+        raise SurfaceMemberMismatchError("group metadata repeats group IDs")
+    widths = {len(value.removeprefix("group_")) for value in identifiers}
     if len(widths) != 1:
-        raise LookupKeyWidthError("unit index mixes unit_id widths")
-    width = widths.pop()
-    runs = list(scenario_table["run_id"])
-    if len(runs) != len(set(runs)) or any(
-        not isinstance(value, str)
-        or not re.fullmatch(r"[0-9]+", value)
-        or len(value) != width
-        or int(value) < 1
-        for value in runs
-    ):
-        raise SurfaceMemberMismatchError(
-            "scenario run ids must be unique text at index width"
-        )
-    if any(
-        value not in (True, False, "true", "false")
-        for value in scenario_table["evaluated"]
-    ):
-        raise SurfaceMemberMismatchError("scenario evaluated flags must be boolean")
-    scenarios = scenario_table.set_index("run_id")
-    evaluated = {
-        row.run_id
-        for row in scenario_table.itertuples()
-        if row.evaluated is True or row.evaluated == "true"
-    }
-    if any(not isinstance(value, str) for value in scenario_table["st_id"]):
-        raise SurfaceMemberMismatchError(
-            "scenario st_id must be text, with an empty baseline key"
-        )
-    if unit_index.duplicated().any():
-        raise SurfaceMemberMismatchError("unit index repeats membership rows")
+        raise LookupKeyWidthError("group metadata mixes group_id suffix widths")
     resolved = {}
-    run_units = set()
-    for unit, group in unit_index.groupby("unit_id", sort=False):
-        grains = set(group["grain"])
-        members = list(group["member_run_id"])
-        if len(grains) != 1 or not grains <= {"run", "bundle"}:
+    for row in group_metadata.itertuples(index=False):
+        if not isinstance(row.st_id, str):
             raise SurfaceMemberMismatchError(
-                f"unit {unit!r} has invalid or mixed grains"
+                "group st_id must be text, including the empty reference"
             )
-        if not set(members) <= evaluated:
+        flag = row.is_reference
+        if not (
+            type(flag) is bool or (type(flag) is str and flag in {"true", "false"})
+        ):
+            raise SurfaceMemberMismatchError("group is_reference must be boolean")
+        if (flag is True or flag == "true") != (row.st_id == ""):
             raise SurfaceMemberMismatchError(
-                f"unit {unit!r} has unresolved or unevaluated members"
+                "group reference flag differs from its design key"
             )
-        grain = next(iter(grains))
-        if grain == "run":
-            if members != [unit]:
-                raise SurfaceMemberMismatchError(
-                    f"run unit {unit!r} must have one self-membership"
-                )
-            run_units.add(unit)
-        elif int(unit) <= max(map(int, runs)):
-            raise SurfaceMemberMismatchError(
-                "bundle ids must follow the complete collection run domain"
-            )
-        designs = set(scenarios.loc[members, "st_id"])
-        if len(designs) != 1:
-            raise SurfaceMemberMismatchError(
-                f"unit {unit!r} spans more than one design point"
-            )
-        resolved[unit] = next(iter(designs))
-    if run_units != evaluated:
-        raise SurfaceMemberMismatchError(
-            "run units differ from exactly the evaluated scenario rows"
-        )
-    return resolved, width
+        resolved[row.group_id] = row.st_id
+    return resolved, widths.pop()
 
 
 def key_width(lookup_df: pd.DataFrame) -> int:
@@ -865,26 +817,25 @@ def join_axes(
     lookup_df: pd.DataFrame,
     surface: Surface,
     *,
-    unit_index: pd.DataFrame,
-    scenario_table: pd.DataFrame,
+    group_metadata: pd.DataFrame,
 ) -> SurfaceJoin:
     """Place indicator rows on a surface, partitioning the baseline out.
 
-    Join units to scenario design points before grouping. Empty ``st_id`` is
+    Join group IDs directly to group metadata. Empty ``st_id`` is
     the unperturbed baseline. Ids are exact text and are never re-padded.
     """
     key_width(lookup_df)
-    design, width = resolve_unit_design(unit_index, scenario_table)
+    design, width = resolve_group_design(group_metadata)
     baseline_token = ""
     indicators_df = indicators_df.copy()
-    if "unit_id" not in indicators_df or any(
+    if "group_id" not in indicators_df or any(
         not isinstance(value, str) or value not in design
-        for value in indicators_df["unit_id"]
+        for value in indicators_df["group_id"]
     ):
         raise SurfaceMemberMismatchError(
-            "indicator table has unresolved unit_id values"
+            "indicator table has unresolved group_id values"
         )
-    indicators_df["st_id"] = indicators_df["unit_id"].map(design)
+    indicators_df["st_id"] = indicators_df["group_id"].map(design)
 
     indicator_ids = set(indicators_df["st_id"])
     lookup_ids = set(lookup_df["st_id"])

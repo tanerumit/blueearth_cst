@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """Which indicator tables a WF4 metric set emits, derived from ``wflow_outvars``.
 
-CR-2 splits the response-surface results into **one table per output variable**
-instead of the two fixed tables (``q_indicators.csv`` + ``basin_indicators.csv``)
-that preceded it. The set is therefore config-dependent, and four places need to
+Metric-set/3 emits paired **run and group tables per output variable**.
+The set is therefore config-dependent, and four places need to
 agree on it before any of them can run:
 
 - ``simulate_system.smk`` — selected metric-set targets at DAG construction;
@@ -94,8 +93,7 @@ VARIABLE_TOKENS = {
 #: be joined here; a label in one and not the other raises at import.
 OUTPUT_CODES = {VARIABLE_TOKENS[label]: code for label, code in _WFLOW_CODES.items()}
 
-#: Filename suffix shared by every indicator table. ``q_indicators.csv`` keeps the
-#: name it was given in R9, which is why the pattern is token-first.
+#: Filename suffix shared by every scoped, token-first indicator table.
 _TABLE_SUFFIX = "_indicators.csv"
 
 #: The five columns of every indicator table, in order. Fixed regardless of gauge
@@ -459,9 +457,11 @@ def variable_token(outvar: str) -> str:
         ) from None
 
 
-def indicator_table_filename(outvar: str) -> str:
-    """``'river discharge'`` → ``'q_indicators.csv'``."""
-    return f"{variable_token(outvar)}{_TABLE_SUFFIX}"
+def indicator_table_filename(outvar: str, scope: str = "run") -> str:
+    """Return a variable's separate run or group indicator filename."""
+    if scope not in {"run", "group"}:
+        raise ValueError("indicator table scope must be run or group")
+    return f"{variable_token(outvar)}_{scope}{_TABLE_SUFFIX}"
 
 
 def indicator_tables(wflow_outvars) -> dict[str, str]:
@@ -480,5 +480,5 @@ def indicator_tables(wflow_outvars) -> dict[str, str]:
     tables: dict[str, str] = {}
     for outvar in wflow_outvars or []:
         token = variable_token(outvar)
-        tables[token] = f"{token}{_TABLE_SUFFIX}"
+        tables[token] = indicator_table_filename(outvar)
     return tables

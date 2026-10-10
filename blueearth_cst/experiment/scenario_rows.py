@@ -73,9 +73,11 @@ def validate_forest(rows: Sequence[ScenarioRow], *, unit_id_capacity: int) -> No
             f"minimum replacement unit_id_capacity={len(rows)}"
         )
     width = len(str(capacity))
-    expected_ids = [f"{i:0{width}d}" for i in range(1, len(rows) + 1)]
+    expected_ids = [f"run_{i:0{width}d}" for i in range(1, len(rows) + 1)]
     if [row.run_id for row in rows] != expected_ids:
-        raise ValueError("run_id must be the ordered, capacity-padded sequence 1..n")
+        raise ValueError(
+            "run_id must be the ordered, capacity-padded sequence run_1..run_n"
+        )
     by_id = {row.run_id: row for row in rows}
     if len({row.scenario_type for row in rows}) != 1:
         raise ValueError("a scenario table must contain exactly one scenario type")
@@ -152,11 +154,11 @@ def stochastic_rows(
     )
     rows = []
     for rlz in range(1, n_realizations + 1):
-        root_id = f"{len(rows) + 1:0{width}d}"
+        root_id = f"run_{len(rows) + 1:0{width}d}"
         for st in range(st_num + 1):
             rows.append(
                 ScenarioRow(
-                    run_id=f"{len(rows) + 1:0{width}d}",
+                    run_id=f"run_{len(rows) + 1:0{width}d}",
                     derived_from=root_id if st else "",
                     evaluated=True,
                     scenario_type="stochastic",

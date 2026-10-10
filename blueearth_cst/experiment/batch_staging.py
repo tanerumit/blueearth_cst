@@ -53,9 +53,9 @@ def members_from_records(records):
 def _paths(staging, run_id):
     root = Path(staging)
     return (
-        root / f"run_{run_id}.csv",
-        root / f"run_{run_id}.expect",
-        root / f"run_{run_id}.ok",
+        root / f"{run_id}.csv",
+        root / f"{run_id}.expect",
+        root / f"{run_id}.ok",
     )
 
 

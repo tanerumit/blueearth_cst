@@ -37,8 +37,8 @@ STUB = textwrap.dedent(
         if run == fail:
             code = 1
             continue
-        os.replace(out, staging / f"run_{run}.csv")
-        os.replace(staging / f"run_{run}.expect", staging / f"run_{run}.ok")
+        os.replace(out, staging / f"{run}.csv")
+        os.replace(staging / f"{run}.expect", staging / f"{run}.ok")
     sys.exit(code)
     """
 )
@@ -47,17 +47,17 @@ SNAKEFILE = textwrap.dedent(
     """
     import sys
     from blueearth_cst.experiment.batch_staging import run_staged_batch
-    RUNS = ["01", "02", "03"]
+    RUNS = ["run_01", "run_02", "run_03"]
     rule all:
-        input: [f"output/run_{r}.csv" for r in RUNS]
+        input: [f"output/{r}.csv" for r in RUNS]
     rule batch:
         input:
             simulation="simulation.json",
-            tomls=[f"settings/run_{r}.toml" for r in RUNS],
+            tomls=[f"settings/{r}.toml" for r in RUNS],
         output:
-            csvs=[update(f"output/run_{r}.csv") for r in RUNS],
+            csvs=[update(f"output/{r}.csv") for r in RUNS],
         params:
-            records=["0", *[v for r in RUNS for v in (r, f"settings/run_{r}.toml", f"output/run_{r}.csv")]],
+            records=["0", *[v for r in RUNS for v in (r, f"settings/{r}.toml", f"output/{r}.csv")]],
         run:
             run_staged_batch(params.records, input.simulation, "_engine/batch_staging",
                 [sys.executable, "stub.py"])
@@ -85,13 +85,13 @@ def test_a_retry_after_one_failure_runs_only_that_member(tmp_path):
     (tmp_path / "Snakefile").write_text(SNAKEFILE, encoding="utf-8")
     (tmp_path / "stub.py").write_text(STUB, encoding="utf-8")
     (tmp_path / "simulation.json").write_text("{}", encoding="utf-8")
-    for run in ("01", "02", "03"):
-        toml = tmp_path / "settings" / f"run_{run}.toml"
+    for run in ("run_01", "run_02", "run_03"):
+        toml = tmp_path / "settings" / f"{run}.toml"
         toml.parent.mkdir(parents=True, exist_ok=True)
         toml.write_text(f"run = {run}\n", encoding="utf-8")
     staging = tmp_path / "_engine" / "batch_staging"
 
-    failed = _snakemake(tmp_path, STUB_FAIL="02")
+    failed = _snakemake(tmp_path, STUB_FAIL="run_02")
     assert failed.returncode != 0, failed.stdout + failed.stderr
     # Snakemake's cleanup removed every declared output of the failed job ...
     assert not list((tmp_path / "output").glob("run_*.csv"))
@@ -104,7 +104,7 @@ def test_a_retry_after_one_failure_runs_only_that_member(tmp_path):
     retried = _snakemake(tmp_path)
     assert retried.returncode == 0, retried.stdout + retried.stderr
     calls = (tmp_path / "calls.txt").read_text().splitlines()
-    assert calls == ["01,02,03", "02"]
-    for run in ("01", "02", "03"):
-        assert (tmp_path / "output" / f"run_{run}.csv").read_text() == f"csv {run}"
+    assert calls == ["run_01,run_02,run_03", "run_02"]
+    for run in ("run_01", "run_02", "run_03"):
+        assert (tmp_path / "output" / f"{run}.csv").read_text() == f"csv {run}"
     assert not staging.exists()

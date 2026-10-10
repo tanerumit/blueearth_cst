@@ -642,7 +642,7 @@ def publish_generation(
         else []
     )
     marker = {
-        "schema_version": "scenario-collection/2",
+        "schema_version": "scenario-collection/3",
         "canonicalization_id": "collection-canon/1",
         "status": "ready",
         "collection_id": plan["collection_id"],

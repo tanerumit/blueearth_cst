@@ -44,7 +44,7 @@ def _write_metric_plan_fixture(project_dir):
     request_id = content_sha256(request)
     set_id = "a" * 64
     plan = {
-        "schema_version": "metric-request/2",
+        "schema_version": "metric-request/3",
         "request": request,
         "metric_request_id": request_id,
         "metric_set_id": set_id,
@@ -60,7 +60,7 @@ def _write_metric_plan_fixture(project_dir):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_json_bytes(plan))
     marker = {
-        "schema_version": "metric-set/2",
+        "schema_version": "metric-set/3",
         "status": "ready",
         "metric_set_id": set_id,
         "response_inventory": {"sha256": "b" * 64},
@@ -100,10 +100,12 @@ def _write_target(path: str, kind: str) -> None:
         # A long indicator table (R11 Q8). Two groups so the per-group tolerance
         # has something to group by; the comparator's own cases live in
         # tests/test_check_baseline_indicator.py.
-        rows = ["metric,location,unit_id,value"]
+        scope = "run" if p.name.endswith("_run_indicators.csv") else "group"
+        rows = [f"metric,location,{scope}_id,value"]
         for metric, base in (("q_mean", 10.0), ("q_low", 0.5)):
             rows += [
-                f"{metric},101,{i + 1:02d},{base * (1.0 + 0.1 * i)!r}" for i in range(5)
+                f"{metric},101,{scope}_{i + 1:02d},{base * (1.0 + 0.1 * i)!r}"
+                for i in range(5)
             ]
         p.write_text("\n".join(rows) + "\n")
     else:  # pragma: no cover - guard against a new untested kind
@@ -124,6 +126,30 @@ def test_baseline_metric_plan_refuses_legacy_fallback_and_ambiguity(tmp_path):
     another = plan.parent / ("c" * 12 + ".json")
     another.write_bytes(plan.read_bytes())
     with pytest.raises(ValueError, match="found 2"):
+        cb.resolve_metric_set_dir(str(tmp_path))
+
+
+@pytest.mark.parametrize("artifact", ["plan", "marker"])
+def test_baseline_reader_refuses_legacy_schema_even_with_valid_digest(
+    tmp_path, artifact
+):
+    from blueearth_cst.experiment.content_identity import (
+        canonical_json_bytes,
+        content_sha256,
+    )
+
+    plan, marker = _write_metric_plan_fixture(str(tmp_path))
+    path = plan if artifact == "plan" else marker
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["schema_version"] = (
+        "metric-request/2" if artifact == "plan" else "metric-set/2"
+    )
+    digest_key = "request_sha256" if artifact == "plan" else "metrics_manifest_sha256"
+    document[digest_key] = content_sha256(
+        {k: v for k, v in document.items() if k != digest_key}
+    )
+    path.write_bytes(canonical_json_bytes(document))
+    with pytest.raises(cb.BaselineFixtureError, match="regenerate the legacy fixture"):
         cb.resolve_metric_set_dir(str(tmp_path))
 
 
@@ -177,7 +203,7 @@ def _check_ns(
 
 @pytest.fixture
 def project(tmp_path):
-    """A synthetic project dir with all 10 targets present + a recorded manifest.
+    """A synthetic project dir with all 11 targets present + a recorded manifest.
 
     Returns (project_dir, manifest_path). Both point under tmp_path.
     """
@@ -195,7 +221,7 @@ def project(tmp_path):
 
 
 def test_targets_tagged_with_expected_cardinality():
-    """The shipping TARGETS carry the 4/5/1 workflow tags the count math relies on.
+    """The shipping TARGETS carry the 4/5/2 workflow tags the count math relies on.
 
     `build_model` gained the beyond-`rule all` discharge target, then dropped
     one again on 2026-08-10: the evaluation hydrograph is keyed by `wflow_id`
@@ -203,18 +229,19 @@ def test_targets_tagged_with_expected_cardinality():
     template target. Its `png` kind is still exercised by `elevation_basin.png` and
     `forcing_precip_map.png`, and the run's NUMBERS are covered by `output.csv`
     and `performance_metrics.csv`, which the baseline does track.
-    `simulate_system` dropped from 3 to 2 at R11 CR-2: `basin_indicators.csv`
+    Historically, `simulate_system` dropped from 3 to 2 at R11 CR-2: `basin_indicators.csv`
     no longer exists, and the seed config declares only `river discharge`, so it
     emits one indicator table. A project configuring more output variables gets
     more tables — but this list describes the SEED tree, which is why the number
     is pinned here rather than derived. It dropped to 1 on 2026-09-17 when
     `simulation.json` was removed (`t2609171739`); see the test below.
+    Split run/group contracts now require two numeric targets.
     """
     counts = Counter(workflow for workflow, _kind, _template in cb.TARGETS)
     assert counts == {
         "build_model": 4,
         "analyze_projections": 5,
-        "simulate_system": 1,
+        "simulate_system": 2,
     }
 
 
@@ -225,7 +252,7 @@ def test_simulation_json_is_never_a_target():
     ever pass in the checkout that recorded it; everywhere else it is a standing
     FAIL that says nothing about the tree, which trains the reader to discount
     real failures. Measured before removal: 7 of 20 leaf keys differed between
-    two successor trees and none was result-bearing, while `q_indicators.csv`
+    two successor trees and none was result-bearing, while `q_group_indicators.csv`
     over those same two trees was exactly equal.
 
     This is a negative assertion on purpose. The file is a reasonable-LOOKING
@@ -241,7 +268,7 @@ def test_simulation_json_is_never_a_target():
 
 def test_scoped_count_is_selected_not_full(project, capsys):
     """`--workflow build_model --workflow analyze_projections` reports nine
-    of the ten targets, not the full set."""
+    of the eleven targets, not the full set."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(
@@ -282,7 +309,7 @@ def test_unselected_missing_target_ignored(project, capsys):
     """An unselected (workflow-3) target missing on disk is ignored by a scoped
     check -> returns 0, count stays nine."""
     project_dir, manifest_path = project
-    victim = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
+    victim = cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
     Path(victim).unlink()
 
     rc = cb.cmd_check(
@@ -299,10 +326,10 @@ def test_unselected_missing_target_ignored(project, capsys):
 
 
 def test_unscoped_record_writes_all_targets(project):
-    """An unscoped record with --include-figures writes all ten (overwrite)."""
+    """An unscoped record with --include-figures writes all eleven (overwrite)."""
     project_dir, manifest_path = project
     written = json.loads(Path(manifest_path).read_text())
-    assert len(written["targets"]) == 10
+    assert len(written["targets"]) == 11
     assert written["version"] == cb.MANIFEST_VERSION
 
 
@@ -316,7 +343,7 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
         "{clim_project_dir}/summary/{clim_project}_change_factors_annual.csv",
         project_dir,
     )
-    exp_path = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
+    exp_path = cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
     cp_before, exp_before = before[cp_path], before[exp_path]
 
     # Mutate a wf1 target AND a wf2 target on disk; then merge-record only wf1.
@@ -336,7 +363,7 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
     assert rc == 0
     after = json.loads(Path(manifest_path).read_text())["targets"]
 
-    assert len(after) == 10  # nothing dropped
+    assert len(after) == 11  # nothing dropped
     assert after[cp_path] == cp_before  # wf2 row preserved verbatim
     assert after[exp_path] == exp_before  # wf3 row preserved verbatim
     # wf1 discharge row re-recorded against the mutated series.
@@ -345,14 +372,14 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
 
 
 def test_unscoped_check_spans_all_targets(project, capsys):
-    """`check --include-figures` with no `--workflow` spans all 10 targets."""
+    """`check --include-figures` with no `--workflow` spans all 11 targets."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=None, include_figures=True)
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 10 target(s)" in out
+    assert "OK - 11 target(s)" in out
 
 
 # --- figure targets are excluded by default (2026-08-03) ----------------------
@@ -534,7 +561,7 @@ def test_an_unusable_metric_fixture_raises_a_typed_error(project, tmp_path):
         plan.unlink()
 
     with pytest.raises(cb.BaselineFixtureError):
-        cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
+        cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
 
     assert issubclass(cb.BaselineFixtureError, ValueError)
 
@@ -553,7 +580,7 @@ def test_the_three_exit_codes_are_distinct():
 #
 # A recorded row whose path no longer resolves used to be dropped by the
 # `p in in_scope_paths` filter with nothing said. That is how the real manifest
-# stopped comparing `q_indicators.csv`: `t2609152107` shortened every
+# stopped comparing `q_group_indicators.csv`: `t2609152107` shortened every
 # content-digest segment to twelve characters, the 64-hex row stopped matching,
 # and `simulate_system` went on reporting a verdict computed from one target.
 # The row is not out of scope -- it BELONGS to the scope and cannot be reached,
@@ -572,7 +599,7 @@ def _orphan_the_metric_row(manifest_path, keep_template=False):
     re-keyed at check time and found; that is the fix, and it has its own test.
     """
     manifest = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
-    key = next(k for k in manifest["targets"] if k.endswith("q_indicators.csv"))
+    key = next(k for k in manifest["targets"] if k.endswith("q_group_indicators.csv"))
     parts = key.split("/")
     parts[-2] = "a" * 64
     orphan = "/".join(parts)
@@ -614,7 +641,7 @@ def test_the_template_key_wins_over_the_literal_key(project):
     recorded = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
     rekeyed = cb.rekey_by_template(recorded["targets"], project_dir)
 
-    resolved = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
+    resolved = cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
     assert resolved in rekeyed
     assert not [k for k in rekeyed if "a" * 64 in k]
 
@@ -666,14 +693,14 @@ def test_other_scopes_are_not_disturbed_by_an_orphan(project, capsys):
 def test_a_pattern_accepts_any_segment_length(project):
     """The matcher must recognise the OLD length, which is the case it exists for."""
     project_dir, _ = project
-    pattern = cb.target_pattern("{metric_set_dir}/q_indicators.csv", project_dir)
+    pattern = cb.target_pattern("{metric_set_dir}/q_group_indicators.csv", project_dir)
     # Posix-normalised, as the matcher normalises both sides -- on Windows the
     # recorded keys mix separators (see `target_pattern`).
     root = cb._posix(project_dir)
     base = f"{root}/experiments/{cb.EXPERIMENT_NAME}/results/metric_sets"
 
-    assert pattern.match(f"{base}/{'a' * 64}/q_indicators.csv")
-    assert pattern.match(f"{base}/{'a' * 12}/q_indicators.csv")
+    assert pattern.match(f"{base}/{'a' * 64}/q_group_indicators.csv")
+    assert pattern.match(f"{base}/{'a' * 12}/q_group_indicators.csv")
     assert not pattern.match(f"{base}/{'a' * 12}/other.csv")
 
 

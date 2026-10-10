@@ -565,8 +565,8 @@ def build_project_tree_rules(
         "return_level_benchmark.json",
     ):
         same_rx(rf"experiments/{exp}/_engine/metric_sets/{digest}/{re.escape(leaf)}")
-    same_rx(rf"{metric_set}/metric_run_lookup\.csv")
-    same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_indicators\.csv")
+    same_rx(rf"{metric_set}/group_(members|metadata)\.csv")
+    same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_(run|group)_indicators\.csv")
     native = rf"experiments/{exp}/hydrology/wflow"
     same_rx(rf"{native}/run_settings/run_[0-9]+\.(toml|yml|temporal\.json)")
     same(f"experiments/{e}/hydrology/wflow/run_settings/forcing_elevation_catalog.yml")

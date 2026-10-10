@@ -119,7 +119,7 @@ def test_the_fixture_is_a_ready_v2_experiment_wherever_it_is_copied(experiment):
     assert not (root / "config/simulation.json").exists()
     assert read_simulation_v2(root)["status"] == "ready"
     assert read_response_inventory_v2(root)["schema_version"] == (
-        "response-inventory/2"
+        "response-inventory/3"
     )
     marker = read_collection_v2(experiment.collection_marker)
     assert [item["run_id"] for item in marker["series"]] == list(RUN_IDS)
@@ -128,14 +128,17 @@ def test_the_fixture_is_a_ready_v2_experiment_wherever_it_is_copied(experiment):
 def test_a_v2_metric_set_publishes_once_and_is_reused_byte_for_byte(experiment):
     root = experiment.root
     plan = _plan(root)
-    assert plan["schema_version"] == "metric-request/2"
-    assert len(plan["expected_result_keys"]) == 2
+    assert plan["schema_version"] == "metric-request/3"
+    assert len(plan["expected_result_keys"]) == 4
     assert plan["units"] == [
         {"run_group_id": run, "grain": "run", "run_id": run} for run in RUN_IDS
+    ] + [
+        {"run_group_id": f"group_{i}", "grain": "bundle", "run_id": run}
+        for i, run in enumerate(RUN_IDS, 1)
     ]
     manifest = publish_metric_set(root, plan)
     marker = _engine(root, plan) / "metrics.json"
-    assert (_result(root, plan) / "gwr_indicators.csv").is_file()
+    assert (_result(root, plan) / "gwr_run_indicators.csv").is_file()
     files = sorted(
         p for d in (marker.parent, _result(root, plan)) for p in d.rglob("*")
     )
@@ -180,7 +183,7 @@ def test_an_xclim_revision_changes_only_the_metric_identity(bare, monkeypatch):
 
 
 def test_a_changed_native_response_byte_refuses_planning(experiment):
-    native = experiment.root / f"hydrology/wflow/output/run_{RUN_IDS[0]}.csv"
+    native = experiment.root / f"hydrology/wflow/output/{RUN_IDS[0]}.csv"
     original = native.read_bytes()
     native.write_bytes(original.replace(b",3\n", b",4\n"))
     assert native.read_bytes() != original
@@ -191,8 +194,52 @@ def test_a_changed_native_response_byte_refuses_planning(experiment):
 def test_a_tampered_published_table_is_refused_on_read(published):
     root, marker, result = published
     read_metric_set(root, marker)
-    table = result / "gwr_indicators.csv"
+    table = result / "gwr_run_indicators.csv"
     table.write_bytes(table.read_bytes() + b"gwr_mean,9,1,0\n")
+    with pytest.raises(ImmutableMetricSetError):
+        read_metric_set(root, marker)
+
+
+@pytest.mark.parametrize(
+    "defect", ["legacy", "scope", "missing_metric", "membership", "metadata"]
+)
+def test_rehashed_contract_corruption_is_refused(published, defect):
+    """Valid file hashes cannot disguise invalid semantics or old layouts."""
+    from blueearth_cst.shared.provenance import file_sha256
+
+    root, marker, result = published
+    manifest = read_metric_set(root, marker)
+    if defect == "legacy":
+        manifest["schema_version"] = "metric-set/2"
+    elif defect in {"scope", "missing_metric"}:
+        entry = next(item for item in manifest["tables"] if item["scope"] == "run")
+        path = result / "gwr_run_indicators.csv"
+        with path.open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            fields, rows = reader.fieldnames, list(reader)
+        if defect == "scope":
+            rows[0]["run_id"] = "group_1"
+        else:
+            rows.pop()
+        with path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+        entry["file"]["sha256"] = file_sha256(path)
+    else:
+        name = "group_members" if defect == "membership" else "group_metadata"
+        path = result / f"{name}.csv"
+        path.write_text(
+            path.read_text(encoding="utf-8").replace("run_1", "run_99")
+            if defect == "membership"
+            else path.read_text(encoding="utf-8").replace("true", "false"),
+            encoding="utf-8",
+        )
+        manifest[name]["sha256"] = file_sha256(path)
+    manifest["metrics_manifest_sha256"] = content_sha256(
+        {k: v for k, v in manifest.items() if k != "metrics_manifest_sha256"}
+    )
+    marker.write_bytes(canonical_json_bytes(manifest))
     with pytest.raises(ImmutableMetricSetError):
         read_metric_set(root, marker)
 
@@ -209,8 +256,8 @@ def test_tampered_return_level_evidence_is_refused_on_read(published):
         read_metric_set(root, marker)
 
 
-def test_a_set_published_before_evidence_was_retained_stays_readable(published):
-    """Sets published before 2026-10-04 carry no evidence key at all."""
+def test_new_sets_require_return_level_evidence(published):
+    """The /3 schema requires explicit return-level evidence, even when empty."""
     root, marker, _ = published
     manifest = read_canonical_json(marker)
     del manifest["return_level_evidence"]
@@ -218,7 +265,8 @@ def test_a_set_published_before_evidence_was_retained_stays_readable(published):
         {k: v for k, v in manifest.items() if k != "metrics_manifest_sha256"}
     )
     marker.write_bytes(canonical_json_bytes(manifest))
-    assert read_metric_set(root, marker) == manifest
+    with pytest.raises(ImmutableMetricSetError):
+        read_metric_set(root, marker)
 
 
 def test_only_metrics_json_is_read_as_the_engine_marker(published):
@@ -232,7 +280,9 @@ def test_only_metrics_json_is_read_as_the_engine_marker(published):
 def test_a_table_renamed_in_the_manifest_is_refused(published):
     root, marker, result = published
     manifest = read_metric_set(root, marker)
-    (result / "alternate.csv").write_bytes((result / "gwr_indicators.csv").read_bytes())
+    (result / "alternate.csv").write_bytes(
+        (result / "gwr_run_indicators.csv").read_bytes()
+    )
     manifest["tables"][0]["file"]["path"] = (
         f"results/metric_sets/{result.name}/alternate.csv"
     )
@@ -316,8 +366,8 @@ def _other_field(plan, origin):
 
 def _mixed_roots(plan, origin):
     """One target keeps its tail but under a third root."""
-    target = plan["targets"]["gwr"]
-    plan["targets"]["gwr"] = "C:/elsewhere" + target[len(origin.as_posix()) :]
+    target = plan["targets"]["gwr_run"]
+    plan["targets"]["gwr_run"] = "C:/elsewhere" + target[len(origin.as_posix()) :]
 
 
 @pytest.mark.parametrize(
@@ -386,7 +436,7 @@ def test_metrics_only_reads_the_anchor_and_asserts_the_retained_collection(
 # --- thirty years of discharge: real GEV fits and class-C month means --------
 
 _TIME = pd.date_range("2046-01-01", "2075-12-31", freq="D")
-_FACTORS = {"1": 1.0, "2": 1.5}
+_FACTORS = {"run_1": 1.0, "run_2": 1.5}
 
 
 def _discharge_frames():
@@ -449,46 +499,66 @@ def test_q_bundles_and_class_c_use_exact_units_and_shared_reference(
     frames = _discharge_frames()
     root = build_v2_experiment(tmp_path, _discharge_responses(frames), capacity=9).root
     plan = _plan(root, ("q",))
-    assert plan["bundle_run_group_ids"] == {"": "3", "1": "4"}
+    assert plan["bundle_run_group_ids"] == {"": "group_1", "1": "group_2"}
     assert plan["units"] == [
         {"run_group_id": unit, "grain": grain, "run_id": run}
         for unit, grain, run in (
-            ("1", "run", "1"),
-            ("2", "run", "2"),
-            ("3", "bundle", "1"),
-            ("4", "bundle", "2"),
+            ("run_1", "run", "run_1"),
+            ("run_2", "run", "run_2"),
+            ("group_1", "bundle", "run_1"),
+            ("group_2", "bundle", "run_2"),
         )
     ]
     for which, month in (("wet", 7), ("dry", 1)):
         reference = plan["resolved_references"][which]
         assert reference["month"] == month
         assert reference["reference_location_id"] == "9"
-        assert reference["run_ids"] == ["1"]
+        assert reference["run_ids"] == ["run_1"]
     publish_metric_set(root, plan)
     with open(
-        _result(root, plan) / "q_indicators.csv", encoding="utf-8", newline=""
+        _result(root, plan) / "q_run_indicators.csv", encoding="utf-8", newline=""
     ) as handle:
         results = list(csv.DictReader(handle))
-    keys = [[r["metric"], r["location"], r["run_group_id"]] for r in results]
-    assert sorted(keys) == plan["expected_result_keys"]
+    keys = [[r["metric"], r["location"], r["run_id"]] for r in results]
+    assert sorted(keys) == [
+        key for key in plan["expected_result_keys"] if key[2].startswith("run_")
+    ]
     assert len(keys) == len({tuple(key) for key in keys})
     for suffix, month in (("wettest_month_mean", 7), ("driest_month_mean", 1)):
         selected = [row for row in results if row["metric"] == f"q_{suffix}"]
-        assert {(r["run_group_id"], r["location"]) for r in selected} == {
+        assert {(r["run_id"], r["location"]) for r in selected} == {
             (run, location) for run in RUN_IDS for location in ("9", "2")
         }
         for row in selected:
-            daily = frames[row["run_group_id"]][f"Q_{row['location']}"]
+            daily = frames[row["run_id"]][f"Q_{row['location']}"]
             expected = (
                 daily[daily.index.month == month].resample("YS-JAN").mean().mean()
             )
             # The retained CSV contract rounds float32 values to four digits.
             assert float(row["value"]) == float(f"{np.float32(expected):.4g}")
     # Return levels are fitted per bundle, never per run.
-    fitted = {
-        r["run_group_id"] for r in results if r["metric"].startswith("q_return_level")
-    }
-    assert fitted == {"3", "4"}
+    fitted = {r["run_id"] for r in results if r["metric"].startswith("q_return_level")}
+    assert fitted == set()
+    with (_result(root, plan) / "q_group_indicators.csv").open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        group_results = list(csv.DictReader(handle))
+    group_keys = [[r["metric"], r["location"], r["group_id"]] for r in group_results]
+    assert sorted(group_keys) == [
+        key for key in plan["expected_result_keys"] if key[2].startswith("group_")
+    ]
+    assert {
+        r["group_id"] for r in group_results if r["metric"].startswith("q_return_level")
+    } == {"group_1", "group_2"}
+    member_to_group = {"run_1": "group_1", "run_2": "group_2"}
+    for row in results:
+        grouped = next(
+            r
+            for r in group_results
+            if (r["metric"], r["location"], r["group_id"])
+            == (row["metric"], row["location"], member_to_group[row["run_id"]])
+        )
+        assert grouped["value"] == row["value"]
     manifest = read_canonical_json(_engine(root, plan) / "metrics.json")
     assert manifest["run_groups"] == plan["units"]
     # Every fitted return level keeps its provenance: one record per bundle and
@@ -498,7 +568,10 @@ def test_q_bundles_and_class_c_use_exact_units_and_shared_reference(
     assert manifest["return_level_evidence"]["path"] == RETURN_LEVEL_EVIDENCE_FILENAME
     evidence = read_canonical_json(_engine(root, plan) / RETURN_LEVEL_EVIDENCE_FILENAME)
     assert evidence["schema_version"] == "return-level-evidence/1"
-    assert {item["run_group_id"] for item in evidence["bundles"]} == {"3", "4"}
+    assert {item["run_group_id"] for item in evidence["bundles"]} == {
+        "group_1",
+        "group_2",
+    }
     for item in evidence["bundles"]:
         assert {loc["location_id"] for loc in item["locations"]} == {"9", "2"}
         for location in item["locations"]:

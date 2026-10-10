@@ -66,7 +66,7 @@ def make_response_request(run_ids, variables):
     the native simulator's output plan, never from completed CSV contents.
     """
     request = {
-        "schema_version": "response-request/1",
+        "schema_version": "response-request/2",
         "reader": {"name": "wflow-csv", "revision": response_reader_revision()},
         "run_ids": list(run_ids),
         "variables": variables,
@@ -86,17 +86,23 @@ def validate_response_request(request):
     if (
         set(request)
         != {"schema_version", "reader", "run_ids", "variables", "expected_series"}
-        or request["schema_version"] != "response-request/1"
+        or request["schema_version"] != "response-request/2"
     ):
-        raise MissingResponseRequirement("invalid response-request/1 fields")
+        raise MissingResponseRequirement("invalid response-request/2 fields")
     runs = request["run_ids"]
     if (
         not runs
-        or any(not isinstance(run, str) or not run.isdecimal() for run in runs)
-        or runs != sorted(set(runs), key=int)
+        or any(
+            not isinstance(run, str)
+            or not (
+                run.startswith("run_") and run[4:].isascii() and run[4:].isdecimal()
+            )
+            for run in runs
+        )
+        or runs != sorted(set(runs))
     ):
         raise MissingResponseRequirement(
-            "response request requires unique numerically ordered run ids"
+            "response request requires unique ordered prefixed run ids (legacy numeric IDs require a new simulation)"
         )
     variables = request["variables"]
     if not variables:
@@ -406,7 +412,7 @@ def build_response_inventory_v2(
 
     def order(item):
         return (
-            int(item["run_id"]),
+            item["run_id"],
             item["variable"],
             item["location_ordinal"],
             item["location_id"],
@@ -437,7 +443,7 @@ def build_response_inventory_v2(
         "series": identity_series,
     }
     inventory = {
-        "schema_version": "response-inventory/2",
+        "schema_version": "response-inventory/3",
         "simulation_id": intent["simulation_id"],
         "collection_id": identity["collection_id"],
         "collection_revision": identity["collection_revision"],
@@ -485,7 +491,7 @@ def read_response_inventory_v2(experiment_root):
             },
             "response inventory",
         )
-        if stored["schema_version"] != "response-inventory/2":
+        if stored["schema_version"] != "response-inventory/3":
             raise MissingResponseRequirement("unsupported response inventory version")
         digest = content_sha256(
             {

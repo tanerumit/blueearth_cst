@@ -32,7 +32,7 @@ ALL_SIX = list(VARIABLE_TOKENS)
 
 def test_the_seed_config_yields_only_the_discharge_table():
     """A config requesting only `river discharge` yields the q table alone."""
-    assert indicator_tables(["river discharge"]) == {"q": "q_indicators.csv"}
+    assert indicator_tables(["river discharge"]) == {"q": "q_run_indicators.csv"}
 
 
 def test_the_shipped_template_yields_two():
@@ -162,11 +162,11 @@ def test_groundwater_recharge_borrows_the_code_it_already_had():
     `recharge` was the violation -- `gwr` is what `wflow_outputs.CODES` already
     writes into the TOML and therefore into every run csv header, so the token
     was a spelling the repo did not need. Renamed 2026-08-11; the table is
-    `gwr_indicators.csv` and the metric `gwr_annual_total`.
+    `gwr_run_indicators.csv` and the metric `gwr_annual_total`.
     """
     assert variable_token("groundwater recharge") == "gwr"
     assert output_code("gwr") == "gwr"
-    assert indicator_table_filename("groundwater recharge") == "gwr_indicators.csv"
+    assert indicator_table_filename("groundwater recharge") == "gwr_run_indicators.csv"
     assert basin_metric_name("gwr") == "gwr_annual_total"
 
 

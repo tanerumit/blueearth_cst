@@ -29,9 +29,9 @@ def test_rows_are_parse_time_pure(monkeypatch):
     }
     rows = enumerate_stochastic(spec, unit_id_capacity=100)
     assert len(rows) == 14
-    assert [row.run_id for row in rows] == [f"{i:03}" for i in range(1, 15)]
+    assert [row.run_id for row in rows] == [f"run_{i:03}" for i in range(1, 15)]
     assert rows[0].as_record() == {
-        "run_id": "001",
+        "run_id": "run_001",
         "derived_from": "",
         "evaluated": "true",
         "scenario_type": "stochastic",
@@ -39,7 +39,7 @@ def test_rows_are_parse_time_pure(monkeypatch):
         "st_id": "",
     }
     assert rows[7].derived_from == ""
-    assert all(row.derived_from == "008" for row in rows[8:])
+    assert all(row.derived_from == "run_008" for row in rows[8:])
     assert all(row.evaluated for row in rows)
     assert rows == enumerate_stochastic({**spec, "seed": 123}, unit_id_capacity=100)
     validate_stochastic(rows, n_realizations=2, st_num=6, unit_id_capacity=100)
@@ -80,7 +80,8 @@ def test_pairing_and_configured_completeness_refuse(defect):
 @pytest.mark.parametrize("parents", [("1", ""), ("2", "1"), ("9", "")])
 def test_forest_refuses_self_cycle_and_missing_ancestor(parents):
     rows = tuple(
-        ScenarioRow(str(i), p, True, "fixture", ()) for i, p in enumerate(parents, 1)
+        ScenarioRow(f"run_{i}", f"run_{p}" if p else "", True, "fixture", ())
+        for i, p in enumerate(parents, 1)
     )
     with pytest.raises(ValueError, match="ancestr|ancestor"):
         validate_forest(rows, unit_id_capacity=2)
@@ -88,8 +89,8 @@ def test_forest_refuses_self_cycle_and_missing_ancestor(parents):
 
 def test_empty_edges_are_valid_for_independent_fixture():
     rows = (
-        ScenarioRow("1", "", True, "fixture", ()),
-        ScenarioRow("2", "", True, "fixture", ()),
+        ScenarioRow("run_1", "", True, "fixture", ()),
+        ScenarioRow("run_2", "", True, "fixture", ()),
     )
     validate_forest(rows, unit_id_capacity=2)
 

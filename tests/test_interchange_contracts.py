@@ -81,6 +81,7 @@ def _successor_artifacts():
     """
     from pathlib import Path
 
+    from blueearth_cst.experiment.content_identity import read_canonical_json
     from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
     from blueearth_cst.experiment.simulation_record import (
         read_simulation_intent_v2,
@@ -95,6 +96,13 @@ def _successor_artifacts():
         or (root / "results/q_indicators.csv").exists()
     ):
         pytest.skip("standing fixture predates the v2 simulation/collection records")
+    if (
+        read_canonical_json(root / "_engine/simulation.json").get("schema_version")
+        == "simulation/2"
+    ):
+        pytest.skip(
+            "standing fixture uses legacy numeric run IDs (simulation/2); fresh /3 coverage runs separately"
+        )
     read_simulation_v2(root)
     manifest = read_simulation_intent_v2(root)["collection"]["manifest"]
     marker_path = resolve_file_reference(manifest, {"project_root": project})
@@ -592,7 +600,7 @@ def _hm7_contract():
         for unit in (["04", "05"] if metric["grain"] == "bundle" else ["01", "02"])
     ]
     response = make_response_request(
-        ["01", "02"],
+        ["run_01", "run_02"],
         [
             {
                 "variable": "q",
@@ -618,9 +626,9 @@ def _hm7_contract():
     )
 
 
-def test_hm7_successor_contract_passes_with_run_and_bundle_grains():
+def test_legacy_hm7_contract_is_refused_with_run_and_bundle_grains():
     tables, contract = _hm7_contract()
-    assert ic.validate_hm7(tables, **contract) == []
+    assert "legacy metric-set/1" in ic.validate_hm7(tables, **contract)[0]
 
 
 @pytest.mark.parametrize(
@@ -713,13 +721,13 @@ def test_hm7_successor_refuses_independent_contract_divergence(mutation):
         table.loc[0, "value"] = float("inf")
     elif mutation == "bundle_nan":
         table.loc[table.unit_id == "04", "value"] = float("nan")
-    assert ic.validate_hm7(tables, **contract)
+    assert "legacy metric-set/1" in ic.validate_hm7(tables, **contract)[0]
 
 
-def test_hm7_native_run_nan_policy_is_preserved():
+def test_legacy_hm7_contract_is_refused_even_with_native_nan():
     tables, contract = _hm7_contract()
     tables["q"].loc[tables["q"].unit_id == "01", "value"] = float("nan")
-    assert ic.validate_hm7(tables, **contract) == []
+    assert ic.validate_hm7(tables, **contract)
 
 
 @pytest.mark.parametrize(
@@ -735,9 +743,7 @@ def test_hm7_native_run_nan_policy_is_preserved():
 def test_hm7_checks_retained_response_physical_basis(field, value):
     tables, contract = _hm7_contract()
     contract["response_request"]["variables"][0][field] = value
-    assert any(
-        "physical/time basis" in item for item in ic.validate_hm7(tables, **contract)
-    )
+    assert "legacy metric-set/1" in ic.validate_hm7(tables, **contract)[0]
 
 
 def _gauge_identity_good():
@@ -790,16 +796,16 @@ def test_gauge_identity_expects_the_labelled_location_set():
 
 
 def test_catalog_runs_validates_per_file_and_exact_evaluated_set():
-    catalogs = {run: _wg5_good(keys=(f"run_{run}",)) for run in ("01", "03")}
-    assert ic.validate_wg5_catalog_runs(catalogs, ["01", "03"]) == []
-    catalogs["03"] = _wg5_good(keys=("run_01",))
-    assert ic.validate_wg5_catalog_runs(catalogs, ["01", "03"])
+    catalogs = {run: _wg5_good(keys=(run,)) for run in ("run_01", "run_03")}
+    assert ic.validate_wg5_catalog_runs(catalogs, ["run_01", "run_03"]) == []
+    catalogs["run_03"] = _wg5_good(keys=("run_01",))
+    assert ic.validate_wg5_catalog_runs(catalogs, ["run_01", "run_03"])
 
 
 def test_catalog_runs_refuses_missing_evaluated_run_and_legacy_selector():
-    catalogs = {"01": _wg5_good(keys=("run_01",))}
-    assert ic.validate_wg5_catalog_runs(catalogs, ["01", "03"])
-    assert "no 'run_<run_id>'" in ic.validate_wg5(_wg5_good(keys=("rlz_1_st_0",)))[0]
+    catalogs = {"run_01": _wg5_good(keys=("run_01",))}
+    assert ic.validate_wg5_catalog_runs(catalogs, ["run_01", "run_03"])
+    assert "no prefixed run IDs" in ic.validate_wg5(_wg5_good(keys=("rlz_1_st_0",)))[0]
 
 
 def _wg4_good():
@@ -994,7 +1000,7 @@ def test_wg5_integration():
     from pathlib import Path
 
     runs = _evaluated_runs()
-    paths = [Path(_RUN_SETTINGS) / f"run_{run}.yml" for run in runs]
+    paths = [Path(_RUN_SETTINGS) / f"{run}.yml" for run in runs]
     if not any(p.exists() for p in paths):
         pytest.skip(_TEMP_ABSENT)
     for p in paths:
@@ -1006,7 +1012,7 @@ def test_wg5_catalog_runs_integration():
     from pathlib import Path
 
     runs = _evaluated_runs()
-    paths = {run: Path(_RUN_SETTINGS) / f"run_{run}.yml" for run in runs}
+    paths = {run: Path(_RUN_SETTINGS) / f"{run}.yml" for run in runs}
     if not any(p.exists() for p in paths.values()):
         pytest.skip(_TEMP_ABSENT)
     catalogs = {run: yaml.safe_load(p.read_text()) for run, p in paths.items()}
@@ -1043,7 +1049,7 @@ def test_hm4_integration():
     from pathlib import Path
 
     for run in _evaluated_runs():
-        path = Path(_RUN_SETTINGS) / f"run_{run}.toml"
+        path = Path(_RUN_SETTINGS) / f"{run}.toml"
         assert (
             ic.validate_hm4(tomllib.loads(path.read_text()), require_output_state=False)
             == []
@@ -1056,7 +1062,7 @@ def test_hm5_integration_wf4():
 
     for run in _evaluated_runs():
         assert (
-            ic.validate_hm5(pd.read_csv(Path(_RUNS_DIR) / "output" / f"run_{run}.csv"))
+            ic.validate_hm5(pd.read_csv(Path(_RUNS_DIR) / "output" / f"{run}.csv"))
             == []
         )
 
@@ -1091,7 +1097,7 @@ def test_hm7_integration():
 
     root, _, _, scenarios = _successor_artifacts()
     markers = sorted((root / "_engine" / "metric_sets").glob("*/metrics.json"))
-    assert markers, "no metric-set/2 marker under _engine/metric_sets"
+    assert markers, "no metric-set/3 marker under _engine/metric_sets"
     inventory = json.loads(
         (root / "_engine" / "response_inventory.json").read_text(encoding="utf-8")
     )
@@ -1100,10 +1106,12 @@ def test_hm7_integration():
     for marker in markers:
         manifest = json.loads(marker.read_text(encoding="utf-8"))
         tables = {
-            entry["token"]: pd.read_csv(root / entry["file"]["path"], **read)
+            f"{entry['token']}_{entry['scope']}": pd.read_csv(
+                root / entry["file"]["path"], **read
+            )
             for entry in manifest["tables"]
         }
-        lookup = pd.read_csv(root / manifest["metric_run_lookup"]["path"], **read)
+        lookup = pd.read_csv(root / manifest["group_members"]["path"], **read)
         assert (
             ic.validate_hm7_v2(
                 manifest,
@@ -1135,8 +1143,8 @@ def test_gauge_identity_integration():
     ]
     assert tables, "no ready metric set carries a q table"
     for run in _evaluated_runs():
-        toml = Path(_RUN_SETTINGS) / f"run_{run}.toml"
-        output = Path(_RUNS_DIR) / "output" / f"run_{run}.csv"
+        toml = Path(_RUN_SETTINGS) / f"{run}.toml"
+        output = Path(_RUNS_DIR) / "output" / f"{run}.csv"
         config = tomllib.loads(toml.read_text())
         frame = pd.read_csv(output)
         static = (
@@ -1194,8 +1202,7 @@ def test_wg6_integration():
     from pathlib import Path
 
     paths = [
-        Path(_RUNS_DIR) / "forcing" / f"inmaps_run_{run}.nc"
-        for run in _evaluated_runs()
+        Path(_RUNS_DIR) / "forcing" / f"inmaps_{run}.nc" for run in _evaluated_runs()
     ]
     if not any(p.exists() for p in paths):
         pytest.skip(_TEMP_ABSENT)

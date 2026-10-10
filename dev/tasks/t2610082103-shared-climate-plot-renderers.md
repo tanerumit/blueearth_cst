@@ -95,9 +95,9 @@ The next chart-interface design is saved as
 Scientific and risk reviews approved it with zero findings; v2 preserves the reviewed draft bytes.
 It proposes one new prepared-chart module and migration of three WF0/WF1 callers, including
 hydrological summaries. Existing scientific preparation, appearance and outputs remain constraints.
-The independent headless review has not run: automatic approval review rejected sending private
-design/repository context without payload-specific authorization. The next action is that explicit
-authorization, then independent review and exact-version implementation approval. See
+After explicit payload authorization, the independent headless review also approved v2 with no
+findings. All three reviews are complete; the exact reviewed design remains unchanged. The next action
+is owner approval of v2 for implementation, then the bounded engineering handoff. See
 [review state](t2610082103/design-runs/prepared-charts/status.md). No source changes in this design packet.
 Remaining visual issues: very long records crowd year labels; all-missing maps retain a default scale
 with little interpretive value; the soil-clay colourbar title clips the upper canvas edge.

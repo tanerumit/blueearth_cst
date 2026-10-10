@@ -5,14 +5,14 @@ genre: decision-record
 author-binding: cst-architect
 started: 2026-10-10
 variant: lean
-stage: 4
-external-rounds-completed: 0
+stage: G2
+external-rounds-completed: 1
 allocation: "Frontier allocation below"
-dispatches: 6
+dispatches: 7
 gates:
   G1: approved 2026-10-10
   G2: pending
-flags: [canonical-board-on-main, same-provider-review, external-review-approval-blocked]
+flags: [canonical-board-on-main, same-provider-review, external-review-owner-authorized]
 ---
 
 # Prepared charts review state
@@ -64,9 +64,16 @@ Nearby documentation and evidence are root-owned. No dispatch inherits permissio
 - [done] 3-revision-r1 — fresh author captured byte-identical v2; root verified exact bytes/hash.
 - [blocked] 4-external-r1 — automatic approval review rejected process launch; no review ran.
   Private design/repository context transmission needs explicit owner approval before retry.
+- [done] External payload approval — user answered "yes" to sending this design, directly cited
+  source context and repository instructions to OpenAI through codex exec for independent review.
+- [done] 4-external-r1 resumed — approve design-v2.md, zero findings; explicitly authorized launch.
+- [done] 5-convergence-r1 — external verdict names v2; all internal/external findings lists empty.
+  Domain correction changes only the premise-disposition wording, not design or findings.
+  No findings need disposition; explicit empty closure verified, no ledger or revision required.
+- [open] G2 — owner approval of exact reviewed v2 is pending. Implementation has not started.
 
-Scientific review and its correction contain zero findings; no ledger required yet.
-This is not convergence or exact-design acceptance.
+Scientific, risk and independent external reviews contain zero findings. Design review has converged.
+No exact-design implementation approval is recorded; no empty ledger is created.
 
 Stage 3 allocation narrowed after empty reviews: a byte-identical capture needs no conceptual work.
 Request cst-architect on gpt-6-luna/low, fallback gpt-6.1-sol/low; no edits to approved framing or text.
@@ -81,13 +88,34 @@ No supplement or sketch. Both files are retained unchanged for dispatch recovery
 Requested model/effort: gpt-6-astra/high; approval never, sandbox read-only, ephemeral.
 Same-provider limitation remains explicit in the brief. No implementation authority added.
 
-Launch was rejected before process creation by automatic approval review:
+The first launch was rejected before process creation by automatic approval review:
 "The headless review may transmit private design and repository context to an external model service;
 the user authorized delegation generally but not this specific sensitive payload to that destination."
-No external report, transcript, verdict or runtime banner exists for this attempted dispatch.
-Do not bypass the rejection with another execution route. Next action: ask the owner to authorize
-sending v2, directly cited source context and automatically loaded repository instructions to OpenAI
-through the specified headless review. Do not send run datasets. G2 remains pending after that review.
+No external process ran for that first attempt. The owner then explicitly authorized the payload,
+and the same execution route succeeded. The rejection was not bypassed. No run datasets were sent.
+The completed external report is `external-review-r1.md`; approval never and read-only sandbox were
+confirmed in the runtime banner. G2 remains pending after this successful review.
+
+## Converged review and approval identity
+
+Exact revision: `dev/tasks/t2610082103/design-runs/prepared-charts/design-v2.md` on main.
+SHA256: `ed2f9691aff7886698883a6087c13ab1cf78abff10e706d89924baa78fd6186e`.
+The retained v1/v2 bytes are identical, including the original proposed header; status owns lifecycle.
+Independent report: approve, doc_version design-v2.md, findings empty. Internal domain/risk approvals
+and domain supplement were reconciled; no contested premises remain except future empirical parity,
+explicitly a falsifiable implementation hypothesis rather than a validated runtime claim.
+No stage-6 revision or second external round is needed after an approval with empty findings.
+Next action: owner approves these exact bytes for implementation, then claim-to-falsifier handoff.
+
+## Allocation diagnostics — external review completed
+
+The owner-authorized retry completed the fifth planned pre-G2 worker packet. Total observed dispatch
+calls are seven: four original worker packets, one domain clarification, one rejected launch and one
+successful external review; the separate planning bootstrap is excluded. No new agents or design edits.
+External effective settings confirmed: gpt-6-astra/high, OpenAI, approval never, read-only sandbox.
+CLI exit code: zero. CLI-reported token usage: 44,861 for this external review; cost and savings unknown.
+Source tree remained clean after review. No broader tests or renders were run for a document-only step.
+All scope ceilings held. Prior rejection remains historical evidence; authorization block is resolved.
 
 ## Allocation diagnostics — checkpoint before external review
 

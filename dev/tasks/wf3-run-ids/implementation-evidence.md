@@ -51,6 +51,9 @@ it cannot certify this change. Synthetic independent oracles cover the changed s
 ## Environment and evidence
 
 Starting implementation commit: `aecadec6`, based on local `main` at `c84ba6f8`.
+Tested implementation commit: `8baf927cbc19c49ae0461196cd5ed1bb928a0b1e`.
+Focused checks and fresh execution tested the frozen implementation tree captured by that commit.
+The following evidence-only commit records its SHA; it changes no executable, configuration or test input.
 Shared environment: `session-1/.pixi/envs/default`; Python 3.12.13, conda-forge, Windows.
 Use `pixi run --manifest-path ../session-1/pixi.toml` from session-3; this preserves the session-3 working
 directory. An unrestricted preflight confirmed the configured data mirror, `weathergenr` and GCS connectivity.

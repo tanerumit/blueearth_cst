@@ -1,27 +1,40 @@
 ---
 title: Number experiments and add a new-experiment flag
 type: todo-item
-status: backlog
-effort: 1
+status: active
+effort: 2
 area: wf4
-queue: 11
+queue: 4
+doc: dev/tasks/t2610032349/task-brief.md
 created: 2026-10-03
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 > [!note] Overview
-> **What changes** — Default experiment_name to stress_test; allocate <name>_NN (01, 02, ...) for unset and set names; plain runs continue the highest number; run_workflows.py --new-experiment [--note] starts the next one; a name already ending in _NN pins that experiment.
-> **Why it matters** — The <project_dir basename>_<date> default yields active_<date> for every create_case case and carries no meaning; numbered experiments with a recorded note are simpler and keep incremental reruns.
-> **What it takes** — Two commits: allocation/numbering + tests, then the runner flag, experiment.yml note, console line and docs; main unknown is the >99 policy.
+> **What changes** — Number experiments from `stress_test_01`; plain runs continue the highest number.
+> `--new-experiment` explicitly creates another. Bind intended inputs early so changed scenarios cannot
+> silently replace an interrupted experiment.
+> **Why it matters** — Users need predictable creation, resumption and comparison without overwriting
+> results or remembering dated folder names. Completion alone must never create another experiment.
+> **What it takes** — Allocation and ownership records, shared runner integration, interruption and
+> compatibility checks, focused tests and live docs. The expanded plan supersedes the two-commit estimate.
 
 ## Progress
 
-- [ ] Allocation in `blueearth_cst/experiment/allocate.py` and `snake_utils`: base `stress_test` when unset, `<base>_NN` numbering, continue the highest existing number (first run creates `_01`), literal pin for a name already ending in `_NN`; tests.
-- [ ] `scripts/run_workflows.py --new-experiment [--note "..."]` reserves the next number before the run; write `experiment.yml` (note, creation date, `git describe` toolbox version) in the experiment folder; console row `experiment: <name> (new|continuing)`.
-- [ ] Docs: `config/templates/README.md` experiment_name section, simulate_system template comment, `suggest_experiment_name.py` role (retire or align).
+- [x] Expand naming and recovery decisions — see the linked plan and acceptance matrix, 2026-10-10.
+- [x] Prepare combined implementation brief — naming plus removal of `active/`, 2026-10-10.
+- [ ] Review the reservation/binding contract against WF3 run-id work before implementation.
+- [ ] Implement shared name resolution, allocation history and atomic reservation; add focused tests.
+- [ ] Integrate both runners, input binding, previews, ownership and recovery diagnostics; add tests.
+- [ ] Verify interrupted runs, retained responses, metrics-only operations and read-only inspection.
+- [ ] Update live docs, templates and naming-helper behavior; execute required acceptance checks.
 
 ## Decisions
 
-- Agreed 2026-10-03: a plain run always continues the latest experiment; only the runner flag starts a new one (chosen over a separate `suggest_experiment_name.py --new` step).
-- Existing `<slug>_<date>` folders are left alone and not continued; the first new-scheme run creates `<base>_01` beside them.
-- Open: behaviour past `_99` (error vs three digits) — must be reported, never silent.
+The [plan](t2610032349/experiment-naming-plan.md) owns behavior, compatibility and acceptance cases.
+Implementation authorized on `feat/minor-improvements`; reservation contract review is in progress.
+
+Start with the [combined brief](t2610032349/task-brief.md); both task IDs remain open until landing.
+
+P1: toolbox `3bea47b9`, cases `cdaad63`. Reservation review: task-owned
+`design-runs/reservation-lifecycle/` on this branch.

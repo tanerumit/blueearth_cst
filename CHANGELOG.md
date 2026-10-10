@@ -9,8 +9,19 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+## [v0.4.0] — 2026-10-10
+
+Pre-1.0 minor release with incompatible experiment identities and output contracts since `v0.3.0`.
+The authoritative version is established by the approved Git tag.
+
 ### Breaking
 
+- Scenario runs and perturbation groups now have separate, prefixed string IDs (`run_01`, `group_01`).
+  Updated collection and metric schemas refuse predecessor numeric-ID collections. Regenerate these
+  collections and simulations; update consumers using the
+  [output contract and migration guidance](docs/site/guide/outputs.qmd).
+- New cases use the case root directly as `project_dir`, without an `active/` suffix. Existing explicitly
+  configured `active/` roots remain valid; changing scaffolds does not relocate retained outputs.
 - Scenario-collection, simulation and metric-set ids all change. Each identity
   hashes the repository code its stage imports, and removing the pre-release v1
   records edited shared modules on all three paths; the relocation fix below
@@ -23,6 +34,14 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ### Added
 
+- Numbered experiment allocation with `--new-experiment`, immutable request bindings and guarded
+  continuation. A plain invocation selects the highest existing experiment in its family, including
+  a completed one; only explicit creation advances the number. Changed scenario requests are refused
+  before producers run. Compatible interrupted simulation batches retain their native checkpoints.
+- Canonical WF0 climate diagnostics and source-comparison figures; expanded WF2 ensemble coverage,
+  analysis windows, seasonal reductions and variability benchmarks.
+- Shared historical map references and chart preparation across WF0/WF1, with standardized forcing,
+  hydrograph, model-performance and hydrological-summary figures.
 - Each metric set retains its return-level evidence as
   `_engine/metric_sets/<id>/return_level_evidence.json`, SHA-referenced from
   the manifest and verified on read. For every fitted return level it records
@@ -38,6 +57,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ### Fixed
 
+- WF2 monthly-factor figures now honor the configured water year. Geographic frames, map legends,
+  captions and figure export preserve their intended extent and layout.
+- Wflow forcing checks honor the retained state's timestamp; region preparation reports outlet-search
+  and tiny-raster failures explicitly.
 - A project tree copied to another root reuses its ready scenario collection,
   simulation and metric set instead of refusing them. The installed
   weather-generator input and each metric plan record absolute paths under
@@ -54,6 +77,18 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
   `metric-set/1`. No release wrote them; they existed only between 2026-09-11
   and 2026-09-22. Such an experiment is now refused by name; simulate it again
   under a new experiment name.
+
+### Migration and known limitations
+
+- Use the [owned runners](README.md) for generation and simulation. To change a scenario request,
+  explicitly create a new experiment; an ordinary invocation does not silently replace completed
+  or interrupted work. Recovery of reservation metadata does not repair damaged native outputs.
+- Retain older project trees before regenerating incompatible collections or simulations. Existing
+  explicit project roots remain supported, including paths ending in `active/`.
+- Plot and diagnostic additions do not establish cross-platform numerical equivalence. Linux/Docker
+  full-pipeline scientific replication remains unqualified, and sample catalogs can require local data.
+- The baseline manifest predates the P-drive/GlobCover input change. It must be regenerated and
+  re-recorded from the revised baseline configuration before serving as a current numerical gate.
 
 ## [v0.3.0] — 2026-10-01
 

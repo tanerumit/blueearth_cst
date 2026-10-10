@@ -132,22 +132,21 @@ Thirty years ending at the last year the CMIP6 historical experiment covers
 
 ### `experiment_name` — why it is absent rather than set
 
-Left unset, WF3 names the directory from the project's own name plus the date the
-experiment was first created, and later runs **reuse** that directory rather than
-minting today's date — which is what keeps incremental reruns idempotent. A
-placeholder value in the template would instead put every project copied from it
-into one shared `experiments/experiment/`.
+Left unset, the simulation runner selects `stress_test_01`, then retains the highest
+allocated number on plain reruns. Set a custom base such as `dry_scenario` to select
+`dry_scenario_01`, or set an exact numbered name to pin that experiment. Completion
+does not advance the number. Use `--new-experiment` on the runner to create the next one.
 
-To pin a deliberate name, run this once before the first climate-experiment run:
+To inspect selection without reserving anything or editing YAML:
 
 ```console
 pixi run python scripts/suggest_experiment_name.py <your config>
 pixi run python scripts/suggest_experiment_name.py <your config> --name dry_scenario
 ```
 
-It reserves the directory atomically, versions a generated collision to `_v2`,
-and refuses to overwrite a name already set — which would strand a completed
-experiment's outputs under a name nothing points at.
+The helper is always advisory. Changed scientific inputs require `--new-experiment`;
+compatible interrupted simulations continue the selected identity. Existing owned
+dated or unnumbered experiments remain readable by their explicit name.
 
 ### `compute.julia_threads` / `compute.max_parallel_batches`
 

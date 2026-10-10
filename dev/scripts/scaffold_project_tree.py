@@ -140,7 +140,7 @@ def _summary(snakefile: str, config_path: Path) -> list[str]:
     return paths
 
 
-def _log_paths(snakefile: str, experiment: str) -> list[str]:
+def _log_paths(snakefile: str, experiment: str = "") -> list[str]:
     """Read each rule's `log:` path straight out of the Snakefile.
 
     `--summary`'s log column reports only logs that already EXIST on disk (it
@@ -351,13 +351,6 @@ def main(argv: list[str] | None = None) -> int:
         shutil.rmtree(project_dir)
     project_dir.mkdir(parents=True, exist_ok=True)
 
-    experiment = (
-        yaml.safe_load(args.config.read_text(encoding="utf-8"))
-        .get("workflows", {})
-        .get("simulate_system", {})
-        .get("experiment_name", "experiment")
-    )
-
     scratch_cfg = _scratch_config(
         args.config, project_dir, project_dir.parent / "_scaffold_config.yml"
     )
@@ -366,7 +359,8 @@ def main(argv: list[str] | None = None) -> int:
     raw: list[str] = []
     for w in workflows:
         found = _summary(SNAKEFILES[w], scratch_cfg)
-        logs = _log_paths(SNAKEFILES[w], experiment)
+        # WF3/WF4 were refused above; these workflows have no experiment name.
+        logs = _log_paths(SNAKEFILES[w])
         print(
             f"wf{w}: {len(found)} declared outputs, {len(logs)} logs", file=sys.stderr
         )

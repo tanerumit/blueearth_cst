@@ -250,6 +250,15 @@ generation inputs or Julia. Changed simulation inputs require a new experiment;
 changed metrics select a new immutable metric set. See
 [retained handoffs](docs/site/toolbox-reference/retained-handoffs.qmd).
 
+Without an explicit name, experiments start at `stress_test_01`. Plain reruns retain
+the highest allocation; completion never advances it. Pass `--new-experiment` to
+either runner for the next number, optionally with `--note` for creation metadata.
+A custom `experiment_name` base selects another family; an exact numbered name pins
+that identity. Changed scientific inputs without the flag refuse before producers.
+The suggestion helper is now read-only and does not edit YAML or reserve a folder.
+Existing owned dated or unnumbered experiment names remain explicit legacy selections.
+See [experiment selection and recovery](docs/site/guide/running.qmd#select-resume-or-create-an-experiment).
+
 ### Logs and DAGs
 
 WF0/WF1/WF2 retain their project-level logs and provenance records. Generation

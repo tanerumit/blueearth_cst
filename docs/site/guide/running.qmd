@@ -143,10 +143,44 @@ from two copies of the toolbox can give conflicting decisions about which
 results need to be refreshed.
 :::
 
+## Select, resume or create an experiment
+
+With no `experiment_name`, the first run reserves `stress_test_01`. A plain rerun
+selects the highest allocated number, whether complete or interrupted. Compatible
+unfinished simulations continue there; intact completed outputs are reused.
+
+For another experiment, pass the flag to either execution runner:
+
+```bash
+python scripts/run_workflows.py --config <config> --new-experiment --note "revised perturbation grid"
+python scripts/simulate_system.py --config <config> --new-experiment --target all
+```
+
+Set `experiment_name: drought` to use the `drought_01`, `drought_02` family.
+An exact name such as `drought_02` pins that identity and cannot combine with
+`--new-experiment`. Existing owned dated or unnumbered names remain explicit
+legacy selections. The flag creates an experiment; it does not force regeneration
+of an unchanged ready scenario collection.
+
+If scientific inputs changed and the flag was omitted, the runner refuses before
+producers start, for both complete and interrupted numbered experiments. Notes,
+resource settings and indicator choices do not redefine those scientific inputs.
+Deleted allocations remain consumed; numbers are never automatically recycled.
+
+`scripts/suggest_experiment_name.py <config>` and dry-runs only preview selection.
+They neither reserve directories nor edit YAML. For an interrupted reservation
+or paired intent/archive publication, `--recover-reservation` finishes only a
+verified retained recipe. It cannot repair partial WF3 generation or missing or
+corrupt native responses; retain that evidence for diagnosis.
+
+Completed batch checkpoints can be reused after an ordinary failed run. A hard
+stop while writing a native CSV or restoring a batch may leave partial outputs
+that need diagnosis; reservation recovery does not repair those files.
+
 ## Calculate different indicators from existing simulations
 
 An experiment is tied to its scenario collection, model, and simulation
-settings. Give a changed simulation a new `experiment_name`.
+settings. Use `--new-experiment` for changed simulation inputs.
 
 To calculate different indicators from completed simulations, set
 `operation: metrics-only` in the simulation settings file and keep the existing

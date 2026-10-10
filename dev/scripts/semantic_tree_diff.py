@@ -83,6 +83,7 @@ import argparse
 import os
 import re
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
@@ -272,6 +273,8 @@ def build_project_tree_rules(
     experiment_name: str,
     dataset_key: str,
     clim_project: str = "cmip6",
+    *,
+    retained_experiment_names: Iterable[str] = (),
 ) -> list[tuple[str | re.Pattern, str]]:
     """Identity rules for the CURRENT project tree, including v2 handoffs.
 
@@ -310,9 +313,10 @@ def build_project_tree_rules(
     experiment_name, dataset_key, clim_project
         The same config-derived values the retired R9 map took, so one
         caller can build either.
+    retained_experiment_names
+        Additional verified owners in the inspected root. Each receives the
+        same enumerated artifact rules; unknown names and leaves stay unmapped.
     """
-    e = experiment_name
-    exp = re.escape(experiment_name)
     rules: list[tuple[str | re.Pattern, str]] = []
 
     def same(path: str) -> None:
@@ -368,6 +372,16 @@ def build_project_tree_rules(
         same(f"config/runs/{workflow_name}/sources/")
     same("config/runs/_engine/execution-configs/")
     same("config/runs/_engine/archive-transactions/")
+    same("config/experiments/allocation.json")
+    transaction = r"config/experiments/_engine/transactions/[0-9a-f]{32}"
+    same_rx(rf"{transaction}/transaction\.json")
+    captured_role = (
+        r"(?:project|simulate_system|generate_scenarios|generator_template|build_model|"
+        r"build_template|waterbodies_template|region|output_locations|catalog_(?:0|[1-9][0-9]*))"
+    )
+    same_rx(rf"{transaction}/sources/{captured_role}\.bin")
+    same_rx(rf"{transaction}/experiment/experiment\.yml")
+    same_rx(rf"{transaction}/experiment/_engine/reservation\.json")
     # `scripts/run_workflows.py`'s invocation manifest, one immutable file per
     # wrapper run. A PREFIX, because the set is genuinely open — the filename is
     # `<utc stamp>-<uuid12>.json`, so a new one appears every run.
@@ -543,39 +557,53 @@ def build_project_tree_rules(
     for leaf in ("basin_cells.csv", "extract_historical.nc"):
         same_rx(rf"scenarios/_engine/generation_inputs/{digest}/{re.escape(leaf)}")
 
-    # Simulation identities are frozen separately from metric-set identities.
-    same(f"experiments/{e}/.model_reference_ok")
-    for leaf in (
-        "model_reference.yml",
-        "simulation.json",
-        "simulation_intent.json",
-    ):
-        same(f"experiments/{e}/_engine/{leaf}")
-    same(f"experiments/{e}/config/run_record.yml")
-    same(f"experiments/{e}/config/sources/")
-    same(f"experiments/{e}/_engine/response_inventory.json")
-    same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
-    metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
-    # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
-    # copied into every set so a reader can validate it without the installed
-    # asset or the estimator dependency. It is a leaf of the set like the rest.
-    for leaf in (
-        "metrics.json",
-        "metric_environment.json",
-        "return_level_benchmark.json",
-    ):
-        same_rx(rf"experiments/{exp}/_engine/metric_sets/{digest}/{re.escape(leaf)}")
-    same_rx(rf"{metric_set}/metric_run_lookup\.csv")
-    same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_indicators\.csv")
-    native = rf"experiments/{exp}/hydrology/wflow"
-    same_rx(rf"{native}/run_settings/run_[0-9]+\.(toml|yml|temporal\.json)")
-    same(f"experiments/{e}/hydrology/wflow/run_settings/forcing_elevation_catalog.yml")
-    same_rx(rf"{native}/forcing/inmaps_run_[0-9]+\.nc")
-    same_rx(rf"{native}/output/run_[0-9]+\.csv")
-    same_rx(rf"{native}/output/_log/run_[0-9]+\.log")
-    same_rx(rf"{native}/output/outstates_run_[0-9]+\.nc")
+    # The caller supplies verified retained owners; apply the same closed leaf inventory.
+    for e in sorted({experiment_name, *retained_experiment_names}):
+        exp = re.escape(e)
+        # Simulation identities are frozen separately from metric-set identities.
+        same(f"experiments/{e}/experiment.yml")
+        same(f"experiments/{e}/.model_reference_ok")
+        for leaf in (
+            "reservation.json",
+            "simulation-freeze.json",
+            "model_reference.yml",
+            "simulation.json",
+            "simulation_intent.json",
+        ):
+            same(f"experiments/{e}/_engine/{leaf}")
+        same(f"experiments/{e}/config/run_record.yml")
+        same(f"experiments/{e}/config/sources/")
+        same(f"experiments/{e}/_engine/response_inventory.json")
+        same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
+        metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
+        # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
+        # copied into every set so a reader can validate it without the installed
+        # asset or the estimator dependency. It is a leaf of the set like the rest.
+        for leaf in (
+            "metrics.json",
+            "metric_environment.json",
+            "return_level_benchmark.json",
+        ):
+            same_rx(
+                rf"experiments/{exp}/_engine/metric_sets/{digest}/{re.escape(leaf)}"
+            )
+        same_rx(rf"{metric_set}/metric_run_lookup\.csv")
+        same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_indicators\.csv")
+        native = rf"experiments/{exp}/hydrology/wflow"
+        same_rx(rf"{native}/run_settings/run_[0-9]+\.(toml|yml|temporal\.json)")
+        same(
+            f"experiments/{e}/hydrology/wflow/run_settings/forcing_elevation_catalog.yml"
+        )
+        same_rx(rf"{native}/forcing/inmaps_run_[0-9]+\.nc")
+        same_rx(rf"{native}/output/run_[0-9]+\.csv")
+        same_rx(rf"{native}/output/_log/run_[0-9]+\.log")
+        same_rx(rf"{native}/output/outstates_run_[0-9]+\.nc")
 
-    rules.append((re.compile(rf"(experiments/(?!{exp}/)[^/]+/.*)"), r"\1"))
+        same(f"experiments/{e}/_engine/freeze-payloads/run_record.yml")
+        same_rx(
+            rf"experiments/{exp}/_engine/freeze-payloads/sources/(?:catalogs/)?[^/]+"
+        )
+        same_rx(rf"experiments/{exp}/_engine/batch_staging/run_[0-9]+\.(csv|expect|ok)")
     return rules
 
 

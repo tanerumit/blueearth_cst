@@ -8,6 +8,7 @@ that derivation, the exclusions, and the exit code.
 
 import os
 import sys
+import uuid
 
 import pytest
 
@@ -62,7 +63,7 @@ def test_map_parameters_are_derived_the_way_the_workflows_build_them():
     params = spt.map_parameters(_config("proj"))
     assert params == {
         "project_dir": "proj",
-        "experiment_name": "my_experiment",
+        "experiment_name": "my_experiment_01",
         "dataset_key": "era5_20000101_20201231",
         "clim_project": "cmip6",
     }
@@ -72,7 +73,7 @@ def test_map_parameters_fall_back_to_the_shipped_defaults():
     cfg = _config("proj")
     cfg["workflows"] = {}
     params = spt.map_parameters(cfg)
-    assert params["experiment_name"] == "experiment"
+    assert params["experiment_name"] == "stress_test_01"
     assert params["clim_project"] == "cmip6"
 
 
@@ -270,3 +271,103 @@ def test_project_dir_override_wins_over_the_config(tmp_path, capsys):
     cfg = _write_config(tmp_path, _config(tmp_path / "somewhere_else"))
     assert spt.main(["--config", str(cfg), "--project-dir", str(proj)]) == 1
     assert "UNMAPPED logs/1.03_create_model.log" in capsys.readouterr().out
+
+
+def test_numbered_retained_owners_and_override_are_read_only(tmp_path, capsys):
+    from blueearth_cst.experiment import reservation
+    from blueearth_cst.shared.workflow_config_snapshot import (
+        archive_lock,
+        file_reference,
+    )
+    from tests import _v2_experiment
+
+    fixture = _v2_experiment.build_v2_experiment(tmp_path)
+    root = fixture.project
+    request = {
+        "schema_version": "experiment-request/1",
+        "generation": None,
+        "selection": {
+            "mode": "explicit-manifest",
+            "manifest": file_reference(fixture.collection_marker, "project_root", root),
+        },
+        "input_catalogs": [],
+        "simulation": {
+            "climate_source": "era5",
+            "model_root": "models/hydrology/wflow",
+            "outvars": ["gwr"],
+            "model_request": None,
+        },
+    }
+    captures = [
+        reservation.CapturedSource(role, path, path.read_bytes())
+        for role, path in (
+            ("project", fixture.config),
+            ("simulate_system", tmp_path / "simulate_system.yml"),
+        )
+    ]
+    with archive_lock(root, "project-execution"):
+        for new in (False, True):
+            reservation.admit_experiment_owned(
+                root,
+                request=request,
+                sources=captures,
+                creator_invocation_id=uuid.uuid4().hex,
+                new_experiment=new,
+            )
+    configured = _config(tmp_path / "not-the-inspected-root")
+    configured["workflows"]["simulate_system"]["experiment_name"] = "stress_test"
+    config_path = _write_config(tmp_path, configured, name="inspection")
+    _touch(root, "experiments/unknown_run/_engine/reservation.json", "unowned bytes")
+    _touch(root, "experiments/stress_test_01/orphan_table.csv")
+    before = {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in root.rglob("*")
+        if p.is_file()
+    }
+    assert spt.map_parameters(configured, root)["experiment_name"] == "stress_test_02"
+    assert spt.retained_experiment_names(root) == (
+        _v2_experiment.EXPERIMENT,
+        "stress_test_01",
+        "stress_test_02",
+    )
+    legacy_config = _config(root)
+    legacy_config["workflows"]["simulate_system"]["experiment_name"] = (
+        _v2_experiment.EXPERIMENT
+    )
+    assert (
+        spt.map_parameters(legacy_config)["experiment_name"]
+        == _v2_experiment.EXPERIMENT
+    )
+    assert (
+        spt.main(["--config", str(config_path), "--project-dir", str(root), "--quiet"])
+        == 1
+    )
+    output = capsys.readouterr().out
+    assert "experiment    : stress_test_02" in output
+    assert "UNMAPPED experiments/unknown_run/_engine/reservation.json" in output
+    assert "UNMAPPED experiments/stress_test_01/orphan_table.csv" in output
+    assert "UNMAPPED experiments/stress_test_01/_engine/reservation.json" not in output
+    assert "UNMAPPED experiments/stress_test_02/_engine/reservation.json" not in output
+    assert before == {
+        p.relative_to(root).as_posix(): p.read_bytes()
+        for p in root.rglob("*")
+        if p.is_file()
+    }
+
+
+def test_scaffold_refuses_dynamic_workflows_before_config_read_or_output(tmp_path):
+    import scaffold_project_tree as scaffold
+
+    output = tmp_path / "not-created"
+    with pytest.raises(SystemExit):
+        scaffold.main(
+            [
+                "--config",
+                str(tmp_path / "absent.yml"),
+                "--workflows",
+                "3,4",
+                "--out",
+                str(output),
+            ]
+        )
+    assert not output.exists()

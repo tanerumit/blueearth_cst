@@ -1,172 +1,177 @@
 # AGENTS.md
 
-> **Canonical.** Single source of truth for every runtime. Codex reads this file directly; `CLAUDE.md` is a thin entry point that imports it (`@AGENTS.md`). Author repo instructions here, never only in `CLAUDE.md`.
+> **Canonical.** Author repository instructions here; Codex reads this file and `CLAUDE.md` imports it.
 
 ## Overview
 
-BlueEarth Climate Stress Test — a multi-language (Python + R + Julia) scientific workflow toolbox stitched together by Snakemake. Five root `*.smk` files define the workflows. Simulation requires `scripts/simulate_system.py` or the all-workflow runner to validate its operation and targets. Narrative: `README.md`.
+BlueEarth Climate Stress Test is a Python/R/Julia Snakemake workflow engine; no API or frontend code.
 
-| entry point | id | does |
+| Entry point | ID | Purpose |
 |---|---|---|
-| `analyze_climate.smk` | wf0 | the basin's historical climate — model-free, optional for the pipeline |
-| `build_model.smk` | wf1 | builds the Wflow-SBM model, runs it on historical forcing |
-| `analyze_projections.smk` | wf2 | CMIP6 change factors — a plausibility overlay |
-| `generate_scenarios.smk` | wf3 | model-independent scenario collection generation |
-| `simulate_system.smk` via `scripts/simulate_system.py` | wf4 | simulation and retained-response metrics |
+| `analyze_climate.smk` | wf0 | Optional, model-free historical climate analysis |
+| `build_model.smk` | wf1 | Build Wflow-SBM from global data; run historical forcing |
+| `analyze_projections.smk` | wf2 | CMIP6 change factors as a plausibility overlay |
+| `generate_scenarios.smk` | wf3 | Model-independent, durable scenario collections |
+| `scripts/simulate_system.py` | wf4 | Validated simulation and immutable retained-response metrics |
 
-Convenience order: wf0 → wf1 → wf2 → wf3 → wf4. Generation and model construction are independent prerequisites of simulation; projections are a plausibility overlay and never drive generation. WF0 is optional and shares region/climate producers: run it first or not at all, and run it ALONE when choosing forcing.
+Convenience order: wf0 → wf1 → wf2 → wf3 → wf4. WF1 and WF3 are independent prerequisites of WF4;
+WF2 never drives generation. WF0 shares region/climate producers: run it first or omit it;
+run it alone when selecting forcing. WF4 consumes explicit run IDs.
 
 ## Background
 
-Method context that changes how code here should be edited (rationale: `docs/references/cst-toolbox-technical-note-2025.md` §1):
-
-- CST is bottom-up stress testing (decision-scaling / DMDU): it perturbs local climate over a temperature × precipitation grid rather than running selected GCM scenarios. Stress-test scenarios come from the stochastic weather generator — never couple the experiment workflow to CMIP scenarios.
-- CMIP6 output (wf2) is a plausibility overlay only. Its change factors situate the perturbation grid in projection space; they never drive a stress-test run.
-- wf0 characterises historical climate without a model — the forcing-selection question, which matters because CST does no local calibration, so forcing choice is the dominant lever on the historical run. wf1 builds Wflow-SBM from global data via hydromt and runs it once. wf2 computes monthly change factors per (model, scenario, horizon). wf3 generates realizations and perturbed scenarios into a durable collection. wf4 consumes its explicit run ids, runs Wflow, and reduces retained native responses into immutable metric sets.
-- This repo is the workflow engine of a three-part platform (workflows + CST-API + CST-frontend). No web/API code belongs here.
-- CST targets rapid, first-order basin assessments on global data. Prefer robustness and automation over site-specific sophistication.
+CST is bottom-up decision-scaling/DMDU: a stochastic weather generator perturbs local climate over
+a temperature × precipitation grid. Never couple that experiment to selected GCM scenarios.
+There is no local calibration, so historical forcing choice matters. Prefer robust, automated,
+first-order basin assessment from global data over site-specific sophistication.
+Read the 2025 technical note in References before changing what a workflow computes.
 
 ## Repo Map
 
-Self-explanatory except for these. Full detail: `dev/reference/repo-layout.md`.
-
-- `blueearth_cst/` — modules invoked from Snakemake `script:` (Python) or `Rscript --vanilla` `shell:` bodies (R); none is a standalone CLI. Split by stage (`model/`, `projections/`, `climate_analysis/`, `experiment/`), plus `shared/` for cross-cutting helpers and `weathergen/` for the R weather generator.
-- `config/` — four bins plus `advanced_settings.yml`, which `snake_utils` reads once for every project and is not a `--configfile` target (closed schema: add a key to the file and to `_ADVANCED_SETTINGS_SCHEMA` together). There is **no `workflows/` bin** — every `--configfile` target lives beside the project it writes into, under `test_case/`. A project config is a SET of files since R13: a project file carrying closed `{enabled, config_path}` workflow stanzas plus one file per workflow beside it, composed by `blueearth_cst/shared/config_composition.py` into today's in-memory shape. A `config_path` resolves against the project file's own directory; every other path key still resolves from the run directory. A key read by more than one workflow belongs in the project file — under the kind section that owns it (`basin:`, `climate:`, `model:`) or at its top level — and is refused inside a workflow file at parse time (R14 dissolved R13's `shared:` heading into those sections; the v1 -> v2 migrator and its guide ship in release `v0.3.0`). The two-tier split: `config/defaults/` is read by rules, so changing one changes a run; `config/templates/` is only scaffolds you copy. `catalogs/` holds the hydromt `-d` targets, of which `cmip6_data.yml` and `cmip6_store_index.json` are generated — never hand-edit them. **Keep the `project_config_` prefix on any new seed config**; a name outside that glob is silently untracked. Real basin data lives in the project folder, referenced by absolute path, never in this repository.
-- `dev/` — planning, audits, conventions, roadmap, baseline manifest, dev helpers. Not shipped. **Open work lives on the todo-board in `main`**: create and edit notes there, render its `dev/TODO.md` with `python dev/scripts/todoboard.py render`, and commit board-only changes to `main` separately from feature work. Put new task plans and handoffs in `dev/tasks/<id>/`; do not add files or folders under `dev/working/`. Do not edit generated `TODO.md`.
-- `docs/` — the published site under `docs/site/`, source-only notebooks, and an offline reference library under `docs/references/` (vendored HydroMT / Wflow guides and the dated 2025 technical note). Historical migration guides live with milestone records under `dev/records/milestones/`. Configs are not mirrored here; `config/` is the single source.
-- Outputs land under `project_dir`. Production `project_dir` lives **outside the repository tree**; the untracked `test_case/test_local` is a dev-only exemption.
-
-**Three homes for executables, split by INVOCATION MODEL** — not by audience: `blueearth_cst/` is executed by Snakemake, `scripts/` is what a user runs to execute the pipeline, `dev/scripts/` inspects or maintains the repository and is never part of a run. `dev/scripts/` also holds libraries `tests/` imports, so an import error there fails CI on a bare checkout. **When something in `dev/scripts/` acquires a run-path caller, move the shared part into the shipped package** rather than importing `dev/` from a run.
-
-`dev/scripts/console.py` is VENDORED: fix console defects in the `console-formatting` skill upstream and re-copy, never here. The agent-config directories (`.claude/`, `.codex/`, `.agents/`) are gitignored per-user state, linked as whole-directory symlinks into worktrees; their absence downgrades rather than fails.
+- `blueearth_cst/`: Snakemake-invoked Python/R modules, not standalone CLIs. `scripts/`: user execution
+  entry points. `dev/scripts/`: repository maintenance and test helpers, never run dependencies.
+  Move shared code into the shipped package when a maintenance helper gains a run-path caller.
+- `config/advanced_settings.yml` is read for every project, never passed as `--configfile`.
+  Its schema is closed: update `_ADVANCED_SETTINGS_SCHEMA` with every new key.
+- Project config sets live beside their project, with seeds under `test_case/`; no `config/workflows/`.
+  The project file has closed `{enabled, config_path}` workflow stanzas, composed with per-workflow
+  files by `blueearth_cst/shared/config_composition.py`. Only `config_path` resolves against the project
+  file; other paths resolve from the run directory. Cross-workflow keys belong in the project file's
+  owning `basin:`, `climate:`, `model:` section or top level, never in workflow files.
+- `config/defaults/` changes runs; `config/templates/` contains scaffolds only. Keep the
+  `project_config_` prefix on new seed configs or Git's glob silently excludes them.
+  `config/catalogs/cmip6_data.yml` and `cmip6_store_index.json` are generated; never hand-edit them.
+- Real basin data and production `project_dir` outputs live outside this repository, referenced by
+  absolute project paths. Untracked `test_case/test_local` is the development-only exception.
+- `dev/`: plans, retained findings, conventions and helpers; not shipped. The board belongs to `main`:
+  edit notes there and render with `python dev/scripts/todoboard.py render`; commit board-only changes
+  separately. Never hand-edit generated `dev/TODO.md`. New task documents go in `dev/tasks/<id>/`,
+  never `dev/working/`; disposable probes go in `.tmp/scratchpad/<task-id-or-purpose>/`.
+- `docs/site/`: published documentation; `docs/notebooks/`: source notebooks; `docs/references/`:
+  upstream guides. Historical migration guides live in `dev/records/milestones/`.
+  Do not mirror configs into docs. Full layout: `dev/reference/repo-layout.md`.
+- `dev/scripts/console.py` is vendored: fix upstream in `console-formatting`, then re-copy.
+  Ignored `.claude/`, `.codex/`, `.agents/` directories are linked into worktrees; absence downgrades,
+  rather than fails, activation.
 
 ## Key Commands
 
-Run everything inside `pixi shell`, or prefix each command with `pixi run`.
+Use `pixi run` or `pixi shell` for commands. Setup: `docs/site/setup/install.md`.
 
-```bash
-pixi install          # conda-forge + PyPI deps
-pixi run install      # + weathergenr (R, via remotes) and the Julia env
-
-# The five workflows, in convenience order. project_config_rapid.yml is the DEFAULT config.
-python scripts/run_workflow.py analyze_climate     --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
-python scripts/run_workflow.py build_model         --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
-python scripts/run_workflow.py analyze_projections --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 --keep-going
-# WF3 execution uses the owned wrapper; for WF3 alone, enable only generate_scenarios in the project config.
-python scripts/run_workflows.py --config <wf3-only-project-config.yml> --project-dir <project-dir> --cores 3
-python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
-
-# Or drive all enabled workflows in fixed order. Contract: the module docstring,
-# pinned clause-by-clause by tests/test_run_workflows.py.
-pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid
-
-snakemake ... --dry-run     # validate the DAG before running and after editing a rule
-snakemake --unlock -s <smk> --configfile <cfg>   # Snakemake locks the workdir on crash
-
-pytest tests/test_cli.py    # cheapest sanity check: checks all five entry points
-pytest tests/               # full suite (test_build_model.py is slow)
+```powershell
+pixi run python scripts/run_workflows.py --help
+pixi run pytest tests/test_cli.py
 ```
 
-Inspection helpers, all report-only until `--delete`: `pixi run tree-check`, `dev/scripts/prune_series_cache.py`, `dev/scripts/prune_climate_store.py`. DAG render: `scripts/plot_workflow_dag.py -s <smk> --configfile <cfg>`.
-
-Use `test_case/project_config_baseline_linux.yml` on Linux; its P-drive catalog also resolves `/mnt/p` and `/p`. `profiles/default/config.yaml` auto-loads from the repo root and sets `quiet: reason`; drop it when you need to see *why* a job re-ran.
+Validate a DAG with `--dry-run` before execution and after rule edits. Use the owned all-workflow
+runner for WF3 (enable only WF3 in its project config for a confined run); WF4 requires
+`scripts/simulate_system.py` or the all-workflow runner. Do not execute WF3/WF4 through bare Snakemake.
+The runner's module docstring and `tests/test_run_workflows.py` own its argument contract.
+`tree-check`, `dev/scripts/prune_series_cache.py`, and `dev/scripts/prune_climate_store.py`
+are report-only until `--delete`. DAG rendering: `scripts/plot_workflow_dag.py`.
+On Linux use `test_case/project_config_baseline_linux.yml`; its P-drive catalog also resolves
+`/mnt/p` and `/p`. The auto-loaded `profiles/default/config.yaml` sets `quiet: reason`;
+remove that setting when diagnosing why a job reran.
 
 ## Conventions
 
-- Name new identifiers and files per `dev/reference/naming.md`. Existing names are grandfathered; rename a contract surface only with a migration note.
-- Snakefiles are config-driven: each parses one `--configfile` YAML via a shared `get_config(config, key, default, optional)` helper. A new config key must mirror that contract (raise on missing required, return the default for optional).
-- Each Snakefile takes the `--configfile` path from `workflow.configfiles[0]` and forwards it as `config_path` to downstream R scripts — keep that forwarding.
-- Register new data sources in a `config/catalogs/*_data*.yml` catalog and pass it to hydromt via `-d`. Never hardcode data paths in a Snakefile.
-- `dev/` holds task-owned design notes and retained findings; disposable probes belong in
-  `.tmp/scratchpad/<task-id-or-purpose>/`. Install and usage docs belong in `docs/`.
-- **Keep configuration references current.** When a path, filename, config key or command moves, grep the old spelling and fix every live reference in the same commit — `docs/`, `README.md`, this file, code comments. A stale path in a document someone reads to do their job is a defect, not a record. The one exception is `dev/` milestone and review records, which are valuable *because* they are unedited; those carry a `> SUPERSEDED …` banner and an entry in `dev/reference/sealed-records.yml`, which `tests/test_sealed_records.py` freezes. **That registry is the entire list** — read it rather than guessing from age.
-- No silent caps: a tool that bounds its own coverage (top-N, sampling, no-retry) must report what it dropped.
-- **Writing a console row? Read `log_row`'s docstring first.** It carries the six conventions a row has to satisfy — it states its subsystem once, a value never repeats its key, a count and its noun agree (`plural`), a warning leads with the fault, no article on a verb row, and a capital unless it opens with an identifier. One row is one line and is never wrapped; a list whose length the data decides is capped with `listed`.
-- [Python] `script:` modules read `snakemake.input/output/params`, not `sys.argv`. [R] `Rscript --vanilla` scripts take positional args via `commandArgs(trailingOnly=TRUE)`.
-- netCDF (`.nc`) is the interchange format across R/Python/Julia. Wrap intermediate per-realization netCDFs in `temp(...)` — omitting it explodes disk usage on large `RLZ_NUM × ST_NUM` runs.
+- Follow `dev/reference/naming.md`; existing names are grandfathered. Contract renames need a
+  migration note. Update every live old path/key/command reference, including docs and comments.
+  Only records with a `SUPERSEDED` banner and entry in `dev/reference/sealed-records.yml` are frozen;
+  do not infer archival status from age.
+- Snakefiles use `get_config(config, key, default, optional)`: raise for missing required keys;
+  return defaults for optional ones. Forward `workflow.configfiles[0]` as `config_path` to R scripts.
+- Register sources in `config/catalogs/*_data*.yml`, passed to HydroMT via `-d`; no hardcoded
+  data paths in Snakefiles. Install and usage prose belongs in `docs/`.
+- No silent coverage caps: report dropped top-N, sampling, or no-retry coverage.
+- Read `log_row`'s docstring before writing console rows. Keep each row on one physical line;
+  use `listed` to cap data-dependent lists.
+- Python `script:` modules read `snakemake.input/output/params`, not `sys.argv`. R scripts use
+  `Rscript --vanilla` and positional `commandArgs(trailingOnly=TRUE)`.
+- netCDF is the R/Python/Julia interchange format. Mark intermediate per-realization netCDFs
+  with `temp(...)` to bound disk use at large realization × scenario counts.
 
 ## Validation ladder — match the check to the blast radius
 
-Batch integration: the user controls lane switching and landing. A modifying request in a clean, detached, configured session authorizes that session to claim itself with `task-start --task <task> --session <name> --base main --no-launch` from the primary checkout; the command creates the branch from current local `main`. Never create the branch by hand. Keep follow-up tasks on the claimed session branch until the user asks to switch or approves landing. Flag substantially unrelated work; the switching decision remains the user's.
+Read `dev/reference/validation-ladder.md` before planning verification, selecting gates, landing,
+or pushing. It owns acceptance-to-check/input/output mapping, evidence reuse, config provenance,
+`verify_landing.py`, and CI procedures. Execution success never replaces numerical/visual acceptance.
 
-At a new session's entry, rebase a clean, local, unpushed lane branch onto current local `main` before writing; use a merge for a published branch unless history rewriting is explicitly authorized. Dirty state or conflicts require resolution first, without automatic stash or reset. Do not repeat this synchronization for each conversational follow-up.
+Use `git-workflow`'s configured session lifecycle. A modifying request permits a clean detached
+session to claim itself with `task-start --task <task> --session <name> --base main --no-launch`
+from the primary checkout; never create the branch by hand. The user controls switching and landing.
+At new-session entry, synchronize a clean local unpushed lane with `main` by rebase; published lanes
+use merge unless rewriting is authorized. Resolve dirty state/conflicts without automatic stash/reset.
+Do not repeat synchronization per follow-up. Commit tasks with focused checks; run combined gates
+at approved landing after synchronization and executable edits. Task completion does not authorize
+landing/pushing. After a verified merge, prove ancestry, detach/free the lane, then delete its branch;
+on failure preserve the lane and branch for recovery.
 
-Complete each task with focused checks and a separate commit. Run the combined batch gates below after synchronizing with `main` at approved landing, rather than repeating them per task. Task completion does not authorize landing or pushing. After a verified merge, prove branch ancestry, detach and free the lane, then delete the merged branch. A failed gate or merge retains the lane and branch for recovery; pushing remains a separate explicit decision.
-
-Plan verification by acceptance claim, not by gate label. New and revised task designs must use
-`dev/reference/validation-ladder.md` § Planning and reusing verification and map each claim to a check,
-input case and reusable output root. A passing `test-full` satisfies `test-fast` on the same candidate
-and environment; do not require both as final gates. When `test-e2e` is owed, inspect its fresh rapid
-outputs for compatible inventory, caption, visual and numerical claims instead of requiring another
-standalone fresh rapid execution. Keep single-model, P0/lab, optional-product and synthetic cases only
-for the distinct coverage they add. Execution success never replaces numerical or visual acceptance.
-
-Record the tested commit, commands, results, environment, input/config identity and output root in the
-existing task evidence. Synchronize and finish executable edits before final gates. Reuse passes on
-an equivalent candidate; otherwise classify all intervening paths and rerun affected coverage,
-including checks reading documentation or transitive inputs. Use `dev/scripts/verify_landing.py` for
-recorded gate evidence. An executable `task-land --verify` may
-validate passing evidence and candidate equivalence instead of repeating expensive gates; it must
-reject missing evidence, failed/skipped required checks and unclassified changes. An equivalent merge
-needs tree-equality and ancestry proofs, not another suite. Push retains its delta and CI checks below.
-
-A task branch is isolated from `main` and cheap to revert, so spend validation time by blast radius. **Re-running the full suite after each incremental edit is the failure mode to avoid.** Measured costs and rationale: `dev/reference/validation-ladder.md`.
-
-| When | Run |
+| When | Required coverage |
 |---|---|
-| While iterating | Only the tests covering the file you changed. Nothing else. |
-| Before a commit | `pytest tests/test_cli.py` if a Snakefile, a `script:` signature, or a rule's declared input changed — the only place a malformed `config/defaults/*.yml` surfaces. If you wrote Python, run Ruff lint and format checks on touched Python files only. |
-| Final Python batch | `pixi run lint` and `pixi run format-check` once on the final candidate. |
-| Before merging the branch | `pixi run test-fast` once, unless a passing `test-full` already covers the candidate. Skip it when the branch diff touches only push-exempt paths (below). |
-| **Before pushing to `origin`** | Gate only the unpushed delta, `git diff --name-only origin/main..main`, and only while the last CI run on `origin/main` is read and green; when it is red or unread, run `test-fast`. Run nothing more when `test-fast` already passed on a commit whose diff to `main` is empty or push-exempt only — the `task-land --verify` candidate you just merged, plus any board-closure commits after it (`git diff --name-only <tested> main`). Rely on the ruff pre-push hook alone when the delta touches only push-exempt paths. Otherwise run `pixi run test-fast`, not `test-full`: CI runs the whole suite on both platforms from the push, so `test-full` here re-proves what CI is about to check, at roughly ten times the wall-clock. |
-| **After a push** | **Read the latest run.** A later push cancels and supersedes an in-flight run, and the latest one covers the whole tree. This is what makes the line above safe, and a green local suite is no evidence about the ubuntu leg. |
-| Before merging a batch that changed shared runtime/configuration contracts or a `script:` signature, or before a milestone seal | `pixi run test-full` — the `workflow_contract` and `process_isolation` tiers, which are the ones you would rather not first meet on two platforms at once. |
-| Cross-workflow changes, release or milestone | Fresh all-five `pixi run test-e2e`; no required skips. |
-| Confined workflow behavior | Execute affected workflow and consumers; figures use render/inspection. |
-| Before a milestone seal / after touching numeric outputs | `check_baseline.py check`, plus `semantic_tree_diff.py` if the tree shape moved. |
+| Iterating | Tests covering the change |
+| Pre-commit | CLI tests for rule/input/script-signature edits; scoped Ruff for touched Python |
+| Final Python batch | `pixi run lint` and `pixi run format-check` once |
+| Merge | `pixi run test-fast`, unless covered by `test-full` or exempt-only diff |
+| Shared runtime/config/script contract; milestone seal | `pixi run test-full` |
+| Cross-workflow change, release, milestone | Fresh all-five `pixi run test-e2e`; no required skips |
+| Confined workflow behavior | Execute affected workflow and output consumers with rapid inputs |
+| Numeric output or milestone seal | Baseline check; semantic tree diff if shape changed |
+| Push | Classify unpushed delta and read last CI; rules below |
+| After push | Read the latest CI run, including both platforms |
 
-The cross-workflow execution gate applies to shared runtime/configuration, orchestration and
-cross-workflow interfaces. For confined changes, search callers and output consumers, use rapid
-inputs, and state the affected consumers and omitted workflows. Shared figure-only helpers require
-all affected renders; runtime contracts and non-figure consumers trigger the broader gates.
+Apply the reference's evidence-reuse contract: full covers fast on the same candidate/environment;
+equivalent merges need tree-equality and ancestry proof. Missing or skipped required checks never pass.
 
-**Push-exempt paths** are edits to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, `AGENTS.md` and the root `README.md`, which no test reads. Classify the files in the diff, not the commit's label: a "dev/" chore can still touch `ci.yml` or `test_case/`. A rename or deletion is never exempt, because `test_activation_links.py` resolves every link under `dev/reference/` against the whole tree. `dev/scripts/`, `dev/records/`, `dev/reference/`, `config/templates/` and `docs/notebooks/` are all read by tests and stay gated. Add a path only after grepping `tests/` for a reader. The `test-full` and `test-e2e` rows follow the same rule: they fire on what the batch's own diff touches, so a follow-up batch that leaves `shared/` alone does not re-run them because an earlier, pushed batch touched it.
+Push exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root
+`AGENTS.md` and root `README.md`. Renames/deletions are never exempt. `dev/scripts/`, `dev/records/`,
+`dev/reference/`, `config/templates/` and `docs/notebooks/` have test readers and remain gated.
+Classify actual diff paths, not commit labels or earlier pushed batches; grep tests before adding
+an exemption. For push, inspect `origin/main..main`: red/unread last CI requires `test-fast`.
+With green last CI, reuse a passed fast/full candidate if intervening edits are exempt-only;
+an exempt-only unpushed delta needs only the Ruff pre-push hook. Otherwise run fast, not full;
+CI runs full on both platforms. Capture gate output in a file, never pipe it through `tail`.
 
-**Redirect a gate to a FILE; never pipe it through `tail`** — a pipe discards the diagnosis of an intermittent failure while still printing the pass/fail line, so the run looks informative and is not. Write `pixi run test-contract > run.log 2>&1` and read the tail of the file.
+CI runs for `main` pushes and PRs, not backup branch pushes. Normal approved publishing goes to
+`main`; use a PR for pre-landing two-platform assurance on reviewed numerical contracts, `shared/`,
+script signatures or milestone seals. `gh` defaults to Deltares upstream here: explicitly select
+`tanerumit/blueearth_cst`. Install local hooks with `core.hooksPath .githooks`.
 
-**Reading CI:** `gh` resolves to the `upstream` (Deltares) remote in this clone and exits 0 printing nothing, which reads as "CI has never run". Fix it once per clone with `gh repo set-default tanerumit/blueearth_cst`, and install the ruff pre-push hook the same way: `git config core.hooksPath .githooks`.
+Use rapid config for execution/DAG checks/renders; baseline config only when numbers are the point.
+Never baseline-check the rapid tree. WF2-fast is restricted iteration with declared coverage loss.
+The baseline manifest is stale after the P-drive/GlobCover switch: regenerate the revised baseline
+and re-record before numerical gating. Each worktree's untracked baseline tree is independent;
+inspect its provenance. Keep WF1 `--notemp` to retain `run_default/output.csv`; rounded `output_q.csv`
+is no substitute. The standing tree is not an R12 migration reference: use matched P0/GF-9 evidence.
+Details and recovery prerequisites live in the validation reference.
 
-**Push to `main`; a PR is the exception.** This is a solo repository and `main` is unprotected, so the ladder above IS the gate: `test-fast` locally, push, read the run. `ci.yml` triggers on `push: branches: [main]` and on `pull_request` and **on nothing else** — so a branch push runs no CI at all, and a branch pushed for safekeeping has been checked by nothing but the pre-push hook. Open a PR when you want both platforms green BEFORE the code lands: a change to a reviewed numerical contract, anything touching `shared/` or a `script:` signature, a milestone seal. Otherwise push straight to `main` and read the run. Note GitHub will not let you approve your own PR, so a required-review rule would strand you; if you ever want merge-on-green, make the two `tests (...)` checks REQUIRED and enable auto-merge, because auto-merge with nothing required merges instantly instead of waiting.
-
-**Which config to run:** default to `project_config_rapid.yml` (`test_case/test_rapid`) for anything you want to watch EXECUTE — a rule you edited, a DAG check, a generation/simulation smoke run, a figure render. Use `project_config_baseline.yml` (`test_case/test_local`) when the run's NUMBERS are the point; the baseline is recorded from it and nothing else, so never point `check_baseline.py` at the rapid tree. `project_config_wf2_fast.yml` is WF2 code iteration only. Rapid is CHEAP, not NARROW — a config that gives up coverage must say which.
-
-**The baseline manifest is stale after the switch to the P-drive catalog and GlobCover land cover.** Its last fresh-root record was made on 2026-10-04 from the prior local-data baseline. Regenerate `test_case/test_local` from the revised baseline config and re-record `dev/baseline/manifest.json` before using `check_baseline.py check` as a numerical gate.
-
-**The standing tree is now the R12 SUCCESSOR tree (2026-09-15).** It was wholly predecessor until then -- all 75 paths `snapshot_project_tree.py` could not map were pre-R12 output -- so it was replaced rather than repaired, and the predecessor copy is preserved at `blueearth_cst-artifacts/r12/predecessor-test_local-2026-09-15`. **It is still not an R12 migration reference**, and never can be: the old and new trees differ by both the R12 path/key/ownership change and the 2026-09-07 config change, so any comparison between them conflates two variables. R12 acceptance rests on the separately captured fresh P0 reference and the signed GF-9 crosswalk, which compare under matched settings. Note for other worktrees: `test_case/test_local` is untracked and **per-worktree, not shared** — verified 2026-09-15, six independent real directories with no junction or symlink among them, and their contents already differ. `project_dir: test_case/test_local` resolves from the run directory, so each worktree writes its own. The hazard is real but it is a SEEDING one, not a sharing one: a worktree seeded by copy before R12 still holds a predecessor tree, and a branch whose manifest describes the predecessor layout will fail `check_baseline` against *that* copy until it merges R12 and the tree is regenerated. Re-seed or regenerate per worktree; fixing one does not fix the others.
-
-**Run WF1 with `--notemp` when the run feeds `check_baseline.py`.** Rule 1.13 declares wflow's `run_default/output.csv` as `temp()`, and that file is the manifest's wf1 discharge target, so without the flag the gate fails "target missing" and reads as a defect. The rounded `output_q.csv` is not a substitute.
-
-**Figures are terminal artifacts** — no rule consumes a `.png`/`.pdf`, so verify a figure-only change by rendering it and publishing the PNG as an Artifact for visual inspection, never with the baseline, the full suite, or a byte comparison of the render. For a shared plotting helper, search all callers and render the affected figures. Escalate to the shared-contract gates only if it also changes runtime/configuration contracts or non-figure consumers.
+For figure-only changes, render and publish PNG artifacts for visual inspection; no baseline,
+full suite or render-byte comparisons. Search shared plotting callers and render all affected figures.
+Changes to runtime/config contracts or non-figure consumers trigger broader gates. For confined
+workflow execution, state affected consumers and omitted workflows; rapid must not silently narrow coverage.
 
 ## Hard Constraints
 
-- **IMPORTANT: Julia is not in the pixi env** — it is juliaup-managed and must already be on `PATH` (conda-forge has no win-64 Julia build). Do not add it via pixi.
-- Do not commit run outputs written under `project_dir`, or hand-edit `pixi.lock` or `Manifest.toml`.
-- The repo root carries **no cache directory of any kind**, and `tests/test_cache_dir_hygiene.py` fails if one appears. `ruff check --isolated` is the one invocation that still writes one — run it as `RUFF_CACHE_DIR=.tmp/ruff_cache ruff check --isolated`.
-- **IMPORTANT: stay within CST's automation scope** — this repo is the workflow engine only. Define config and setup (`config/defaults/wflow_build_model.yml`, data catalogs, `setup_*` blocks, `wflow_sbm.toml`-affecting steps) using hydromt / hydromt_wflow / Wflow conventions verbatim: CSDMS Standard Names, their YAML schema, their catalog format. Do not re-engineer how hydromt handles data, how `setup_*` methods work internally, or how Wflow parameterizes physics. Verification may *read* upstream docs to validate our config but must never patch upstream; a genuine hydromt/wflow bug is flagged upstream or worked around in our own code, never inside a vendored package.
+- Julia is juliaup-managed and must be on `PATH`; never add it to Pixi (no conda-forge win-64 build).
+- Never commit run outputs or hand-edit `pixi.lock` or `Manifest.toml`.
+- No root cache directories. For isolated Ruff, set PowerShell `$env:RUFF_CACHE_DIR = '.tmp/ruff_cache'`.
+- Use HydroMT/hydromt_wflow/Wflow standard names, schemas, catalogs and `setup_*` conventions verbatim.
+  Do not re-engineer upstream data handling or physics. Read upstream docs to validate our configuration;
+  flag upstream bugs or work around them in our code, never patch a vendored package.
 
 ## References
 
-- `dev/reference/plot-style.md` — read before revising scientific plots or their interactive review page;
-  preserve the agreed defaults and figure-specific exceptions, and update it when new styles are approved.
-- `dev/reference/versioning.md` — read before release preparation or version classification: manual SemVer, authoritative Git release tags, compatibility rules, and separate release approvals.
-- `README.md` — the pipeline and how the five workflows fit together; start here.
-- `docs/references/cst-toolbox-technical-note-2025.md` — the original 2025 note; read for method background and design rationale before changing *what* a workflow computes. Its only edit since is a two-line path sweep, so the method framing still holds, but pipeline details, paths and artifact names in it are often superseded — trust the code and `dev/reference/` where they disagree.
-- `dev/reference/validation-ladder.md` — read when deciding whether a gate is affordable, or when a gate behaves unexpectedly.
-- `dev/reference/repo-layout.md` — read when adding a file and unsure where it goes.
-- `dev/reference/naming.md` — read when naming a new identifier, file, or rule.
-- `dev/reference/workflows/rule-index.md` — read when editing or adding a rule.
-- `docs/site/setup/install.md`, `docs/site/setup/env-setup-notes.md` — read when pixi / R / Julia setup or env activation misbehaves.
-- `docs/references/hydromt-user-guide/00-index.md`, `docs/references/hydromt-architecture.md` — read when editing model-build config, data catalogs, or region setup.
-- `docs/references/hydromt-wflow/getting-started.md`, `user-guide.md`, `api.md` — read when a build/update/clip step touches the hydromt_wflow plugin (`api.md` for signatures).
-- `docs/references/wflow-user-guide/00-index.md` — read when editing `wflow_sbm.toml`, warm states, or Wflow run config.
+- `README.md`: workflow execution and pipeline; start here.
+- `dev/reference/plot-style.md`: before scientific plots/review pages; preserve defaults/exceptions and
+  record newly approved styles. `dev/reference/versioning.md`: before release/version decisions.
+- `docs/references/cst-toolbox-technical-note-2025.md`: methodology; code/current references win on stale
+  pipeline details, paths and artifacts.
+- `dev/reference/validation-ladder.md`: verification planning, affordability, unexpected gates and CI.
+- `dev/reference/repo-layout.md`, `dev/reference/naming.md`: placement and naming decisions.
+- `dev/reference/workflows/rule-index.md`: before adding/editing rules.
+- `docs/site/setup/install.md`, `docs/site/setup/env-setup-notes.md`: Pixi/R/Julia setup problems.
+- `docs/references/hydromt-user-guide/00-index.md`, `docs/references/hydromt-architecture.md`:
+  model-build config, catalogs and regions.
+- `docs/references/hydromt-wflow/` (`getting-started.md`, `user-guide.md`, `api.md`):
+  plugin build/update/clip behavior and signatures.
+- `docs/references/wflow-user-guide/00-index.md`: TOML, warm states and Wflow run configuration.

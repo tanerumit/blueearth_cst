@@ -39,9 +39,12 @@ Four bins plus `advanced_settings.yml`.
 
 User-facing runners, indexed in `scripts/README.md`.
 
-`suggest_experiment_name.py` pins a deliberate `experiment_name` into a config. It edits the config as text, never via `yaml.safe_dump`, which would strip every comment.
+`suggest_experiment_name.py` previews selection without editing YAML or reserving a directory.
 
-The key is optional. Unset, WF3 uses the project name plus the date the experiment was first created, and reuses an existing dated experiment rather than minting today's date (`experiment/allocate.py::resolve_default_experiment_name`). Never generate that name from the current clock — it would break Snakemake idempotence.
+The simulation's `experiment_name` is optional. Unset, runners start at `stress_test_01`; plain reruns
+select the highest allocation regardless of completion. Only `--new-experiment` advances numbering.
+A custom base selects its own family; an exact numbered name pins it. Existing owned dated or unnumbered
+experiments remain explicit legacy selections. The resolver lives in `experiment/reservation.py`.
 
 ## dev/
 

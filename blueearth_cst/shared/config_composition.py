@@ -416,6 +416,11 @@ IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
         ("blueearth_cst/experiment/simulation_runner.py", "*"),
         ("blueearth_cst/experiment/simulation_runner.py", "generate_scenarios"),
         ("blueearth_cst/experiment/generation_publication.py", "generate_scenarios"),
+        # Reservation admission compares frozen intent across producer sections;
+        # their settings remain owned by the corresponding producer builders.
+        ("blueearth_cst/experiment/reservation_request.py", "*"),
+        ("blueearth_cst/experiment/reservation_request.py", "build_model"),
+        ("blueearth_cst/experiment/reservation_request.py", "generate_scenarios"),
     }
 )
 

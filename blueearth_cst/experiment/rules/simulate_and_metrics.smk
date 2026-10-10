@@ -6,22 +6,19 @@ import tempfile
 import os
 import sys
 from blueearth_cst.shared.output_capture import captured_output
-from datetime import datetime
 from blueearth_cst.experiment.simulation_runner import simulation_settings, resolve_selected_collection
 from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2, read_simulation_intent_v2, read_simulation_v2, SimulationFrozenError
 from blueearth_cst.experiment.wf4_ancillary_descriptor import resolve_wf4_preparation
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import resolved_unit_interpretation
-from blueearth_cst.experiment.allocate import resolve_default_experiment_name
+from blueearth_cst.experiment.reservation_context import resolve_experiment_name
 from blueearth_cst.experiment.batch_sizing import count_active_cells, disk_headroom_bytes, measure_member_footprint, resolve_batch_plan, resolve_batch_size, split_evenly
 from blueearth_cst.shared.indicator_tables import indicator_tables
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, resolve_water_year_start, validate_experiment_name
 from blueearth_cst.shared.console_style import RuleRegistry, defer_rows, defer_warning, target_banner
 
 project, my_cfg = simulation_settings(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
-experiment = my_cfg.get("experiment_name")
-if experiment is None or not str(experiment).strip():
-    experiment = resolve_default_experiment_name(project_dir, project_slug(project_dir, reserve=len("_YYYYMMDD")), datetime.now().strftime("%Y%m%d"))
+experiment = resolve_experiment_name(Path(project_dir), my_cfg.get("experiment_name"))
 experiment = validate_experiment_name(experiment, project_dir)
 exp_dir = f"{project_dir}/experiments/{experiment}"
 runs_dir = f"{exp_dir}/hydrology/wflow"
@@ -35,6 +32,18 @@ _intent = read_canonical_json(Path(SELECTION["manifest_path"]).parent / "collect
 SIM_WINDOW_START = _intent["scenario_spec"]["simulation_window"]["start"]
 SIM_WINDOW_END = _intent["scenario_spec"]["simulation_window"]["end"]
 RUN_IDS = [item["run_id"] for item in COLLECTION["series"]]
+_retained_selection = None
+if Path(f"{engine_dir}/simulation_intent.json").exists():
+    _retained_selection = read_simulation_intent_v2(exp_dir)["collection"]
+elif Path(f"{engine_dir}/reservation.json").exists():
+    from blueearth_cst.experiment.reservation import read_reservation
+    _retained_selection = read_reservation(Path(project_dir), experiment)["resolution"]
+if _retained_selection is not None:
+    if (_retained_selection["collection_id"] != COLLECTION["collection_id"]
+        or _retained_selection["collection_revision"] != COLLECTION["collection_revision"]
+        or _retained_selection["run_ids"] != RUN_IDS):
+        raise SimulationFrozenError("selected collection differs from retained experiment; use --new-experiment")
+    SELECTION["resolution_mode"] = _retained_selection["resolution_mode"]
 SERIES = {item["run_id"]: item["file"]["path"] for item in COLLECTION["series"]}
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/simulate_system/{experiment}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/simulate_system/{experiment}"

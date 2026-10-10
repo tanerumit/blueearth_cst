@@ -261,6 +261,19 @@ def test_growth_exact_pins_no_gap_fill_and_completed_status_is_not_allocation(
     assert ledger["families"][0]["high_water"] == 101
 
 
+def test_chosen_roots_allocate_independently_including_active(api, prepared):
+    root, request, sources = prepared
+    other = (root.parent / "active", request, sources)
+    first = admit(api, prepared)
+    second = admit(api, other)
+    assert first.name == second.name == "stress_test_01"
+    assert first.reservation_id != second.reservation_id
+    before = inventory(other[0])
+    assert admit(api, prepared, new_experiment=True).name == "stress_test_02"
+    assert api.preview_experiment(other[0]).name == "stress_test_01"
+    assert inventory(other[0]) == before
+
+
 def test_deletion_is_permanent_and_preview_cannot_tombstone(api, prepared):
     root, _, _ = prepared
     admit(api, prepared, "wet_99")

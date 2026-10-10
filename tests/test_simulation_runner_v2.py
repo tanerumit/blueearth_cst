@@ -220,7 +220,13 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
 
 
 def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monkeypatch):
-    from blueearth_cst.experiment import metric_plan
+    from blueearth_cst.experiment import metric_plan, reservation_context
+
+    # This projection unit uses a synthetic marker; admission/integrity are
+    # exercised with real retained records by the reservation integration tests.
+    monkeypatch.setattr(
+        reservation_context, "resolve_experiment_name", lambda _root, name: name
+    )
 
     project = tmp_path / "project"
     root = project / "experiments/experiment_rapid"

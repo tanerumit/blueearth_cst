@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from blueearth_cst.experiment.content_identity import atomic_record, read_canonical_json
-from blueearth_cst.shared.workflow_config_snapshot import archive_lock
+from blueearth_cst.shared.workflow_config_snapshot import _replace, archive_lock
 
 
 @pytest.fixture(scope="session")
@@ -509,7 +509,9 @@ def test_recovery_refuses_without_verified_exact_recipe(api, prepared, damage):
     elif damage == "both":
         final.mkdir(parents=True)
     elif damage == "unknown final":
-        staged.rename(transaction / "preserved-stage")
+        # Fixture damage must tolerate the same transient Windows directory
+        # handle as publication; keep the unknown-occupant assertions intact.
+        _replace(staged, transaction / "preserved-stage")
         final.mkdir(parents=True)
         (final / "foreign").write_bytes(b"foreign")
     elif damage == "partial payload":

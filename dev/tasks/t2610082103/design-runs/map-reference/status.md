@@ -5,12 +5,12 @@ genre: decision-record
 author-binding: cst-architect
 started: 2026-10-10
 variant: lean
-stage: G1
+stage: 4
 external-rounds-completed: 0
 allocation: "Frontier plan below"
-dispatches: 2
+dispatches: 4
 gates:
-  G1: pending
+  G1: approved 2026-10-10
   G2: pending
 flags: [canonical-board-on-main, same-provider-review]
 ---
@@ -87,7 +87,8 @@ preserve auxiliary retained CHIRPS arrays but exclude borrowed contributions; tr
 Empty references use a finite-but-unscaled hatch without numerical colorbar. Ledger tracks every part;
 all findings remain open. The author must revise after G1 and disposition every original ID.
 
-The owner has not approved these concrete contracts. Risk and external review wait for that approval.
+The owner approved this framing and its required corrections on 2026-10-10 with "yes" in reply to
+the recorded G1 presentation. Risk review and author revision may proceed; G2 remains pending.
 No source change, rebase, merge or push. Source branch remains clean at `22fbe441`.
 
 ## Measured missing-data premise
@@ -111,3 +112,79 @@ Wall-clock and planner overhead were not instrumented. One root factual probe ad
 revision yet. One design/file author and one immutable report reviewer held their scope ceilings.
 Domain review found one blocking/two minor issues; resource exhaustion did not recur in these stages.
 Risk, revision and external stages remain pending G1. No general findings closure claimed.
+
+## Settled framing — G1 approval 2026-10-10
+
+- Python rendering first; portable drawing stays separate from CST preparation and persistence.
+- Produce one historical reference JSON under data/climate/historical/_engine/ for both WF0 and WF1.
+- Use the selected historical source's full cell-edge frame and pooled frame-intersecting candidate scales.
+- Add project-owned climate.map_reference completeness with a WF0 equality guard; keep forcing science intact.
+- Restrict the new reference missing-month tolerance to 0–27 days to resolve false-zero missing years.
+- Preserve retained CHIRPS auxiliary arrays; exclude borrowed temperature/PET contributions by source role.
+- Measure additional WF1-only extraction, hashing, reduction and memory cost; claim no acceptable-cost result.
+- Standardize map aspect, ticks/classes and extensions; finite fields without reference use an unscaled hatch.
+- Preserve figure paths and existing temporal products; keep implementation on the pinned session branch.
+- No implementation, landing or push approval is granted by this framing decision.
+
+User reply: "yes", following the concrete framing question and the one blocking/two minor scientific
+findings. Reviewed G1 design/tree SHA256 remains b3b6510335d863cfac447d18b56c1c291a7da6bbeaa488afc0d41317c4fb8e2d.
+The approved 0–27 correction and minor corrections enter the stage-3 revision, then further review.
+
+## Allocation revalidation and blocking-finding classification
+
+Continue the saved allocation: fresh critical-thinker Astra/high, then fresh cst-architect Astra/high.
+Capability/ownership unchanged; effective settings unverified. Risk dispatch is worker call 3.
+The pre-G1 blocking finding is confined to accepted missing-day input bounds in an existing calculation.
+The approved remedy narrows a policy domain; it does not change calculation mechanism, architecture or
+the intended scientific estimand. Classify as local mechanism and retain lean per SKILL.md's qualified
+promotion rule, with a targeted scientific verification of the corrective delta before G2.
+Any new architecture/cross-tool/estimand defect or non-convergence still invokes promotion.
+The stage-contract reference's older unqualified first-blocking trigger is superseded by that explicit
+SKILL.md classification rule; this discrepancy is retained as process friction, not silently ignored.
+
+## Approved-range probe
+
+Exit 0 in Pixi, existing diagnostics.annual only. All-missing 2020 and otherwise-one 2019 with wholly
+missing February produce NaN at max_missing_days_month=27, max_missing_days_year=366. At 31/366 they
+produce 0.0 and 337.0 respectively. Exact output retained in approved-range-probe.log; intake E12.
+This supports the bound remedy for those cases; no proposed config parser or producer is implemented.
+The final handoff still owes rejection at 28 and unavailable map values/zero eligible counts.
+
+## Risk completion and stage-3 handoff
+
+Risk verdict revise: one major, no blocking/minor, risk-1. Immutable report SHA256
+77703c6dd9301d9301de9632e33ff57c0d979a01dfc390ae6803920b2e9cfe76.
+Driver traced retained map attributes in compute_climate_diagnostics.py: they contain reporting period
+but no current-byte preparation identity. The review's premise is consistent with source inspection;
+same-mtime and orography failure sequences remain prospective acceptance cases.
+The bounded repair preserves ownership and approved framing; no gate return or promotion is needed.
+Index includes both completed lenses and explicitly records no conflicts.
+Fresh cst-architect map_revision requested Astra/high; owns only design-v2.md and append-only ledger.
+All four findings require full part-by-part resolution. Original v1 and reviews remain immutable.
+Execution/visual acceptance stays future work; effective settings and token cost unverified.
+
+## Frozen revision and external dispatch — round 1
+
+Fresh author completed v2 and append-only resolutions for all four original findings. No framing delta.
+Immutable design-v2 SHA256: 4e3175e4b79e0856bbd5c4705b7e81e5a2c6aa9b9602462dd49c5a87ee26f278.
+Immutable review-brief SHA256: c1c543e7903f3a1994bb60e34d260852fbfbc533f585bf436a4dd034a3489f47.
+Author claim checked: v1 bytes unchanged, source clean, original findings retained with full resolutions.
+Closure remains provisional until independent review. Source-PET dependency exposure is explicitly an
+implementation qualification gate; failure returns that interface gap to G1.
+
+Proposed external dispatch 5 requests Astra/high in an independent ephemeral read-only Codex context. Inputs are
+the named v2, settled framing in the immutable brief, and narrowly cited source files; no prior reports.
+Same provider, not cross-vendor. Reuse successful enforced read-only preflight at CLI 0.162.0; verify the
+actual review banner. No source writes, workflow execution, network research or nested delegation.
+The external domain lens explicitly checks the corrective missing-data delta and retained-field repair.
+No execution assurance or performance acceptance follows from review convergence.
+
+## External launch rejected — payload approval pending
+
+Automatic approval review rejected the launch before any reviewer process started. Reason: general
+independent-review authorization did not specifically authorize transmitting private design documents
+and cited source contents to the external destination. No retry, workaround or review result.
+Asked the owner to approve the exact frozen design, brief and narrowly cited source excerpts to OpenAI
+through ephemeral read-only Codex CLI, or keep review within this session. Required answer is pending.
+Completed worker dispatches remain four; the rejected launch is a separate attempted dispatch.
+Stage 4 remains pending, not converged. G2 and implementation remain pending.

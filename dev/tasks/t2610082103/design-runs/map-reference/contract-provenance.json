@@ -36,6 +36,11 @@
       "path": "artifacts/skills/design-review-loop/references/findings-and-closure.md",
       "sha256": "55f23a42ffc4ef1ad0cfbe38b87af54b49c1c652038bb51d726cb987b263dbc1",
       "matches_pin": true
+    },
+    {
+      "path": "artifacts/skills/design-review-loop/references/external-review-brief.md",
+      "sha256": "0d8a7a3ef805af02c74c0a97bf1dd1c2cfe20b2d1c59dcf1eb66f632613cfbcf",
+      "matches_pin": true
     }
   ]
 }

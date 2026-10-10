@@ -56,9 +56,10 @@ Evidence below is static source observation, not numerical equality or measured 
 | E6 | Drawing derives classes from limits, uses field latitude for aspect, auto ticks | diagnostic_maps.py | Inspect draw_map | High, static |
 | E7 | Shared map policy needs WF0-independent settings | diagnostic_settings.py; Snakefiles | WF0 settings versus WF1 defaults | High, static |
 | E8 | Both routes can yield identical records with declared inputs | Prospective claim | Falsify with fresh paired roots and record comparison | Hypothesis |
-| E9 | WF1-only pooled reductions have acceptable cost | Prospective claim | Measure source extraction/reduction time and memory separately | Unmeasured |
+| E9 | Extra candidate work requires cost measurement, not an acceptability claim | G1 ruling | Measure extraction, hashing, reduction and memory separately | Unmeasured |
 | E10 | Wrapper holds project-execution archive_lock across child Snakemake execution | workflow_archive_launch.py | Inspect execute path around line 650 | High, static |
 | E11 | All-NaN leap-year amount returns 0 at 31/366; NaN at 3/15 | diagnostics.annual | One-time all-missing-probe.log; 366 daily values, m0=1 | Measured exact |
+| E12 | At 27/366, all-missing year and wholly missing February amounts are NaN | diagnostics.annual | approved-range-probe.log; contrasts 31/366 | Measured exact |
 
 Domain-scientific content: yes. Pooling support, missingness/completeness, physical units and
 interpretation of shared classes require model-validator review before G1. Review hypotheses as

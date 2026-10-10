@@ -129,7 +129,12 @@ settings can turn an entirely missing amount year into zero. Proposed G1 remedy 
 map policy to at most 27 missing days per month. Retained CHIRPS auxiliary arrays need an explicit
 preservation oracle; runtime cost becomes a measurement objective rather than an acceptability claim.
 
-G1 framing approval is pending; risk/external review and implementation have not started. See
+The owner approved G1 framing, including the 0–27 monthly bound, CHIRPS preservation and cost
+measurement. Risk review found one major retained-field provenance gap. The fresh architect's
+[design-v2](t2610082103/design-runs/map-reference/design-v2.md) resolves all four findings in the design,
+with matching preparation/payload identities, rejection and repair; execution remains unverified.
+Independent review is pending explicit payload approval after automatic approval review rejected the
+separate external launch. No reviewer process started. G2 and implementation remain pending. See
 [run authority and exact identity](t2610082103/design-runs/map-reference/status.md) and
-[open finding dispositions](t2610082103/design-runs/map-reference/ledger.md). The pinned source branch
+[finding dispositions](t2610082103/design-runs/map-reference/ledger.md). The pinned source branch
 remains clean at `22fbe441`; no merge or push.

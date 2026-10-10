@@ -1,5 +1,8 @@
 # Experiment numbering implementation evidence
 
+Scratch paths below use `<task-scratch>` for a root assembled from parent `.tmp/scratchpad` and
+task ID `t2610032349`. Raw gate receipts retain the exact executed command arguments.
+
 Branch: `feat/minor-improvements`, session-1. Implementation authorized 2026-10-10.
 No landing, pushing, release, output migration or output deletion is authorized by this task.
 
@@ -23,7 +26,7 @@ Metrics-only uses retained responses without requiring current generation, catal
 ## Focused evidence
 
 Commands use this worktree's Pixi environment on Windows 11, Python 3.11, and external juliaup Julia.
-Scratch evidence root: `.tmp/scratchpad/t2610032349/`. Elevated verification grants local P-drive
+Scratch evidence root: `<task-scratch>/`. Elevated verification grants local P-drive
 catalog access and the normal Windows token needed for the private-tempfile fixtures.
 
 | Claim | Command / case | Result | Evidence relative to scratch root |
@@ -75,8 +78,8 @@ collection/revision/run IDs, every scenario's netCDF content, native CSV values 
 
 The final explicit generation comparison passed: all 18 provider-inventory paths and hashes are
 unchanged; seed 123, collection/revision and all ten scenario contents exactly match the reference.
-Command: `python .tmp/scratchpad/t2610032349/compare_science.py
-.tmp/scratchpad/t2610032349/candidate-final/project --generation-only`.
+Command: `python <task-scratch>/compare_science.py
+<task-scratch>/candidate-final/project --generation-only`.
 Evidence: `candidate-final/generation-compare.log` and `candidate-final/science-generation.json`.
 
 Full explicit scientific comparison also passed: ten native CSV tables and all three retained metric
@@ -149,7 +152,7 @@ Exact final focused commands (all pytest commands run with the normal Windows to
 pixi run pytest tests/test_reservation_request.py tests/test_reservation_context.py tests/test_reservation_generation.py -q
 pixi run pytest tests/test_reservation.py -k chosen_roots -q
 pixi run pytest tests/test_reservation_context.py -k 'disabled_simulation or metrics_only' -q
-pixi run python -m pytest tests/test_snapshot_project_tree.py tests/test_project_tree_inventory.py tests/test_semantic_tree_diff.py -q --basetemp .tmp/scratchpad/t2610032349/p2-candidate/pytest-inspection-01
+pixi run python -m pytest tests/test_snapshot_project_tree.py tests/test_project_tree_inventory.py tests/test_semantic_tree_diff.py -q --basetemp <task-scratch>/p2-candidate/pytest-inspection-01
 pixi run lint
 pixi run format-check
 ```
@@ -197,7 +200,7 @@ Only verified task changes are committed; the lane remains occupied until the us
 
 ## Retained original context and authorized landing
 
-The [accepted design](accepted-design.md) retains its original header. Approval and capped review
+The accepted design retains its original header in the verified context archive. Approval and capped review
 identity are in the original status, recoverable through [original-context.json](original-context.json).
 That identity stores repository, full commit, original parent, task ID, task-tree object and each report's
 relative path separately. The pin remains reachable through ordinary merge ancestry. Retrieve a report
@@ -255,7 +258,7 @@ pixi run test-fast -n 2 --dist loadfile -o faulthandler_timeout=180
 pixi run test-contract -o faulthandler_timeout=180
 pixi run lint
 pixi run format-check
-pixi run test-e2e --basetemp .tmp/scratchpad/t2610032349/landing/e2e-root -o faulthandler_timeout=180
+pixi run test-e2e --basetemp <task-scratch>/landing/e2e-root -o faulthandler_timeout=180
 ```
 
 The fresh execution ran on `78ed0bca45c2d234ab7d3c8ed764d5ffccc469d9`. It is reused on the final executable candidate
@@ -289,7 +292,7 @@ existing upstream HydroMT preprocessing round-trip defect. No stale baseline was
 Fresh output root:
 
 ```text
-.tmp/scratchpad/t2610032349/landing/e2e-root/test_all_five_workflows_run_en0/project
+<task-scratch>/landing/e2e-root/test_all_five_workflows_run_en0/project
 ```
 
 Input: `test_case/project_config_rapid.yml`, explicit seed 123, two realizations and the full rapid
@@ -310,7 +313,7 @@ Fresh `subbasins.png` and `comparison_precip_annual_wet_days_ts_basin_avg.png` w
 labels, units, legends and source captions remain readable and unclipped. No figure code changed.
 
 Gate receipts, raw logs, numerical hashes, fresh outputs and their verification scripts are retained
-under `.tmp/scratchpad/t2610032349/landing/` pending landing/push evidence retention. They include
+under `<task-scratch>/landing/` pending landing/push evidence retention. They include
 `full-passing-gates.json`, `style-passing-gates.json`, the original `e2e-gates.json`,
 `e2e-reuse-passing-gates.json`,
 and `output-acceptance.json`. The repository evidence verifier checks their clean candidate identity,

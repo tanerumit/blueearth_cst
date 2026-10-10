@@ -8,7 +8,6 @@ queue: 1
 created: 2026-10-08
 updated: 2026-10-10
 doc: dev/tasks/t2610082103/landscape-and-plan.md
-branch: refactor/t2610082103-shared-plotting
 ---
 
 > [!note] Overview
@@ -16,17 +15,20 @@ branch: refactor/t2610082103-shared-plotting
 > A shared map-reference producer makes extent, grid lines and colorbar classes independent of workflow order.
 > WF2 adopts the common plotting fundamentals.
 > **Why it matters** — Separate map, style and export paths let comparable figures drift and duplicate fixes.
-> **What it takes** — Roughly 4–7 focused developer days in two batches. Agree the target appearance and
-> scientific preparation boundary first; the estimate comes from source inspection, not a prototype.
+> **What it takes** — Internal v1 is landed. Next, prove standalone use and scope external packaging;
+> R/WF3 adoption and remaining spatial-layout corrections stay incremental.
 
 ## Progress
 
-- [ ] Agree the target appearance and shared renderer inputs through a reviewed design.
-- [x] Consolidate style, sizing, export and caption placement; migrate WF2's common helper imports.
-- [ ] Share raster-map drawing and an input-identified reference producer; migrate WF0/WF1 adapters.
-- [x] Share equivalent annual-series and monthly-distribution renderers with workflow-specific preparation.
-- [ ] Verify prepared values and WF0-to-WF1 versus WF1-only equivalence; inspect affected rapid renders.
-- [ ] Remove replaced drawing paths, correct stale claims and document the resulting ownership.
+- [x] Review target appearance and renderer inputs — approved foundations, chart and map designs.
+- [x] Consolidate style, sizing, export and captions — active WF0–WF2 helpers share the internal core.
+- [x] Share native raster rendering and identified references — WF0/WF1 use one producer and policy.
+- [x] Share annual/monthly chart rendering — scientific preparation remains workflow-owned.
+- [x] Verify numerical/visual preservation — full suite, fresh all-five and independent review pass.
+- [x] Retire replaced paths and land internal v1 — local main merge `761c8e54`; no push or release.
+- [ ] Prove standalone reuse and scope external packaging; R/WF3 remain later increments.
+
+Current evidence: [internal v1 landing](t2610082103/landing-evidence.md).
 
 ## Scope and acceptance
 
@@ -58,14 +60,14 @@ Acceptance: fresh WF0 then WF1 and fresh WF1 alone produce identical references 
 frames, grids and colorbars under matched inputs. Changing source set or policy rebuilds the
 reference. Use one-time checks and visual inspection; do not add these checks to the testing suite.
 Keep workflow-specific scientific preparation unchanged. The Liberia output corrections prompted
-this requirement; shared-producer implementation remains deferred.
+this requirement; implementation was deferred at that checkpoint and is now complete.
 ## Agreed direction (2026-10-10)
 
 The user approved Python rendering first, an internal core with a portable dependency boundary,
 then reusable chart interfaces, a separately scoped map-reference producer, and later external packaging.
 The [landscape and development plan](t2610082103/landscape-and-plan.md) preserves the full assessment.
-Start with a bounded foundations design and focused specialist handoffs. Implementation remains in
-the pinned session branch; board and planning records stay on main.
+The initial work used a bounded foundations design and focused specialist handoffs. Implementation
+was isolated in the pinned session branch; board and planning records stayed on main.
 
 The first foundations design passed internal and independent review with no findings, and the user
 approved its exact revision. The extraction is implemented and verified on the pinned branch.
@@ -103,10 +105,10 @@ files also matched. API probes, visual inspection, repository lint and formattin
 Post-implementation verification was root-owned after the worker service hit its usage limit.
 See [completion evidence](t2610082103/design-runs/prepared-charts/completion.md) and
 [review state](t2610082103/design-runs/prepared-charts/status.md).
-The next packet is the separately reviewed shared map-reference producer design.
-Remaining visual issues: very long records crowd year labels; all-missing maps retain a default scale
-with little interpretive value; the soil-clay colourbar title clips the upper canvas edge.
-Map-reference production, R/WF3 and external packaging remain later work.
+The next packet at this checkpoint was the separately reviewed shared map-reference producer design.
+At this chart checkpoint, long records crowded year labels and all-missing maps retained a default
+scale. The later map-reference work replaces unavailable scales with explicit unscaled display.
+Spatial soil-clay and LAI colorbar-title cropping remains; R/WF3 and external packaging stay open.
 
 
 ### Branch identity (2026-10-10)
@@ -149,6 +151,19 @@ See [implementation evidence](t2610082103/design-runs/map-reference/implementati
 [scientific/visual verdict](t2610082103/design-runs/map-reference/scientific-consumer-report.md),
 [repair/cost evidence](t2610082103/design-runs/map-reference/repair-and-cost-evidence.md) and
 [run state](t2610082103/design-runs/map-reference/status.md). Costs are measured with explicit scope;
-no performance acceptability or token-savings claim. The source worktree is clean. Full-suite and fresh
-all-five gates remain owed at approved batch landing; no merge or push. Broader library development,
-R/WF3 and external packaging remain open parts of this task.
+no performance acceptability or token-savings claim. At that implementation checkpoint, the source
+worktree was clean and full-suite/fresh all-five gates were owed. The landing section below records
+their completion. Broader library development, R/WF3 and external packaging remain open.
+
+
+### Internal v1 landed (2026-10-10)
+
+The owner-approved batch is merged to local main in `761c8e54`; session-1 is parked and its source
+branch is deleted. The corrected software gate passes 4,120 tests, with 17 documented skips and one
+upstream expected failure. Fresh all-five execution passes without skips, followed by exact WF0
+preservation, classified WF1 preservation and independent WF0–WF2 visual/caption review.
+See the [landing receipt](t2610082103/landing-evidence.md) for candidate/configuration/environment
+identities, output roots, gate records, coverage limits and cleanup proofs. No push or release.
+
+Internal v1 is complete. This broader item stays active for standalone reuse and external packaging;
+R/WF3 migration and residual spatial title clipping remain later work.

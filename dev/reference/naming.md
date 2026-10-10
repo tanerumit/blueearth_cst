@@ -174,6 +174,7 @@ Every Snakemake rule identifier is `<verb>_<noun>`. The verb comes from this lis
 | `perturb_` | apply a climate perturbation to an existing series |
 | `run_` | invoke an external engine |
 | `reduce_` | **intermediate** aggregation that feeds a later rule |
+| `produce_` | shared preparation and publication consumed by more than one workflow |
 | `derive_` | compute a workflow's **terminal product** from reduced inputs |
 | `plot_` | render a figure |
 | `check_` | validate, fail loud |

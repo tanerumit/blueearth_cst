@@ -93,6 +93,16 @@ they can be used with the current toolbox.
   optional historical climate analysis helps compare candidate sources.
   **`climate.sources`** is the full candidate list it compares; `selected` must
   be one of them.
+- **`climate.map_reference`** optionally sets historical map completeness. Defaults are three missing
+  days per calendar month and fifteen per reporting year. `max_missing_days_month` accepts integers
+  0–27; `max_missing_days_year` accepts nonnegative integers. Unknown keys, booleans and fractions are
+  refused. Put this mapping in the project file, never a workflow file.
+
+WF0's `diagnostics.max_missing_days_month` and `diagnostics.max_missing_days_year` must equal the shared
+map policy. For custom tolerances, copy both values into `climate.map_reference`; a monthly value above
+27 requires an explicit supported choice in both places. There is no automatic clamping. Changing WF0's
+tolerances also affects its temporal diagnostics. WF1's model-forcing summaries keep the independent
+default 3/15 policy; map captions distinguish this from a custom reference policy.
 
 The project file holds the basin, climate source, and model output choices
 shared across workflows. Settings specific to one workflow go in that

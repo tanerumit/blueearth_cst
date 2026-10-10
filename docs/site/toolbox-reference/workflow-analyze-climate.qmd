@@ -66,6 +66,12 @@ diagnostics:
 
 ## Inputs
 
+Historical maps share `climate.map_reference` from the project file (default 3/15). Its tolerances must
+match the diagnostic settings above; monthly values above 27 are refused for shared maps. Temporal
+diagnostic methods remain unchanged. The selected source supplies the common cell-edge frame; native
+cells intersecting it across the configured candidates supply pooled color classes. Auxiliary CHIRPS
+temperature and PET remain retained where present but do not contribute to historical scales.
+
 Inputs are the basin definition, candidate historical climate datasets, and their catalog entries. The
 workflow does not consume a Wflow model or CMIP6 projections.
 
@@ -75,6 +81,14 @@ WF0 writes shared basin geometry and historical climate stores beneath `project_
 Each source gets `tables/` and `plots/` directly inside its store. With multiple sources,
 `data/climate/historical/comparison/` contains the comparison products in the same layout.
 There is no one-source comparison.
+
+Both WF0 and WF1 can produce `data/climate/historical/_engine/map_reference.json` independently. It
+records frame/classes, source roles, completeness and current input/preparation identities. Existing
+`tables/annual_climatology.nc` products gain preparation and payload identities; older files must be
+regenerated before map rendering. A reference rebuild alone cannot validate stale retained fields.
+After changing backing data without changing timestamps, force affected extraction when needed, then
+the affected `compute_climate_diagnostics_<source>` rules and `produce_historical_map_reference`, and
+rerender through the owned runner. Captions distinguish reference support, fields and unavailable scales.
 
 Multisource runs also retain `comparison/dataset_comparison.csv` and `.md` at their existing paths. These
 describe the extracted sources, their grids, periods and structural forcing readiness. They complement

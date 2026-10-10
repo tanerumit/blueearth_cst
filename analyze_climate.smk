@@ -16,6 +16,7 @@ from blueearth_cst.shared.workflow_archive_launch import captured_projection, re
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.climate_analysis.diagnostic_outputs import diagnostic_source_outputs, diagnostic_comparison_outputs
 from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
+from blueearth_cst.shared.map_reference import historical_map_reference_rule, require_wf0_completeness, source_map_inputs, source_spec_dict
 
 # --- figure filenames ---------------------------------------------------------
 # WF0's figures follow `dev/reference/wf0-figure-filename-rule.md`:
@@ -294,6 +295,7 @@ LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("0.01", "delineate_region")
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers")
 EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="clip global climate to the basin")
+PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference")
 COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics")
 PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics")
 
@@ -312,6 +314,14 @@ if type(_subbasin_figures) is not bool:
 DIAGNOSTIC_SETTINGS["subbasin_figures"] = _subbasin_figures
 from blueearth_cst.shared.wf3_science import water_year_start_number
 DIAGNOSTIC_M0 = water_year_start_number(WATER_YEAR_START)
+MAP_REFERENCE = historical_map_reference_rule(
+    project_dir=project_dir, model_region=model_region, climate=climate_cfg,
+    data_sources=DATA_SOURCES, region_geojson=REGION.outputs["region_geojson"],
+    basin_geojson=SPATIAL_UNITS.outputs["basins"], m0=DIAGNOSTIC_M0,
+    hydrography=basin_hydrography, basin_index=basin_index,
+)
+require_wf0_completeness(DIAGNOSTIC_SETTINGS, MAP_REFERENCE.params["completeness"])
+MAP_SOURCE_SPECS = {spec.source: spec for spec in MAP_REFERENCE.source_specs}
 SOURCE_DIAGNOSTICS = {s: diagnostic_source_outputs(CLIMATE_STORES[s].store_dir, s, DIAGNOSTIC_SETTINGS) for s in CANDIDATE_SOURCES}
 POOLED_ROOTS = [SOURCE_DIAGNOSTICS[s]["root"] for s in CANDIDATE_SOURCES]
 COMPARISON_DIR = f"{project_dir}/data/climate/historical/comparison"
@@ -415,7 +425,7 @@ for _source in CANDIDATE_SOURCES:
             _spec.script
 
     _diag = SOURCE_DIAGNOSTICS[_source]
-    _compute_inputs = {"climate_nc": _spec.outputs["climate_nc"], "basin_cells": _spec.outputs["basin_cells"]}
+    _compute_inputs = source_map_inputs(MAP_SOURCE_SPECS[_source])
     if "oro_nc" in _spec.outputs:
         _compute_inputs["oro_nc"] = _spec.outputs["oro_nc"]
     _compute_outputs = dict(_diag["compute"])
@@ -431,13 +441,19 @@ for _source in CANDIDATE_SOURCES:
         params:
             settings=DIAGNOSTIC_SETTINGS, source=_source, store_dir=_spec.store_dir,
             m0=DIAGNOSTIC_M0, data_sources=DATA_SOURCES,
+            map_source_spec=source_spec_dict(MAP_SOURCE_SPECS[_source]),
+            map_completeness=MAP_REFERENCE.params["completeness"],
+            preparation_code_digest=MAP_REFERENCE.params["preparation_code_digest"],
+            map_environment=MAP_REFERENCE.params["environment"],
         log: COMPUTE_DIAGNOSTICS.log(_source),
         benchmark: COMPUTE_DIAGNOSTICS.benchmark(_source),
         script: "blueearth_cst/climate_analysis/compute_climate_diagnostics.py"
 
     _render_outputs = dict(_diag["render"])
     _render_inputs = {"tables": list(_diag["compute"].values()),
-        "pooled": [p for spec in SOURCE_DIAGNOSTICS.values() for key, p in spec["compute"].items() if key in {"monthly_values", "metadata", "maps"}],
+        "pooled": [p for spec in SOURCE_DIAGNOSTICS.values() for key, p in spec["compute"].items() if key in {"monthly_values", "metadata"}],
+        "map_reference": MAP_REFERENCE.outputs["reference"],
+        **MAP_REFERENCE.inputs,
         **{key: SPATIAL_UNITS.outputs[key] for key in ("basins", "subbasins", "rivers", "locations")}}
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
         _render_inputs["subbasin_tables"] = f"{_diag['root']}/tables/subbasins"
@@ -454,9 +470,20 @@ for _source in CANDIDATE_SOURCES:
             settings=DIAGNOSTIC_SETTINGS, source=_source, store_dir=_spec.store_dir,
             m0=DIAGNOSTIC_M0, pooled_roots=POOLED_ROOTS,
             subbasin_table_dirs=[f"{_diag['root']}/tables/subbasins"],
+            map_reference_params=dict(MAP_REFERENCE.params),
         log: PLOT_DIAGNOSTICS.log(_source),
         benchmark: PLOT_DIAGNOSTICS.benchmark(_source),
         script: "blueearth_cst/climate_analysis/plot_climate_diagnostics.py"
+
+# 0.03b  produce_historical_map_reference — shared native-grid display contract.
+rule produce_historical_map_reference:
+    message: PRODUCE_MAP_REFERENCE.banner()
+    input: **MAP_REFERENCE.inputs,
+    output: **MAP_REFERENCE.outputs,
+    params: **MAP_REFERENCE.params,
+    log: PRODUCE_MAP_REFERENCE.log(),
+    benchmark: PRODUCE_MAP_REFERENCE.benchmark(),
+    script: MAP_REFERENCE.script
 
 if COMPARISON_DIAGNOSTICS:
     _comparison_outputs = {**COMPARISON_DIAGNOSTICS["compute"], **COMPARISON_DIAGNOSTICS["render"], **COMPARISON_DIAGNOSTICS["source_summary"]}

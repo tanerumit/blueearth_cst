@@ -433,7 +433,8 @@ def build_project_tree_rules(
     # The climate store is keyed by <clim_source>_<window>; the key is a CACHE
     # KEY, so the rule is keyed by a variable exactly as the R9 map's is.
     same(f"data/climate/historical/{dataset_key}/")
-    same_rx(r"data/climate/historical/[^/]+/.*")
+    same_rx(r"data/climate/historical/(?!_engine/)[^/]+/.*")
+    same("data/climate/historical/_engine/map_reference.json")
     # Rule 0.04b pools its colour scale ACROSS sources, so `shared_plot_scales.json`
     # lands at the historical root rather than inside a store key -- one level
     # above what the pattern on the line before can match. The per-source sidecar

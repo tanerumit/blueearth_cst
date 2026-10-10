@@ -127,7 +127,7 @@ MIGRATION_COMMAND = "scripts/migrate_project_config.py"
 #: refuse a shape the design ships.
 T1_SHARED_SECTIONS: dict[str, tuple[str, ...]] = {
     "basin": ("region", "resolution", "output_locations", "delineation", "sources"),
-    "climate": ("sources", "selected", "window", "water_year_start"),
+    "climate": ("sources", "selected", "window", "water_year_start", "map_reference"),
     "model": ("outvars",),
 }
 

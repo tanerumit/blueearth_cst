@@ -14,6 +14,8 @@ def run(sm):
         [sm.params.source],
         list(sm.params.pooled_roots),
         {key: sm.input[key] for key in ("basins", "subbasins", "rivers", "locations")},
+        map_reference=sm.input.map_reference,
+        map_reference_params=dict(sm.params.map_reference_params),
     )
     if settings["subbasin_figures"]:
         from blueearth_cst.climate_analysis.diagnostic_subbasins import render_subbasins

@@ -10,7 +10,10 @@ import xarray as xr
 
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis import diagnostics as dg
-from blueearth_cst.climate_analysis.diagnostic_maps import draw_map
+from blueearth_cst.climate_analysis.diagnostic_render import (
+    load_map_overlays,
+    prepared_map,
+)
 from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
 from blueearth_cst.plotting import prepared_charts as pc
 from blueearth_cst.plotting.fundamentals import MONTH_ABBR, STYLE
@@ -143,9 +146,14 @@ def render_forcing_figures(
     plot_dir: str | Path,
     overlays: dict[str, str | Path],
     m0: int,
-    map_extent: list[float] | None = None,
+    *,
+    reference: dict,
+    validate_current,
 ) -> list[Path]:
-    """Write nine canonical figures, optionally framed on historical cell edges."""
+    """Write nine canonical figures using the validated historical reference."""
+    validate_current()
+    features = load_map_overlays(overlays)
+    map_extent = reference["frame"]["extent"]
     fields, results, years = prepare_forcing(ds, inside, m0)
     map_inside = inside.rename(
         {
@@ -196,23 +204,21 @@ def render_forcing_figures(
             with plt.rc_context(STYLE):
                 if kind == "map":
                     field = fields[variable]
-                    finite = field.values[np.isfinite(field.values)]
-                    limits = (
-                        (float(finite.min()), float(finite.max()))
-                        if finite.size
-                        else (0.0, 1.0)
-                    )
-                    fig = draw_map(
+                    fig, map_info, reference_text = prepared_map(
                         field,
-                        variable,
-                        "forcing",
-                        overlays,
-                        limits,
                         fields[f"{variable}_valid_years"],
+                        reference,
+                        variable,
+                        features,
                         cell_edges=False,
                         inside=map_inside,
-                        extent=map_extent,
                     )
+                    map_info["field_period"] = [int(years[0]), int(years[-1])]
+                    map_info["source_role"] = "model forcing"
+                    map_info["field_completeness"] = {
+                        "max_missing_days_month": max_month,
+                        "max_missing_days_year": max_year,
+                    }
                     encoding = (
                         "Mean of eligible reporting-year means"
                         if is_temperature
@@ -229,10 +235,11 @@ def render_forcing_figures(
                     )
                     details = (
                         f"{encoding} at each model cell ({unit}); {count_text} eligible years per available cell. "
-                        "White cells are outside the model basin; gray basin cells have no eligible annual values. "
+                        "White cells are outside the model basin; gray basin cells have no finite annual climatology. "
                         "Basin and subbasin boundaries, rivers and gauges are shown where supplied. No spatial interpolation."
                     )
-                    available = bool(finite.size)
+                    details += " " + reference_text
+                    available = bool(map_info["finite_cells"])
                 elif kind == "annual":
                     fig = pc.annual_series(
                         years,
@@ -277,6 +284,7 @@ def render_forcing_figures(
                 name = f"forcing_{variable}_{kind}.png"
                 path = root / name
                 try:
+                    validate_current()
                     fig.savefig(
                         path,
                         dpi=600,
@@ -327,7 +335,18 @@ def render_forcing_figures(
                     "map_extent": map_extent if kind == "map" else None,
                 },
             }
+            if kind == "map":
+                records[name]["map_reference"] = map_info
+                if not map_info["displayed_cells"]:
+                    records[name]["availability"] = (
+                        "not displayed: native support does not intersect the reference frame"
+                    )
+                elif available and map_info["scale_status"] == "unavailable":
+                    records[name]["availability"] = (
+                        "unscaled: historical reference unavailable"
+                    )
             written.append(path)
+    validate_current()
     engine = root / "_engine"
     engine.mkdir(exist_ok=True)
     (engine / "figure_captions.json").write_text(

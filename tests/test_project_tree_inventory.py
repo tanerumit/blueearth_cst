@@ -124,6 +124,7 @@ COVERED: dict[str, list[str]] = {
         # A SECOND store key is legitimate: the key is a cache key, so a project
         # with an era5 and a chirps store holds both.
         "data/climate/historical/chirps_19900101_20101231/extract_historical.nc",
+        "data/climate/historical/_engine/map_reference.json",
         f"data/climate/projections/{CP}/raw/cmip6_INM_INM-CM4-8_ssp245_r1i1p1f1.nc",
         f"data/climate/projections/{CP}/scalar/cmip6_INM_INM-CM4-8_ssp245_r1i1p1f1.nc",
         f"data/climate/projections/{CP}/summary/cmip6_change_factors_annual.csv",
@@ -286,6 +287,7 @@ def test_coverage_is_not_trivially_satisfied():
 #: point, and each one sits under a root the inventory DOES cover, so a prefix
 #: written one level too broad would swallow it silently.
 UNDECLARED = [
+    "data/climate/historical/_engine/unknown.json",
     f"scenarios/{PK}/unknown.csv",
     f"scenarios/{PK}/series/run_01.tmp.nc",
     f"scenarios/{PK}/weathergenr/output/unknown_dates.csv",

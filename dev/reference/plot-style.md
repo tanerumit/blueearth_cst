@@ -79,8 +79,17 @@ temperature and PET. Read the actual model-grid forcing, mask to the model basin
 cell means for temporal figures. Keep the nine `forcing_<variable>_<kind>.png` filenames for now.
 Identify the data as Wflow forcing in legends and captions; use ERA5 blue for this forcing family.
 Maps retain their model-grid footprint and basin mask, with the reviewed coordinate labels, palettes,
-spatial overlays and gauge labels. Source and forcing maps retain independent color limits; identical
-colors alone do not establish equal values.
+spatial overlays and gauge labels. WF0 source and WF1 forcing maps share the historical reference at
+`data/climate/historical/_engine/map_reference.json`. The selected source's outer cell edges determine
+their frame, ticks and fixed midpoint-latitude aspect. Historical candidate cells intersecting this frame
+determine pooled classes; borrowed CHIRPS temperature/PET do not contribute. Native source fields and
+model-grid basin masks retain their scientific support. Common colors do not establish equal periods,
+eligibility policies or PET methods; captions state those differences.
+
+Every available reference colorbar shows both rectangular extensions and reports strict under/over counts
+in captions. The final class includes its upper boundary. Missing cells are gray, outside-model and
+uncovered areas white. With no finite historical scale, finite cells use an unscaled neutral hatch and
+there is no numerical colorbar. Never infer a scale from model forcing or invent a default 0–1 scale.
 Suppress individual model-cell outlines on the fine forcing grid so they do not obscure the field.
 Show cells outside the model basin in white and unavailable summaries inside it in gray.
 

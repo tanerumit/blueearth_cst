@@ -207,6 +207,7 @@ The selected forcing remains a project configuration decision.
 | 0.01 | `delineate_region` | Shared region foundation. |
 | 0.02 | `delineate_subbasins_and_rivers` | Shared vector foundation. |
 | 0.03 | `extract_climate_datasets_<source>` | Shared climate extraction, per source. |
+| 0.03b | `produce_historical_map_reference` | Shared frame, scales and verified native-field identities. |
 | 0.04 | `compute_climate_diagnostics_<source>` | Numerical diagnostics, per source. |
 | 0.04b | `plot_climate_diagnostics_<source>` | PNGs and captions, per source. |
 | 0.05 | `compare_climate_diagnostics` | Common-period comparison, multiple sources only. |
@@ -380,6 +381,8 @@ The store reaches WF1's evaluation (1.15), never its forcing.
 | 1.01 | `delineate_region` | Delineates the one project extent. |
 | 1.02 | `delineate_subbasins_and_rivers` | The shared vector foundation, and where gauges enter the workflow. |
 | 1.03 | `extract_climate_datasets` | The shared historical-climate store (= WF3 3.02). |
+| 1.03b | `extract_map_candidates_<source>` | Extra historical candidates for pooled map scales. |
+| 1.03c | `produce_historical_map_reference` | The same reference producer as WF0; independent of WF0. |
 | 1.05 | `prepare_land_and_soil_maps` | The thematic raster stack and the model-build interface. |
 | 1.06 | `build_wflow_model` | Parameterises Wflow-SBM, and where gauges enter the model. |
 | 1.07 | `add_reservoirs_lakes_glaciers` | Adds waterbodies. |

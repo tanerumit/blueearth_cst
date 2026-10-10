@@ -58,12 +58,21 @@ fifteen per reporting year. WF1 can produce these figures without running WF0.
 The existing `forcing_<variable>_<kind>.png` filenames remain. Captions are recorded in
 `plots/figure_captions.md` and `plots/_engine/figure_captions.json` beneath the forcing directory.
 The figures describe the post-processed model forcing; regenerating them does not rebuild the model
-or change its forcing. Source and model-grid maps use independent color limits, so compare their
-colorbar values when assessing differences.
+or change its forcing. Source and model-grid maps share a historical frame and color classes from
+`data/climate/historical/_engine/map_reference.json`. WF1 independently prepares historical candidate
+summaries for this record, so it may extract additional configured sources without running WF0.
+This additional work does not build extra models or change the selected forcing.
 
 Forcing maps use the selected historical climate extraction's outer cell edges as their exact frame,
 matching WF0's historical maps. The forcing values and basin mask retain their model-grid resolution;
 changing the frame does not interpolate or expand the forcing data.
+
+The reference pools native historical cells intersecting this frame and uses the project-owned
+`climate.map_reference` completeness policy. Forcing summaries retain 3/15. Captions distinguish periods,
+support, completeness and source/model PET methods; shared colors alone do not establish equivalence.
+Available scales have rectangular under/over extensions and captions report exceedance counts. If a
+historical variable has no finite scale, finite forcing cells are hatched as unscaled and no numerical
+colorbar is shown. Current-byte reference validation rejects stale identities before figure publication.
 
 Rule 1.15 writes station hydrographs under `models/hydrology/wflow/evaluation/plots/stations/`.
 Each sheet shows daily discharge, annual means, the seasonal cycle and linear/log flow-duration

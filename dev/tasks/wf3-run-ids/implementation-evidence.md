@@ -198,5 +198,51 @@ at 10.49 m³ s⁻¹. These endpoint axes are not time means or stationary climat
 
 Task scratch logs, numerical reports, representative CSVs and the fresh project are retained for
 approved landing and reuse of acceptance evidence. No generated project outputs are committed.
-The prior task's scratch is preserved. Shared-contract full-suite and final batch gates remain due
-at approved landing; the stale baseline remains explicitly unavailable as a numerical certificate.
+The prior task's scratch is preserved. The stale baseline remains explicitly unavailable as a numerical
+certificate.
+
+## Approved landing verification — 2026-10-10
+
+Tested candidate: `a71dd6eaa07cf4cfb3bc3384eeae4324d6a036cd`.
+Environment: Windows 11, Python 3.12.13, shared session-1 Pixi environment;
+`pixi.lock` SHA256 `797afdad5a8f8c37dd62b2f1e2f88f3fea120c3fc53b7e7c792b860700a6782b`.
+Every accepted gate ran with session-3 as its working directory.
+
+The first correct-checkout full run found stale fixtures in exactly four test modules:
+`test_check_baseline_indicator.py`, `test_metric_checkpoint_contract.py`,
+`test_p2_current_carrier.py` and `test_project_tree_inventory.py`.
+Commit `a71dd6ea` fixes their retired filenames, scoped targets and inventory expectations, adds both
+run/group target coverage, and rejects predecessor tables under current metric-set roots.
+No production code, configuration or scientific calculation changed after `8baf927c`.
+
+| Check | Exact command after environment/cache setup | Result |
+|---|---|---|
+| Focused fixtures | `python -m pytest tests/test_check_baseline_indicator.py tests/test_metric_checkpoint_contract.py tests/test_p2_current_carrier.py tests/test_project_tree_inventory.py -q` | 216 passed |
+| Full suite | `python -m pytest tests/` | 4133 passed, 27 skipped, 1 xfailed; 1099.28 s |
+| Final lint | `ruff check .` | Passed |
+| Final format | `ruff format --check .` | 445 files already formatted |
+| All-five/numerical reuse | Git comparison to `8baf927c`, excluding classified planning paths and the four test modules | Passed |
+
+Python commands used `pixi run --manifest-path ../session-1/pixi.toml python` with an explicit command.
+Ruff used the absolute executable in session-1's `.pixi/envs/default/Scripts/`.
+`NUMBA_CACHE_DIR` and `RUFF_CACHE_DIR` pointed to session-3's corresponding `.tmp/` directories.
+The repository's `dev/scripts/verify_landing.py record` wrapped each final gate and captured its command,
+commit/tree, environment, result and log hash. Receipts and logs remain under
+`.tmp/scratchpad/wf3-run-ids/landing-final-{full,lint,format,e2e-reuse}.{json,log}`.
+
+The 27 full-suite skips comprise five Linux-only controls, ten predecessor standing-fixture interchange
+cases, eleven unavailable local projection-parity cases and the separately executed integration test.
+Fresh successor interchange and the required all-five execution passed in the retained acceptance run
+above. The expected failure is the existing upstream HydroMT preprocessing round-trip defect.
+
+All-five reuse hashes the original execution log, `fresh-results.json` and `group-oracle.json`.
+The exact four test-only deltas do not occur on those execution or numerical-inspection paths.
+Intervening main changes are task planning/evidence only. The final main synchronization preserves the
+tested candidate's ancestry; its only additional path is `dev/tasks/t2610032349/task-brief.md`.
+Landing permits precisely that Markdown path and this evidence document after the recorded gates.
+No deletions or renames are permitted by the evidence verifier. The accepted full pass also covers
+`test-fast`; a second fast suite is unnecessary.
+
+An earlier Pixi named-task attempt used session-1's checkout rather than this candidate. Those receipts
+and logs are explicitly excluded under `invalid-wrong-checkout-*`; no result from that attempt is used
+for acceptance or landing. Explicit executable commands were then run in the correct checkout.

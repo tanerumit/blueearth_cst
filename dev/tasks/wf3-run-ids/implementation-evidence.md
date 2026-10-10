@@ -249,7 +249,10 @@ above. The expected failure is the existing upstream HydroMT preprocessing round
 All-five reuse hashes the original execution log, `fresh-results.json` and `group-oracle.json`.
 The exact four test-only deltas do not occur on those execution or numerical-inspection paths.
 Intervening main changes are task planning/evidence only. The final main synchronization preserves the
-tested candidate's ancestry; its only additional path is `dev/tasks/t2610032349/task-brief.md`.
+tested candidate's ancestry; its only additional path was the naming task's master brief.
+Its original parent is `dev/tasks`, task ID `t2610032349`, and tree-relative path `task-brief.md`.
+[Retained context](../../records/decisions/experiment-numbering-2026-10-10/implementation-evidence.md#closure-provenance)
+records the original citer, target and exact source identities.
 Landing permits precisely that Markdown path and this evidence document after the recorded gates.
 No deletions or renames are permitted by the evidence verifier. The accepted full pass also covers
 `test-fast`; a second fast suite is unnecessary.

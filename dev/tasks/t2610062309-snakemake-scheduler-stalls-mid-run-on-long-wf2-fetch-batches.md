@@ -5,10 +5,10 @@ status: active
 effort: 1
 area: wf2
 origin: t2610022259 P0 (2026-10-06)
-queue: 3
+queue: 2
 doc: dev/tasks/t2610062309/diagnosis.md
 created: 2026-10-06
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 > [!note] Overview

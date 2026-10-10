@@ -5,9 +5,9 @@ status: backlog
 effort: 1
 area: wf2
 origin: reference-doc cleanup (2026-08-20)
-queue: 23
+queue: 22
 created: 2026-08-20
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 > [!note] Overview

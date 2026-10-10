@@ -17,6 +17,7 @@ issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-10 | t2610101521 | Drop the active output folder convention | config |
 | 2026-10-09 | t2610091518 | Review and migrate legacy development files | maintenance |
 | 2026-10-09 | t2610091206 | Harden worktree coordination | dev  |
 | 2026-10-08 | t2610070255 | WF2 monthly change factors ignore the configured water year | wf2  |

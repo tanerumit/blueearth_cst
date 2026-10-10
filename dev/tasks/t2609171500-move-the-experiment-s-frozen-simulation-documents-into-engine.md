@@ -5,9 +5,9 @@ status: backlog
 effort: 2
 area: layout
 origin: test_rapid review (2026-09-17)
-queue: 16
+queue: 15
 created: 2026-09-17
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 > [!note] Overview

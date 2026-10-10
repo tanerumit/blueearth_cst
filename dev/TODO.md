@@ -7,36 +7,34 @@ cssclasses: [todo-board]
 
 | #      | ID                       | Item                                                         | Area       | Status       |
 | ------ | ------------------------ | ------------------------------------------------------------ | ---------- | ------------ |
-| 1      | [t2610101521][]          | Drop the active output folder convention                     | config     | active (4/4) |
-| 2      | [t2610082103][]          | Share plot renderers across climate workflows                | plotting   | active (6/7) |
-| 3      | [t2610062309][]          | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2        | active (3/5) |
-| 4      | [t2610032349][]          | Number experiments and add a new-experiment flag             | wf4        | active (7/7) |
-| 5      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1        | blocked      |
-| 6      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs       | blocked      |
-| 7      | [t2608202351][]          | Publish the technical note as site chapters                  | docs       | blocked      |
-| 8      | [t2608091730][]          | Make waterbody layers for the basin map                      | plotting   | blocked      |
-| 9      | [t2608071207][]          | Prove wflow log check fails without path_log                 | wf3        | blocked      |
-| 10     | [t2610091737][]          | Consider bounded-window forcing preparation for WF4          | wf4        | backlog      |
-| 11     | [t2610091622][]          | Triage unresolved geographic robustness findings             | validation | backlog      |
-| 12     | [t2610022259][]          | Scope conceptual workflow improvements                       | methods    | backlog      |
-| 13     | [t2609251520][]          | Decide naming of generation_inputs snapshots                 | wf3        | backlog      |
-| 14     | [t2609251025][]          | Wflow sysimage to cut Julia startup                          | runtime    | backlog      |
-| 15     | [t2609181302][]          | Snakemake preamble cannot be suppressed                      | console    | backlog      |
-| 16     | [t2609171500][]          | Move frozen simulation documents into _engine                | layout     | backlog      |
-| 17     | [t2609162115][]          | weathergenr prints a raw glue expression                     | upstream   | backlog      |
-| 18     | [t2609161642][]          | Scope R15: run workflows as one DAG                          | workflows  | backlog      |
-| 19     | [t2608222252][]          | Make climate extraction variables configurable               | climate    | backlog      |
-| 20     | [t2608222239][]          | Support more historical climate datasets                     | climate    | backlog      |
-| 21     | [t2608210010][]          | Use official Deltares colours on docs site                   | docs       | backlog      |
-| 22     | [t2608202351a][]         | Publish pipeline notebooks on the docs site                  | docs       | backlog      |
-| 23     | [t2608202148][]          | WF2 behaviour has no current documentation                   | wf2        | backlog      |
-| 24     | [t2608191733][]          | Ship a sample dataset bundle                                 | data       | backlog      |
-| 25     | [t2608181139][]          | Add forcing-selection evaluation to WF0                      | wf0        | backlog      |
-| 26     | [t2608121606][]          | Missing catalog source can hide a reservoir                  | wf1        | backlog      |
-| 27     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog      |
-| 28     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog      |
+| 1      | [t2610082103][]          | Share plot renderers across climate workflows                | plotting   | active (6/7) |
+| 2      | [t2610062309][]          | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2        | active (3/5) |
+| 3      | [t2610032349][]          | Number experiments and add a new-experiment flag             | wf4        | active (7/7) |
+| 4      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1        | blocked      |
+| 5      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs       | blocked      |
+| 6      | [t2608202351][]          | Publish the technical note as site chapters                  | docs       | blocked      |
+| 7      | [t2608091730][]          | Make waterbody layers for the basin map                      | plotting   | blocked      |
+| 8      | [t2608071207][]          | Prove wflow log check fails without path_log                 | wf3        | blocked      |
+| 9      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4          | wf4        | backlog      |
+| 10     | [t2610091622][]          | Triage unresolved geographic robustness findings             | validation | backlog      |
+| 11     | [t2610022259][]          | Scope conceptual workflow improvements                       | methods    | backlog      |
+| 12     | [t2609251520][]          | Decide naming of generation_inputs snapshots                 | wf3        | backlog      |
+| 13     | [t2609251025][]          | Wflow sysimage to cut Julia startup                          | runtime    | backlog      |
+| 14     | [t2609181302][]          | Snakemake preamble cannot be suppressed                      | console    | backlog      |
+| 15     | [t2609171500][]          | Move frozen simulation documents into _engine                | layout     | backlog      |
+| 16     | [t2609162115][]          | weathergenr prints a raw glue expression                     | upstream   | backlog      |
+| 17     | [t2609161642][]          | Scope R15: run workflows as one DAG                          | workflows  | backlog      |
+| 18     | [t2608222252][]          | Make climate extraction variables configurable               | climate    | backlog      |
+| 19     | [t2608222239][]          | Support more historical climate datasets                     | climate    | backlog      |
+| 20     | [t2608210010][]          | Use official Deltares colours on docs site                   | docs       | backlog      |
+| 21     | [t2608202351a][]         | Publish pipeline notebooks on the docs site                  | docs       | backlog      |
+| 22     | [t2608202148][]          | WF2 behaviour has no current documentation                   | wf2        | backlog      |
+| 23     | [t2608191733][]          | Ship a sample dataset bundle                                 | data       | backlog      |
+| 24     | [t2608181139][]          | Add forcing-selection evaluation to WF0                      | wf0        | backlog      |
+| 25     | [t2608121606][]          | Missing catalog source can hide a reservoir                  | wf1        | backlog      |
+| 26     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog      |
+| 27     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog      |
 
-[t2610101521]: tasks/t2610101521-drop-active-output-folder.md
 [t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
 [t2610062309]: tasks/t2610062309-snakemake-scheduler-stalls-mid-run-on-long-wf2-fetch-batches.md
 [t2610032349]: tasks/t2610032349-number-experiments-and-add-a-new-experiment-flag.md

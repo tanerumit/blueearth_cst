@@ -1,6 +1,7 @@
 # Master Brief — Experiment identity and user-selected output roots
 
-Date: 2026-10-10. Status: P0–P4 implemented and task-locally verified; pending approved batch landing.
+Date: 2026-10-10.
+Status: P0–P4 verified and landed; board closure awaits owner approval for review-copy removal.
 Executor: repository contributor/agent using PowerShell and Pixi. Owner authorized this branch's work.
 
 ### Goal
@@ -30,7 +31,7 @@ Keep every intermediate commit usable; P2 must not activate new resolution befor
 
 - Follow root `AGENTS.md`, the canonical naming plan and both existing tasks. Keep their identities:
   [naming](../t2610032349-number-experiments-and-add-a-new-experiment-flag.md) and
-  [output folders](../t2610101521-drop-active-output-folder.md). Do not dissolve or duplicate them.
+  [output folders](../../records/decisions/experiment-numbering-2026-10-10/implementation-evidence.md). Do not dissolve or duplicate them.
 - Implementation is authorized. It grants no landing, push, release, output migration or deletion.
   Follow the assigned session/lane; commit verified units separately. Board maintenance stays on main.
 - Reconcile the concurrent WF3 run-id work at P0; never silently absorb another session's unlanded work.

@@ -31,12 +31,9 @@ updated: 2026-10-10
 
 ## Decisions
 
-The [plan](t2610032349/experiment-naming-plan.md) owns behavior, compatibility and acceptance cases.
-Implemented and task-locally verified on `feat/minor-improvements`; pending approved landing.
-
-Start with the [combined brief](t2610032349/task-brief.md); both task IDs remain open until landing.
-
-P1: toolbox `3bea47b9`, cases `cdaad63`; P2 `ea125361`; P3 `4e409685`; P4 `a83f5b12`
-(final reference correction `12f43c00`). Accepted v3 review: `2111cae7`.
-The combined brief indexes focused tests, matched numerical runs and retained evidence.
-Next: approved landing and combined batch gates; no landing or push occurred.
+The [brief](t2610032349/task-brief.md) and
+[retained evidence](../records/decisions/experiment-numbering-2026-10-10/implementation-evidence.md)
+record agreed behavior and passing checks. Implementation landed; the output-folder task is closed.
+This item's closure awaits explicit approval to remove the redundant readable review copy.
+Automatic approval review rejected that deletion; the copy and original reviewed bytes remain intact.
+No push occurred.

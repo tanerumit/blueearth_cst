@@ -32,3 +32,6 @@ Verified on `feat/minor-improvements`, pending toolbox landing: outputs default 
 Related task: `t2610032349` addresses experiment naming within the chosen output root.
 The [combined task brief](t2610032349/task-brief.md) assigns both changes, with separate acceptance.
 Existing `active/` trees and user-selected paths remain valid. Keep this task open until landing.
+
+Combined naming acceptance also verifies independent allocation in an explicitly chosen `active/`
+root (focused test passed). Final task-local evidence is indexed by the combined brief.

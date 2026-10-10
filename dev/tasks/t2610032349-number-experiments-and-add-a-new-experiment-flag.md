@@ -23,18 +23,20 @@ updated: 2026-10-10
 
 - [x] Expand naming and recovery decisions — see the linked plan and acceptance matrix, 2026-10-10.
 - [x] Prepare combined implementation brief — naming plus removal of `active/`, 2026-10-10.
-- [ ] Review the reservation/binding contract against WF3 run-id work before implementation.
-- [ ] Implement shared name resolution, allocation history and atomic reservation; add focused tests.
-- [ ] Integrate both runners, input binding, previews, ownership and recovery diagnostics; add tests.
-- [ ] Verify interrupted runs, retained responses, metrics-only operations and read-only inspection.
-- [ ] Update live docs, templates and naming-helper behavior; execute required acceptance checks.
+- [x] Review the reservation/binding contract against WF3 run-id work before implementation.
+- [x] Implement shared name resolution, allocation history and atomic reservation; add focused tests.
+- [x] Integrate both runners, input binding, previews, ownership and recovery diagnostics; add tests.
+- [x] Verify interrupted runs, retained responses, metrics-only operations and read-only inspection.
+- [x] Update live docs, templates and naming-helper behavior; execute required acceptance checks.
 
 ## Decisions
 
 The [plan](t2610032349/experiment-naming-plan.md) owns behavior, compatibility and acceptance cases.
-Implementation authorized on `feat/minor-improvements`; reservation contract review is in progress.
+Implemented and task-locally verified on `feat/minor-improvements`; pending approved landing.
 
 Start with the [combined brief](t2610032349/task-brief.md); both task IDs remain open until landing.
 
-P1: toolbox `3bea47b9`, cases `cdaad63`. Reservation review: task-owned
-`design-runs/reservation-lifecycle/` on this branch.
+P1: toolbox `3bea47b9`, cases `cdaad63`; P2 `ea125361`; P3 `4e409685`; P4 `a83f5b12`
+(final reference correction `12f43c00`). Accepted v3 review: `2111cae7`.
+The combined brief indexes focused tests, matched numerical runs and retained evidence.
+Next: approved landing and combined batch gates; no landing or push occurred.

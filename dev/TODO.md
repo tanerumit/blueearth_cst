@@ -10,7 +10,7 @@ cssclasses: [todo-board]
 | 1      | [t2610101521][]          | Drop the active output folder convention                     | config     | active (4/4) |
 | 2      | [t2610082103][]          | Share plot renderers across climate workflows                | plotting   | active (6/7) |
 | 3      | [t2610062309][]          | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2        | active (3/5) |
-| 4      | [t2610032349][]          | Number experiments and add a new-experiment flag             | wf4        | active (2/7) |
+| 4      | [t2610032349][]          | Number experiments and add a new-experiment flag             | wf4        | active (7/7) |
 | 5      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1        | blocked      |
 | 6      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs       | blocked      |
 | 7      | [t2608202351][]          | Publish the technical note as site chapters                  | docs       | blocked      |

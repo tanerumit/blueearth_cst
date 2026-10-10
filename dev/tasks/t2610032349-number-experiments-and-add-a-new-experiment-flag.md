@@ -5,7 +5,7 @@ status: backlog
 effort: 2
 area: wf4
 queue: 11
-doc: dev/tasks/t2610032349/experiment-naming-plan.md
+doc: dev/tasks/t2610032349/task-brief.md
 created: 2026-10-03
 updated: 2026-10-10
 ---
@@ -22,6 +22,7 @@ updated: 2026-10-10
 ## Progress
 
 - [x] Expand naming and recovery decisions — see the linked plan and acceptance matrix, 2026-10-10.
+- [x] Prepare combined implementation brief — naming plus removal of `active/`, 2026-10-10.
 - [ ] Review the reservation/binding contract against WF3 run-id work before implementation.
 - [ ] Implement shared name resolution, allocation history and atomic reservation; add focused tests.
 - [ ] Integrate both runners, input binding, previews, ownership and recovery diagnostics; add tests.
@@ -30,11 +31,14 @@ updated: 2026-10-10
 
 ## Decisions
 
-The 2026-10-03 agreement remains: a plain run continues the highest numbered experiment, regardless
-of completion; an explicit runner flag starts another. Existing dated folders remain unchanged.
+Plain runs continue the highest number regardless of completion; the runner flag creates another.
+Existing dated folders remain unchanged (2026-10-03 agreement).
 
-The [expanded plan](t2610032349/experiment-naming-plan.md) records the selected behavior, compatibility,
-failure cases and validation. Implementation remains in backlog; this update authorizes planning only.
+The [plan](t2610032349/experiment-naming-plan.md) owns behavior, compatibility and acceptance cases.
+Implementation remains in backlog.
 
-The 2026-10-10 output-folder decision removes the `active/` scaffold convention separately. Numbering
-works within any user-selected output root and does not version or archive the whole assessment.
+Start with the [combined brief](t2610032349/task-brief.md), including output-folder task `t2610101521`.
+Both tasks remain open until verified.
+
+The output-folder decision removes the `active/` default. Numbering belongs to the chosen output root;
+it does not version or archive the whole assessment.

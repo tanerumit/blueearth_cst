@@ -25,7 +25,7 @@ HARNESS = REPO / "scripts/simulate_system.py"
 
 @pytest.fixture(scope="module")
 def built(tmp_path_factory):
-    """One retained experiment and its metric plan's gwr target, relative to it.
+    """One retained experiment and its scoped gwr targets, relative to it.
 
     Planning is the expensive part of each case and its result is
     project-relative, so it is computed once here rather than on every copy.
@@ -39,7 +39,10 @@ def built(tmp_path_factory):
         )
         root = experiment.root
         plan = build_metric_plan(root, current_metric_request(root, ["gwr"], "YS-JAN"))
-    return experiment, Path(plan["targets"]["gwr"]).relative_to(root)
+    return experiment, {
+        name: Path(plan["targets"][name]).relative_to(root)
+        for name in ("gwr_run", "gwr_group")
+    }
 
 
 @pytest.fixture
@@ -53,13 +56,27 @@ def carrier_state(built, tmp_path, monkeypatch):
     source, gwr = built
     experiment = copy_v2_experiment(source, tmp_path)
     root = experiment.root
-    return experiment.config, root, {"targets": {"gwr": str(root / gwr)}}
+    return (
+        experiment.config,
+        root,
+        {"targets": {name: str(root / path) for name, path in gwr.items()}},
+    )
 
 
 @pytest.mark.parametrize("operation", ["simulate-and-metrics", "metrics-only"])
 @pytest.mark.parametrize(
     "target",
-    ["default", "all", "metrics", "selected", "wrong-set", "wflow", "mixed", "unknown"],
+    [
+        "default",
+        "all",
+        "metrics",
+        "selected",
+        "selected-run",
+        "wrong-set",
+        "wflow",
+        "mixed",
+        "unknown",
+    ],
 )
 def test_current_carrier_operation_target_matrix(
     carrier_state, monkeypatch, operation, target
@@ -78,12 +95,13 @@ def test_current_carrier_operation_target_matrix(
     targets = {
         "all": ["all"],
         "metrics": ["metrics"],
-        "selected": [plan["targets"]["gwr"]],
+        "selected": [plan["targets"]["gwr_group"]],
+        "selected-run": [plan["targets"]["gwr_run"]],
         "wrong-set": [
-            str(root / "results/metric_sets" / ("0" * 64) / "gwr_indicators.csv")
+            str(root / "results/metric_sets" / ("0" * 64) / "gwr_group_indicators.csv")
         ],
-        "wflow": [str(root / f"hydrology/wflow/output/run_{RUN_IDS[0]}.csv")],
-        "mixed": ["metrics", plan["targets"]["gwr"]],
+        "wflow": [str(root / f"hydrology/wflow/output/{RUN_IDS[0]}.csv")],
+        "mixed": ["metrics", plan["targets"]["gwr_group"]],
         "unknown": ["unknown"],
     }
     source = yaml.safe_load(config.read_text())
@@ -98,7 +116,10 @@ def test_current_carrier_operation_target_matrix(
         argv += ["--target", *targets[target]]
     allowed = (
         operation == "simulate-and-metrics" and target in {"default", "all"}
-    ) or (operation == "metrics-only" and target in {"metrics", "selected"})
+    ) or (
+        operation == "metrics-only"
+        and target in {"metrics", "selected", "selected-run"}
+    )
     if allowed:
         invocation_dir = root.parents[1] / "config/runs/_engine/invocations"
         assert not list(invocation_dir.glob("*.json"))

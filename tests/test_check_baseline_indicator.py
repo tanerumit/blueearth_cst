@@ -322,9 +322,13 @@ def _write_simulate_system_targets(project_dir: str) -> str:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         if kind == "indicator":
-            _table(_grid("q_mean", "101", 10.0) + _grid("q_low", "101", 0.5)).to_csv(
-                p, index=False
-            )
+            frame = _table(_grid("q_mean", "101", 10.0) + _grid("q_low", "101", 0.5))
+            scope = "run" if "_run_" in p.name else "group"
+            frame[f"{scope}_id"] = [
+                f"{scope}_{number:02d}"
+                for number in frame.groupby(["metric", "location"]).cumcount() + 1
+            ]
+            frame[["metric", "location", f"{scope}_id", "value"]].to_csv(p, index=False)
             indicator = path
         elif kind in ("yaml", "run_record"):
             p.write_text("loaded_config:\n  project:\n    project_dir: synthetic\n")
@@ -362,11 +366,23 @@ def test_roundtrip_records_reference_table_and_checks_clean(
     project_dir, manifest_path, _ = experiment_only_project
     targets = json.loads(Path(manifest_path).read_text())["targets"]
     assert "sentinel/wf1.csv" in targets  # other workflows preserved
-    rows = [r for r in targets.values() if r.get("type") == "indicator"]
-    assert len(rows) == 1
-    row = rows[0]
-    assert row["n_rows"] == 12 and row["n_groups"] == 2
-    assert (Path(manifest_path).parent / row["ref_table"]).exists()
+    rows = {
+        Path(path).name: row
+        for path, row in targets.items()
+        if row.get("type") == "indicator"
+    }
+    assert set(rows) == {"q_run_indicators.csv", "q_group_indicators.csv"}
+    for name, row in rows.items():
+        scope = "run" if "_run_" in name else "group"
+        assert row["n_rows"] == 12 and row["n_groups"] == 2
+        reference = Path(manifest_path).parent / row["ref_table"]
+        assert reference.exists()
+        assert list(pd.read_csv(reference).columns) == [
+            "metric",
+            "location",
+            f"{scope}_id",
+            "value",
+        ]
 
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=["simulate_system"])

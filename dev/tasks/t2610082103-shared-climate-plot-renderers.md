@@ -137,9 +137,11 @@ After the owner's explicit payload approval, the independent read-only review ap
 with no findings. All four internal findings have part-by-part design resolutions; the design converged
 unchanged. The owner approved exact v2 for implementation; the reviewed bytes/header remain unchanged.
 The [implementation brief](t2610082103/design-runs/map-reference/implementation-brief.md) assigns bounded
-engineering packets and independent scientific acceptance. Qualification and before-change captures have
-started. The rapid catalog currently cannot resolve its configured P-drive roots; fresh execution is not
-qualified. Numerical, visual, route, repair and cost evidence remain implementation requirements. See
+engineering packets and independent scientific acceptance. Qualification and before-change captures
+completed; the P-drive issue was sandbox access and the production inputs qualify. Exact native scientific
+parity passes rapid and Liberia ERA5/CHIRPS cases. Shared producer and wiring are implemented; consumer
+migration and independent acceptance continue. CLI checks pass 20 cases; runtime checks pass nine cases.
+Numerical, visual, route, repair and cost acceptance remain implementation requirements. See
 [run authority and exact identity](t2610082103/design-runs/map-reference/status.md) and
 [finding dispositions](t2610082103/design-runs/map-reference/ledger.md). The pinned source branch
-remains clean at `22fbe441`; no merge or push.
+has uncommitted approved implementation based on `22fbe441`; no merge or push.

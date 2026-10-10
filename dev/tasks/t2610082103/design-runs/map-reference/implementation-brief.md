@@ -99,8 +99,8 @@ failing source. No new permission gate except a genuine unresolved design qualif
 
 | Phase | State | Durable marker | Blocked on | Next action |
 |---|---|---|---|---|
-| Qualification/capture | in progress | G2 status; qualification dispatch; before-WF0 log | — | Expose dependencies/capture |
-| Drawing/preparation | not started | Approved design sections 4/6 | Capture/qualification | Dispatch packet 1 |
-| Producer/identity | not started | Approved design sections 3/5 | Packet 1 | Dispatch packet 2 |
-| Consumers/wiring | not started | Approved design sections 3/5/7 | Packet 2 | Dispatch packet 3 |
-| Acceptance/completion | not started | Approved design section 9 | Candidate | Run falsifiers/review |
+| Qualification/capture | complete | qualification; fresh WF0 and retained captures | — | Keep before roots read-only |
+| Drawing/preparation | checkpoint passed | packet1; scientific-preparation-report | — | Integrate identity result |
+| Producer/identity | implemented | packet2-evidence; stable scientific probe active | — | Fresh WF1-only execution |
+| Consumers/wiring | active | CLI 20 passed; packet3 engineer dispatched | Migration | Render candidate maps |
+| Acceptance/completion | active | Runtime 9 passed; inventory pass; independent probes | Candidate | Route/repair/render/cost |

@@ -259,6 +259,32 @@ Astra/high owns independent scientific verdict. Max two active workers and one s
 internal settings unverified. Fallback Sol/medium only after diagnosing quota/runtime failure.
 Packet-0 qualification running, source read-only. No new source edits yet.
 
+## Implementation checkpoint — preparation and producer wiring
+
+Qualification and before-capture completed. P-drive access was a sandbox denial, not missing production
+data. Actual local ERA5 orography and current loaded package/backend versions qualify against the locks.
+The fresh rapid WF0 baseline finished exit 0; 17 retained-input PNG captures include ordinary/captioned
+source maps and all nine forcing products. Before outputs remain read-only evidence.
+
+Packet 1 added portable NumPy/Matplotlib map drawing and exact source preparation. Independent validation
+passes all native arrays, counts, masks, coordinates and scientific attributes for fresh rapid and retained
+Liberia ERA5/CHIRPS. Full-grid Celsius/normalized legacy K and rejected-temperature gates also pass.
+Scientific pooling, provenance and final consumer acceptance remain pending.
+
+Packet 2 producer identities/publication are being tightened after an initial passing scratch probe for
+paired roots, role filtering, payload tampering, atomic reopen and same-mtime input replacement refusal.
+Root wired both Snakefiles to the shared factory; consumer migration is next. Existing selected extraction
+remains unchanged. Root ownership expands to the existing test catalog fixture and a tiny real NetCDF DEM:
+the old catalog schema cannot be parsed by installed HydroMT when concrete PET inputs are resolved.
+The Linux parse test substitutes this hermetic catalog while retaining all other Linux configuration.
+
+Configuration seam red/green: two new refusal cases failed before and passed after adding map_reference
+to the project-owned climate keys. Matching suite: 127 passed; one sandboxed subprocess stalled and was
+stopped after verifying its task-owned command line. That one test passes under authorized access in
+6.10 seconds. Preserve both logs; this is not a full-suite pass. CLI wiring checks are running.
+
+No source commit, landing, push or completed-implementation claim yet. Approved design identity unchanged.
+
 Initial baseline wrapper rejected a mismatched project root; scratch rapid config now carries the
 matching absolute output root and original absolute workflow config paths. Sandbox catalog probe
 reported no root, but explicit stat showed PermissionError. Escalated read confirmed P-drive exists.

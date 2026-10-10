@@ -620,11 +620,6 @@ def archive_lock(project_root: Path, owner_key: str) -> Iterator[None]:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as handle:
         handle.seek(0)
-        if handle.read(1) == b"":
-            handle.seek(0)
-            handle.write(b"0")
-            handle.flush()
-        handle.seek(0)
         if os.name == "nt":
             import msvcrt
 
@@ -634,6 +629,12 @@ def archive_lock(project_root: Path, owner_key: str) -> Iterator[None]:
 
             fcntl.flock(handle, fcntl.LOCK_EX)
         try:
+            # Windows permits locking beyond EOF. Initialize only while owned;
+            # reading/writing the byte beforehand races another process's lock.
+            if os.fstat(handle.fileno()).st_size == 0:
+                handle.seek(0)
+                handle.write(b"0")
+                handle.flush()
             yield
         finally:
             handle.seek(0)

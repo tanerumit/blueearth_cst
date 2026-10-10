@@ -215,13 +215,24 @@ Commit `a71dd6ea` fixes their retired filenames, scoped targets and inventory ex
 run/group target coverage, and rejects predecessor tables under current metric-set roots.
 No production code, configuration or scientific calculation changed after `8baf927c`.
 
-| Check | Exact command after environment/cache setup | Result |
-|---|---|---|
-| Focused fixtures | `python -m pytest tests/test_check_baseline_indicator.py tests/test_metric_checkpoint_contract.py tests/test_p2_current_carrier.py tests/test_project_tree_inventory.py -q` | 216 passed |
-| Full suite | `python -m pytest tests/` | 4133 passed, 27 skipped, 1 xfailed; 1099.28 s |
-| Final lint | `ruff check .` | Passed |
-| Final format | `ruff format --check .` | 445 files already formatted |
-| All-five/numerical reuse | Git comparison to `8baf927c`, excluding classified planning paths and the four test modules | Passed |
+| Check | Result |
+|---|---|
+| Focused fixtures | 216 passed |
+| Full suite | 4133 passed, 27 skipped, 1 xfailed; 1099.28 s |
+| Final lint | Passed |
+| Final format | 445 files already formatted |
+| All-five/numerical reuse | Passed; classified planning and four test-only deltas |
+
+Exact check commands after environment/cache setup:
+
+```text
+python -m pytest tests/test_check_baseline_indicator.py tests/test_metric_checkpoint_contract.py tests/test_p2_current_carrier.py tests/test_project_tree_inventory.py -q
+python -m pytest tests/
+ruff check .
+ruff format --check .
+```
+
+Reuse compares the candidate to `8baf927c`, excluding the classified planning paths and four test modules.
 
 Python commands used `pixi run --manifest-path ../session-1/pixi.toml python` with an explicit command.
 Ruff used the absolute executable in session-1's `.pixi/envs/default/Scripts/`.

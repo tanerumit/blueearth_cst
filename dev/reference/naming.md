@@ -126,7 +126,7 @@ Different file classes follow different conventions; this guide does not unify t
 | Markdown planning docs under `dev/` | kebab-case | `naming-conventions-design.md` |
 | Standard root-level files | upstream | `CLAUDE.md`, `README.md`, `LICENSE` |
 | Config / data / catalog YAML | tool contract | `project_config_rapid.yml`, `deltares_data.yml` |
-| Generated outputs under `project_dir/` | lowercase `snake_case`, two exemptions below | `q_indicators.csv`, `basin_indicators.csv`, `inmaps_rlz_1_st_2.nc` |
+| Outputs in `project_dir/` | `snake_case`; exemptions below | `q_group_indicators.csv`, `inmaps_run_01.nc` |
 
 Do not rename existing `dev/` docs.
 

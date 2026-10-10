@@ -191,25 +191,25 @@ if not _simulation_complete:
             simulation=_frozen_simulation,
             model_reference_ok=f"{exp_dir}/.model_reference_ok",
         output:
-            nc=temp(f"{runs_dir}/forcing/inmaps_run_{{run_id}}.nc"),
-            toml=update(f"{runs_dir}/run_settings/run_{{run_id}}.toml"),
-            catalog=temp(f"{runs_dir}/run_settings/run_{{run_id}}.yml"),
-            temporal=temp(f"{runs_dir}/run_settings/run_{{run_id}}.temporal.json"),
+            nc=temp(f"{runs_dir}/forcing/inmaps_{{run_id}}.nc"),
+            toml=update(f"{runs_dir}/run_settings/{{run_id}}.toml"),
+            catalog=temp(f"{runs_dir}/run_settings/{{run_id}}.yml"),
+            temporal=temp(f"{runs_dir}/run_settings/{{run_id}}.temporal.json"),
         params:
             model_dir=basin_dir,
             run_id=lambda wc: wc.run_id,
             validated_collection=COLLECTION,
-            native_output_path=f"{runs_dir}/output/run_{{run_id}}.csv",
-            native_log_path=f"{runs_dir}/output/_log/run_{{run_id}}.log",
+            native_output_path=f"{runs_dir}/output/{{run_id}}.csv",
+            native_log_path=f"{runs_dir}/output/_log/{{run_id}}.log",
             sim_window_start=SIM_WINDOW_START,
             sim_window_end=SIM_WINDOW_END,
         threads: 1
         resources:
             mem_mb=2048,
         log:
-            DOWNSCALE_SCENARIO_SERIES.log("run_{run_id}"),
+            DOWNSCALE_SCENARIO_SERIES.log("{run_id}"),
         benchmark:
-            DOWNSCALE_SCENARIO_SERIES.benchmark("run_{run_id}"),
+            DOWNSCALE_SCENARIO_SERIES.benchmark("{run_id}"),
         script: "../downscale_climate_forcing.py"
 
     compute = my_cfg.get("compute") or {}
@@ -246,16 +246,16 @@ if not _simulation_complete:
             message: RUN_WFLOW_SIMULATIONS.banner(part=f"batch_{batch}", context=f"{len(members)} members")
             input:
                 simulation=_frozen_simulation,
-                forcing=[f"{runs_dir}/forcing/inmaps_run_{run}.nc" for run in members],
-                tomls=[f"{runs_dir}/run_settings/run_{run}.toml" for run in members],
+                forcing=[f"{runs_dir}/forcing/inmaps_{run}.nc" for run in members],
+                tomls=[f"{runs_dir}/run_settings/{run}.toml" for run in members],
             output:
-                csvs=[update(f"{runs_dir}/output/run_{run}.csv") for run in members],
+                csvs=[update(f"{runs_dir}/output/{run}.csv") for run in members],
             threads: _threads
             resources:
                 mem_mb=2048,
             params:
                 records=[str(batch), *[value for run in members for value in
-                    (run, f"{runs_dir}/run_settings/run_{run}.toml", f"{runs_dir}/output/run_{run}.csv")]],
+                    (run, f"{runs_dir}/run_settings/{run}.toml", f"{runs_dir}/output/{run}.csv")]],
                 julia=lambda wc, threads: julia_prefix(threads),
             log:
                 RUN_WFLOW_SIMULATIONS.log(f"batch_{batch}"),
@@ -278,9 +278,9 @@ if not _simulation_complete:
         message: PUBLISH_WFLOW_OUTPUTS.banner()
         input:
             simulation=_frozen_simulation,
-            csvs=[f"{runs_dir}/output/run_{run}.csv" for run in RUN_IDS],
-            tomls=[f"{runs_dir}/run_settings/run_{run}.toml" for run in RUN_IDS],
-            temporal=[f"{runs_dir}/run_settings/run_{run}.temporal.json" for run in RUN_IDS],
+            csvs=[f"{runs_dir}/output/{run}.csv" for run in RUN_IDS],
+            tomls=[f"{runs_dir}/run_settings/{run}.toml" for run in RUN_IDS],
+            temporal=[f"{runs_dir}/run_settings/{run}.temporal.json" for run in RUN_IDS],
         output:
             inventory=update(f"{engine_dir}/response_inventory.json"),
             simulation=update(f"{engine_dir}/simulation.json"),

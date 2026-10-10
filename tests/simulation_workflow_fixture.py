@@ -35,11 +35,11 @@ def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None):
             {
                 "run_id": run,
                 "file": {
-                    "path": f"scenarios/fixture/series/run_{run}.nc",
+                    "path": f"scenarios/fixture/series/{run}.nc",
                     "sha256": "0" * 64,
                 },
             }
-            for run in ("01", "02", "03")
+            for run in ("run_01", "run_02", "run_03")
         ]
     }
     monkeypatch.setattr(

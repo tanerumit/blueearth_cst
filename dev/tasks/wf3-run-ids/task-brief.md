@@ -181,5 +181,6 @@ and newly introduced group summaries. Provide representative CSVs and a group-le
 
 Remain in the pinned session/branch until the user authorizes switching or landing. Preserve the
 canonical board on `main` and unrelated work. No automatic in-place migration of existing outputs.
-The immediate deliverable is this brief; implementation has not started. The next implementation
-step is contract/scientific design review, including explicit old-artifact handling.
+The user commissioned direct implementation on 2026-10-10, waiving the separate design-review loop.
+Implementation decisions and verification results are recorded in
+[implementation-evidence.md](implementation-evidence.md), including explicit old-artifact handling.

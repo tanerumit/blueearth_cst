@@ -80,7 +80,7 @@ def collection_run_forcing(
         ancillary[0]["file"], {"project_root": project}
     )
     catalog["elevation"]["uri"] = str(elevation_path)
-    forcing_key = f"run_{run_id}"
+    forcing_key = run_id
     if forcing_key in catalog:
         raise ValueError("ancillary catalog uses reserved generated forcing key")
     reader = preparation["generated_forcing_reader"]

@@ -544,29 +544,24 @@ def test_duplicate_surface_ids_are_refused():
 
 def _indicators(st_ids, metrics=("q_annual_mean",)):
     rows = [
-        {"metric": metric, "location": "101", "unit_id": f"{number:02d}", "value": 1.0}
+        {
+            "metric": metric,
+            "location": "101",
+            "group_id": f"group_{number:02d}",
+            "value": 1.0,
+        }
         for number, st_id in enumerate(st_ids, 1)
         for metric in metrics
     ]
     frame = pd.DataFrame(rows)
-    frame.attrs["scenario_table"] = pd.DataFrame(
+    frame.attrs["group_metadata"] = pd.DataFrame(
         [
             {
-                "run_id": f"{number:02d}",
-                "evaluated": "true",
+                "group_id": f"group_{number:02d}",
                 "st_id": "" if int(st_id) == 0 else st_id,
+                "is_reference": "true" if int(st_id) == 0 else "false",
             }
             for number, st_id in enumerate(st_ids, 1)
-        ]
-    )
-    frame.attrs["unit_index"] = pd.DataFrame(
-        [
-            {
-                "unit_id": f"{number:02d}",
-                "grain": "run",
-                "member_run_id": f"{number:02d}",
-            }
-            for number, _ in enumerate(st_ids, 1)
         ]
     )
     return frame
@@ -577,8 +572,7 @@ def _join(indicators, lookup, surface):
         indicators,
         lookup,
         surface,
-        unit_index=indicators.attrs["unit_index"],
-        scenario_table=indicators.attrs["scenario_table"],
+        group_metadata=indicators.attrs["group_metadata"],
     )
 
 
@@ -594,13 +588,11 @@ def test_join_partitions_the_baseline_out():
     assert list(joined.surface_df["precip_change"]) == [-30.0, 0.0, 30.0]
 
 
-def test_bundle_axis_joins_members_without_expanding_result_rows():
+def test_group_axis_joins_metadata_without_expanding_result_rows():
     lookup = _linspace_members(-30.0, 30.0, 3)
     indicators = _indicators(["0", "1", "1", "2", "3"])
-    scenarios = indicators.attrs["scenario_table"]
-    units = indicators.attrs["unit_index"].to_dict("records") + [
-        {"unit_id": "90", "grain": "bundle", "member_run_id": "02"},
-        {"unit_id": "90", "grain": "bundle", "member_run_id": "03"},
+    metadata = indicators.attrs["group_metadata"].to_dict("records") + [
+        {"group_id": "group_90", "st_id": "1", "is_reference": "false"},
     ]
     results = pd.DataFrame(
         indicators.to_dict("records")
@@ -608,7 +600,7 @@ def test_bundle_axis_joins_members_without_expanding_result_rows():
             {
                 "metric": "q_return_level_10yr_max",
                 "location": "101",
-                "unit_id": "90",
+                "group_id": "group_90",
                 "value": 2.0,
             }
         ]
@@ -617,23 +609,55 @@ def test_bundle_axis_joins_members_without_expanding_result_rows():
         results,
         lookup,
         DEFAULT_SURFACE,
-        unit_index=pd.DataFrame(units),
-        scenario_table=scenarios,
+        group_metadata=pd.DataFrame(metadata),
     )
-    bundle = joined.surface_df[joined.surface_df.unit_id == "90"]
+    bundle = joined.surface_df[joined.surface_df.group_id == "group_90"]
     assert len(bundle) == 1
     assert bundle.iloc[0]["st_id"] == "1"
     assert bundle.iloc[0]["precip_change"] == -30.0
 
 
-def test_indicator_reader_preserves_unit_id_text(tmp_path):
+def test_indicator_reader_preserves_group_id_text(tmp_path):
     from blueearth_cst.shared.surface_axes import read_indicators
 
-    path = tmp_path / "q_indicators.csv"
+    path = tmp_path / "q_group_indicators.csv"
     path.write_text(
-        "metric,location,unit_id,value\nq_annual_mean,101,001,2.0\n", encoding="utf-8"
+        "metric,location,group_id,value\nq_annual_mean,101,group_001,2.0\n",
+        encoding="utf-8",
     )
-    assert read_indicators(path).iloc[0]["unit_id"] == "001"
+    assert read_indicators(path).iloc[0]["group_id"] == "group_001"
+
+
+@pytest.mark.parametrize("id_column", ["unit_id", "run_id", "run_group_id"])
+def test_surface_reader_refuses_other_result_scopes(tmp_path, id_column):
+    from blueearth_cst.shared.surface_axes import read_indicators
+
+    path = tmp_path / "old_indicators.csv"
+    path.write_text(
+        f"metric,location,{id_column},value\nq_annual_mean,101,01,2.0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(SurfaceMemberMismatchError, match="group_id"):
+        read_indicators(path)
+
+
+@pytest.mark.parametrize(
+    "fault", ["duplicate", "wrong-reference", "numeric-group", "missing-group"]
+)
+def test_surface_join_refuses_ambiguous_group_metadata(fault):
+    lookup = _linspace_members(-30.0, 30.0, 3)
+    indicators = _indicators(["0", "1", "2", "3"])
+    metadata = indicators.attrs["group_metadata"].copy()
+    if fault == "duplicate":
+        metadata = pd.concat([metadata, metadata.iloc[:1]])
+    elif fault == "wrong-reference":
+        metadata.loc[0, "is_reference"] = "false"
+    elif fault == "numeric-group":
+        metadata.loc[0, "group_id"] = "01"
+    else:
+        metadata = metadata.iloc[1:]
+    with pytest.raises((SurfaceMemberMismatchError, LookupKeyWidthError)):
+        join_axes(indicators, lookup, DEFAULT_SURFACE, group_metadata=metadata)
 
 
 def test_missing_lookup_member_refused():

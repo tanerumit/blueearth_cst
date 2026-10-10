@@ -47,7 +47,7 @@ def v2(unpublished, tmp_path):
 def test_common_temporal_and_path_neutral_scientific_projection(v2):
     root, native_runs, temporal = v2
     inventory = publish_response_inventory_v2(root, native_runs, temporal)
-    assert inventory["schema_version"] == "response-inventory/2"
+    assert inventory["schema_version"] == "response-inventory/3"
     assert inventory["response_request"]["section"] == "/documents/response_request"
     assert inventory["series"][0]["native_selector"]["temporal"] == {
         "schema_version": "local-section-reference/1",

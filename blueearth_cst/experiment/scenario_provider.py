@@ -69,9 +69,12 @@ def generate_roots(
         raise ValueError("generate_roots accepts stochastic roots only")
     run_ids = [row.run_id for row in root_rows]
     if len(set(run_ids)) != len(run_ids) or any(
-        not item.isascii() or not item.isdecimal() for item in run_ids
+        not item.startswith("run_")
+        or not item[4:].isascii()
+        or not item[4:].isdecimal()
+        for item in run_ids
     ):
-        raise ValueError("root run IDs must be unique ASCII decimal strings")
+        raise ValueError("root run IDs must be unique prefixed ASCII decimal strings")
     command = [
         "Rscript",
         "--vanilla",
@@ -87,7 +90,7 @@ def generate_roots(
     artifacts = tuple(
         ClimateArtifact(
             row.run_id,
-            source_inputs.output_dir / f"run_{row.run_id}.nc",
+            source_inputs.output_dir / f"{row.run_id}.nc",
         )
         for row in root_rows
     )

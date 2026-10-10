@@ -18,6 +18,7 @@ from blueearth_cst.experiment.metric_registry import (
     declarations,
     metric_unit_index,
     reduce_bundle,
+    reduce_group_mean,
     reduce_run,
     resolve_month_reference,
 )
@@ -56,7 +57,7 @@ def responses():
     times = pd.date_range("2046-01-02", "2054-12-31")
     rng = np.random.default_rng(12)
     result = []
-    for run in ("01", "08"):
+    for run in ("run_01", "run_08"):
         for ordinal, location in enumerate(("9", "2")):
             # Native-first gauge peaks in June; lexically first peaks in January.
             values = (
@@ -95,47 +96,125 @@ def test_registry_grains_vocabulary_and_empty_design_bundle():
     groups, reference, realizations = metric_groups(
         rows, n_realizations=2, st_num=6, unit_id_capacity=14
     )
-    assert groups[""] == reference == ("01", "08")
-    assert realizations["08"] == 2
+    assert groups[""] == reference == ("run_01", "run_08")
+    assert realizations["run_08"] == 2
 
 
 def test_logical_unit_index_retains_empty_group_and_refuses_capacity():
     from blueearth_cst.experiment.scenario_rows import UnitNamespaceCapacityError
 
-    runs = ("01", "02", "03")
+    runs = ("run_01", "run_02", "run_03")
     index = metric_unit_index(
         runs,
-        ("01", "03"),
-        (DeclaredBundle("same_design_point", "", ("03", "01")),),
+        ("run_01", "run_03"),
+        (DeclaredBundle("same_design_point", "", ("run_03", "run_01")),),
         unit_id_capacity=10,
     )
     assert [(item.unit_id, item.grain, item.member_run_id) for item in index] == [
-        ("01", "run", "01"),
-        ("03", "run", "03"),
-        ("04", "bundle", "01"),
-        ("04", "bundle", "03"),
+        ("run_01", "run", "run_01"),
+        ("run_03", "run", "run_03"),
+        ("group_01", "bundle", "run_01"),
+        ("group_01", "bundle", "run_03"),
     ]
     with pytest.raises(UnitNamespaceCapacityError, match="minimum replacement=4"):
         metric_unit_index(
-            ("1", "2", "3"),
-            ("1", "3"),
-            (DeclaredBundle("same_design_point", "", ("1", "3")),),
+            ("run_1", "run_2", "run_3", "run_4"),
+            ("run_1", "run_3"),
+            (DeclaredBundle("same_design_point", "", ("run_1", "run_3")),),
             unit_id_capacity=3,
         )
     with pytest.raises(ValueError, match="unique evaluated"):
         metric_unit_index(
             runs,
-            ("01", "03"),
-            (DeclaredBundle("same_design_point", "", ("01", "02")),),
+            ("run_01", "run_03"),
+            (DeclaredBundle("same_design_point", "", ("run_01", "run_02")),),
             unit_id_capacity=10,
         )
 
 
+@pytest.mark.parametrize("statistic", ["mean", "wetmonth_mean", "drymonth_mean"])
+def test_group_means_weight_realizations_equally_and_propagate_nan(statistic):
+    """Two and four January days have run means 2 and 8, hence group mean 5.
+
+    The plausible pooled-day answer is 6, so this independent oracle detects
+    sample-length weighting. The same fixed January month applies to Class C.
+    """
+    from blueearth_cst.experiment.metric_registry import MonthReference
+
+    metric = next(m for m in declarations(("q",)) if m.statistic == statistic)
+    members = []
+    for run, count, value in (("run_01", 2, 2.0), ("run_02", 4, 8.0)):
+        times = pd.date_range("2050-01-02", periods=count)
+        members.append(
+            ResponseSeries(
+                run,
+                "q",
+                "9",
+                0,
+                times,
+                "standard",
+                timedelta(days=1),
+                "interval_end",
+                "m3 s-1",
+                np.full(count, value),
+                np.zeros(count, dtype=bool),
+            )
+        )
+    reference = MonthReference(
+        ("run_01",), "9", 1, "wet" if statistic == "wetmonth_mean" else "dry", ()
+    )
+    kwargs = {"reference": reference} if metric.reference else {}
+    result = reduce_group_mean(
+        metric,
+        members,
+        expected_run_ids=("run_01", "run_02"),
+        anchor="YS-JAN",
+        **kwargs,
+    )
+    assert result["9"] == 5.0
+    assert (2 * 2 + 4 * 8) / 6 != result["9"]
+    singleton = reduce_group_mean(
+        metric, members[:1], expected_run_ids=("run_01",), anchor="YS-JAN", **kwargs
+    )
+    assert singleton["9"] == 2.0
+    invalid = replace(
+        members[1], values=np.full(4, np.nan), missing=np.ones(4, dtype=bool)
+    )
+    assert np.isnan(
+        reduce_group_mean(
+            metric,
+            [members[0], invalid],
+            expected_run_ids=("run_01", "run_02"),
+            anchor="YS-JAN",
+            **kwargs,
+        )["9"]
+    )
+    with pytest.raises(ValueError, match="membership"):
+        reduce_group_mean(
+            metric, members, expected_run_ids=("run_01",), anchor="YS-JAN", **kwargs
+        )
+    with pytest.raises(ValueError, match="unique"):
+        reduce_group_mean(
+            metric,
+            members,
+            expected_run_ids=("run_01", "run_01"),
+            anchor="YS-JAN",
+            **kwargs,
+        )
+    if metric.reference:
+        with pytest.raises(ValueError, match="reference"):
+            reduce_group_mean(
+                metric, members, expected_run_ids=("run_01", "run_02"), anchor="YS-JAN"
+            )
+
+
 def test_reference_uses_explicit_native_ordinal_and_is_order_invariant():
     series = responses()
-    ref = resolve_month_reference(series, expected_run_ids=("01", "08"), which="wet")
+    ref = resolve_month_reference(
+        series, expected_run_ids=("run_01", "run_08"), which="wet"
+    )
     reverse = resolve_month_reference(
-        tuple(reversed(series)), expected_run_ids=("08", "01"), which="wet"
+        tuple(reversed(series)), expected_run_ids=("run_08", "run_01"), which="wet"
     )
     assert ref == reverse
     assert (ref.reference_location_id, ref.month) == ("9", 6)
@@ -148,13 +227,13 @@ def test_reference_uses_explicit_native_ordinal_and_is_order_invariant():
         reduce_run(metric, series[:2], anchor="YE-DEC")
     incompatible = tuple(
         replace(item, location_ordinal=1 - item.location_ordinal)
-        if item.run_id == "08"
+        if item.run_id == "run_08"
         else item
         for item in series
     )
     with pytest.raises(ValueError, match="same first"):
         resolve_month_reference(
-            incompatible, expected_run_ids=("01", "08"), which="wet"
+            incompatible, expected_run_ids=("run_01", "run_08"), which="wet"
         )
 
 
@@ -168,14 +247,14 @@ def test_bundle_preserves_estimator_and_records_per_member_blocks(
     series = responses()
     metric = next(item for item in declarations(("q",)) if item.statistic == statistic)
     actual, evidence = reduce_bundle(
-        metric, series, expected_run_ids=("01", "08"), anchor="YE-DEC"
+        metric, series, expected_run_ids=("run_01", "run_08"), anchor="YE-DEC"
     )
     frames = [
         pd.DataFrame(
             {item.location_id: item.values for item in series if item.run_id == run},
             index=series[0].time,
         )
-        for run in ("01", "08")
+        for run in ("run_01", "run_08")
     ]
     blocks = pd.concat(
         [
@@ -219,7 +298,7 @@ def test_bundle_preserves_estimator_and_records_per_member_blocks(
         json.dumps(item.fit, allow_nan=False)
 
     with pytest.raises(InsufficientReturnLevelBlocks, match="actual=9"):
-        reduce_bundle(metric, series[:2], expected_run_ids=("01",), anchor="YE-DEC")
+        reduce_bundle(metric, series[:2], expected_run_ids=("run_01",), anchor="YE-DEC")
 
 
 def test_constant_sample_reaches_the_adapter_as_a_structured_refusal():
@@ -230,7 +309,9 @@ def test_constant_sample_reaches_the_adapter_as_a_structured_refusal():
     )
     constant = tuple(replace(item, values=np.ones(len(item.time))) for item in series)
     with pytest.raises(InvalidReturnLevelFit, match="invalid_range") as caught:
-        reduce_bundle(metric, constant, expected_run_ids=("01", "08"), anchor="YE-DEC")
+        reduce_bundle(
+            metric, constant, expected_run_ids=("run_01", "run_08"), anchor="YE-DEC"
+        )
     result = caught.value.fit_result
     assert result is not None, "the refusal must carry its structured record"
     assert result.status == "refused"
@@ -251,12 +332,12 @@ def test_metric_refuses_incompatible_response_metadata(field, value):
 def test_reference_refuses_unevaluated_members_and_preserves_month_tie():
     series = responses()
     with pytest.raises(ValueError, match="not evaluated"):
-        resolve_month_reference(series, expected_run_ids=("01",), which="wet")
+        resolve_month_reference(series, expected_run_ids=("run_01",), which="wet")
     tied = tuple(
         replace(item, values=(item.time.day == 2).astype(float)) for item in series
     )
     reference = resolve_month_reference(
-        tied, expected_run_ids=("01", "08"), which="wet"
+        tied, expected_run_ids=("run_01", "run_08"), which="wet"
     )
     assert reference.month == 1
 
@@ -282,7 +363,7 @@ def test_invalid_estimator_result_refuses_without_fallback(
     )
     with pytest.raises(InvalidReturnLevelFit, match=reason) as caught:
         reduce_bundle(
-            metric, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
+            metric, responses(), expected_run_ids=("run_01", "run_08"), anchor="YE-DEC"
         )
     assert caught.value.fit_result.refusal_reasons == (reason,)
 
@@ -300,7 +381,7 @@ def test_unexpected_estimator_fault_is_not_converted_to_a_refusal(monkeypatch):
     )
     with pytest.raises(RuntimeError, match="unexpected estimator failure"):
         reduce_bundle(
-            metric, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
+            metric, responses(), expected_run_ids=("run_01", "run_08"), anchor="YE-DEC"
         )
 
 
@@ -323,7 +404,10 @@ def test_uncovered_probability_is_a_fault_before_any_fit(monkeypatch):
     uncovered = replace(metric, return_period=4)
     with pytest.raises(ReturnLevelProbabilityNotCovered, match="0.75"):
         reduce_bundle(
-            uncovered, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
+            uncovered,
+            responses(),
+            expected_run_ids=("run_01", "run_08"),
+            anchor="YE-DEC",
         )
     assert calls == [], "the estimator was invoked despite an uncovered probability"
 
@@ -417,7 +501,7 @@ def test_reduce_bundle_publishes_an_out_of_domain_shape(monkeypatch):
         item for item in declarations(("q",)) if item.statistic == "return_level_max"
     )
     values, evidence = reduce_bundle(
-        metric, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
+        metric, responses(), expected_run_ids=("run_01", "run_08"), anchor="YE-DEC"
     )
 
     assert len(values) == 2, "the bundle still published every location"

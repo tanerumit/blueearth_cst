@@ -142,11 +142,11 @@ def test_candidate_intent_uses_wf3_only_seed_projection(tmp_path, monkeypatch):
     assert path.name == f"{digest}.json"
     assert plan["outputs"]["temporary_members"] == [
         {
-            "run_id": "01",
+            "run_id": "run_01",
             "path": f"scenarios/{intent['collection_id'][:12]}/weathergenr/output/run_01.nc",
         },
         {
-            "run_id": "06",
+            "run_id": "run_06",
             "path": f"scenarios/{intent['collection_id'][:12]}/weathergenr/output/run_06.nc",
         },
     ]

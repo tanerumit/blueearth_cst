@@ -58,7 +58,7 @@ def test_provider_preserves_root_and_transform_arguments(tmp_path):
         "1",
         "1",
         str(source.basin_cells),
-        "01,03",
+        "run_01,run_03",
     ]
     output = tmp_path / "arbitrary-name.nc"
     result = transform(
@@ -70,7 +70,7 @@ def test_provider_preserves_root_and_transform_arguments(tmp_path):
         log_path=tmp_path / "transform.log",
         execute=execute,
     )
-    assert result == ClimateArtifact("04", output)
+    assert result == ClimateArtifact("run_04", output)
     assert output.read_bytes() == b"second draw transformed"
     assert seen[1][0] == [
         "Rscript",
@@ -143,7 +143,7 @@ def test_descriptor_keeps_native_attributes_separate_from_effective_units(tmp_pa
     interpretation = UnitInterpretation(
         "fixture/1", "explicit fixture construction", (("temp", "degC"),)
     )
-    descriptor = describe(ClimateArtifact("01", path), interpretation)
+    descriptor = describe(ClimateArtifact("run_01", path), interpretation)
     variable = descriptor.variables[0]
     assert variable.units == "degC"
     assert dict(variable.native_attributes)["units"] == "K"
@@ -155,11 +155,13 @@ def test_descriptor_keeps_native_attributes_separate_from_effective_units(tmp_pa
     assert path.read_bytes() == before
     with pytest.raises(ValueError, match="interpretation"):
         describe(
-            ClimateArtifact("01", path), UnitInterpretation("", "", (("temp", "degC"),))
+            ClimateArtifact("run_01", path),
+            UnitInterpretation("", "", (("temp", "degC"),)),
         )
     with pytest.raises(ValueError, match="variables"):
         describe(
-            ClimateArtifact("01", path), UnitInterpretation("fixture/1", "fixture", ())
+            ClimateArtifact("run_01", path),
+            UnitInterpretation("fixture/1", "fixture", ()),
         )
 
 
@@ -177,7 +179,7 @@ def test_a_root_is_transformed_from_itself_at_the_identity_member(tmp_path):
     output = tmp_path / "run_01.nc"
     transform(
         rows[0],
-        ClimateArtifact("01", raw),
+        ClimateArtifact("run_01", raw),
         weathergen_config=tmp_path / "wg.yml",
         lookup_csv=tmp_path / "grid.csv",
         output_path=output,
@@ -189,7 +191,7 @@ def test_a_root_is_transformed_from_itself_at_the_identity_member(tmp_path):
     with pytest.raises(ValueError, match="ancestor id mismatch"):
         transform(
             rows[0],
-            ClimateArtifact("03", raw),
+            ClimateArtifact("run_03", raw),
             weathergen_config=tmp_path / "wg.yml",
             lookup_csv=tmp_path / "grid.csv",
             output_path=tmp_path / "other.nc",

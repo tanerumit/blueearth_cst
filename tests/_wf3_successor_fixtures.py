@@ -25,8 +25,8 @@ class SyntheticProvider:
     @staticmethod
     def enumerate_scenarios():
         return (
-            ScenarioRow("01", "", True, "fixture", (("level", "1"),)),
-            ScenarioRow("02", "", True, "fixture", (("level", "2"),)),
+            ScenarioRow("run_01", "", True, "fixture", (("level", "1"),)),
+            ScenarioRow("run_02", "", True, "fixture", (("level", "2"),)),
         )
 
     @staticmethod

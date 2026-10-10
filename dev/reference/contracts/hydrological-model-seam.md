@@ -72,7 +72,7 @@ Rendered one subsection per artifact.
 ## HM-2 — Wflow forcing (inmaps)
 
 - **path pattern:** `models/hydrology/wflow/forcing/inmaps_historical.nc` (wf1
-  forcing); wf4 twin `<exp>/hydrology/wflow/forcing/inmaps_run_<run_id>.nc`
+  forcing); wf4 twin `<exp>/hydrology/wflow/forcing/inmaps_<run_id>.nc`
   (= WG-6 on the weather-generator seam). R07 B5 files the wf4 twin on the
   HYDROLOGY side because it is model-grid forcing, symmetric with the wf1
   path above.
@@ -166,8 +166,8 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
 ## HM-4 — run configuration (wflow_sbm.toml)
 
 - **path pattern:** `models/hydrology/wflow/wflow_sbm.toml` (base) and per-cst
-  `<exp>/hydrology/wflow/config/run_<run_id>.toml`. The run TOMLs sit in
-  their own `config/` directory beside `forcing/` and `output/`, so
+  `<exp>/hydrology/wflow/run_settings/<run_id>.toml`. The run TOMLs sit in
+  their own `run_settings/` directory beside `forcing/` and `output/`, so
   `input.path_forcing` is the sibling hop `../forcing/…` and
   `[state].path_output` / `[output.csv].path` are `../output/…`. `dir_output`
   stays `"."` and the hop rides in the pointers themselves
@@ -213,8 +213,8 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
 ## HM-5 — per-run discharge CSV (output.csv)
 
 - **path pattern:** wf1 `models/hydrology/wflow/run_default/output.csv`; wf4
-  `<exp>/hydrology/wflow/output/run_<run_id>.csv` — the realization index is
-  in the file name, so one member is one filename in three flat directories (`config/`, `forcing/`,
+  `<exp>/hydrology/wflow/output/<run_id>.csv` — the run ID is
+  in the file name, so one member is one filename in three flat directories (`run_settings/`, `forcing/`,
   `output/`). This is the inverse of R07 B5.
 - **producer:** rule 1.13 `run_historical_simulation` / rule 4.05 `run_wflow_simulations`.
 - **consumers:** wf1 rule 1.15 plots; WF4 response inventory, then retained metric reduction.
@@ -286,33 +286,34 @@ synthetic schema checks. `--notemp` does not recreate this retired output.
 
 ## HM-7 — retained metric-set interchange
 
-- **Path:** `<exp>/results/metric_sets/<short id>/<token>_indicators.csv` and
-  `metric_run_lookup.csv`; the ready marker is
-  `<exp>/_engine/metric_sets/<short id>/metrics.json` (`metric-set/2`), written
+- **Path:** `<exp>/results/metric_sets/<short id>/<token>_run_indicators.csv`,
+  `<token>_group_indicators.csv`, `group_members.csv` and `group_metadata.csv`; the ready marker is
+  `<exp>/_engine/metric_sets/<short id>/metrics.json` (`metric-set/3`), written
   last.
 - **Producer:** `prepare_indicator_plan` resolves response-dependent declarations,
   units and references; `derive_system_indicators` publishes complete results.
 - **Consumer:** terminal reporting, CST-API and notebooks. Readers validate
   `metrics.json` and its inventory before consuming tables
   (`metric_plan.read_metric_set`).
-- **Header:** exactly `metric,location,run_group_id,value`; the lookup is
-  exactly `run_group_id,grain,run_id`. IDs are text. `(metric, location,
-  run_group_id)` keys are unique per table.
-- **Membership:** the lookup equals the marker's `run_groups`. Grain `run` has
-  exactly one group per collection run, named after it; grain `bundle` groups
-  list their member runs. Every run belongs to the collection.
+- **Header:** run tables use `metric,location,run_id,value`; group tables use
+  `metric,location,group_id,value`. Membership uses `group_id,run_id`; metadata uses
+  `group_id,st_id,is_reference`. `(metric, location, ID)` keys are unique per table.
+- **Membership:** `group_members.csv` equals the marker's declared group memberships, including singleton
+  groups. Every member is an evaluated collection run. Prefixed `group_01` IDs are allocated independently
+  of run count and selected metrics, in sorted declared-group-key order. IDs are scoped to their owner.
 - **Coverage:** a table's locations equal the response inventory's locations
-  for that variable, and each metric covers every location x every run group of
-  its one grain. Metric names are not derivable independently of the tables in
-  `/2`, so a whole missing metric is caught by the reader's digests, not here.
+  for that variable. Run-grain metrics cover every evaluated run and every group; pooled return-level
+  metrics cover every group. Both scopes are written per selected variable, with header-only tables
+  for scopes without applicable metrics. Expected result keys pin complete coverage.
 - **Values:** numeric; existing metric vocabulary, location spelling and
   publication precision stand. See [indicator glossary](../indicator-glossary.md).
 - **Lifecycle:** immutable; `metrics.json` is published last. A changed metric
   request selects a new set without modifying native responses or prior sets.
+  Numeric-ID collections and old mixed-ID metric sets are refused; regenerate under new schema identities.
 
-`validate_hm7_v2` takes the marker, the parsed tables and lookup, the response
-inventory's `series` and the collection's run ids. `validate_hm7` still
-describes the retired `metric-set/1` surface (`unit_index.csv`, `unit_id`).
+`validate_hm7_v2` takes the marker, parsed tables keyed by `<token>_<run|group>`, parsed group membership,
+the response inventory's `series` and the collection's run IDs. `validate_hm7` explicitly refuses the
+retired `metric-set/1` surface (`unit_index.csv`, `unit_id`); use the current validator for new products.
 
 ## HM-4 → HM-5 → HM-7 gauge-column identity
 

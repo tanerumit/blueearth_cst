@@ -147,7 +147,7 @@ def test_preparation_checks_wrapped_elevation_grid(
     )
     run = SimpleNamespace(
         preparation_context=context,
-        run_id="007",
+        run_id="run_007",
         descriptor=SimpleNamespace(calendar="standard"),
     )
     settings = SimpleNamespace(

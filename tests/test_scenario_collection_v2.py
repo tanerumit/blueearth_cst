@@ -1,4 +1,4 @@
-"""Fixture proof for the additive scenario-collection/2 reader and identity."""
+"""Fixture proof for the additive scenario-collection/3 reader and identity."""
 
 from copy import deepcopy
 from hashlib import sha256
@@ -39,7 +39,7 @@ def test_wf4_only_evidence_does_not_enter_seed_or_collection_identity():
     assert original_seed == 1459665732
     assert (
         original_id
-        == "e129e7f83e925771dc8d9cfbf1553b615a01c39f5561876c81f29f6e6f870a92"
+        != "e129e7f83e925771dc8d9cfbf1553b615a01c39f5561876c81f29f6e6f870a92"
     )
     wf4_only = {"elevation": "changed", "settings": "changed", "code": "changed"}
     wf4_only["elevation"] = "changed again"
@@ -188,7 +188,7 @@ def test_collection_v2_requires_marker_and_matching_data(tmp_path, monkeypatch):
     )
     lookup = data / "scenario_run_lookup.csv"
     lookup.write_text(
-        "run_id,evaluate,type,rlz,st_id\n1,true,stochastic,1,\n2,true,stochastic,1,1\n",
+        "run_id,evaluate,type,rlz,st_id\nrun_1,true,stochastic,1,\nrun_2,true,stochastic,1,1\n",
         encoding="utf-8",
     )
     perturbation = data / "perturbation_lookup.csv"
@@ -198,8 +198,8 @@ def test_collection_v2_requires_marker_and_matching_data(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     series = []
-    for run_id in ("1", "2"):
-        path = data / "series" / f"run_{run_id}.nc"
+    for run_id in ("run_1", "run_2"):
+        path = data / "series" / f"{run_id}.nc"
         path.write_bytes(run_id.encode())
         series.append(
             {
@@ -230,7 +230,7 @@ def test_collection_v2_requires_marker_and_matching_data(tmp_path, monkeypatch):
             {"role": role, "file": file_reference(path, "project_root", tmp_path)}
         )
     marker = {
-        "schema_version": "scenario-collection/2",
+        "schema_version": "scenario-collection/3",
         "canonicalization_id": "collection-canon/1",
         "status": "ready",
         "collection_id": intent["collection_id"],

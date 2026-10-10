@@ -76,7 +76,7 @@ def neutral_forcing(tmp_path):
         False,
     )
     return RunForcing(
-        "007", forcing, file_sha256(forcing), descriptor, context, None, None
+        "run_007", forcing, file_sha256(forcing), descriptor, context, None, None
     ), requirement
 
 
@@ -115,12 +115,12 @@ def test_neutral_record_reaches_dummy_preparation_and_execution(
         "blueearth_cst.experiment.downscale_climate_forcing.prepare_model_forcing",
         dummy_prepare,
     )
-    prepared = prepare("007", validate_forcing(run, requirement), model, settings)
+    prepared = prepare("run_007", validate_forcing(run, requirement), model, settings)
 
     def dummy_execute(command, log_path):
         assert command[-4:] == [
-            "007",
-            "007",
+            "run_007",
+            "run_007",
             str(settings.toml_path),
             str(settings.native_output_path),
         ]
@@ -133,7 +133,7 @@ def test_neutral_record_reaches_dummy_preparation_and_execution(
         log_path=tmp_path / "run.log",
         run_command=dummy_execute,
     )
-    assert seen == ["007"]
+    assert seen == ["run_007"]
     assert native.csv_path == settings.native_output_path
     assert native.toml_path == settings.toml_path
 
@@ -155,7 +155,7 @@ def test_physical_mismatch_names_run_field_and_artifact(neutral_forcing, change,
     run = replace(run, descriptor=replace(run.descriptor, **change))
     with pytest.raises(IncompatibleForcingError, match=field) as error:
         validate_forcing(run, requirement)
-    assert "run_id=007" in str(error.value)
+    assert "run_id=run_007" in str(error.value)
     assert str(run.forcing_path) in str(error.value)
     assert "required=" in str(error.value) and "observed=" in str(error.value)
 
@@ -194,22 +194,31 @@ def test_input_freshness_is_separate_from_compatible_metadata(
 def test_batch_records_keep_ids_with_arbitrary_paths(neutral_forcing, tmp_path):
     run, _ = neutral_forcing
     first = PreparedRun(
-        "007", Path("b.toml"), Path("x.csv"), Path("grid.nc"), run.preparation_context
+        "run_007",
+        Path("b.toml"),
+        Path("x.csv"),
+        Path("grid.nc"),
+        run.preparation_context,
     )
     second = replace(
-        first, run_id="012", toml_path=Path("a.toml"), native_output_path=Path("z.csv")
+        first,
+        run_id="run_012",
+        toml_path=Path("a.toml"),
+        native_output_path=Path("z.csv"),
     )
     assert batch_arguments("batch-4", [first, second]) == [
         "batch-4",
-        "007",
+        "run_007",
         "b.toml",
         "x.csv",
-        "012",
+        "run_012",
         "a.toml",
         "z.csv",
     ]
     with pytest.raises(ValueError, match="increasing"):
         batch_arguments("batch-4", [second, first])
+    with pytest.raises(ValueError, match="prefixed"):
+        batch_arguments("batch-4", [replace(first, run_id="007")])
 
 
 def test_incompatible_ancillary_grid_refuses_before_preparation():
@@ -217,7 +226,9 @@ def test_incompatible_ancillary_grid_refuses_before_preparation():
         np.ones((2, 2)), dims=("y", "x"), coords={"y": [1.0, 0.0], "x": [0.0, 1.0]}
     )
     forcing.raster.set_crs(4326)
-    validate_ancillary_grid("007", forcing, forcing.copy(), Path("dem.nc"))
+    validate_ancillary_grid("run_007", forcing, forcing.copy(), Path("dem.nc"))
     shifted = forcing.assign_coords(x=[10.0, 11.0])
-    with pytest.raises(IncompatibleForcingError, match="run_id=007: ancillary_grid"):
-        validate_ancillary_grid("007", forcing, shifted, Path("dem.nc"))
+    with pytest.raises(
+        IncompatibleForcingError, match="run_id=run_007: ancillary_grid"
+    ):
+        validate_ancillary_grid("run_007", forcing, shifted, Path("dem.nc"))

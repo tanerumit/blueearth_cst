@@ -16,12 +16,14 @@ to the dicts first and to the tables here second.
 
 | `model.outvars` label | CSDMS name | csv code | token | table | metric |
 | --- | --- | --- | --- | --- | --- |
-| `river discharge` | `river_water__volume_flow_rate` | `Q` | `q` | `q_indicators.csv` | *11 names — see §2* |
-| `precipitation` | `atmosphere_water__precipitation_volume_flux` | `p` | `precip` | `precip_indicators.csv` | `precip_annual_total` |
-| `actual evapotranspiration` | `land_surface__evapotranspiration_volume_flux` | `aet` | `aet` | `aet_indicators.csv` | `aet_annual_total` |
-| `groundwater recharge` | `soil_water_saturated_zone_top__net_recharge_volume_flux` | `gwr` | `gwr` | `gwr_indicators.csv` | `gwr_annual_total` |
-| `overland flow` | `land_surface_water__volume_flow_rate` | `qof` | `overland_flow` | `overland_flow_indicators.csv` | `overland_flow_annual_mean` |
-| `snow` | `snowpack_liquid_water__depth` | `swe` | `snow` | `snow_indicators.csv` | `snow_annual_max` |
+| `river discharge` | `river_water__volume_flow_rate` | `Q` | `q` | `q_run_indicators.csv` | *11 names — see §2* |
+| `precipitation` | `atmosphere_water__precipitation_volume_flux` | `p` | `precip` | `precip_run_indicators.csv` | `precip_annual_total` |
+| `actual evapotranspiration` | `land_surface__evapotranspiration_volume_flux` | `aet` | `aet` | `aet_run_indicators.csv` | `aet_annual_total` |
+| `groundwater recharge` | `soil_water_saturated_zone_top__net_recharge_volume_flux` | `gwr` | `gwr` | `gwr_run_indicators.csv` | `gwr_annual_total` |
+| `overland flow` | `land_surface_water__volume_flow_rate` | `qof` | `overland_flow` | `overland_flow_run_indicators.csv` | `overland_flow_annual_mean` |
+| `snow` | `snowpack_liquid_water__depth` | `swe` | `snow` | `snow_run_indicators.csv` | `snow_annual_max` |
+
+Each run table has a paired `<token>_group_indicators.csv`; §3 defines their distinct identifier columns.
 
 Column by column, with the dict that owns it:
 
@@ -144,25 +146,28 @@ asymmetries in that table are ruled, not accidental:
 
 ## 3. Row identifiers
 
-Current `metric-set/2` indicator tables carry four columns, in this order:
+Current `metric-set/3` indicator tables carry four columns, in this order:
 
 | column | meaning |
 | --- | --- |
 | `metric` | `<token>_<statistic>` from §2 |
 | `location` | the registry's bare Wflow id, joinable to `outlet_index.csv` |
-| `run_group_id` | zero-padded text identifying a run or a bundle of runs |
+| `run_id` or `group_id` | prefixed text identifying a run or group in its respective table |
 | `value` | numeric result stored to four significant digits |
 
-Join `run_group_id` through the metric set's `metric_run_lookup.csv` to its
-member `run_id` values. Join those to the collection's `scenario_run_lookup.csv`
-for realization and `st_id`, then to `perturbation_lookup.csv` for monthly
-changes. An empty `st_id` identifies the unperturbed reference.
+`<token>_run_indicators.csv` uses `run_id` (`run_01`); `<token>_group_indicators.csv` uses
+`group_id` (`group_01`). Join run IDs to the collection's `scenario_run_lookup.csv` for realization
+and `st_id`. Join group IDs directly to `group_metadata.csv`, then by `st_id` to
+`perturbation_lookup.csv` for monthly changes. `group_members.csv` records every contributing run,
+including singleton groups. An empty `st_id` and `is_reference=true` identify the unperturbed group.
+Run-grain group summaries are equal-weight means of realization-level metrics with NaN propagation;
+return levels retain pooled estimation from member-local blocks.
 
 Axis columns are derived at reporting time rather than stored in the indicator
 tables. `precip_change` in the perturbation lookup is a percent. HM-7 in
 `dev/reference/contracts/hydrological-model-seam.md` defines the current
 contract; `blueearth_cst/shared/surface_axes.py` supplies monthly axis calculations.
-Keep identifiers as text, including leading zeros.
+Keep identifiers as text; their scope is the owning collection or metric set.
 
 `indicator_tables.py::INDICATOR_COLUMNS` describes the legacy expanded rows;
 the current retained four-column schema is written by `metric_plan.py`.

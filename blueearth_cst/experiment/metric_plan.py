@@ -22,6 +22,7 @@ from blueearth_cst.experiment.metric_registry import (
     declarations,
     metric_unit_index,
     reduce_bundle,
+    reduce_group_mean,
     reduce_run,
     resolve_month_reference,
 )
@@ -201,7 +202,7 @@ def current_metric_request(experiment_root, tokens, anchor):
             resolve_metric_environment(),
             return_level_validation.build_declaration(),
         )
-        request["schema_version"] = "metric-request/2"
+        request["schema_version"] = "metric-request/3"
         request["simulation_schema_version"] = record["schema_version"]
         return request
     if (root / "_engine/simulation_intent.json").is_file():
@@ -211,9 +212,9 @@ def current_metric_request(experiment_root, tokens, anchor):
         # runs long before that, so the request's identity comes from the
         # frozen INTENT rather than waiting on a completed simulation.
         #
-        # simulation_schema_version is pinned to the "simulation/2" literal
+        # simulation_schema_version is pinned to the "simulation/3" literal
         # (matching build_metric_plan), never the intent's
-        # own "simulation-intent/1" tag -- the checkpoint wildcard is fixed
+        # own "simulation-intent/2" tag -- the checkpoint wildcard is fixed
         # from this request before responses complete, and params.request is
         # re-resolved (this time via the v2-complete branch above) once the
         # job actually runs, so the two resolutions must hash identically.
@@ -225,8 +226,8 @@ def current_metric_request(experiment_root, tokens, anchor):
             resolve_metric_environment(),
             return_level_validation.build_declaration(),
         )
-        request["schema_version"] = "metric-request/2"
-        request["simulation_schema_version"] = "simulation/2"
+        request["schema_version"] = "metric-request/3"
+        request["simulation_schema_version"] = "simulation/3"
         return request
     raise MetricsOnlySimulationUnavailable(
         f"{root.name}: no frozen simulation intent; simulate the experiment first"
@@ -361,8 +362,8 @@ def build_metric_plan(experiment_root, request):
         request["metric_environment"],
         request["return_level_validation"],
     )
-    live["schema_version"] = "metric-request/2"
-    live["simulation_schema_version"] = "simulation/2"
+    live["schema_version"] = "metric-request/3"
+    live["simulation_schema_version"] = "simulation/3"
     if live != request:
         raise MetricPlanStale("metric declarations or invoked code changed")
     inventory = read_response_inventory_v2(root)
@@ -383,10 +384,8 @@ def build_metric_plan(experiment_root, request):
         unit_id_capacity=intent["run_group_id_capacity"],
     )
     registry = declarations(request["tokens"])
-    bundles = (
-        tuple(DeclaredBundle("st_id", key, members) for key, members in groups.items())
-        if any(item.grain == "bundle" for item in registry)
-        else ()
+    bundles = tuple(
+        DeclaredBundle("st_id", key, members) for key, members in groups.items()
     )
     unit_rows = metric_unit_index(
         [row.run_id for row in rows],
@@ -396,7 +395,7 @@ def build_metric_plan(experiment_root, request):
     )
     units = _v2_run_groups([asdict(item) for item in unit_rows])
     bundle_ids = {
-        bundle.canonical_key: f"{len(rows) + number:0{intent['run_group_id_width']}d}"
+        bundle.canonical_key: f"group_{number:0{intent['run_group_id_width']}d}"
         for number, bundle in enumerate(
             sorted(bundles, key=lambda item: (item.bundle_by, item.canonical_key)), 1
         )
@@ -433,8 +432,9 @@ def build_metric_plan(experiment_root, request):
         ids = (
             [row.run_id for row in rows if row.evaluated]
             if metric.grain == "run"
-            else list(bundle_ids.values())
+            else []
         )
+        ids += list(bundle_ids.values())
         expected_keys.extend(
             [metric.name, location, unit]
             for unit in ids
@@ -449,6 +449,7 @@ def build_metric_plan(experiment_root, request):
         "water_year_anchor": request["water_year_anchor"],
         "code_inventory": request["code_inventory"],
         "return_level_validation": request["return_level_validation"],
+        "group_summary": "equal-weight run reductions; NaN propagation; fixed Class-C reference; pooled return levels",
     }
     definition_digest, environment_digest = (
         content_sha256(definition),
@@ -460,6 +461,7 @@ def build_metric_plan(experiment_root, request):
         "metric_definition_sha256": definition_digest,
         "metric_environment_sha256": environment_digest,
         "groups": {key: list(value) for key, value in groups.items()},
+        "schema_version": "metric-set-identity/3",
         "run_groups": units,
         "reference": references,
         "water_year_anchor": request["water_year_anchor"],
@@ -472,7 +474,7 @@ def build_metric_plan(experiment_root, request):
         root / "results/metric_sets" / identity_segment(identity, "metric_set_id")
     )
     plan = {
-        "schema_version": "metric-request/2",
+        "schema_version": "metric-request/3",
         "metric_request_id": content_sha256(request),
         "request": request,
         "response_inventory_sha256": inventory["response_inventory_sha256"],
@@ -493,7 +495,8 @@ def build_metric_plan(experiment_root, request):
                 / identity_segment(identity, "metric_set_id")
                 / "metrics.json"
             ).as_posix(),
-            "unit_index": (destination / "metric_run_lookup.csv").as_posix(),
+            "unit_index": (destination / "group_members.csv").as_posix(),
+            "group_metadata": (destination / "group_metadata.csv").as_posix(),
             "environment": (
                 root
                 / "_engine/metric_sets"
@@ -501,8 +504,11 @@ def build_metric_plan(experiment_root, request):
                 / "metric_environment.json"
             ).as_posix(),
             **{
-                token: (destination / f"{token}_indicators.csv").as_posix()
+                f"{token}_{scope}": (
+                    destination / f"{token}_{scope}_indicators.csv"
+                ).as_posix()
                 for token in request["tokens"]
+                for scope in ("run", "group")
             },
         },
     }
@@ -697,6 +703,18 @@ def reduce_metric_plan(experiment_root, plan):
                     )
                     for run in members
                 ]
+                batches.append(
+                    (
+                        plan["bundle_run_group_ids"][group],
+                        reduce_group_mean(
+                            metric,
+                            variable,
+                            expected_run_ids=members,
+                            anchor=anchor,
+                            reference=reference,
+                        ),
+                    )
+                )
             for unit, values in batches:
                 for location, value in values.items():
                     output[token].append(
@@ -744,7 +762,10 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
                 raise ImmutableMetricSetError(
                     "indicator row has undeclared metric or wrong table token"
                 )
-            if grains.get(row[key]) != declaration["grain"]:
+            grain = grains.get(row[key])
+            if grain is None or (
+                declaration["grain"] == "bundle" and grain != "bundle"
+            ):
                 raise ImmutableMetricSetError("indicator metric and unit grain differ")
             value = float(row["value"]) if row["value"] != "" else float("nan")
             if np.isinf(value) or (
@@ -764,7 +785,7 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
 
 def publish_metric_set(experiment_root, plan):
     """Publish a whole declared set, preserving all bytes on exact ready reuse."""
-    if plan["schema_version"] != "metric-request/2":
+    if plan["schema_version"] != "metric-request/3":
         raise MetricPlanStale(f"unsupported metric plan {plan['schema_version']!r}")
     return _publish_metric_set_v2(experiment_root, plan)
 
@@ -791,20 +812,38 @@ def _publish_metric_set_v2(experiment_root, plan):
         tables, plan["expected_result_keys"], declarations_by_name, plan["units"]
     )
     payloads = {
-        f"{token}_indicators.csv": _csv_bytes(
-            ["metric", "location", "run_group_id", "value"],
+        f"{token}_{scope}_indicators.csv": _csv_bytes(
+            ["metric", "location", f"{scope}_id", "value"],
             sorted(
-                rows,
+                [
+                    {
+                        **{k: v for k, v in row.items() if k != "run_group_id"},
+                        f"{scope}_id": row["run_group_id"],
+                    }
+                    for row in rows
+                    if row["run_group_id"].startswith(f"{scope}_")
+                ],
                 key=lambda row: (
                     row["metric"],
                     row["location"],
-                    int(row["run_group_id"]),
+                    row[f"{scope}_id"],
                 ),
             ),
         )
         for token, rows in tables.items()
+        for scope in ("run", "group")
     }
-    lookup = _csv_bytes(["run_group_id", "grain", "run_id"], plan["units"])
+    memberships = [
+        {"group_id": row["run_group_id"], "run_id": row["run_id"]}
+        for row in plan["units"]
+        if row["grain"] == "bundle"
+    ]
+    metadata = [
+        {"group_id": identity, "st_id": key, "is_reference": str(not key).lower()}
+        for key, identity in plan["bundle_run_group_ids"].items()
+    ]
+    lookup = _csv_bytes(["group_id", "run_id"], memberships)
+    metadata_payload = _csv_bytes(["group_id", "st_id", "is_reference"], metadata)
     environment = canonical_json_bytes(plan["request"]["metric_environment"])
     # Each return level's provenance: usable block counts per member against
     # the required minimum, the fitted parameters, fit and shape coverage, and
@@ -826,13 +865,14 @@ def _publish_metric_set_v2(experiment_root, plan):
     engine.mkdir(parents=True, exist_ok=True)
     for name, payload in payloads.items():
         (result / name).write_bytes(payload)
-    (result / "metric_run_lookup.csv").write_bytes(lookup)
+    (result / "group_members.csv").write_bytes(lookup)
+    (result / "group_metadata.csv").write_bytes(metadata_payload)
     (engine / "metric_environment.json").write_bytes(environment)
     (engine / return_level_validation.REPORT_FILENAME).write_bytes(report)
     (engine / RETURN_LEVEL_EVIDENCE_FILENAME).write_bytes(evidence_payload)
     simulation = read_simulation_v2(root)
     manifest = {
-        "schema_version": "metric-set/2",
+        "schema_version": "metric-set/3",
         "canonicalization_id": "collection-canon/1",
         "status": "ready",
         "metric_set_id": plan["metric_set_id"],
@@ -846,18 +886,23 @@ def _publish_metric_set_v2(experiment_root, plan):
         "environment_sha256": content_sha256(plan["request"]["metric_environment"]),
         "groups": plan["groups"],
         "run_groups": plan["units"],
-        "metric_run_lookup": ref(
-            f"results/metric_sets/{short}/metric_run_lookup.csv", lookup
+        "group_members": ref(f"results/metric_sets/{short}/group_members.csv", lookup),
+        "group_metadata": ref(
+            f"results/metric_sets/{short}/group_metadata.csv", metadata_payload
         ),
+        "declarations": plan["request"]["declarations"],
+        "expected_result_keys": plan["expected_result_keys"],
         "tables": [
             {
                 "token": token,
+                "scope": scope,
                 "file": ref(
-                    f"results/metric_sets/{short}/{token}_indicators.csv",
-                    payloads[f"{token}_indicators.csv"],
+                    f"results/metric_sets/{short}/{token}_{scope}_indicators.csv",
+                    payloads[f"{token}_{scope}_indicators.csv"],
                 ),
             }
             for token in sorted(tables)
+            for scope in ("run", "group")
         ],
         "return_level_benchmark": ref(return_level_validation.REPORT_FILENAME, report),
         "return_level_evidence": ref(RETURN_LEVEL_EVIDENCE_FILENAME, evidence_payload),
@@ -897,16 +942,23 @@ def _read_metric_set_v2(experiment_root, marker):
     root = Path(experiment_root).resolve()
     manifest = read_canonical_json(marker)
     if (
-        manifest.get("schema_version") != "metric-set/2"
+        manifest.get("schema_version") != "metric-set/3"
         or manifest.get("status") != "ready"
     ):
-        raise ImmutableMetricSetError("metric set is not ready")
+        raise ImmutableMetricSetError(
+            "unsupported or unready metric set; legacy mixed-ID metric sets must be recomputed from a new simulation"
+        )
     if content_sha256(
         {k: v for k, v in manifest.items() if k != "metrics_manifest_sha256"}
     ) != manifest.get("metrics_manifest_sha256"):
         raise ImmutableMetricSetError("metric manifest digest differs")
     if content_sha256(manifest["identity_projection"]) != manifest["metric_set_id"]:
         raise ImmutableMetricSetError("metric-set identity projection differs")
+    if (
+        manifest["identity_projection"]["groups"] != manifest["groups"]
+        or manifest["identity_projection"]["run_groups"] != manifest["run_groups"]
+    ):
+        raise ImmutableMetricSetError("metric-set membership differs from identity")
     short = identity_segment(manifest["metric_set_id"], "metric_set_id")
     if (
         marker.parent.name != short
@@ -920,43 +972,124 @@ def _read_metric_set_v2(experiment_root, marker):
     if manifest["response_inventory"]["path"] != "../../response_inventory.json":
         raise ImmutableMetricSetError("metric inventory reference differs")
     artifacts = [manifest["environment"], manifest["return_level_benchmark"]]
-    # Sets published before 2026-10-04 carry no evidence and stay readable;
-    # one that names it must name the canonical file and match its bytes.
-    if "return_level_evidence" in manifest:
-        if manifest["return_level_evidence"]["path"] != RETURN_LEVEL_EVIDENCE_FILENAME:
-            raise ImmutableMetricSetError("return-level evidence reference differs")
-        artifacts.append(manifest["return_level_evidence"])
+    if manifest["return_level_evidence"]["path"] != RETURN_LEVEL_EVIDENCE_FILENAME:
+        raise ImmutableMetricSetError("return-level evidence reference differs")
+    artifacts.append(manifest["return_level_evidence"])
     for item in artifacts:
         if file_sha256(engine / item["path"]) != item["sha256"]:
             raise ImmutableMetricSetError(f"metric artifact differs: {item['path']}")
-    lookup = result / "metric_run_lookup.csv"
-    if manifest["metric_run_lookup"]["path"] != (
-        f"results/metric_sets/{short}/metric_run_lookup.csv"
+    lookup = result / "group_members.csv"
+    if manifest["group_members"]["path"] != (
+        f"results/metric_sets/{short}/group_members.csv"
     ):
         raise ImmutableMetricSetError("metric lookup reference differs")
-    if file_sha256(lookup) != manifest["metric_run_lookup"]["sha256"]:
+    if file_sha256(lookup) != manifest["group_members"]["sha256"]:
         raise ImmutableMetricSetError("metric lookup differs")
     with lookup.open(newline="", encoding="utf-8") as handle:
-        if csv.DictReader(handle).fieldnames != ["run_group_id", "grain", "run_id"]:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames != ["group_id", "run_id"]:
             raise ImmutableMetricSetError("metric lookup schema differs")
+        members = list(reader)
+    declared_members = [
+        {"group_id": row["run_group_id"], "run_id": row["run_id"]}
+        for row in manifest["run_groups"]
+        if row["grain"] == "bundle"
+    ]
+    if members != declared_members or len(
+        {tuple(row.values()) for row in members}
+    ) != len(members):
+        raise ImmutableMetricSetError("group membership differs or contains duplicates")
+    metadata = result / "group_metadata.csv"
+    if (
+        manifest["group_metadata"]["path"]
+        != f"results/metric_sets/{short}/group_metadata.csv"
+        or file_sha256(metadata) != manifest["group_metadata"]["sha256"]
+    ):
+        raise ImmutableMetricSetError("group metadata reference or bytes differ")
+    with metadata.open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames != ["group_id", "st_id", "is_reference"]:
+            raise ImmutableMetricSetError("group metadata schema differs")
+        metadata_rows = list(reader)
+    expected_metadata = [
+        {"group_id": group, "st_id": key, "is_reference": str(not key).lower()}
+        for key, group in zip(
+            sorted(manifest["groups"]), sorted({row["group_id"] for row in members})
+        )
+    ]
+    if metadata_rows != expected_metadata:
+        raise ImmutableMetricSetError("group metadata differs from grouping keys")
+    tables = {}
+    seen = set()
     for item in manifest["tables"]:
+        scope = item["scope"]
+        if scope not in ("run", "group") or (item["token"], scope) in seen:
+            raise ImmutableMetricSetError("duplicate or unknown metric table scope")
+        seen.add((item["token"], scope))
         if item["file"]["path"] != (
-            f"results/metric_sets/{short}/{item['token']}_indicators.csv"
+            f"results/metric_sets/{short}/{item['token']}_{scope}_indicators.csv"
         ):
             raise ImmutableMetricSetError("metric table reference differs")
         path = result / Path(item["file"]["path"]).name
         if file_sha256(path) != item["file"]["sha256"]:
             raise ImmutableMetricSetError("metric table differs")
         with path.open(newline="", encoding="utf-8") as handle:
-            if csv.DictReader(handle).fieldnames != [
+            reader = csv.DictReader(handle)
+            if reader.fieldnames != [
                 "metric",
                 "location",
-                "run_group_id",
+                f"{scope}_id",
                 "value",
             ]:
                 raise ImmutableMetricSetError("metric table schema differs")
+            scoped_rows = list(reader)
+            if any(
+                not row[f"{scope}_id"].startswith(f"{scope}_") for row in scoped_rows
+            ):
+                raise ImmutableMetricSetError(
+                    "metric table ID does not match its scope"
+                )
+            tables.setdefault(item["token"], []).extend(
+                {
+                    **{k: v for k, v in row.items() if k != f"{scope}_id"},
+                    "run_group_id": row[f"{scope}_id"],
+                }
+                for row in scoped_rows
+            )
+    tokens = {
+        item["required_responses"]["variable"] for item in manifest["declarations"]
+    }
+    if seen != {(token, scope) for token in tokens for scope in ("run", "group")}:
+        raise ImmutableMetricSetError("metric table scopes are incomplete")
     read_simulation_v2(root)
     inventory = read_response_inventory_v2(root)
+    runs = {item["run_id"] for item in inventory["series"]}
+    group_ids = {row["group_id"] for row in members}
+    if {row["run_id"] for row in members} != runs or any(
+        not row["group_id"].startswith("group_") for row in members
+    ):
+        raise ImmutableMetricSetError(
+            "group membership differs from retained evaluated runs"
+        )
+    locations = {}
+    for item in inventory["series"]:
+        locations.setdefault(item["variable"], set()).add(item["location_id"])
+    expected_keys = sorted(
+        [declaration["name"], location, unit]
+        for declaration in manifest["declarations"]
+        for location in locations[declaration["required_responses"]["variable"]]
+        for unit in (runs | group_ids if declaration["grain"] == "run" else group_ids)
+    )
+    if manifest["expected_result_keys"] != expected_keys:
+        raise ImmutableMetricSetError(
+            "metric keys differ from declarations and retained locations"
+        )
+    _validate_tables(
+        tables,
+        expected_keys,
+        {item["name"]: item for item in manifest["declarations"]},
+        manifest["run_groups"],
+    )
     if (
         manifest["response_inventory"]["sha256"]
         != inventory["response_inventory_sha256"]

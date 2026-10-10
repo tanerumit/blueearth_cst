@@ -64,21 +64,27 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch)
     from blueearth_cst.experiment import metric_plan
     from blueearth_cst.experiment.metric_registry import declarations
 
-    declaration = asdict(declarations(("gwr",))[0])
+    declaration = metric_plan._plain(asdict(declarations(("gwr",))[0]))
     environment = {"packages": {"fixture": "1"}}
-    simulation = {"schema_version": "simulation/2", "simulation_id": "a" * 64}
+    simulation = {"schema_version": "simulation/3", "simulation_id": "a" * 64}
     inventory = {
         "response_inventory_sha256": "b" * 64,
         "response_identity_sha256": "c" * 64,
+        "series": [{"run_id": "run_01", "variable": "gwr", "location_id": "9"}],
     }
     projection = {
         "simulation_id": simulation["simulation_id"],
         "response_identity_sha256": inventory["response_identity_sha256"],
         "metric_definition_sha256": "d" * 64,
         "metric_environment_sha256": content_sha256(environment),
+        "groups": {"": ["run_01"]},
+        "run_groups": [
+            {"run_group_id": "run_01", "grain": "run", "run_id": "run_01"},
+            {"run_group_id": "group_01", "grain": "bundle", "run_id": "run_01"},
+        ],
     }
     plan = {
-        "schema_version": "metric-request/2",
+        "schema_version": "metric-request/3",
         "metric_set_id": content_sha256(projection),
         "request": {
             "declarations": [declaration],
@@ -89,9 +95,12 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch)
         "metric_definition_sha256": projection["metric_definition_sha256"],
         "metric_environment_sha256": projection["metric_environment_sha256"],
         "response_inventory_sha256": inventory["response_inventory_sha256"],
-        "groups": {},
-        "units": [{"run_group_id": "01", "grain": "run", "run_id": "01"}],
-        "expected_result_keys": [[declaration["name"], "9", "01"]],
+        "groups": projection["groups"],
+        "bundle_run_group_ids": {"": "group_01"},
+        "units": projection["run_groups"],
+        "expected_result_keys": [
+            [declaration["name"], "9", unit] for unit in ("group_01", "run_01")
+        ],
     }
     monkeypatch.setattr(metric_plan, "check_live_metric_environment", lambda _: None)
     monkeypatch.setattr(metric_plan, "read_simulation_v2", lambda _: simulation)
@@ -105,9 +114,10 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch)
                     {
                         "metric": declaration["name"],
                         "location": "9",
-                        "run_group_id": "01",
+                        "run_group_id": unit,
                         "value": "1",
                     }
+                    for unit in ("run_01", "group_01")
                 ]
             },
             (),
@@ -127,26 +137,27 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch)
     short = identity_segment(plan["metric_set_id"], "metric_set_id")
     engine = tmp_path / "_engine/metric_sets" / short
     result = tmp_path / "results/metric_sets" / short
-    assert marker["schema_version"] == "metric-set/2"
+    assert marker["schema_version"] == "metric-set/3"
     assert engine.joinpath("metrics.json").is_file()
-    assert result.joinpath("metric_run_lookup.csv").is_file()
-    assert marker["metric_run_lookup"]["path"] == (
-        f"results/metric_sets/{short}/metric_run_lookup.csv"
+    assert result.joinpath("group_members.csv").is_file()
+    assert marker["group_members"]["path"] == (
+        f"results/metric_sets/{short}/group_members.csv"
     )
     assert [item["file"]["path"] for item in marker["tables"]] == [
-        f"results/metric_sets/{short}/gwr_indicators.csv"
+        f"results/metric_sets/{short}/gwr_run_indicators.csv",
+        f"results/metric_sets/{short}/gwr_group_indicators.csv",
     ]
-    with result.joinpath("metric_run_lookup.csv").open(
+    with result.joinpath("group_members.csv").open(
         newline="", encoding="utf-8"
     ) as handle:
-        assert csv.DictReader(handle).fieldnames == ["run_group_id", "grain", "run_id"]
-    with result.joinpath("gwr_indicators.csv").open(
+        assert csv.DictReader(handle).fieldnames == ["group_id", "run_id"]
+    with result.joinpath("gwr_run_indicators.csv").open(
         newline="", encoding="utf-8"
     ) as handle:
         assert csv.DictReader(handle).fieldnames == [
             "metric",
             "location",
-            "run_group_id",
+            "run_id",
             "value",
         ]
     assert metric_plan.read_metric_set(tmp_path, engine / "metrics.json") == marker
@@ -159,8 +170,8 @@ def test_v2_metric_plan_reads_collection_from_intent(tmp_path, monkeypatch):
     (root / "_engine").mkdir(parents=True)
     (root / "_engine/simulation.json").write_bytes(b"{}\n")
     request = {
-        "schema_version": "metric-request/2",
-        "simulation_schema_version": "simulation/2",
+        "schema_version": "metric-request/3",
+        "simulation_schema_version": "simulation/3",
         "simulation_id": "a" * 64,
         "tokens": ["gwr"],
         "water_year_anchor": "YS-JAN",
@@ -175,7 +186,7 @@ def test_v2_metric_plan_reads_collection_from_intent(tmp_path, monkeypatch):
     monkeypatch.setattr(
         metric_plan,
         "read_simulation_v2",
-        lambda path: {"schema_version": "simulation/2", "simulation_id": "a" * 64},
+        lambda path: {"schema_version": "simulation/3", "simulation_id": "a" * 64},
     )
     monkeypatch.setattr(
         metric_plan,
@@ -204,14 +215,14 @@ def test_v2_scenario_lookup_preserves_member_ancestry():
     rows = _v2_scenario_rows(
         [
             {
-                "run_id": "01",
+                "run_id": "run_01",
                 "evaluate": "true",
                 "type": "stochastic",
                 "rlz": "1",
                 "st_id": "",
             },
             {
-                "run_id": "02",
+                "run_id": "run_02",
                 "evaluate": "true",
                 "type": "stochastic",
                 "rlz": "1",
@@ -221,8 +232,8 @@ def test_v2_scenario_lookup_preserves_member_ancestry():
     )
 
     assert [(row.run_id, row.derived_from, dict(row.payload)) for row in rows] == [
-        ("01", "", {"rlz": "1", "st_id": ""}),
-        ("02", "01", {"rlz": "1", "st_id": "1"}),
+        ("run_01", "", {"rlz": "1", "st_id": ""}),
+        ("run_02", "run_01", {"rlz": "1", "st_id": "1"}),
     ]
 
 
@@ -237,13 +248,13 @@ def test_v2_native_run_references_resolve_from_inventory(tmp_path):
     inventory = {
         "artifacts": [
             {
-                "run_id": "01",
+                "run_id": "run_01",
                 "file": file_reference(csv_path, "experiment_root", tmp_path),
             }
         ],
         "series": [
             {
-                "run_id": "01",
+                "run_id": "run_01",
                 "native_selector": {
                     "toml": file_reference(toml_path, "experiment_root", tmp_path)
                 },
@@ -253,14 +264,14 @@ def test_v2_native_run_references_resolve_from_inventory(tmp_path):
 
     native_runs = _native_runs_v2(tmp_path, inventory)
 
-    assert native_runs["01"].csv_path == csv_path
-    assert native_runs["01"].toml_path == toml_path
-    assert native_runs["01"].temporal_path is None
+    assert native_runs["run_01"].csv_path == csv_path
+    assert native_runs["run_01"].toml_path == toml_path
+    assert native_runs["run_01"].temporal_path is None
 
 
 def test_v2_run_groups_replace_legacy_unit_keys():
     from blueearth_cst.experiment.metric_plan import _v2_run_groups
 
     assert _v2_run_groups(
-        [{"unit_id": "01", "grain": "run", "member_run_id": "01"}]
-    ) == [{"run_group_id": "01", "grain": "run", "run_id": "01"}]
+        [{"unit_id": "run_01", "grain": "run", "member_run_id": "run_01"}]
+    ) == [{"run_group_id": "run_01", "grain": "run", "run_id": "run_01"}]

@@ -108,6 +108,11 @@ def main():
         for s in payload["sources"]
     ]
 
+    # Prepare the scientific request before the contender barrier, as the
+    # runner does. Cold scientific imports must not consume the Windows
+    # lock-acquisition retry window; admission still revalidates while owned.
+    api.validate_request(payload["request"], root)
+
     if mode in {"automatic", "same-pin"}:
         ready = Path(input_path).parent / f"creator-ready-{os.getpid()}"
         ready.write_bytes(b"ready")

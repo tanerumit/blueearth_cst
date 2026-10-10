@@ -4,6 +4,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import yaml
@@ -92,6 +93,19 @@ def test_current_carrier_operation_target_matrix(
         return 0
 
     monkeypatch.setattr(harness, "run_project_child", launch)
+    if operation == "simulate-and-metrics":
+        # This launch-target matrix has no producer catalog. Real admission is
+        # covered by the context tests and the fresh all-five execution.
+        from blueearth_cst.experiment import reservation_context
+
+        monkeypatch.setattr(
+            reservation_context,
+            "admit_context_owned",
+            lambda *args, **kwargs: SimpleNamespace(
+                bind_selection=lambda: None,
+                environment=lambda: {"CST_EXPERIMENT_NAME": root.name},
+            ),
+        )
     targets = {
         "all": ["all"],
         "metrics": ["metrics"],

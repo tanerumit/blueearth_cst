@@ -47,7 +47,7 @@ A custom base selects its own family; an exact numbered name pins it. Existing o
 experiments remain explicit legacy selections. The resolver lives in `experiment/reservation.py`.
 
 Accepted design, retained review context and landing verification:
-[experiment numbering](../records/reviews/experiment-numbering-2026-10-10/implementation-evidence.md).
+[experiment numbering](../records/decisions/experiment-numbering-2026-10-10/implementation-evidence.md).
 
 ## dev/
 

@@ -115,3 +115,21 @@ At the user's request, renamed `chore/minor-fixes` to `refactor/t2610082103-shar
 Session-1 remains occupied; HEAD and the recorded base are unchanged. The supported advisory
 `task-adopt --confirm` command updated the session registration, and session-check found no mismatch.
 Earlier reviewed artifacts retain the branch name used when they were produced. No merge or push.
+
+### Map-reference framing draft (2026-10-10)
+
+The [map-reference draft](t2610082103/design-runs/map-reference/design-v1.md) is saved with its
+annotated repository/output trees and configuration/compatibility inventory. It proposes one shared
+historical machine record, selected-source frame authority, pooled frame-intersecting source scales,
+project-owned completeness and explicit unscaled/extension display. WF1-only candidate cost is unmeasured.
+
+The [scientific review](t2610082103/design-runs/map-reference/internal-review-domain.md) requests revision:
+one blocking finding and two minor findings. A one-time probe confirms that permissive missing-data
+settings can turn an entirely missing amount year into zero. Proposed G1 remedy is to narrow the new
+map policy to at most 27 missing days per month. Retained CHIRPS auxiliary arrays need an explicit
+preservation oracle; runtime cost becomes a measurement objective rather than an acceptability claim.
+
+G1 framing approval is pending; risk/external review and implementation have not started. See
+[run authority and exact identity](t2610082103/design-runs/map-reference/status.md) and
+[open finding dispositions](t2610082103/design-runs/map-reference/ledger.md). The pinned source branch
+remains clean at `22fbe441`; no merge or push.

@@ -1,0 +1,41 @@
+{
+  "repository": "C:\\Users\\taner\\workspace\\brain-infrastructure",
+  "recoverable_commit": "1c50048ae051faa7dfb2e8b5edfea83dc83fac9a",
+  "files": [
+    {
+      "path": "artifacts/skills/design-review-loop/SKILL.md",
+      "sha256": "d05a6677273450bda8c20151ff51e79f2777bd41d8ec5122646429bca48e0793",
+      "matches_pin": true
+    },
+    {
+      "path": "artifacts/skills/design-review-loop/references/stage-contracts.md",
+      "sha256": "8d27819b4734e166afe94d4c1963afe31a5ff783ba64da8d6d914fade670809e",
+      "matches_pin": true
+    },
+    {
+      "path": "artifacts/skills/design-review-loop/references/run-artifacts.md",
+      "sha256": "8b42b93bbf7cc8eecd7abaf4d0e384530491b09e835581ac2a703213dc0ce379",
+      "matches_pin": true
+    },
+    {
+      "path": "artifacts/skills/design-review-loop/references/roles-and-recovery.md",
+      "sha256": "946626b61a7b062bc5cd2c3f87810b5f5bae74d1cb9efd4deff96be6985a61d7",
+      "matches_pin": true
+    },
+    {
+      "path": "artifacts/skills/design-review-loop/references/evidence-and-gates.md",
+      "sha256": "da14f1cba3a2ffb482c8856000849c911d0e13e22fda76a5f3bc42d9d3cd3830",
+      "matches_pin": true
+    },
+    {
+      "path": "artifacts/skills/design-review-loop/references/journey-and-sketch.md",
+      "sha256": "c53f7ae05e2711db959b507f2ccb4ffe923d1facb92eea04a3c8c0740ae14022",
+      "matches_pin": true
+    },
+    {
+      "path": "artifacts/skills/design-review-loop/references/findings-and-closure.md",
+      "sha256": "55f23a42ffc4ef1ad0cfbe38b87af54b49c1c652038bb51d726cb987b263dbc1",
+      "matches_pin": true
+    }
+  ]
+}

@@ -12,7 +12,8 @@ from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis import diagnostics as dg
 from blueearth_cst.climate_analysis.diagnostic_maps import draw_map
 from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
-from blueearth_cst.plotting.fundamentals import STYLE
+from blueearth_cst.plotting import prepared_charts as pc
+from blueearth_cst.plotting.fundamentals import MONTH_ABBR, STYLE
 from blueearth_cst.shared.variable_registry import CLIMATE_VARS
 
 
@@ -173,18 +174,24 @@ def render_forcing_figures(
         label = {"precip": "Precipitation", "temp": "Temperature", "pet": "PET"}[
             variable
         ]
-        view = artists.View(
-            sources=["forcing"],
-            labels={"forcing": "Wflow forcing"},
-            styles={"forcing": artists.SOURCE_STYLE["era5"]},
-            results={"forcing": results[variable]},
-            years=years,
-            m0=m0,
-            reference=(int(years[0]), int(years[-1])),
-            wet_mm=1.0,
-            agreement=pd.DataFrame(),
-            common_years=years,
-        )
+        color, marker = artists.SOURCE_STYLE["era5"]
+        yearly = results[variable]["annual"]["total"].reindex(years)
+        trend = results[variable]["trends"]["total"]
+        eligible = yearly.dropna().index.to_numpy()
+        trend_unit = "°C decade⁻¹" if is_temperature else artists.UNITS["mm_decade"]
+        segments = []
+        if np.isfinite(trend["slope"]) and eligible.size:
+            span = np.array([eligible[0], eligible[-1]], dtype=float)
+            fitted = trend["intercept"] + trend["slope"] / 10 * span
+            digits = 2 if is_temperature else 0
+            segments.append(
+                pc.TrendSegment(
+                    color,
+                    tuple(span),
+                    tuple(fitted),
+                    f"{artists.fmt_signed(trend['slope'], digits)} {trend_unit}",
+                )
+            )
         for kind in ("map", "annual", "monthly"):
             with plt.rc_context(STYLE):
                 if kind == "map":
@@ -227,13 +234,15 @@ def render_forcing_figures(
                     )
                     available = bool(finite.size)
                 elif kind == "annual":
-                    fig = artists.series(
-                        view,
+                    fig = pc.annual_series(
+                        years,
+                        [
+                            pc.AnnualLine(
+                                "Wflow forcing", color, marker, yearly.to_numpy()
+                            )
+                        ],
                         ylabel=unit,
-                        trend_unit="°C decade⁻¹"
-                        if is_temperature
-                        else artists.UNITS["mm_decade"],
-                        digits=2 if is_temperature else 0,
+                        trends=segments,
                     )
                     details = (
                         f"Reporting-year {'means' if is_temperature else 'totals'} of the daily equal-weight basin-cell mean ({unit}). "
@@ -242,10 +251,21 @@ def render_forcing_figures(
                     )
                     available = bool(results[variable]["annual"].total.notna().any())
                 else:
-                    fig = artists._climatology(
-                        view,
-                        "clim",
-                        artists.UNITS["degc" if is_temperature else "mm_month"],
+                    climatology = results[variable]["clim"]
+                    fig = pc.monthly_cycle(
+                        [
+                            pc.MonthlyBand(
+                                "Wflow forcing",
+                                color,
+                                marker,
+                                climatology["mean"].to_numpy(),
+                                climatology["p10"].to_numpy(),
+                                climatology["p90"].to_numpy(),
+                            )
+                        ],
+                        month_labels=[MONTH_ABBR[m - 1] for m in dg.month_order(m0)],
+                        ylabel=artists.UNITS["degc" if is_temperature else "mm_month"],
+                        band_label="10–90th percentile",
                         zero=not is_temperature,
                     )
                     details = (

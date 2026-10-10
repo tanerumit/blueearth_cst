@@ -280,6 +280,7 @@ in this visual review.
 ## Implementation entry points
 
 - Shared drawing fundamentals and reviewed CST preset: `blueearth_cst/plotting/fundamentals.py`.
+- Prepared annual lines, trend segments and monthly bands: `blueearth_cst/plotting/prepared_charts.py`.
 - Explicit-figure export without workflow logging: `blueearth_cst/plotting/export.py`.
 - Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
 - WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
@@ -297,6 +298,24 @@ export_figure(fig, "plots/precip_annual_ts.png", dpi=600, metadata={"Software": 
 ```
 
 The caller closes the figure after its final export. Existing workflow callers keep using `save_figure`.
+
+### Prepared annual and monthly charts
+
+`prepared_charts.annual_series` and `monthly_cycle` draw supplied arrays and return a `Figure`.
+Use `draw_annual_lines` and `draw_annual_trends` on an existing axis when a composition needs its own
+ticks or legend, as WF1 hydrological summaries do. Call within the existing `rc_context(STYLE)` and
+keep that context active through export. The module does not select a backend or install global styles.
+
+Adapters own aggregation, completeness, source order, units, reporting-year alignment and fitted trends.
+`AnnualLine` contains values aligned to the supplied years. `TrendSegment` contains already evaluated
+endpoints and the formatted label; drawing never fits a trend. `MonthlyBand` contains the mean and
+lower/upper arrays in the supplied twelve-month label order. Pass the band's statistical meaning through
+`band_label`; the current adapters use `10–90th percentile` for interannual spread. Drawing neither
+calculates quantiles nor rotates months. Missing values retain gaps; inputs are not mutated.
+
+WF0 keeps its compatible `View` wrappers. WF1 forcing and basin/subbasin summaries prepare the small
+records directly. Existing captions, export options, filenames and scientific calculations remain with
+their workflow adapters. These are internal reusable interfaces; external distribution is a later step.
 
 WF2 review uses the newer artists and retained tables in the `wf0-lab` ensemble outputs as its visual
 baseline. The annual overview, trajectories, change strips, split seasonal products, variability ratios,

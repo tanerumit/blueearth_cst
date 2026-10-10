@@ -20,6 +20,7 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 from blueearth_cst.climate_analysis.diagnostics import SPI_SCALES, month_order
+from blueearth_cst.plotting import prepared_charts as pc
 from blueearth_cst.plotting.fundamentals import (
     AXIS as AXIS,
 )
@@ -155,6 +156,7 @@ from blueearth_cst.plotting.fundamentals import (
 from blueearth_cst.plotting.fundamentals import (
     ygrid as ygrid,
 )
+from blueearth_cst.plotting.prepared_charts import TREND_DASH as TREND_DASH
 
 MISSING = "#a0a0a0"
 
@@ -166,9 +168,6 @@ SOURCE_STYLE = {"era5": ("#236b8e", "o"), "chirps": ("#bf6a3c", "o")}
 
 
 FREE_SLOTS = (("#009E73", "o"), ("#CC79A7", "o"))
-
-
-TREND_DASH = (0, (5, 2.5))
 
 
 DODGE = 0.2
@@ -385,44 +384,23 @@ def coverage(v: View) -> Figure:
 
 def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
     have = [s for s in v.sources if v.results[s][key] is not None]
-    fig, axs = new_fig(H_SINGLE)
-    ax = axs[0, 0]
-    x = np.arange(12)
-    top = 0.0
-    bands = []
-    lines = []
-    for s in have:
-        c = v.results[s][key]
-        bands.append(
-            ax.fill_between(
-                x, c["p10"], c["p90"], color=v.color(s), alpha=BAND_ALPHA, lw=0
+    return pc.monthly_cycle(
+        [
+            pc.MonthlyBand(
+                v.labels[s],
+                v.color(s),
+                v.marker(s),
+                v.results[s][key]["mean"].to_numpy(),
+                v.results[s][key]["p10"].to_numpy(),
+                v.results[s][key]["p90"].to_numpy(),
             )
-        )
-        lines.extend(
-            ax.plot(
-                x,
-                c["mean"],
-                color=v.color(s),
-                lw=LW_MEAN,
-                marker=v.marker(s),
-                ms=MS_LINE,
-            )
-        )
-        finite = c["p90"].to_numpy()
-        finite = finite[np.isfinite(finite)]
-        if finite.size:
-            top = max(top, float(finite.max()))
-    month_axis(ax, v.m0)
-    if zero:
-        ax.set_ylim(0, max(top * 1.08, 1))
-    else:
-        ax.margins(y=0.08)
-    ax.set_ylabel(ylabel)
-    ygrid(ax)
-    spread = Patch(facecolor=MUTED, alpha=BAND_ALPHA, edgecolor="none")
-    spread.set_label("10–90th percentile")
-    inside_legend(fig, ax, [*id_handles(v, have), spread], bands, lines)
-    return fig
+            for s in have
+        ],
+        month_labels=[MONTH_ABBR[m - 1] for m in month_order(v.m0)],
+        ylabel=ylabel,
+        band_label="10–90th percentile",
+        zero=zero,
+    )
 
 
 def seasonal(v: View) -> Figure:
@@ -991,20 +969,48 @@ def series(
     digits: int = 0,
 ) -> Figure:
     """Annual basin series; defaults retain the reviewed precipitation figure."""
-    fig, axs = new_fig(H_SINGLE)
-    ax = axs[0, 0]
+    return pc.annual_series(
+        v.years,
+        [
+            pc.AnnualLine(
+                v.labels[s],
+                v.color(s),
+                v.marker(s),
+                v.results[s]["annual"]["total"].reindex(v.years).to_numpy(),
+            )
+            for s in v.sources
+        ],
+        ylabel=ylabel,
+        trends=_prepared_trends(v, "annual", "total", "total", trend_unit, digits),
+    )
+
+
+def _prepared_trends(
+    v: View,
+    table: str,
+    column: str,
+    metric: str,
+    unit: str,
+    digits: int,
+) -> list[pc.TrendSegment]:
+    """Translate retained estimates using the original eligible endpoint rule."""
+    segments = []
     for s in v.sources:
-        y = v.results[s]["annual"]["total"].reindex(v.years)
-        ax.plot(
-            v.years, y, color=v.color(s), lw=LW_LINE, marker=v.marker(s), ms=MS_LINE
-        )
-    year_ticks(ax, v.years)
-    ax.margins(y=0.08)
-    _annual_trends(ax, v, "annual", "total", "total", trend_unit, digits)
-    ax.set_ylabel(ylabel)
-    top_legend(fig, identity_row(v))
-    ygrid(ax)
-    return fig
+        y = v.results[s][table][column].reindex(v.years)
+        t = v.results[s]["trends"][metric]
+        ok = y.dropna().index.to_numpy()
+        if np.isfinite(t["slope"]) and ok.size:
+            span = np.array([ok[0], ok[-1]], dtype=float)
+            line = t["intercept"] + t["slope"] / 10 * span
+            segments.append(
+                pc.TrendSegment(
+                    v.color(s),
+                    tuple(span),
+                    tuple(line),
+                    f"{fmt_signed(t['slope'], digits)} {unit}",
+                )
+            )
+    return segments
 
 
 def _annual_trends(
@@ -1017,40 +1023,11 @@ def _annual_trends(
     digits: int = 0,
 ) -> None:
     """Draw retained Sen estimates with separated, source-colored slope labels."""
-    labels = []
-    for s in v.sources:
-        y = v.results[s][table][column].reindex(v.years)
-        t = v.results[s]["trends"][metric]
-        ok = y.dropna().index.to_numpy()
-        if np.isfinite(t["slope"]) and ok.size:
-            span = np.array([ok[0], ok[-1]], dtype=float)
-            line = t["intercept"] + t["slope"] / 10 * span
-            ax.plot(span, line, color=v.color(s), lw=LW_REF, ls=TREND_DASH, alpha=0.6)
-            labels.append(
-                [
-                    line[-1],
-                    f"{fmt_signed(t['slope'], digits)} {unit}",
-                    v.color(s),
-                ]
-            )
-    ax.margins(y=0.08)
-    lo, hi = ax.get_ylim()
-    gap = (hi - lo) * 0.07  # keep end labels from overlapping
-    labels.sort(key=lambda r: r[0])
-    for i in range(1, len(labels)):
-        labels[i][0] = max(labels[i][0], labels[i - 1][0] + gap)
-    for y, text, color in labels:
-        ax.annotate(
-            text,
-            (v.years[-1] - 0.4, y),
-            xytext=(-3, 8),
-            textcoords="offset points",
-            ha="right",
-            va="bottom",
-            fontsize=FS_TICK,
-            color=color,
-            bbox=LABEL_BOX,
-        )
+    pc.draw_annual_trends(
+        ax,
+        _prepared_trends(v, table, column, metric, unit, digits),
+        label_x=v.years[-1] - 0.4,
+    )
 
 
 def sensitivity(v: View) -> Figure:

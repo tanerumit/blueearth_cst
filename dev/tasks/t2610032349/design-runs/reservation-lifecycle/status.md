@@ -5,13 +5,13 @@ genre: decision-record
 author-binding: cst-architect
 started: 2026-10-10
 variant: lean
-stage: G2
+stage: 7-complete
 external-rounds-completed: 0
 allocation: allocation.md
 dispatches: 6
 gates:
   G1: approved
-  G2: pending
+  G2: approved 2026-10-10
 flags: [owner-fast-track-one-review-cap, single-provider-combined-review]
 ---
 
@@ -19,7 +19,7 @@ flags: [owner-fast-track-one-review-cap, single-provider-combined-review]
 
 Stage 0, draft stage 1 and stage 1b domain review complete. G1 approved on 2026-10-10. Prior behavioral plan
 was the seed; the author preserved decisions and filled schema/publication mechanics.
-No design or findings have been accepted. No ledger yet; empty closure is not asserted before review.
+Design v3 and all capped-review resolutions are accepted. The append-only ledger records all six findings.
 Domain stage 1b required by intake. Required artifacts: intake/status/design. Conditional artifacts
 are created at dispatch, with hashes/acceptance identity recorded here when known.
 
@@ -107,6 +107,15 @@ All six findings are accepted in the specification, none rejected/deferred. At t
 ratification of the bounded fast-1/fast-2 resolutions and exact v3 bytes at G2; no convergence claimed.
 The full provider inventory was captured before runtime edits in reference/generation-code-inventory.json.
 Reference run remains active, last observed WF1 job 2/19 complete; no numerical acceptance yet.
+
+G2 owner approval: "yes", 2026-10-10, in direct response to final v3 and capped-review fixes.
+Accepted exact local bytes: design-v3.md, SHA256
+0B0D8B8BCCCC363FD74F23994848F910ED2B2DC653A1A0E7C41C391E4ED78106.
+No editorial delta requested; final pointer remains unchanged v3, including its original header.
+Owner ratified fast-1/fast-2 bounded resolutions at the cap. Review completed under owner fast-track
+authority, not reviewer convergence. G1/G2 complete; no further review stage. Containing task stays active.
+P2/P3 runtime activation waits for the mandatory reference; scratch-only implementation preparation
+may proceed without changing the running code or its pinned provider inventory.
 
 ## Installed contract provenance
 

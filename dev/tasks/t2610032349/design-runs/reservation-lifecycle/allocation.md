@@ -23,3 +23,9 @@ surviving blockers return to the owner under the cap instead of another round.
 
 First-use compliance benchmark: record dispatch timing, requested/effective configuration, model usage
 if available, and rework in status. Pricing and comparable baseline unavailable; savings undetermined.
+
+Implementation handoff after G2: one python_engineer worker, gpt-6.1-sol/high, owns scratch-only P2
+allocation/reservation modules and focused tests while the pre-change reference runs. Coordinator
+handles scientific capture, integration and reconciliation inline. No concurrent source writers,
+no nested delegation, no additional review round. Prefer existing canonical/path/ownership helpers.
+Activation and runtime-file edits remain blocked on the mandatory matched reference capture.

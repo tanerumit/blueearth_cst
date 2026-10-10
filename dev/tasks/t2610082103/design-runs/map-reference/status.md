@@ -19,6 +19,13 @@ flags: [canonical-board-on-main, same-provider-review]
 
 ## Authority and current stage
 
+Approved implementation is complete in session-1 commit `99939abf`; the pinned source worktree is clean.
+Scientific, visual, numerical preservation, matched-byte factory route, repair and measured-cost evidence
+passes the increment's acceptance. See implementation-evidence.md and the independent reports. Full
+software/all-five workflow gates remain deferred to approved batch landing. No landing or push occurred.
+
+## Intake authority (historical)
+
 Owner requests the map-reference producer design under the saved Python-first plan. Concrete producer,
 record and output contracts require G1 after scientific review. No implementation, landing or push.
 Source is session-1 `22fbe441`, branch `refactor/t2610082103-shared-plotting`; source tree clean at intake.
@@ -298,3 +305,52 @@ fingerprints and outputs are in before-retained/. This is retained-input renderi
 workflow evidence. Fresh WF0 capture is still running; source baseline remains 22fbe441.
 Escalated descriptor qualification resolves ERA5 orography through HydroMT without reading raster data;
 the concrete file exists. Full report/environment closure checks remain pending.
+
+## Final implementation acceptance checkpoint
+
+All three engineering packets are integrated. Independent producer/core oracle: 74 passes and eight
+correct refusals, with zero unresolved scientific failures. Independent native preparation remains exact
+for rapid and Liberia inputs. The first real producer run exposed float32 CHIRPS coordinate rounding;
+storage-precision-aware regularity checks now preserve original native edges and reject materially
+irregular coordinates. Translated temperature thresholds and nextafter controls also pass.
+
+Fresh WF1-only reference production succeeds without WF0, model construction or temporal diagnostics.
+Its five-job producer DAG and actual extraction/production logs are retained. Retained real WF1 capture
+passes all nine native field arrays, six CSV tables, six untouched temporal PNGs and nine-product inventory.
+Independent review inspected all three map figures and verified displayed support and strict exceedance.
+Final corrected-caption capture takes 143.82 seconds; this is measured execution, not an acceptability claim.
+
+Caption review corrected gray-cell wording, distinct nonintersecting support availability, and provenance
+for retained auxiliary CHIRPS PET. These adapter-only edits do not alter preparation or reference identities.
+Three hundred obsolete source-map artist/helper lines were retired after confirming no live callers;
+annual_fields remains unchanged. No output PNG path was removed.
+
+Focused final CLI: 20 passed in 247.39 seconds under authorized subprocess access. The earlier sandboxed
+attempt stalled; only verified task-owned processes were stopped, and its log is preserved. Repository
+lint/format passed before the bounded caption corrections; touched-file Ruff checks pass afterward.
+Runtime contracts: 17 passed; consumer plus existing WF0 diagnostic contracts: 25 passed; paired rule
+contracts: three passed. Full suite and fresh all-five execution remain owed at approved batch landing.
+
+Fresh WF0 extracted and computed both sources and produced its reference, then rendering lost access to
+the data-drive catalog root. Python-visible root and DEM access subsequently recovered. The owned wrapper
+resumed only four remaining render/gather jobs, reusing six up-to-date rules. Preserve failure and resume
+logs. Fresh WF0 visual/parity completion, isolated repair/swap/route checks and measured costs remain active.
+
+Fresh ERA5 NetCDF byte hashes differ across captures, but exact Xarray dataset identity confirms all
+scientific arrays, coordinates and attributes match. Reference identities correctly distinguish raw bytes;
+semantic equality alone is not asserted as matched-byte route evidence.
+
+## Completion — 2026-10-10
+
+Fresh WF0 resumed successfully after drive access recovered. Exact final parity: 12 native arrays,
+54 CSV tables and 51 temporal PNGs; four source maps retain their canonical inventory. All four ordinary
+and four optional captioned source variants pass independent visual review. Nine forcing products pass
+native/temporal preservation and map visual review. The final preview-only CHIRPS label concern was
+resolved by pixel-strip equality and direct image inspection; no source defect remained.
+
+Isolated preserved-mtime source/DEM reference-only repairs refuse stale fields before save; full repairs
+match fresh reopened payloads exactly. A newly valid pair swap after drawing refuses publication.
+Matched-input shared-factory roots produce identical reference bytes. Timing/RSS measurements are retained
+with inclusive/nested limitations; no acceptability or savings claim. Source commit `99939abf` includes
+29 task-only paths. The source worktree is clean and remains occupied for follow-up work. All generated
+evidence roots are retained for review/landing; no bulk deletion, merge or push.

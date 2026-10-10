@@ -101,6 +101,6 @@ failing source. No new permission gate except a genuine unresolved design qualif
 |---|---|---|---|---|
 | Qualification/capture | complete | qualification; fresh WF0 and retained captures | — | Keep before roots read-only |
 | Drawing/preparation | checkpoint passed | packet1; scientific-preparation-report | — | Integrate identity result |
-| Producer/identity | implemented | packet2-evidence; stable scientific probe active | — | Fresh WF1-only execution |
-| Consumers/wiring | active | CLI 20 passed; packet3 engineer dispatched | Migration | Render candidate maps |
-| Acceptance/completion | active | Runtime 9 passed; inventory pass; independent probes | Candidate | Route/repair/render/cost |
+| Producer/identity | complete | packet2; scientific-reference-report | — | Retain evidence |
+| Consumers/wiring | complete | CLI 20 passed; packet3; scientific-consumer-report | — | Retain evidence |
+| Acceptance/completion | complete | implementation-evidence; commit 99939abf | — | Await approved landing |

@@ -136,12 +136,19 @@ with matching preparation/payload identities, rejection and repair; execution re
 After the owner's explicit payload approval, the independent read-only review approved exact v2
 with no findings. All four internal findings have part-by-part design resolutions; the design converged
 unchanged. The owner approved exact v2 for implementation; the reviewed bytes/header remain unchanged.
-The [implementation brief](t2610082103/design-runs/map-reference/implementation-brief.md) assigns bounded
-engineering packets and independent scientific acceptance. Qualification and before-change captures
-completed; the P-drive issue was sandbox access and the production inputs qualify. Exact native scientific
-parity passes rapid and Liberia ERA5/CHIRPS cases. Shared producer and wiring are implemented; consumer
-migration and independent acceptance continue. CLI checks pass 20 cases; runtime checks pass nine cases.
-Numerical, visual, route, repair and cost acceptance remain implementation requirements. See
-[run authority and exact identity](t2610082103/design-runs/map-reference/status.md) and
-[finding dispositions](t2610082103/design-runs/map-reference/ledger.md). The pinned source branch
-has uncommitted approved implementation based on `22fbe441`; no merge or push.
+The approved implementation is complete in session-1 commit `99939abf` on the pinned branch.
+WF0/WF1 now share historical frames/classes, a portable prepared-map renderer and validated preparation
+and payload identities. Exact scientific preservation passes rapid and Liberia cases. Final fresh WF0
+preserves 12 native arrays, 54 CSV tables and 51 temporal PNGs; four source maps and all four captioned
+variants pass visual review. All nine retained WF1 products preserve their scientific/temporal values.
+Independent producer/core checks pass 74 cases plus eight correct refusals; final CLI passes 20 tests.
+Same-mtime source/DEM repairs and a newly valid pair swap refuse stale publication; complete repairs
+match fresh payloads, and matched-input shared-factory roots produce identical reference bytes.
+
+See [implementation evidence](t2610082103/design-runs/map-reference/implementation-evidence.md),
+[scientific/visual verdict](t2610082103/design-runs/map-reference/scientific-consumer-report.md),
+[repair/cost evidence](t2610082103/design-runs/map-reference/repair-and-cost-evidence.md) and
+[run state](t2610082103/design-runs/map-reference/status.md). Costs are measured with explicit scope;
+no performance acceptability or token-savings claim. The source worktree is clean. Full-suite and fresh
+all-five gates remain owed at approved batch landing; no merge or push. Broader library development,
+R/WF3 and external packaging remain open parts of this task.

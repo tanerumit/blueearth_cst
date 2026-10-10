@@ -135,8 +135,11 @@ measurement. Risk review found one major retained-field provenance gap. The fres
 with matching preparation/payload identities, rejection and repair; execution remains unverified.
 After the owner's explicit payload approval, the independent read-only review approved exact v2
 with no findings. All four internal findings have part-by-part design resolutions; the design converged
-unchanged. G2 implementation approval remains pending. Numerical, visual, workflow-route, incremental
-repair and cost evidence are future implementation requirements. See
+unchanged. The owner approved exact v2 for implementation; the reviewed bytes/header remain unchanged.
+The [implementation brief](t2610082103/design-runs/map-reference/implementation-brief.md) assigns bounded
+engineering packets and independent scientific acceptance. Qualification and before-change captures have
+started. The rapid catalog currently cannot resolve its configured P-drive roots; fresh execution is not
+qualified. Numerical, visual, route, repair and cost evidence remain implementation requirements. See
 [run authority and exact identity](t2610082103/design-runs/map-reference/status.md) and
 [finding dispositions](t2610082103/design-runs/map-reference/ledger.md). The pinned source branch
 remains clean at `22fbe441`; no merge or push.

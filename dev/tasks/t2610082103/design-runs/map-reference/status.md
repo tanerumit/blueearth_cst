@@ -5,13 +5,13 @@ genre: decision-record
 author-binding: cst-architect
 started: 2026-10-10
 variant: lean
-stage: G2
+stage: 7
 external-rounds-completed: 1
 allocation: "Frontier plan below"
 dispatches: 5
 gates:
   G1: approved 2026-10-10
-  G2: pending
+  G2: approved 2026-10-10
 flags: [canonical-board-on-main, same-provider-review]
 ---
 
@@ -239,3 +239,36 @@ Canonical review checkpoint commit: cae00c7e. No software tests owed for task-re
 `git diff --cached --check` reported one trailing-whitespace line in the verbatim external report
 (`verdict: approve` followed by the Markdown two-space hard break). Preserve immutable reviewer bytes;
 this record-format exception does not alter the verdict. No code failure or deletion.
+
+## G2 approval and stage-7 final pointer — 2026-10-10
+
+Owner reply "yes, I approve" to implementing the exact independently reviewed design and its numerical,
+visual and workflow validation. Approved canonical path:
+dev/tasks/t2610082103/design-runs/map-reference/design-v2.md.
+Approved SHA256: 4e3175e4b79e0856bbd5c4705b7e81e5a2c6aa9b9602462dd49c5a87ee26f278.
+No editorial delta approved or needed; final pointer is the unchanged reviewed base including its header.
+Skip author finalization dispatch; repeated identity check matches. Review complete, implementation active.
+No landing, push, external packaging or scientific algorithm-change authority. Design qualification gaps
+remain explicit implementation stop/return conditions rather than presumed satisfied.
+
+## Implementation allocation and capture start
+
+Planning bootstrap requested Astra/high completed. One reused python-engineer requested 6.1 Sol/medium
+owns serial three/two/five-file packets; root owns integration/wiring/docs/Git; model-validator requested
+Astra/high owns independent scientific verdict. Max two active workers and one source writer. Effective
+internal settings unverified. Fallback Sol/medium only after diagnosing quota/runtime failure.
+Packet-0 qualification running, source read-only. No new source edits yet.
+
+Initial baseline wrapper rejected a mismatched project root; scratch rapid config now carries the
+matching absolute output root and original absolute workflow config paths. Sandbox catalog probe
+reported no root, but explicit stat showed PermissionError. Escalated read confirmed P-drive exists.
+The task-owned sandboxed Snakemake child was stopped after its identity check; wrapper exited 1.
+Authorized baseline rerun progresses, using existing data mirror and scratch before-project root.
+The error was access, not missing data; no catalog change is needed. Preserve all logs as evidence.
+
+Current-source retained-real render capture exited 0: four source maps (including captioned variants),
+all nine forcing products, source native arrays/counts/masks and forcing prepared fields. Its input
+fingerprints and outputs are in before-retained/. This is retained-input rendering, not fresh rapid
+workflow evidence. Fresh WF0 capture is still running; source baseline remains 22fbe441.
+Escalated descriptor qualification resolves ERA5 orography through HydroMT without reading raster data;
+the concrete file exists. Full report/environment closure checks remain pending.

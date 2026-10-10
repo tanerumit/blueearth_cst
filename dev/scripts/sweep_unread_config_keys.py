@@ -95,7 +95,8 @@ _PROSE_REST = re.compile(r"^\s+[A-Z][a-z]+\s+[a-z]")
 #: `compute`, `spells`, `body` and `entry` hold a config sub-mapping by a name
 #: that says what it is rather than that it is config: the batch-sizing stanza,
 #: the spell factors, one `variables:` entry, one `future_windows` entry.
-_CFG_NAME = r"(?:[a-z_]*(?:cfg|config|settings|stanza|section|params)[a-z_]*|t1|t2|raw|workflows|perturbations|compute|spells|body|entry)"
+#: `climate` is the project climate section passed to the shared map producer.
+_CFG_NAME = r"(?:[a-z_]*(?:cfg|config|settings|stanza|section|params)[a-z_]*|t1|t2|raw|workflows|perturbations|compute|spells|body|entry|climate)"
 
 #: A subscript chain, and EVERY segment of it counts as a read. `min` reaches a
 #: reader only through `stress_test_cfg["temp"]["mean"]["min"]`, and so do

@@ -133,8 +133,10 @@ The owner approved G1 framing, including the 0–27 monthly bound, CHIRPS preser
 measurement. Risk review found one major retained-field provenance gap. The fresh architect's
 [design-v2](t2610082103/design-runs/map-reference/design-v2.md) resolves all four findings in the design,
 with matching preparation/payload identities, rejection and repair; execution remains unverified.
-Independent review is pending explicit payload approval after automatic approval review rejected the
-separate external launch. No reviewer process started. G2 and implementation remain pending. See
+After the owner's explicit payload approval, the independent read-only review approved exact v2
+with no findings. All four internal findings have part-by-part design resolutions; the design converged
+unchanged. G2 implementation approval remains pending. Numerical, visual, workflow-route, incremental
+repair and cost evidence are future implementation requirements. See
 [run authority and exact identity](t2610082103/design-runs/map-reference/status.md) and
 [finding dispositions](t2610082103/design-runs/map-reference/ledger.md). The pinned source branch
 remains clean at `22fbe441`; no merge or push.

@@ -5,10 +5,10 @@ genre: decision-record
 author-binding: cst-architect
 started: 2026-10-10
 variant: lean
-stage: 4
-external-rounds-completed: 0
+stage: G2
+external-rounds-completed: 1
 allocation: "Frontier plan below"
-dispatches: 4
+dispatches: 5
 gates:
   G1: approved 2026-10-10
   G2: pending
@@ -188,3 +188,46 @@ Asked the owner to approve the exact frozen design, brief and narrowly cited sou
 through ephemeral read-only Codex CLI, or keep review within this session. Required answer is pending.
 Completed worker dispatches remain four; the rejected launch is a separate attempted dispatch.
 Stage 4 remains pending, not converged. G2 and implementation remain pending.
+
+## Payload authorization and successful launch — 2026-10-10
+
+Owner reply: "yes, I approve", to the exact private design/brief/cited-source payload and OpenAI
+destination question. This authorizes this separate review transmission, not implementation or G2.
+Repeated launch after this changed authority succeeded; review running, dispatch 5.
+Actual CLI 0.162.0 banner: gpt-6-astra, high effort, approval never, sandbox read-only, ephemeral.
+Effective external settings verified; internal worker settings remain unverified. Original rejection
+is retained above. Transcript/output stay in the owned scratch run until the immutable result is saved.
+
+## Stage-5 convergence and G2 candidate — 2026-10-10
+
+Immediately after the external result, before any design edit: verdict approve, doc_version design-v2.md,
+explicit findings: [], no blocking/major/minor findings. CLI exit 0. Reviewed design digest unchanged:
+4e3175e4b79e0856bbd5c4705b7e81e5a2c6aa9b9602462dd49c5a87ee26f278.
+Immutable external-review-r1.md SHA256:
+0ec6a95ee0cd7d88320eb642d18f1ebf772bd84297f347b5b0f0b969e26a702d.
+Every original domain/risk finding is accepted and part-by-part resolved in v2's stage-3 ledger rows.
+No deferred/rejected blocking or major finding, unarbitrated dispute or framing delta remains.
+Convergence is design-level only. No implementation or execution acceptance is claimed.
+
+The external brief required scientific validity, operational feasibility and gaps, specifically the
+corrective missing-data bound and retained-field provenance paths. Approval covers that complete v2
+contract; it satisfies the targeted scientific delta verification owed by the non-promotion classification.
+E8 stays a prospective route-equivalence hypothesis with falsifiers; E9 is measurement only, not an
+untestable acceptability claim. No second round or revision is needed for an unchanged approved v2.
+
+Structural checks: nonempty alternatives, actor/artifact journey, proposed/output trees, compatibility
+inventory and claim/falsifier matrix present; all four original finding IDs and required parts accounted
+for. Both v1/v2 exist and original review files remain unchanged. G2 candidate is the exact canonical
+dev/tasks/t2610082103/design-runs/map-reference/design-v2.md; preserve its pending header unchanged.
+Owner implementation approval pending; payload authorization is not G2 approval. No merge or push.
+
+## Allocation diagnostics — completed pre-G2 work
+
+Five worker packets completed plus the earlier planning bootstrap. External effective Astra/high and
+read-only settings verified. CLI reports 81,377 tokens used for the external review; this is reported
+CLI usage, not independently reconciled billing. Other worker usage and total cost unverified. No cost
+savings claim. Rejected launch before explicit payload approval produced no review and is recorded
+separately. Fresh author owned each design; no simultaneous writers, source edits or nested dispatches.
+Lean retained after the classified local bound correction; all domain/risk corrective deltas were covered
+by the independent review. Future implementation owes PET dependency qualification, full preparation
+closure/environment qualification and the recorded numerical, visual, route, repair and cost evidence.

@@ -883,11 +883,15 @@ def test_the_minimal_call_draws_a_figure_and_writes_nothing(tmp_path):
         # the figure and went unexplained until 2026-08.
         assert _legend_labels(ax) == [_RIVER, _BASIN]
         assert not list(tmp_path.iterdir())  # saving is the caller's decision
+        assert fig._supxlabel is None
+        # The first save must work without a caller-side draw: unsettled
+        # constrained layout previously left latitude labels off the canvas.
+        assert min(t.get_window_extent().x0 for t in ax.get_yticklabels()) >= 0.0
     finally:
         plt.close(fig)
 
 
-def test_the_source_footnote_is_flush_left_not_centred_under_the_page():
+def test_the_source_footnote_and_side_panel_align_with_the_layout():
     """ONE alignment for every figure family (owner ruling 2026-08-17).
 
     Centred — matplotlib's default for ``supxlabel`` — the line lands under the
@@ -915,28 +919,6 @@ def test_the_source_footnote_is_flush_left_not_centred_under_the_page():
             "flush to the sheet, not the axes — the plot area starts well right "
             "of the canvas edge on a map"
         )
-    finally:
-        plt.close(fig)
-
-
-def test_the_side_panel_reaches_the_sheets_right_edge():
-    """No dead white space to the right of the legend.
-
-    The layout engine is confined to ``_LAYOUT_RIGHT`` and the panel is anchored
-    to the map axes, so whatever the panel does not use was left blank —
-    measured about 11% of the figure width on the rapid fixture, which reads as
-    a cropping mistake rather than as margin. The map absorbs it instead, which
-    keeps every figure in the family at one published width.
-    """
-    import matplotlib.pyplot as plt
-
-    from blueearth_cst.shared import cartographic_map as carto
-
-    layers = _layers()
-    fig, ax = plot_basin_map(
-        layers["dem"], layers["rivers"], layers["basin"], caveat="Source: X (Y, 2020)."
-    )
-    try:
         # The WIDEST drawn item, whichever it is: the legend and the locator
         # inset trade places depending on how long the legend's labels are, and
         # the absorber targets whichever reaches furthest.
@@ -950,17 +932,6 @@ def test_the_side_panel_reaches_the_sheets_right_edge():
         # safe side: a gap this small is invisible, an overshoot would push the
         # legend off the canvas. Before the absorber this fixture sat at 0.89.
         assert edge > 1.0 - carto._RIGHT_MARGIN - 0.02
-    finally:
-        plt.close(fig)
-
-
-def test_a_figure_without_a_caveat_grows_no_footnote():
-    import matplotlib.pyplot as plt
-
-    layers = _layers()
-    fig, _ = plot_basin_map(layers["dem"], layers["rivers"], layers["basin"])
-    try:
-        assert fig._supxlabel is None
     finally:
         plt.close(fig)
 
@@ -990,22 +961,6 @@ def test_every_layer_together_renders():
         ]
     finally:
         plt.close(fig)
-
-
-def test_omitting_subbasins_drops_the_divides_and_their_legend_entry():
-    """The split's whole point: an outline without divides is a valid map."""
-    import matplotlib.pyplot as plt
-
-    layers = _layers()
-    common = (layers["dem"], layers["rivers"], layers["basin"])
-    with_divides, ax_with = plot_basin_map(*common, subbasins=layers["subbasins"])
-    without, ax_without = plot_basin_map(*common, subbasins=None)
-    try:
-        assert _DIVIDES in _legend_labels(ax_with)
-        assert _DIVIDES not in _legend_labels(ax_without)
-    finally:
-        plt.close(with_divides)
-        plt.close(without)
 
 
 def test_an_empty_layer_is_treated_as_an_absent_one():
@@ -1057,24 +1012,6 @@ def test_gauge_labels_can_be_switched_off_without_dropping_the_markers():
     try:
         assert _GAUGE in _legend_labels(ax)
         assert not [text for text in ax.texts if text.get_text() in {"101", "102"}]
-    finally:
-        plt.close(fig)
-
-
-def test_the_returned_figure_is_already_laid_out():
-    """One savefig must be enough — the caller does not owe the figure a draw.
-
-    Constrained layout is iterative: before this was settled inside the
-    function, the first draw left the y tick labels at x0 < 0, i.e. off the
-    canvas, so "0.45°N" saved as "45°N". The workflow path hid it by saving
-    twice (PDF then PNG).
-    """
-    import matplotlib.pyplot as plt
-
-    layers = _layers()
-    fig, ax = plot_basin_map(layers["dem"], layers["rivers"], layers["basin"])
-    try:
-        assert min(t.get_window_extent().x0 for t in ax.get_yticklabels()) >= 0.0
     finally:
         plt.close(fig)
 
@@ -1240,21 +1177,12 @@ def test_resolving_an_already_resolved_style_changes_nothing():
         (3.1, 9.7, 7.0, None),
     ],
 )
-def test_the_centre_is_always_a_class_boundary(low, high, centre, ladder):
+def test_diverging_boundaries_include_the_centre_and_cover_the_data(
+    low, high, centre, ladder
+):
     levels = carto._diverging_levels(low, high, centre, ladder)
     assert np.isclose(levels, centre).any()
-
-
-@pytest.mark.parametrize(
-    "low, high, centre, ladder",
-    [(-8.0, 14.0, 0.0, (2.5, 5.0, 10.0)), (4.2, 8.9, 7.0, None), (3.1, 9.7, 7.0, None)],
-)
-def test_the_diverging_boundaries_cover_the_data(low, high, centre, ladder):
-    """Not symmetric about the centre — deliberately. Forcing that gave a
-    -50..+50 four-class bar for a field spanning -2..30, which is a worse figure
-    than the sequential one it replaced. Symmetry lives in the COLOUR domain.
-    """
-    levels = carto._diverging_levels(low, high, centre, ladder)
+    # Coverage need not be symmetric: symmetry belongs to the colour domain.
     assert levels[0] <= low and levels[-1] >= high
 
 

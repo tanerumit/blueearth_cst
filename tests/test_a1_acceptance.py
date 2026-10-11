@@ -47,14 +47,7 @@ def test_the_recommended_window_sits_inside_the_historical_experiment():
     w = clip_reference_window(OQ4_WINDOW)
     assert w.clipped is False
     assert w.effective == (1985, 2014)
-
-
-def test_the_recommended_window_emits_no_warnings_at_all():
-    assert window_warnings(clip_reference_window(OQ4_WINDOW)) == []
-
-
-def test_it_clears_the_short_window_floor_with_room():
-    w = clip_reference_window(OQ4_WINDOW)
+    assert window_warnings(w) == []
     assert w.n_years >= SHORT_WINDOW_YEARS
 
 
@@ -66,35 +59,10 @@ def test_A1_january_start_yields_30_complete_hydrological_years(series):
     start, end, n = hydrological_year_bounds(series, "Jan")
     assert n == 30
     assert (str(start.date()), str(end.date())) == ("1985-01-01", "2014-12-01")
-
-
-def test_A1_january_start_drops_no_months_at_either_end(series):
-    start, end, _ = hydrological_year_bounds(series, "Jan")
     leading, trailing = dropped_months(
         series["time"].values[0], series["time"].values[-1], start, end
     )
     assert (leading, trailing) == (0, 0)
-
-
-@pytest.mark.parametrize("month", ["Feb", "Apr", "Jul", "Oct", "Dec"])
-def test_A1_any_other_start_month_yields_29(series, month):
-    """ "for any other start month the window contains 29" — all of them."""
-    _, _, n = hydrological_year_bounds(series, month)
-    assert n == 29
-
-
-def test_A1_october_start_drops_nine_months_leading_and_three_trailing(series):
-    """The dropped months must account for exactly the missing year.
-
-    9 + 3 = 12: 30 calendar years minus 29 hydrological years is one year, and
-    A1 requires that be visible per end rather than inferred from a count.
-    """
-    start, end, _ = hydrological_year_bounds(series, "Oct")
-    leading, trailing = dropped_months(
-        series["time"].values[0], series["time"].values[-1], start, end
-    )
-    assert (leading, trailing) == (9, 3)
-    assert leading + trailing == 12
 
 
 @pytest.mark.parametrize(

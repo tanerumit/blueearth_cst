@@ -492,6 +492,23 @@ def test_sensitive_args_are_redacted_from_console(tmp_path, capture_runs, capsys
 # --- contract (h): the wrapper's own console narration ----------------------
 
 
+def test_command_display_wraps_long_options_without_changing_argv():
+    argv = rw.build_command(
+        "analyze_projections",
+        "C:/cases/gabon-ntoum/project_config.yml",
+        3,
+        ["--config", "api_token=secret", "threshold=4"],
+    )
+    original = argv.copy()
+    assert rw._format_command(argv).splitlines() == [
+        "snakemake all -c 3 -s analyze_projections.smk",
+        "              --configfile C:/cases/gabon-ntoum/project_config.yml",
+        "              --keep-going",
+        "              --config api_token=<redacted> threshold=4",
+    ]
+    assert argv == original
+
+
 def _group_raw_lines(output, label):
     """The raw lines under one ``  <label>`` group, indentation intact."""
     lines = output.splitlines()

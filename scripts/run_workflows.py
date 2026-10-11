@@ -406,6 +406,16 @@ def _banner(head: str) -> list[str]:
     return [_RULE, f"  {head}", _RULE]
 
 
+def _format_command(argv: list[str]) -> str:
+    """Display sanitized argv with each long option on an indented new line."""
+    groups: list[list[str]] = [[]]
+    for argument in sanitize_argv(argv):
+        if argument.startswith("--") and groups[-1]:
+            groups.append([])
+        groups[-1].append(argument)
+    return "\n              ".join(" ".join(group) for group in groups)
+
+
 def _handoff(tag: str, detail: str, *, note: str | None = None) -> str:
     """One hand-off band: a rule, the workflow and what just happened to it.
 
@@ -413,13 +423,9 @@ def _handoff(tag: str, detail: str, *, note: str | None = None) -> str:
     is that the line is the runner's; a closing rule under a one-line utterance
     doubles the cost to say it twice, and this fires twice per workflow.
 
-    Flush left, both lines. The block above indents its ROWS under a group
-    label, which is what an indent means there; a band has no label and no
-    rows, so the same two spaces only made the one line a reader scans for --
-    `[1/4]  wf0 analyze_climate` -- start one column later than the rule that
-    announces it. The command sits under the title, flush left for the same
-    reason, after one blank line: the command is long, and without the gap the
-    title reads as the first line of it.
+    The title and command's first line are flush left under the rule. Long
+    options continue on indented lines. A blank line separates the command
+    from the title so the title does not read as part of the command.
     """
     lines = [_RULE, f"{tag}  --  {detail}"]
     if note:
@@ -1097,7 +1103,7 @@ def _run_owned(
                 + _handoff(
                     tag,
                     f"starting {_clock()}",
-                    note=" ".join(sanitize_argv(cmd)),
+                    note=_format_command(cmd),
                 )
                 + "\n",
             )

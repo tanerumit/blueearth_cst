@@ -256,7 +256,7 @@ def test_growth_exact_pins_no_gap_fill_and_completed_status_is_not_allocation(
     assert admit(api, prepared, "wet_37").name == "wet_37"
     assert admit(api, prepared, "wet").name == "wet_100"
     assert admit(api, prepared, "wet", new_experiment=True).name == "wet_101"
-    ledger = read_canonical_json(root / "config/experiments/allocation.json")
+    ledger = read_canonical_json(root / "experiments/_engine/allocation.json")
     assert [a["number"] for a in ledger["families"][0]["allocations"]] == [
         37,
         99,
@@ -279,6 +279,32 @@ def test_chosen_roots_allocate_independently_including_active(api, prepared):
     assert inventory(other[0]) == before
 
 
+def test_shared_engine_is_not_an_experiment_and_creation_uses_new_layout(api, prepared):
+    root, _, _ = prepared
+    selected = admit(api, prepared)
+    engine = root / "experiments/_engine"
+    assert (engine / "allocation.json").is_file()
+    transaction = engine / "transactions" / selected.reservation_id
+    assert (transaction / "transaction.json").is_file()
+    assert (transaction / "sources/project.bin").is_file()
+    assert (root / f"experiments/{selected.name}/_engine/reservation.json").is_file()
+    assert not (root / "config/experiments").exists()
+    assert not (root / "config/runs").exists()
+    assert api.preview_experiment(root).name == selected.name
+    assert admit(api, prepared, new_experiment=True).name == "stress_test_02"
+
+
+def test_engine_file_is_refused_without_mutation(api, prepared):
+    root, _, _ = prepared
+    (root / "experiments").mkdir(parents=True)
+    (root / "experiments/_engine").write_bytes(b"foreign")
+    before = inventory(root)
+    result = api.preview_experiment(root)
+    assert result.action == "refuse"
+    assert "engine root is not a directory" in result.reason
+    assert inventory(root) == before
+
+
 def test_deletion_is_permanent_and_preview_cannot_tombstone(api, prepared):
     root, _, _ = prepared
     admit(api, prepared, "wet_99")
@@ -291,7 +317,7 @@ def test_deletion_is_permanent_and_preview_cannot_tombstone(api, prepared):
     assert inventory(root) == before
     with pytest.raises(ValueError, match="tombstoned"):
         admit(api, prepared, "wet")
-    ledger = read_canonical_json(root / "config/experiments/allocation.json")
+    ledger = read_canonical_json(root / "experiments/_engine/allocation.json")
     assert ledger["families"][0]["allocations"][-1]["presence"] == "tombstone"
     (root / "experiments/wet_100").mkdir()
     assert api.preview_experiment(root, "wet_100").action == "missing"
@@ -315,9 +341,9 @@ def test_unknown_numeric_occupants_are_never_adopted(api, prepared, occupied):
     with pytest.raises(ValueError):
         admit(api, prepared, "wet")
     assert inventory(root) == before | {
-        "config/runs/_engine/archive-transactions/project-execution.lock": "lock-size:1"
+        "config/_engine/archive-transactions/project-execution.lock": "lock-size:1"
     }
-    assert not (root / "config/experiments/allocation.json").exists()
+    assert not (root / "experiments/_engine/allocation.json").exists()
 
 
 def test_new_unledgered_owner_refuses_after_adoption(api, prepared):
@@ -350,7 +376,7 @@ def test_capture_validation_precedes_allocation(api, prepared, mutation):
         )
     with pytest.raises(ValueError):
         admit(api, prepared)
-    assert not (root / "config/experiments").exists()
+    assert not (root / "experiments/_engine").exists()
 
 
 def test_changed_request_reports_nested_field_and_preserves_authority(api, prepared):
@@ -385,7 +411,7 @@ def test_closed_records_reject_schema_mutation(api, prepared, record, field, val
     root, _, _ = prepared
     selected = admit(api, prepared)
     paths = {
-        "ledger": root / "config/experiments/allocation.json",
+        "ledger": root / "experiments/_engine/allocation.json",
         "reservation": root
         / "experiments"
         / selected.name
@@ -455,7 +481,7 @@ def test_process_death_at_every_creation_boundary_recovers_twice(
         env=worker_env(),
     )
     assert result.returncode == 71, result.stdout + result.stderr
-    ledger_path = root / "config/experiments/allocation.json"
+    ledger_path = root / "experiments/_engine/allocation.json"
     allocated = boundary in {
         "ledger_prepared",
         "directory_published",
@@ -497,10 +523,10 @@ def test_recovery_refuses_without_verified_exact_recipe(api, prepared, damage):
 
     with pytest.raises(RuntimeError):
         admit(api, prepared, failpoint=stop)
-    ledger = read_canonical_json(root / "config/experiments/allocation.json")
+    ledger = read_canonical_json(root / "experiments/_engine/allocation.json")
     allocation = ledger["families"][0]["allocations"][0]
     transaction = (
-        root / "config/experiments/_engine/transactions" / allocation["reservation_id"]
+        root / "experiments/_engine/transactions" / allocation["reservation_id"]
     )
     staged = transaction / "experiment"
     final = root / "experiments/stress_test_01"
@@ -562,7 +588,7 @@ def test_independent_creators_hold_project_ownership(api, prepared, tmp_path, mo
         stdout, stderr = process.communicate(timeout=70)
         assert process.returncode == 0, stdout + stderr
         outputs.append(json.loads(stdout.splitlines()[-1]))
-    ledger = read_canonical_json(root / "config/experiments/allocation.json")
+    ledger = read_canonical_json(root / "experiments/_engine/allocation.json")
     if mode == "automatic":
         assert sorted(item["name"] for item in outputs) == [
             "stress_test_01",
@@ -704,9 +730,10 @@ def test_links_are_refused_and_targets_preserved(api, prepared, tmp_path, which)
     else:
         link = {
             "experiment link": root / "experiments",
-            "ledger parent link": root / "config",
+            "ledger parent link": root / "experiments/_engine",
             "project link": tmp_path / "project-link",
         }[which]
+        link.parent.mkdir(parents=True, exist_ok=True)
         link.symlink_to(outside, target_is_directory=True)
         selected = api.preview_experiment(link if which == "project link" else root)
         assert selected.action == "refuse"

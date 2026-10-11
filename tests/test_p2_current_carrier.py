@@ -145,7 +145,7 @@ def test_current_carrier_operation_target_matrix(
         and target in {"metrics", "selected", "selected-run"}
     )
     if allowed:
-        invocation_dir = root.parents[1] / "config/runs/_engine/invocations"
+        invocation_dir = root.parents[1] / "config/_engine/invocations"
         assert not list(invocation_dir.glob("*.json"))
         assert harness.main(argv) == 0
         assert len(calls) == 1

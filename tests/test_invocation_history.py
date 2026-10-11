@@ -11,7 +11,7 @@ from scripts import run_workflows, simulate_system
 
 
 def _records(root: Path) -> list[dict]:
-    folder = root / "config/runs/_engine/invocations"
+    folder = root / "config/_engine/invocations"
     return [
         json.loads(path.read_text(encoding="utf-8")) for path in folder.glob("*.json")
     ]
@@ -107,7 +107,7 @@ def test_interim_wf3_retains_exact_config_source_bytes(tmp_path):
     source = Path(__file__).resolve().parents[1] / "test_case/project_config_rapid.yml"
     digest = run_workflows._capture_legacy_wf3_attempt(source, tmp_path, "attempt")
     copied = list(
-        (tmp_path / "config/runs/_engine/invocations/attempt/config/sources").rglob(
+        (tmp_path / "config/_engine/invocations/attempt/config/sources").rglob(
             source.name
         )
     )

@@ -149,10 +149,10 @@ def _fixture_present() -> bool:
 # which would skip the sixteen that a pre-R14 tree still answers correctly.
 # The snapshot is now the run-record/2 archive (`run_record.yml`), whose
 # `loaded_config` carries the composed v2 config `composed_config.yml` did.
-_WF1_SNAPSHOT = join(_FIXTURE, "config", "runs", "build_model", "run_record.yml")
+_WF1_SNAPSHOT = join(_FIXTURE, "config", "build_model", "run_record.yml")
 
 _FIXTURE_PRE_R14 = (
-    "test_case/test_local predates the run-record/2 archive: no config/runs/"
+    "test_case/test_local predates the run-record/2 archive: no config/"
     "build_model/run_record.yml, so it cannot answer a v2 key "
     "(the WG-1 store-key case is skipped; the rest of the layer still runs)"
 )

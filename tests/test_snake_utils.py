@@ -709,10 +709,10 @@ def test_declare_project_root_lets_a_row_shorten_without_a_rule_log(monkeypatch)
     monkeypatch.delenv(su._PROJECT_ROOT_ENV, raising=False)
     su.declare_project_root("test_case/test_rapid")
     assert os.environ[su._PROJECT_ROOT_ENV] == "test_case/test_rapid"
-    native = os.path.join("test_case", "test_rapid", "config", "runs", "cfg.yml")
+    native = os.path.join("test_case", "test_rapid", "config", "cfg.yml")
     assert (
         su._relativize_paths(f"snapshot -> {native}", os.environ[su._PROJECT_ROOT_ENV])
-        == "snapshot -> config/runs/cfg.yml"
+        == "snapshot -> config/cfg.yml"
     )
 
 
@@ -727,9 +727,9 @@ def test_declare_project_root_unsets_on_a_blank(monkeypatch):
 def test_log_row_shortens_the_project_dir_it_was_given(capsys, monkeypatch):
     monkeypatch.setenv(su._PATH_TOKENS_ENV, "{}")
     monkeypatch.setenv(su._PROJECT_ROOT_ENV, "test_case/test_rapid")
-    native = os.path.join("test_case", "test_rapid", "config", "runs", "record.yml")
+    native = os.path.join("test_case", "test_rapid", "config", "record.yml")
     su.log_row(f"Run record -> {native}", module="config")
-    assert "Run record -> config/runs/record.yml" in capsys.readouterr().out
+    assert "Run record -> config/record.yml" in capsys.readouterr().out
 
 
 def test_log_row_leaves_a_row_alone_when_no_project_root_is_declared(
@@ -738,8 +738,8 @@ def test_log_row_leaves_a_row_alone_when_no_project_root_is_declared(
     """A bare script run by hand keeps the behaviour this improves on."""
     monkeypatch.setenv(su._PATH_TOKENS_ENV, "{}")
     monkeypatch.delenv(su._PROJECT_ROOT_ENV, raising=False)
-    su.log_row("Run record -> test_case/test_rapid/config/runs/record.yml")
-    assert "test_case/test_rapid/config/runs/record.yml" in capsys.readouterr().out
+    su.log_row("Run record -> test_case/test_rapid/config/record.yml")
+    assert "test_case/test_rapid/config/record.yml" in capsys.readouterr().out
 
 
 def test_path_tokens_fails_open_on_a_malformed_declaration(monkeypatch):
@@ -3900,7 +3900,7 @@ def test_run_header_marks_a_staged_execution_config_with_the_project_token():
     """A generated config under `execution-configs/` reads `<project>/...`.
 
     Regression: `prepare_workflow` stages the composed config INSIDE the
-    project root (`config/runs/_engine/execution-configs/<workflow>/<digest>/
+    project root (`config/_engine/execution-configs/<workflow>/<digest>/
     project_config.yml`), so on a production run -- where the project lives
     outside the repo and matches neither the `<repo>` nor `<site-packages>`
     rewrite -- this row used to print the same absolute prefix as `<project>`
@@ -3912,7 +3912,6 @@ def test_run_header_marks_a_staged_execution_config_with_the_project_token():
     config = os.path.join(
         project,
         "config",
-        "runs",
         "_engine",
         "execution-configs",
         "analyze_projections",
@@ -3922,7 +3921,7 @@ def test_run_header_marks_a_staged_execution_config_with_the_project_token():
     out = cs.run_header("wf2 analyze_projections", project, config)
     row = next(line for line in out.splitlines() if line.startswith("config"))
     assert row.split(None, 1)[1] == (
-        "<project>/config/runs/_engine/execution-configs/"
+        "<project>/config/_engine/execution-configs/"
         "analyze_projections/91d954f93e17/project_config.yml"
     )
     assert "\\" not in row

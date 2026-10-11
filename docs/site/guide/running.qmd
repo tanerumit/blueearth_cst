@@ -65,7 +65,7 @@ python scripts/run_workflows.py --config test_case/project_config_rapid.yml --pr
 
 The runner follows the `enabled:` choices in the project file and stops if a
 workflow fails. It records the result of each attempt under
-`<project_dir>/config/runs/_engine/invocations/`, including checks and failed
+`<project_dir>/config/_engine/invocations/`, including checks and failed
 runs. Set `enabled: false` for a workflow you want to skip. Check that any
 earlier results used by a later workflow still match your current project
 settings.

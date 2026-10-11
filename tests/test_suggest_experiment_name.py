@@ -111,7 +111,7 @@ def test_subprocess_previews_configured_family_and_override_without_writing(tmp_
     assert _inventory(tmp_path) == before
     assert not project.exists()
     assert not (project / "experiments").exists()
-    assert not (project / "config/experiments/allocation.json").exists()
+    assert not (project / "experiments/_engine/allocation.json").exists()
 
 
 def test_subprocess_previews_default_with_bare_key_and_preserves_comments(tmp_path):

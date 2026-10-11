@@ -283,7 +283,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "build_model",
         "run_record",
-        "{project_dir}/config/runs/build_model/run_record.yml",
+        "{project_dir}/config/build_model/run_record.yml",
     ),
     # Unmoved within the tree (prefix change only) -- and exception 3(d)
     # requires it to stay that way: if discharge moves at all, stop.
@@ -327,7 +327,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "analyze_projections",
         "run_record",
-        "{project_dir}/config/runs/analyze_projections/run_record.yml",
+        "{project_dir}/config/analyze_projections/run_record.yml",
     ),
     # WF4 emits separate run/group tables. The seed requests only discharge;
     # both scopes are numerical baseline targets. The existing recorded mixed-ID

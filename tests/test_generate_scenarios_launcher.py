@@ -210,7 +210,7 @@ def test_direct_dry_run_records_terminal_invocation(tmp_path, monkeypatch, exit_
         )
         == exit_code
     )
-    (path,) = (project / "config/runs/_engine/invocations").glob("*.json")
+    (path,) = (project / "config/_engine/invocations").glob("*.json")
     record = json.loads(path.read_text(encoding="utf-8"))
     assert record["workflow"] == "generate_scenarios"
     assert record["contract_mode"] == "new_schema"
@@ -243,7 +243,7 @@ def test_direct_launch_exception_is_terminal(tmp_path, monkeypatch):
                 "--dry-run",
             ]
         )
-    (path,) = (project / "config/runs/_engine/invocations").glob("*.json")
+    (path,) = (project / "config/_engine/invocations").glob("*.json")
     record = json.loads(path.read_text(encoding="utf-8"))
     assert record["status"] == "failed"
     assert record["error"]["type"] == "OSError"

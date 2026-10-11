@@ -274,7 +274,7 @@ fails as a missing input instead of silently dropping observation outputs.
 ## Where they end up
 
 Both files are snapshotted into `<project_dir>/config/basin_data/` by rule
-1.01, alongside the run's config (`config/runs/`), catalogs (`config/catalogs/`)
+1.01, alongside the run's config (`config/`), catalogs (`config/catalogs/`)
 and build templates (`config/templates/`). The bin is named for what it holds —
 local, basin-scoped tabular inputs — not for observations alone: only one of the
 two files is an observation, the other declares where the model reports. They are

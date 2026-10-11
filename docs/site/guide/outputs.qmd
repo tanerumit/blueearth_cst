@@ -10,7 +10,11 @@ use a directory outside the toolbox checkout.
 
 ```text
 <project_dir>/
-  config/runs/                   configuration and run records
+  config/                        configuration archives and run records
+    analyze_climate/              latest WF0 run_record.yml and sources/
+    build_model/                  latest WF1 run_record.yml and sources/
+    analyze_projections/          latest WF2 run_record.yml and sources/
+    _engine/                      execution inputs, locks and invocation history
   data/spatial/                  basin geometry, locations and maps
   data/climate/                  historical forcing and projection products
   models/hydrology/wflow/         model, historical run and evaluation
@@ -25,6 +29,9 @@ use a directory outside the toolbox checkout.
     config/                      copied creator configuration
     weathergenr/                 copied generator settings, products and diagnostics
   scenarios/<id>/                immutable collection, including original tables and series
+  experiments/_engine/
+    allocation.json             project-wide experiment numbering
+    transactions/               experiment creation and recovery records
   experiments/<name>/
     _engine/simulation.json      simulation settings used
     hydrology/wflow/output/      retained model responses
@@ -49,6 +56,16 @@ then by `st_id` to `perturbation_lookup.csv`. For a group response surface, join
 by `group_id` directly to `group_metadata.csv`, then by `st_id` to `perturbation_lookup.csv`.
 `group_members.csv` records the contributing runs. Reference groups have `is_reference=true`
 and an empty `st_id`; retain them explicitly rather than losing them in an inner coordinate join.
+
+Configuration archives are generated records. Edit the source configuration supplied to the runner;
+the archived `sources/` files preserve what an execution used. WF3 and WF4 retain their configuration
+inside the owning collection or experiment. The shared `experiments/_engine/` directory is reserved
+for allocation and creation recovery; it is not an experiment.
+
+New projects use this layout from October 2026: the former `config/runs/` contents now sit directly
+under `config/`, and former `config/experiments/` state sits under `experiments/_engine/`.
+Existing output trees are not migrated or supported through path aliases; use a fresh output root
+with this toolbox version.
 
 ### Climate extent and basin cells
 
@@ -77,7 +94,7 @@ Check `collection.json` or `metrics.json` in the corresponding `_engine/`
 metadata directory before treating a collection or
 indicator set as complete.
 
-The runners record each attempt under `config/runs/_engine/invocations/`,
+The runners record each attempt under `config/_engine/invocations/`,
 including failed runs and dry runs. These records help diagnose a run; they do
 not establish that its results are complete.
 

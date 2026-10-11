@@ -85,7 +85,7 @@ DATA_SOURCES = get_config(my_cfg, "catalog", optional=False)  # C-39
 # redesign, 2026-08-13) -- no readers, and a digest over the whole config, so
 # any other workflow's edit minted a fresh directory. `run_record.yml` replaces
 # it: current-only and one per workflow.
-RUN_RECORD = f"{project_dir}/config/runs/analyze_projections/run_record.yml"
+RUN_RECORD = f"{project_dir}/config/analyze_projections/run_record.yml"
 
 CONFIG_REFERENCES = [
     # The per-workflow config files, so an in-place edit to the file that now
@@ -1376,7 +1376,7 @@ rule gather_benchmarks:
 # job ran, truncating the ledger to one line every run. See the same block in
 # build_model.smk for the scope the P0 probe established -- these fire
 # only when at least one job executed, which is what R5 was narrowed to.
-JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 _JOURNAL_TOOLBOX = toolbox_identity()
 

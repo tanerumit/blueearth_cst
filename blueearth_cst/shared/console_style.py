@@ -2115,7 +2115,7 @@ def run_meta_rows(project_dir, config_path=None, details=None):
     # 2026-09-16 (t2609162114).
     rows = [("<project>", display_root(project_dir))]
     if config_path:
-        # A generated config now lives under `config/runs/_engine/
+        # A generated config now lives under `config/_engine/
         # execution-configs/<workflow>/<digest>/`, which is INSIDE the
         # project -- so on a production run this row printed the same
         # absolute prefix as `<project>` above it, repeated in full. Marked

@@ -58,25 +58,35 @@ def _archive(
 def test_captured_bytes_survive_live_mutation_and_publish(tmp_path):
     record, payloads = _archive(tmp_path, "first")
     root = tmp_path / "output"
-    publish_archive(root, "build_model", "config/runs/build_model", record, payloads)
-    loaded = read_archive(root, "build_model", "config/runs/build_model")
+    publish_archive(root, "build_model", "config/build_model", record, payloads)
+    loaded = read_archive(root, "build_model", "config/build_model")
     entry = loaded["source_files"][0]
     assert entry["archived_path"] == "sources/project_config.yml"
     assert (
-        root / "config/runs/build_model" / entry["archived_path"]
+        root / "config/build_model" / entry["archived_path"]
     ).read_bytes() == b"# comment\r\nx: 1\r\n"
     assert loaded["schema_version"] == "run-record/2"
+    assert not (root / "config/runs").exists()
+
+
+@pytest.mark.parametrize("target", ["config/runs/build_model", "config/unknown"])
+def test_archive_publication_refuses_noncanonical_workflow_directory(tmp_path, target):
+    record, payloads = _archive(tmp_path, "first")
+    root = tmp_path / "output"
+    with pytest.raises(ValueError, match="archive target"):
+        publish_archive(root, "build_model", target, record, payloads)
+    assert not root.exists()
 
 
 def test_first_publication_replaces_empty_target_directory(tmp_path):
     record, payloads = _archive(tmp_path, "first")
     root = tmp_path / "output"
-    (root / "config/runs/build_model").mkdir(parents=True)
+    (root / "config/build_model").mkdir(parents=True)
 
-    publish_archive(root, "build_model", "config/runs/build_model", record, payloads)
+    publish_archive(root, "build_model", "config/build_model", record, payloads)
 
     assert (
-        read_archive(root, "build_model", "config/runs/build_model")["invocation_id"]
+        read_archive(root, "build_model", "config/build_model")["invocation_id"]
         == "first"
     )
 
@@ -84,9 +94,7 @@ def test_first_publication_replaces_empty_target_directory(tmp_path):
 def test_publication_retries_transient_windows_access_denied(tmp_path, monkeypatch):
     root = tmp_path / "output"
     first, first_payloads = _archive(tmp_path, "first")
-    publish_archive(
-        root, "build_model", "config/runs/build_model", first, first_payloads
-    )
+    publish_archive(root, "build_model", "config/build_model", first, first_payloads)
     second, second_payloads = _archive(tmp_path, "second", b"second: true\n")
     real_replace = snapshot.os.replace
     attempts = 0
@@ -104,13 +112,11 @@ def test_publication_retries_transient_windows_access_denied(tmp_path, monkeypat
     monkeypatch.setattr(snapshot, "_WINDOWS_REPLACE_RETRY", True, raising=False)
     monkeypatch.setattr(snapshot.os, "replace", replace_with_contention)
 
-    publish_archive(
-        root, "build_model", "config/runs/build_model", second, second_payloads
-    )
+    publish_archive(root, "build_model", "config/build_model", second, second_payloads)
 
     assert attempts == 3
     assert (
-        read_archive(root, "build_model", "config/runs/build_model")["invocation_id"]
+        read_archive(root, "build_model", "config/build_model")["invocation_id"]
         == "second"
     )
 
@@ -182,35 +188,29 @@ def test_experiment_owner_is_an_archive_owner_kind(tmp_path):
 def test_recovery_and_next_writer(tmp_path, failure_after, expected):
     root = tmp_path / "output"
     first, first_payloads = _archive(tmp_path, "first")
-    publish_archive(
-        root, "build_model", "config/runs/build_model", first, first_payloads
-    )
+    publish_archive(root, "build_model", "config/build_model", first, first_payloads)
     second, second_payloads = _archive(tmp_path, "second", b"new: true\n")
     with pytest.raises(RuntimeError, match="injected failure"):
         publish_archive(
             root,
             "build_model",
-            "config/runs/build_model",
+            "config/build_model",
             second,
             second_payloads,
             failure_after=failure_after,
         )
     assert recover_archive(root, "build_model") == expected
-    assert read_archive(root, "build_model", "config/runs/build_model")[
-        "invocation_id"
-    ] == ("second" if expected == "committed" else "first")
+    assert read_archive(root, "build_model", "config/build_model")["invocation_id"] == (
+        "second" if expected == "committed" else "first"
+    )
     assert recover_archive(root, "build_model") == expected
     third, third_payloads = _archive(tmp_path, "third", b"third: true\n")
-    publish_archive(
-        root, "build_model", "config/runs/build_model", third, third_payloads
-    )
+    publish_archive(root, "build_model", "config/build_model", third, third_payloads)
     assert (
-        read_archive(root, "build_model", "config/runs/build_model")["invocation_id"]
+        read_archive(root, "build_model", "config/build_model")["invocation_id"]
         == "third"
     )
-    assert list(
-        (root / "config/runs/_engine/archive-transactions/completed").glob("*.json")
-    )
+    assert list((root / "config/_engine/archive-transactions/completed").glob("*.json"))
 
 
 def test_first_publication_failure_stays_unpublished(tmp_path):
@@ -220,16 +220,16 @@ def test_first_publication_failure_stays_unpublished(tmp_path):
         publish_archive(
             root,
             "build_model",
-            "config/runs/build_model",
+            "config/build_model",
             first,
             payloads,
             failure_after="prepared",
         )
     assert recover_archive(root, "build_model") == "unpublished"
-    assert not (root / "config/runs/build_model").exists()
-    publish_archive(root, "build_model", "config/runs/build_model", first, payloads)
+    assert not (root / "config/build_model").exists()
+    publish_archive(root, "build_model", "config/build_model", first, payloads)
     assert (
-        read_archive(root, "build_model", "config/runs/build_model")["invocation_id"]
+        read_archive(root, "build_model", "config/build_model")["invocation_id"]
         == "first"
     )
 
@@ -247,28 +247,26 @@ def test_contradictory_candidate_refuses_recovery_reader_and_next_writer(
 ):
     root = tmp_path / "output"
     first, first_payloads = _archive(tmp_path, "first")
-    publish_archive(
-        root, "build_model", "config/runs/build_model", first, first_payloads
-    )
+    publish_archive(root, "build_model", "config/build_model", first, first_payloads)
     second, second_payloads = _archive(tmp_path, "second", b"second: true\n")
     with pytest.raises(RuntimeError):
         publish_archive(
             root,
             "build_model",
-            "config/runs/build_model",
+            "config/build_model",
             second,
             second_payloads,
             failure_after=failure_after,
         )
-    journal = root / "config/runs/_engine/archive-transactions/build_model.json"
+    journal = root / "config/_engine/archive-transactions/build_model.json"
     transaction = json.loads(journal.read_text(encoding="utf-8"))
     path = root / transaction[candidate] / "run_record.yml"
     path.write_bytes(b"corrupt")
     for action in (
         lambda: recover_archive(root, "build_model"),
-        lambda: read_archive(root, "build_model", "config/runs/build_model"),
+        lambda: read_archive(root, "build_model", "config/build_model"),
         lambda: publish_archive(
-            root, "build_model", "config/runs/build_model", second, second_payloads
+            root, "build_model", "config/build_model", second, second_payloads
         ),
     ):
         with pytest.raises(ValueError, match="contradicts"):
@@ -410,8 +408,8 @@ def test_file_reference_refuses_tampered_bytes_and_unbound_paths(tmp_path):
 def test_closed_record_rejects_unknown_fields_and_bad_pointers(tmp_path, mutation):
     root = tmp_path / "output"
     record, payloads = _archive(tmp_path, "first")
-    publish_archive(root, "build_model", "config/runs/build_model", record, payloads)
-    directory = root / "config/runs/build_model"
+    publish_archive(root, "build_model", "config/build_model", record, payloads)
+    directory = root / "config/build_model"
     loaded = yaml.safe_load((directory / "run_record.yml").read_bytes())
     mutation(loaded)
     (directory / "run_record.yml").write_text(yaml.safe_dump(loaded), encoding="utf-8")
@@ -449,10 +447,8 @@ def test_builder_refuses_unclassified_rerun_overlay(tmp_path):
 def test_rerun_retains_predecessor_after_original_is_removed(tmp_path):
     first_root = tmp_path / "A"
     first, payloads = _archive(tmp_path, "first")
-    publish_archive(
-        first_root, "build_model", "config/runs/build_model", first, payloads
-    )
-    predecessor = first_root / "config/runs/build_model"
+    publish_archive(first_root, "build_model", "config/build_model", first, payloads)
+    predecessor = first_root / "config/build_model"
     second_root = tmp_path / "B"
     sources, retained, overlay = capture_rerun_predecessor(
         predecessor,
@@ -483,7 +479,7 @@ def test_rerun_retains_predecessor_after_original_is_removed(tmp_path):
     publish_archive(
         second_root,
         "build_model",
-        "config/runs/build_model",
+        "config/build_model",
         second,
         second_payloads | retained,
     )
@@ -491,7 +487,7 @@ def test_rerun_retains_predecessor_after_original_is_removed(tmp_path):
     moved = tmp_path / "C"
     second_root.rename(moved)
     assert (
-        read_archive(moved, "build_model", "config/runs/build_model")["invocation_id"]
+        read_archive(moved, "build_model", "config/build_model")["invocation_id"]
         == "second"
     )
 
@@ -540,10 +536,10 @@ def test_a_to_b_to_relocated_c_composes_without_a(tmp_path):
         sources=sources,
         environment={},
     )
-    publish_archive(root_a, "build_model", "config/runs/build_model", first, payloads)
+    publish_archive(root_a, "build_model", "config/build_model", first, payloads)
     root_b = tmp_path / "B"
     captured, retained, overlay = capture_rerun_predecessor(
-        root_a / "config/runs/build_model",
+        root_a / "config/build_model",
         predecessor_project_root=root_a,
         new_project_root=root_b,
         output_project_dir=str(root_b),
@@ -565,14 +561,14 @@ def test_a_to_b_to_relocated_c_composes_without_a(tmp_path):
     publish_archive(
         root_b,
         "build_model",
-        "config/runs/build_model",
+        "config/build_model",
         second,
         second_payloads | retained,
     )
     shutil.rmtree(root_a)
     root_c = tmp_path / "C"
     root_b.rename(root_c)
-    resolved = resolve_rerun_execution(root_c, "build_model", "config/runs/build_model")
+    resolved = resolve_rerun_execution(root_c, "build_model", "config/build_model")
     assert (
         resolved.composed_config["workflows"]["build_model"]["engine"]["build_config"]
         == "old.yml"

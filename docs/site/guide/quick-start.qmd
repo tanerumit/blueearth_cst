@@ -92,7 +92,7 @@ test_case/test_rapid/
   experiments/<name>/   simulated responses and indicators
   logs/                 one log per workflow
   benchmarks/           per-rule timings
-  config/runs/          configuration and run records
+  config/              configuration archives and run records
 ```
 
 Find the hydrological indicators under

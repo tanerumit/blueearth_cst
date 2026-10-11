@@ -8,6 +8,12 @@
 
 ## 1. What this document shows
 
+**Layout update (2026-10-11).** For new output projects, flatten `config/runs/` into `config/`.
+Project-wide allocation and creation transactions live in `experiments/_engine/`; each experiment
+keeps its own `_engine/`. Existing projects are not migrated. The current path inventory is maintained
+in [repository layout](../reference/repo-layout.md#outputs); historical inspected trees below retain
+their original paths.
+
 This is the accepted output-project contract for a successful WF0–WF4 run, compared with the existing layout and generated metadata. “Output tree” means the contents of project_dir, not the Git worktree holding the toolbox. The target contract describes fresh project outputs only; the implementation remains to be done.
 
 The proposal brings together exact configuration archives, execution history, shared elevation data and the prospective WF3 static plan. It preserves the stochastic generation algorithm, Wflow physics and metric definitions. The new WF3-only automatic-seed projection can change numerical seeds and hence realizations; those changes must be distinguished from algorithmic differences using matched explicit-seed comparisons. WF2 remains a projection plausibility overlay; it does not supply generation scenarios.
@@ -112,27 +118,26 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 ~~~text
 <project_dir>/
 ├── config/
-│   ├── runs/
-│   │   ├── README.md                         [changed]
-│   │   ├── _engine/invocations/
-│   │   │   ├── <parent-id>.json              [changed: common schema]
-│   │   │   ├── <workflow-invocation-id>.json  [new/common: one per child]
-│   │   │   └── <invocation-id>/config/      [conditional: later/failed attempt archive, §10.4]
-│   │   ├── analyze_climate/
-│   │   │   ├── run_record.yml                [changed: full loaded config]
-│   │   │   └── sources/                      [new: original bytes/names]
-│   │   │       ├── project_config_rapid.yml
-│   │   │       └── project_config_rapid_analyze_climate.yml
-│   │   ├── build_model/
-│   │   │   ├── run_record.yml
-│   │   │   └── sources/
-│   │   │       ├── project_config_rapid.yml
-│   │   │       └── project_config_rapid_build_model.yml
-│   │   └── analyze_projections/
-│   │       ├── run_record.yml
-│   │       └── sources/
-│   │           ├── project_config_rapid.yml
-│   │           └── project_config_rapid_analyze_projections.yml
+│   ├── README.md                             [changed]
+│   ├── _engine/invocations/
+│   │   ├── <parent-id>.json                  [changed: common schema]
+│   │   ├── <workflow-invocation-id>.json      [new/common: one per child]
+│   │   └── <invocation-id>/config/           [conditional: later/failed attempt archive, §10.4]
+│   ├── analyze_climate/
+│   │   ├── run_record.yml                    [changed: full loaded config]
+│   │   └── sources/                          [new: original bytes/names]
+│   │       ├── project_config_rapid.yml
+│   │       └── project_config_rapid_analyze_climate.yml
+│   ├── build_model/
+│   │   ├── run_record.yml
+│   │   └── sources/
+│   │       ├── project_config_rapid.yml
+│   │       └── project_config_rapid_build_model.yml
+│   ├── analyze_projections/
+│   │   ├── run_record.yml
+│   │   └── sources/
+│   │       ├── project_config_rapid.yml
+│   │       └── project_config_rapid_analyze_projections.yml
 │   └── basin_data/                           [kept]
 ├── data/
 │   ├── spatial/                              [kept]
@@ -168,6 +173,9 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 │       └── collections/<collection-id>/
 │           ├── collection_intent.json        [changed: embeds four WF3 sidecars]
 │           └── collection.json               [changed binding; final ready marker]
+├── experiments/_engine/
+│   ├── allocation.json                       [project-wide numbering]
+│   └── transactions/                         [creation and recovery records]
 ├── experiments/<name>/
 │   ├── config/
 │   │   ├── run_record.yml                    [new: replaces composed snapshot]
@@ -819,7 +827,7 @@ Capture each project/workflow YAML, custom template and custom catalog into byte
 
 Source placement preserves the original basename. For one filesystem volume, choose the common parent of loaded sources and retain relative paths below sources/. If that common parent is a drive root, or sources span volumes/shares, assign deterministic source-group IDs and use sources/<group-id>/<relative-path-from-group-root>; record every original-to-archive mapping. Collision handling is based on resolved canonical source identity, with case-insensitive collision refusal where applicable. Never flatten two same-basename files. A source reference that points outside the captured set remains an explicit external dependency.
 
-Publication applies to the whole archive directory, including record and sources. It uses a staging sibling on the same filesystem and an archive-specific OS lock shared by all supported readers; writers take exclusive ownership. The broader project execution lock in §10.5 already serializes writers. There is one archive-transaction/1 journal under config/runs/_engine/archive-transactions/<owner-key>.json:
+Publication applies to the whole archive directory, including record and sources. It uses a staging sibling on the same filesystem and an archive-specific OS lock shared by all supported readers; writers take exclusive ownership. The broader project execution lock in §10.5 already serializes writers. There is one archive-transaction/1 journal under config/_engine/archive-transactions/<owner-key>.json:
 
 ~~~text
 {schema_version, transaction_id, owner, invocation_id,
@@ -868,7 +876,7 @@ From P2, new-schema WF0–2 production output requires scripts/run_workflow.py o
 
 P3/P4 preserve a runnable, explicitly legacy WF3 route: run_workflows.py holds project ownership and launches the predecessor generate_scenarios.smk checkpoint path in a child under that ownership. The invocation envelope adds contract_mode: enum(new_schema,legacy_wf3_interim,legacy_wf4_interim); the interim WF3 child uses legacy_wf3_interim, captures attempt evidence in the invocation-local archive, records the actual command/outcome, and emits no generation-plan/1 or generation-initialization/2 claims. Legacy creator artifacts stay in the predecessor schema; its old snapshots do not masquerade as run-record/2. P4 is additive only. P3/P4 raw legacy WF3 execution is possible only through the ownership-aware adapter; unattended raw mutation refuses. At P5 the wrapper and WF3 producer/consumers switch together to scripts/generate_scenarios.py, new_schema, and the required plan/receipt; legacy WF3 production routes are removed. Raw WF3 source preparation may be dry-run independently, while all generation execution from P5 requires the validated pinned plan and owned launcher session. Raw WF4 always requires its launcher; the interim WF4 child uses legacy_wf4_interim until P6 and refuses new WF3 artifacts during P5. These phase-local routes are staging mechanics, not compatibility readers in the final contract.
 
-Metrics-only, failed-after-load and equivalent-request attempts need their own exact configuration evidence. Use config/runs/_engine/invocations/<invocation-id>/config/{run_record.yml,sources/}. The flat <invocation-id>.json remains the history record. Successful WF3/WF4 creation promotes the captured archive into its artifact and the invocation refers there; reuse and metrics-only keep the invocation-local archive and separately reference the immutable creator archive. Failure before successful parsing records captured source hashes and error, but does not invent loaded_config or a valid run-record. WF0–2 successful latest-archive adoption drops any redundant staging archive; older input recovery is not promised.
+Metrics-only, failed-after-load and equivalent-request attempts need their own exact configuration evidence. Use config/_engine/invocations/<invocation-id>/config/{run_record.yml,sources/}. The flat <invocation-id>.json remains the history record. Successful WF3/WF4 creation promotes the captured archive into its artifact and the invocation refers there; reuse and metrics-only keep the invocation-local archive and separately reference the immutable creator archive. Failure before successful parsing records captured source hashes and error, but does not invent loaded_config or a valid run-record. WF0–2 successful latest-archive adoption drops any redundant staging archive; older input recovery is not promised.
 
 ### 10.5 Static plan, receipt, pointer and workspace exclusion
 

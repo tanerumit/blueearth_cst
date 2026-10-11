@@ -1,9 +1,9 @@
 """Record the config an artifact-scoped workflow ran under, beside the artifact.
 
 WF0-WF2 are singletons per project, so each writes one overwritable record
-under ``config/runs/<workflow>/``. WF3 and WF4 are not: a project holds one
+under ``config/<workflow>/``. WF3 and WF4 are not: a project holds one
 directory per scenario collection and one per experiment, so a single
-``config/runs/<workflow>/`` slot would be claimed by whichever ran last and
+``config/<workflow>/`` slot would be claimed by whichever ran last and
 would describe the others wrongly. Their snapshot therefore lives INSIDE the
 identified directory, which is the only placement that stays true when a
 second collection is generated.
@@ -61,7 +61,7 @@ from blueearth_cst.shared.provenance import (
 SCHEMA_VERSION = 1
 
 #: The snapshot's filename, in every bin that holds one. Deliberately the same
-#: name WF0-WF2 use under ``config/runs/<workflow>/``: a reader who has learned
+#: name WF0-WF2 use under ``config/<workflow>/``: a reader who has learned
 #: one has learned all five, and the directory already says which workflow and
 #: which artifact it belongs to. Spelling the workflow into the name as well
 #: would restate the directory and stutter in the per-workflow bins.
@@ -550,7 +550,7 @@ _WINDOWS_REPLACE_RETRY = os.name == "nt"
 #: file or directory -- the identical pattern already handled in
 #: dev/scripts/stage_data.py's `_write_zarr` for zarr's own metadata rename.
 #: 10 attempts at a flat 20ms (0.2s total) turned out too short for a live run:
-#: t2609231529 hit WinError 5 renaming a whole directory (`config/runs/<workflow>`,
+#: t2609231529 hit WinError 5 renaming a whole directory (`config/<workflow>`,
 #: whose scan window plausibly outlasts a single file's). Exponential backoff,
 #: capped per attempt so it cannot itself become the multi-minute stall it is
 #: meant to absorb, sums to ~5s over 12 attempts -- the same order of magnitude
@@ -612,7 +612,6 @@ def archive_lock(project_root: Path, owner_key: str) -> Iterator[None]:
     path = (
         project_root
         / "config"
-        / "runs"
         / "_engine"
         / "archive-transactions"
         / f"{owner_key}.lock"
@@ -1139,7 +1138,7 @@ def _matches_archive(directory: Path, expected_hash: str | None) -> bool:
 
 
 def _transaction_paths(project_root: Path, owner_key: str) -> tuple[Path, Path]:
-    journal_dir = project_root / "config" / "runs" / "_engine" / "archive-transactions"
+    journal_dir = project_root / "config" / "_engine" / "archive-transactions"
     journal_dir.mkdir(parents=True, exist_ok=True)
     return journal_dir / f"{owner_key}.json", journal_dir / "completed"
 
@@ -1254,7 +1253,10 @@ def publish_archive(
     """
     project_root = Path(project_root).resolve()
     target = _confined(project_root, target_relative)
-    if target.name != "config" and target.parent.name != "runs":
+    if target.name != "config" and not (
+        target.parent == project_root / "config"
+        and target.name in {"analyze_climate", "build_model", "analyze_projections"}
+    ):
         raise ValueError(
             "archive target must be a workflow or artifact config directory"
         )

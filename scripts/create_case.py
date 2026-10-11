@@ -246,7 +246,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         "Existing output folders are not moved or archived. "
         "Configuration files remain in this application folder.\n\n"
         "| Folder within the output directory | What you will find |\n|---|---|\n"
-        "| `config/runs/` | Configuration snapshots and workflow attempt records |\n"
+        "| `config/` | Configuration snapshots and workflow attempt records |\n"
         "| `data/spatial/` | Basin geometry, output locations, and maps |\n"
         "| `data/climate/historical/` | Historical climate series, analysis plots, and source comparisons (WF0) |\n"
         "| `models/hydrology/wflow/` | Hydrological model, historical run, and evaluation (WF1) |\n"

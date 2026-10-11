@@ -8,7 +8,7 @@ simulation and response records. Typed readers verify content beyond existence.
 from __future__ import annotations
 
 # Archive marker retained for fixture staging, not a WF4 dependency.
-LEAF_WF1_SNAPSHOT = "config/runs/build_model/run_record.yml"
+LEAF_WF1_SNAPSHOT = "config/build_model/run_record.yml"
 
 # WF4's model reference writer consumes these WF1 artifacts.
 LEAF_MODEL_TOML = "models/hydrology/wflow/wflow_sbm.toml"

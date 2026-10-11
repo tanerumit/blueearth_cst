@@ -34,13 +34,13 @@ def test_each_kind_lands_in_its_own_bin(tmp_path, sources):
     cfg = tmp_path / "project" / "config"
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
+        config_out_path=str(cfg / "build_model" / "composed_config.yml"),
         other_config_files={
             str(catalog): str(cfg / "catalogs"),
             str(template): str(cfg / "templates"),
         },
     )
-    assert (cfg / "runs" / "build_model" / "composed_config.yml").is_file()
+    assert (cfg / "build_model" / "composed_config.yml").is_file()
     assert (cfg / "catalogs" / "deltares_data.yml").is_file()
     assert (cfg / "templates" / "wflow_build_model.yml").is_file()
     # nothing leaks into the parent bin
@@ -77,13 +77,11 @@ def test_the_snapshot_round_trips_to_the_composed_config(tmp_path, sources):
     }
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
+        config_out_path=str(cfg / "build_model" / "composed_config.yml"),
         composed_config=composed,
         other_config_files={str(catalog): str(cfg / "catalogs")},
     )
-    snapshot = (cfg / "runs" / "build_model" / "composed_config.yml").read_text(
-        encoding="utf-8"
-    )
+    snapshot = (cfg / "build_model" / "composed_config.yml").read_text(encoding="utf-8")
     assert yaml.safe_load(snapshot) == composed
     # Sorted keys, so two runs of one configuration produce the same bytes --
     # this file's digest is a drift-guard comparand.
@@ -102,9 +100,9 @@ def test_without_a_composed_config_the_source_is_still_copied(tmp_path, sources)
     cfg = tmp_path / "project" / "config"
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
+        config_out_path=str(cfg / "build_model" / "composed_config.yml"),
     )
-    assert (cfg / "runs" / "build_model" / "composed_config.yml").read_text(
+    assert (cfg / "build_model" / "composed_config.yml").read_text(
         encoding="utf-8"
     ) == snake.read_text(encoding="utf-8")
 
@@ -116,7 +114,7 @@ def test_missing_source_is_skipped_not_fatal(tmp_path, sources):
     cfg = tmp_path / "project" / "config"
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
+        config_out_path=str(cfg / "build_model" / "composed_config.yml"),
         other_config_files={
             str(catalog): str(cfg / "catalogs"),
             "artifact_data": str(cfg / "catalogs"),  # predefined, no file
@@ -134,10 +132,10 @@ def test_destination_dirs_are_created(tmp_path, sources):
     assert not cfg.exists()
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
+        config_out_path=str(cfg / "build_model" / "composed_config.yml"),
         other_config_files={str(catalog): str(cfg / "catalogs")},
     )
-    assert (cfg / "runs").is_dir() and (cfg / "catalogs").is_dir()
+    assert cfg.is_dir() and (cfg / "catalogs").is_dir()
 
 
 # --------------------------------------------------------------------------- #
@@ -161,7 +159,7 @@ def test_observations_land_in_their_own_bin(tmp_path, sources):
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "build_model" / "composed_config.yml",
+        config_out_path=cfg / "build_model" / "composed_config.yml",
         other_config_files={
             str(locations): str(cfg / "basin_data"),
             str(series): str(cfg / "basin_data"),
@@ -185,7 +183,7 @@ def test_the_snapshot_is_a_faithful_copy(tmp_path, sources):
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "snake.yml",
+        config_out_path=cfg / "snake.yml",
         other_config_files={str(series): str(cfg / "basin_data")},
     )
     copied = (cfg / "basin_data" / "observations_timeseries.csv").read_text(
@@ -209,10 +207,10 @@ def _record(tmp_path, sources, **overrides):
     """Run the writer with a run record and return the parsed record."""
     snake, catalog, _template = sources
     cfg = tmp_path / "project" / "config"
-    record_path = cfg / "runs" / "build_model" / "run_record.yml"
+    record_path = cfg / "build_model" / "run_record.yml"
     kwargs = {
         "config": snake,
-        "config_out_path": cfg / "runs" / "build_model" / "composed_config.yml",
+        "config_out_path": cfg / "build_model" / "composed_config.yml",
         "other_config_files": {str(catalog): str(cfg / "catalogs")},
         "run_record_path": record_path,
         "effective_config": {"project": {"project_dir": "somewhere"}},
@@ -256,7 +254,7 @@ def test_run_record_leaves_no_temporary_behind(tmp_path, sources):
     record, which now sit together -- and no scratch file from either write.
     """
     _record(tmp_path, sources)
-    record_dir = tmp_path / "project" / "config" / "runs" / "build_model"
+    record_dir = tmp_path / "project" / "config" / "build_model"
 
     assert sorted(p.name for p in record_dir.iterdir()) == [
         "composed_config.yml",
@@ -456,7 +454,7 @@ def test_a_case_only_destination_collision_still_raises(tmp_path, sources):
     def run():
         copy_config_files(
             config=snake,
-            config_out_path=cfg / "runs" / "snake.yml",
+            config_out_path=cfg / "snake.yml",
             other_config_files={
                 str(first_dir / "one.csv"): str(cfg / "basin_data"),
                 str(second_dir / "two.csv"): str(cfg / "basin_data"),
@@ -531,7 +529,7 @@ def test_two_references_sharing_a_destination_raise(tmp_path, sources):
     with pytest.raises(ValueError, match="both map to"):
         copy_config_files(
             config=snake,
-            config_out_path=cfg / "runs" / "snake.yml",
+            config_out_path=cfg / "snake.yml",
             other_config_files={
                 str(first_dir / "data.csv"): str(cfg / "basin_data"),
                 str(second_dir / "data.csv"): str(cfg / "basin_data"),
@@ -552,7 +550,7 @@ def test_declared_roles_keep_same_named_files_apart(tmp_path, sources):
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "snake.yml",
+        config_out_path=cfg / "snake.yml",
         other_config_files={
             str(first_dir / "data.csv"): str(cfg / "basin_data"),
             str(second_dir / "data.csv"): str(cfg / "basin_data"),
@@ -593,15 +591,15 @@ def test_run_record_requires_its_companions(tmp_path, sources):
     with pytest.raises(ValueError, match="must be provided together"):
         copy_config_files(
             config=snake,
-            config_out_path=cfg / "runs" / "snake.yml",
-            run_record_path=cfg / "runs" / "run_record.yml",
+            config_out_path=cfg / "snake.yml",
+            run_record_path=cfg / "run_record.yml",
         )
 
 
 def test_the_runs_bin_carries_its_own_readme(tmp_path, sources):
     """The one genuine trap in this bin: it all looks like configuration.
 
-    Everything under config/runs/ is written by the run, so an edit is
+    Everything under config/ is written by the run, so an edit is
     silently overwritten on the next execution. Someone will eventually open
     the copy nearest the outputs and change it, which is why the warning ships
     beside the files rather than only in the repo README.
@@ -611,10 +609,10 @@ def test_the_runs_bin_carries_its_own_readme(tmp_path, sources):
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "build_model" / "composed_config.yml",
+        config_out_path=cfg / "build_model" / "composed_config.yml",
     )
 
-    readme = (cfg / "runs" / "README.md").read_text(encoding="utf-8")
+    readme = (cfg / "README.md").read_text(encoding="utf-8")
 
     assert "written by the run" in readme
     assert "journal.jsonl" in readme
@@ -628,7 +626,7 @@ def test_the_runs_bin_carries_its_own_readme(tmp_path, sources):
 
     # In the BIN, not in the workflow subdirectory beside the snapshot --
     # otherwise every workflow drops its own copy of the bin's README.
-    assert not (cfg / "runs" / "build_model" / "README.md").exists()
+    assert not (cfg / "build_model" / "README.md").exists()
     # The bin's SECOND trap: these files LOOK like mangled copies of the
     # source -- no comments, keys reordered -- because since R13 they are
     # composed documents rather than copies. Asserted here because this text
@@ -645,13 +643,13 @@ def test_the_runs_readme_is_refreshed_not_preserved(tmp_path, sources):
     """It is shipped documentation, so an old project should get the new text."""
     snake, _catalog, _template = sources
     cfg = tmp_path / "project" / "config"
-    stale = cfg / "runs" / "README.md"
+    stale = cfg / "README.md"
     stale.parent.mkdir(parents=True)
     stale.write_text("notes I typed here\n", encoding="utf-8")
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "build_model" / "composed_config.yml",
+        config_out_path=cfg / "build_model" / "composed_config.yml",
     )
 
     assert "notes I typed here" not in stale.read_text(encoding="utf-8")

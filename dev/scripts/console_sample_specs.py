@@ -83,7 +83,7 @@ total                                 11
         f"{PROJECT}/data/climate/historical/_comparison/climate_source_comparison.csv",
         f"{PROJECT}/data/climate/historical/_comparison/climate_source_comparison.md",
         f"{PROJECT}/data/spatial/basins.geojson",
-        f"{PROJECT}/config/runs/project_config_analyze_climate.yml",
+        f"{PROJECT}/config/analyze_climate/run_record.yml",
         f"{PROJECT}/logs/wf0_analyze_climate.log",
         f"{PROJECT}/benchmarks/wf0_benchmarks.md",
     ],

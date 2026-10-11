@@ -29,12 +29,16 @@ def _rule_block(snakefile: Path, name: str) -> str:
     ("snakefile_name", "record_path"),
     [
         (
+            "analyze_climate.smk",
+            "config/analyze_climate/run_record.yml",
+        ),
+        (
             "build_model.smk",
-            "config/runs/build_model/run_record.yml",
+            "config/build_model/run_record.yml",
         ),
         (
             "analyze_projections.smk",
-            "config/runs/analyze_projections/run_record.yml",
+            "config/analyze_projections/run_record.yml",
         ),
     ],
 )
@@ -43,7 +47,11 @@ def test_launcher_owns_archive_publication(snakefile_name, record_path):
     text = snakefile.read_text(encoding="utf-8")
     assert "rule snapshot_config:" not in text
     assert "require_capture(" in text
-    assert record_path in text
+    assert f'RUN_RECORD = f"{{project_dir}}/{record_path}"' in text.splitlines()
+    assert (
+        'JOURNAL_PATH = f"{project_dir}/config/_engine/journal.jsonl"'
+        in text.splitlines()
+    )
 
 
 @pytest.mark.parametrize("snakefile_name", SNAKEFILES)

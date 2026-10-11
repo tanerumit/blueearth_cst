@@ -271,7 +271,7 @@ WF0/WF1/WF2 retain their project-level logs and provenance records. Generation
 parts are scoped by generation request under `logs/_parts/generate_scenarios/`;
 simulation parts are scoped by experiment under `logs/_parts/simulate_system/`.
 Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflow
-runner retains an invocation record under `config/runs/_engine/invocations/`.
+runner retains an invocation record under `config/_engine/invocations/`.
 
 ```console
 # WF3's owned dry run shows the source-preparation DAG.

@@ -147,7 +147,7 @@ def durable_inventory(case):
             if path.is_dir()
             else hashlib.sha256(path.read_bytes()).hexdigest()
         )
-        for prefix in ("config/experiments", "experiments")
+        for prefix in ("experiments",)
         for path in (case.project / prefix).rglob("*")
     }
 
@@ -246,7 +246,7 @@ def test_new_flag_with_disabled_simulation_refuses_before_producers(
     with pytest.raises(ValueError, match="require enabled simulate_system"):
         run_workflows.run(str(pending.config), 1, [], new_experiment=True)
     assert not (pending.project / "experiments").exists()
-    assert not (pending.project / "config/experiments").exists()
+    assert not (pending.project / "experiments/_engine").exists()
 
 
 def test_public_runner_reserves_before_first_producer(pending, monkeypatch):
@@ -376,7 +376,7 @@ def test_metrics_only_uses_retained_readiness_without_new_input_reads(
     context.recheck()
     assert durable_inventory(retained) == before
     if owner == "legacy":
-        assert not (retained.project / "config/experiments/allocation.json").exists()
+        assert not (retained.project / "experiments/_engine/allocation.json").exists()
 
 
 def test_changed_catalog_during_invocation_recheck_refuses_and_preserves_owner(pending):

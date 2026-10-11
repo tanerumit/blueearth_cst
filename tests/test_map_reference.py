@@ -1,10 +1,54 @@
 """Runtime contracts for historical map policy and retained-field provenance."""
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 import xarray as xr
 
 from blueearth_cst.shared import map_reference as mr
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_orography_planning_hides_catalog_info_and_preserves_warnings(
+    capfd, monkeypatch, fails
+):
+    import logging
+    import sys
+
+    import hydromt
+
+    logger = logging.getLogger("hydromt.data_catalog.data_catalog")
+    handler = logging.StreamHandler(sys.stderr)
+    logger.addHandler(handler)
+    original_level = logger.level
+    logger.setLevel(logging.INFO)
+    original_catalog = hydromt.DataCatalog
+
+    def catalog_with_warning(**kwargs):
+        logger.warning("WARNING: catalog planning diagnostic")
+        catalog = original_catalog(**kwargs)
+        if fails:
+            raise ValueError("catalog planning failed")
+        return catalog
+
+    monkeypatch.setattr(hydromt, "DataCatalog", catalog_with_warning)
+    try:
+        catalogs = [Path("config/catalogs/deltares_data.yml")]
+        if fails:
+            with pytest.raises(ValueError, match="catalog planning failed"):
+                mr._orography_descriptor(catalogs)
+        else:
+            source = mr._orography_descriptor(catalogs)
+            assert source.data_type == "RasterDataset"
+        output = capfd.readouterr()
+        assert ("Parsing data catalog" in output.out + output.err) is fails
+        assert "catalog planning diagnostic" in output.err
+        logger.info("catalog logging restored")
+        assert "catalog logging restored" in capfd.readouterr().err
+    finally:
+        logger.removeHandler(handler)
+        logger.setLevel(original_level)
 
 
 @pytest.mark.parametrize("month", [28, -1, True, 1.5])

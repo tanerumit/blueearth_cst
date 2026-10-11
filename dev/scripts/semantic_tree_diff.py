@@ -369,11 +369,11 @@ def build_project_tree_rules(
     # -- config/ --------------------------------------------------------------
     # WF0--WF2 publish exact source archives and use immutable execution views.
     for workflow_name in ("analyze_climate", "build_model", "analyze_projections"):
-        same(f"config/runs/{workflow_name}/sources/")
-    same("config/runs/_engine/execution-configs/")
-    same("config/runs/_engine/archive-transactions/")
-    same("config/experiments/allocation.json")
-    transaction = r"config/experiments/_engine/transactions/[0-9a-f]{32}"
+        same(f"config/{workflow_name}/sources/")
+    same("config/_engine/execution-configs/")
+    same("config/_engine/archive-transactions/")
+    same("experiments/_engine/allocation.json")
+    transaction = r"experiments/_engine/transactions/[0-9a-f]{32}"
     same_rx(rf"{transaction}/transaction\.json")
     captured_role = (
         r"(?:project|simulate_system|generate_scenarios|generator_template|build_model|"
@@ -400,10 +400,10 @@ def build_project_tree_rules(
     # first time a fixture (`test_rapid`) was rebuilt THROUGH the wrapper. The
     # R9 map has carried the equivalent row since 2026-08-05; this is the
     # mirror that was never made.
-    same("config/runs/_engine/invocations/")
+    same("config/_engine/invocations/")
     # The content-addressed bundles are GONE (config-snapshot redesign,
     # 2026-08-13); the regex that matched
-    # `config/runs/<workflow>/<digest>/...` went with them, so a surviving
+    # `config/<workflow>/<digest>/...` went with them, so a surviving
     # bundle in an existing project now reports as undeclared. That is the
     # migration's own signal; delete the bundle. (The one-shot
     # `prune_config_snapshots.py` that did so was retired 2026-09-24; it is
@@ -411,17 +411,17 @@ def build_project_tree_rules(
     #
     # What replaces them is ONE record per workflow, at an enumerated path --
     # no digest level, so nothing needs a regex.
-    same("config/runs/analyze_climate/run_record.yml")
-    same("config/runs/build_model/run_record.yml")
-    same("config/runs/analyze_projections/run_record.yml")
+    same("config/analyze_climate/run_record.yml")
+    same("config/build_model/run_record.yml")
+    same("config/analyze_projections/run_record.yml")
     # The run journal. An UNDECLARED SIDE EFFECT and the only one in this tree:
     # it is written by the workflow's lifecycle handlers, not by a rule, so the
     # declared tier cannot see it and it has to be whitelisted here by hand. It
     # is deliberately not a rule output -- Snakemake deletes those before a job
     # runs, which would truncate the ledger to one line every time.
-    same("config/runs/_engine/journal.jsonl")
+    same("config/_engine/journal.jsonl")
     # The bin's own README, rewritten by rule X.01 on every run.
-    same("config/runs/README.md")
+    same("config/README.md")
     # Both still receive copies, but only of files the toolbox repository
     # cannot give back: a tracked, unmodified catalog or template is recorded
     # by git blob id instead. In a normal checkout these are usually EMPTY.

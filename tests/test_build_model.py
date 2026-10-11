@@ -34,7 +34,7 @@ def test_copy_config(tmp_path, data_sources, model_build_config):
 
     copy_config_files.copy_config_files(
         config=config_fn,
-        config_out_path=join(cfg, "runs", "build_model", "composed_config.yml"),
+        config_out_path=join(cfg, "build_model", "composed_config.yml"),
         other_config_files={
             data_sources: join(cfg, "catalogs"),
             model_build_config: join(cfg, "templates"),
@@ -44,7 +44,7 @@ def test_copy_config(tmp_path, data_sources, model_build_config):
 
     # The snapshot is unconditional -- it is baseline-fingerprinted in a real
     # project, and it sits beside the run record in the workflow's own bin.
-    assert os.path.exists(join(cfg, "runs", "build_model", "composed_config.yml"))
+    assert os.path.exists(join(cfg, "build_model", "composed_config.yml"))
 
     # Both fixture inputs are TRACKED toolbox files, so neither is copied.
     assert not os.path.exists(join(cfg, "templates", "wflow_build_model.yml"))

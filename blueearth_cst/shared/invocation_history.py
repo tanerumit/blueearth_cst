@@ -88,9 +88,7 @@ def start(
 ) -> tuple[Path, dict[str, Any]]:
     """Publish a running record before configuration validation or launch."""
     identity = invocation_id or uuid.uuid4().hex
-    path = (
-        project_root.resolve() / "config/runs/_engine/invocations" / f"{identity}.json"
-    )
+    path = project_root.resolve() / "config/_engine/invocations" / f"{identity}.json"
     if path.exists():
         raise ValueError(f"invocation already exists: {identity}")
     record: dict[str, Any] = {

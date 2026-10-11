@@ -243,7 +243,7 @@ _observations_input = (
 # digest over the WHOLE config meant an edit to any other workflow's section
 # minted a fresh one. What replaces it is `run_record.yml`: current-only and
 # one per workflow.
-RUN_RECORD = f"{project_dir}/config/runs/build_model/run_record.yml"
+RUN_RECORD = f"{project_dir}/config/build_model/run_record.yml"
 
 # Every external file this workflow's configuration points at. Hashed at parse
 # time so the digest below moves when one is edited IN PLACE -- the recorded
@@ -1309,7 +1309,7 @@ rule gather_logs:
 # _onstart, guarded by no flag -- so the journal counts executed runs, and a gap
 # in the dates means no work was done rather than that nobody looked. Do not add
 # a parse-time or atexit emitter to reach past this; the owner ruled against it.
-JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 
 # One toolbox read per invocation, shared by both handlers, so a line pair

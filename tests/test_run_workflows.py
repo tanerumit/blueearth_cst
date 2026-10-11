@@ -136,7 +136,7 @@ def _snakefiles_invoked(calls):
 
 def _manifests(project_dir: Path) -> list[Path]:
     """Return only parent invocation records, excluding workflow children."""
-    paths = (project_dir / "config" / "runs" / "_engine" / "invocations").glob("*.json")
+    paths = (project_dir / "config" / "_engine" / "invocations").glob("*.json")
     return sorted(
         path
         for path in paths
@@ -848,7 +848,7 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     assert wrote["project"] == root
     # Rows under the project use the token the project row defines.
     assert wrote["logs"] == "<project>/logs/"
-    assert wrote["invocation"].startswith("<project>/config/runs/_engine/invocations/")
+    assert wrote["invocation"].startswith("<project>/config/_engine/invocations/")
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()
@@ -1298,7 +1298,7 @@ def test_closing_block_paints_every_failed_line_red(tmp_path):
     }
     kwargs = dict(
         project_dir=tmp_path,
-        manifest_path=tmp_path / "config/runs/_engine/invocations/x.json",
+        manifest_path=tmp_path / "config/_engine/invocations/x.json",
         manifest=manifest,
         ran=[(rw.WORKFLOW_ORDER[0], "FAILED (exit 1) after 0:00:01")],
         elapsed_seconds=1.0,

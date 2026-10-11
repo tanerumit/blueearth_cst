@@ -51,7 +51,7 @@ _CANONICAL_JSON_OPTIONS = {
 #:
 #: A snapshot bundle's directory and each archived file inside it are named
 #: after their digest, and a full SHA-256 makes both unreadable — a 64-hex
-#: directory under ``config/runs/<workflow>/`` tells a user nothing except that
+#: directory under ``config/<workflow>/`` tells a user nothing except that
 #: something hashed it. Twelve hex is 48 bits: within one project, whose
 #: bundles number in the tens, a collision is not a practical concern, and the
 #: name is short enough to read, compare by eye, and type.

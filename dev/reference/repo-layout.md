@@ -97,6 +97,16 @@ The baseline covers data, not figures. `FIGURE_KINDS` targets are excluded by de
 
 Outputs land under `project_dir`, set in the config. Production `project_dir` lives outside the repository tree; the untracked in-repo `test_case/test_local` is a dev/test exemption.
 
+For new output projects, `config/<workflow>/{run_record.yml,sources/}` holds the latest WF0–WF2
+configuration archives. Shared execution inputs, archive locks and invocation history live in
+`config/_engine/`. There is no intermediate `config/runs/` directory. Editable source configurations
+remain beside the project, outside these generated archives.
+
+`experiments/_engine/{allocation.json,transactions/}` owns project-wide numbering and creation
+recovery. Each `experiments/<name>/_engine/` owns that experiment's reservation, simulation and metric
+records. Discovery skips the reserved collection-level `_engine/` directory. These paths replace
+`config/experiments/` for new projects; existing output trees are not migrated.
+
 ## Three homes for executables
 
 The split itself is stated in `AGENTS.md` § Repo Map, which is what shipped modules cite by name.

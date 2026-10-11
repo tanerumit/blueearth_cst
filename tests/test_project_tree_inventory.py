@@ -77,34 +77,34 @@ COVERED: dict[str, list[str]] = {
         f"benchmarks/_parts/generate_scenarios/{PK}/3.08_perturb_climate_realizations.tsv",
     ],
     "config": [
-        "config/experiments/allocation.json",
-        f"config/experiments/_engine/transactions/{'a' * 32}/transaction.json",
-        f"config/experiments/_engine/transactions/{'a' * 32}/sources/project.bin",
-        f"config/experiments/_engine/transactions/{'a' * 32}/sources/catalog_0.bin",
-        f"config/experiments/_engine/transactions/{'a' * 32}/experiment/experiment.yml",
-        f"config/experiments/_engine/transactions/{'a' * 32}/experiment/_engine/reservation.json",
-        "config/runs/build_model/sources/project_config_baseline.yml",
-        "config/runs/analyze_projections/sources/project_config_baseline.yml",
-        "config/runs/_engine/execution-configs/build_model/abc/project_config_baseline.yml",
-        "config/runs/_engine/archive-transactions/build_model.json",
+        "experiments/_engine/allocation.json",
+        f"experiments/_engine/transactions/{'a' * 32}/transaction.json",
+        f"experiments/_engine/transactions/{'a' * 32}/sources/project.bin",
+        f"experiments/_engine/transactions/{'a' * 32}/sources/catalog_0.bin",
+        f"experiments/_engine/transactions/{'a' * 32}/experiment/experiment.yml",
+        f"experiments/_engine/transactions/{'a' * 32}/experiment/_engine/reservation.json",
+        "config/build_model/sources/project_config_baseline.yml",
+        "config/analyze_projections/sources/project_config_baseline.yml",
+        "config/_engine/execution-configs/build_model/abc/project_config_baseline.yml",
+        "config/_engine/archive-transactions/build_model.json",
         # The wrapper's per-invocation manifest. Not reachable through the
-        # `config/runs/<workflow>/<digest>/` regex below -- it sits DIRECTLY
+        # `config/<workflow>/<digest>/` regex below -- it sits DIRECTLY
         # under `invocations/`, with no digest level -- so it carries its own
         # row (2026-08-11).
-        "config/runs/_engine/invocations/20260811T142556.501Z-83c05db9c855.json",
+        "config/_engine/invocations/20260811T142556.501Z-83c05db9c855.json",
         # The content-addressed bundles these replaced are GONE (2026-08-13):
         # one record per workflow at an enumerated path, so there is no digest
         # level left for a regex to match. A surviving bundle in an existing
         # project now reports as undeclared -- which is the migration's signal,
         # and deleting the bundle clears it (the one-shot prune script was
         # retired 2026-09-24; tag archive/dev-scripts-2026-09-24).
-        "config/runs/build_model/run_record.yml",
-        "config/runs/analyze_projections/run_record.yml",
+        "config/build_model/run_record.yml",
+        "config/analyze_projections/run_record.yml",
         # Written by the workflow's lifecycle handlers rather than by a rule,
         # so the declared tier structurally cannot see it and the inventory
         # whitelists it by hand.
-        "config/runs/_engine/journal.jsonl",
-        "config/runs/README.md",
+        "config/_engine/journal.jsonl",
+        "config/README.md",
         "config/catalogs/deltares_data.yml",
         "config/templates/wflow_build_model.yml",
         "config/basin_data/output_locations.csv",
@@ -304,12 +304,14 @@ def test_coverage_is_not_trivially_satisfied():
 #: point, and each one sits under a root the inventory DOES cover, so a prefix
 #: written one level too broad would swallow it silently.
 UNDECLARED = [
-    "config/experiments/unknown.json",
-    f"config/experiments/_engine/transactions/{'a' * 31}/transaction.json",
-    f"config/experiments/_engine/transactions/{'a' * 32}/sources/unknown_role.bin",
-    f"config/experiments/_engine/transactions/{'a' * 32}/sources/catalog_00.bin",
-    f"config/experiments/_engine/transactions/{'a' * 32}/sources/project.bin.bak",
-    f"config/experiments/_engine/transactions/{'a' * 32}/experiment/_engine/unknown.json",
+    "experiments/_engine/unknown.json",
+    "config/experiments/allocation.json",
+    "config/runs/build_model/run_record.yml",
+    f"experiments/_engine/transactions/{'a' * 31}/transaction.json",
+    f"experiments/_engine/transactions/{'a' * 32}/sources/unknown_role.bin",
+    f"experiments/_engine/transactions/{'a' * 32}/sources/catalog_00.bin",
+    f"experiments/_engine/transactions/{'a' * 32}/sources/project.bin.bak",
+    f"experiments/_engine/transactions/{'a' * 32}/experiment/_engine/unknown.json",
     f"experiments/{E}/_engine/freeze-payloads/unknown.json",
     f"experiments/{E}/_engine/freeze-payloads/sources/nested/orphan.json",
     f"experiments/{E}/_engine/batch_staging/run_01.unknown",
@@ -334,15 +336,15 @@ UNDECLARED = [
     "data/spatial/spatial_maps.tmp.nc",  # a crashed write
     "models/hydrology/wflow/stray_output.nc",
     "models/hydrology/wflow/forcing/inmaps_2050.nc",
-    "config/runs/something_new.yml",  # not the two contract paths
+    "config/something_new.yml",  # not the two contract paths
     "config/whatever_new_thing.yml",
     # Guards on the two rows added 2026-08-11. `invocations/` is a PREFIX
     # because its filenames are open, so this proves it did not widen into a
-    # `config/runs/` catch-all that would swallow the contract paths and the
+    # `config/` catch-all that would swallow the contract paths and the
     # stray above. `climate_store_catalog.yml` is an ENUMERATED leaf, so the
     # model's config/ must still report a genuinely new file -- if this row
     # ever starts mapping, someone replaced the leaf list with a prefix.
-    "config/runs/invocations.json",  # a FILE named invocations, not the dir
+    "config/invocations.json",  # a FILE named invocations, not the dir
     "models/hydrology/wflow/config/some_new_generated.yml",
     f"experiments/{E}/orphan_table.csv",
     # The retired stress-test parameter artifacts. This pair is the guard on

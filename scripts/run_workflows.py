@@ -9,7 +9,7 @@ one Snakemake invocation. Its execution-option allowlist also applies here.
 
 Each invocation records resolved configuration provenance, checked commands,
 selected simulation operation/targets, stage timing and final status in a
-unique config/runs/invocations JSON record. Console handoffs are flushed before
+unique config/_engine/invocations JSON record. Console handoffs are flushed before
 the child starts; sensitive argument values are redacted in records and output.
 """
 
@@ -1412,14 +1412,14 @@ def _bind_workflow_archive(
     child_path: Path, child: dict[str, Any], project_dir: Path, workflow: str
 ) -> None:
     """Bind a WF0--WF2 child to its checked current creator archive."""
-    archive = read_archive(project_dir, workflow, f"config/runs/{workflow}")
+    archive = read_archive(project_dir, workflow, f"config/{workflow}")
     projection = archive["configuration_projection"]
     child["configuration"].update(
         source_config_sha256=archive["source_files"][0]["sha256"],
         effective_config_sha256=projection["effective_config_sha256"],
         configuration_inputs_sha256=projection["configuration_inputs_sha256"],
         run_record=file_reference(
-            project_dir / "config/runs" / workflow / "run_record.yml",
+            project_dir / "config" / workflow / "run_record.yml",
             "project_root",
             project_dir,
         ),
@@ -1438,10 +1438,7 @@ def _capture_legacy_wf3_attempt(
         ("project", "basin", "climate", "workflows.generate_scenarios"),
     )
     directory = (
-        project_dir
-        / "config/runs/_engine/invocations"
-        / invocation_id
-        / "config/sources"
+        project_dir / "config/_engine/invocations" / invocation_id / "config/sources"
     )
     for source in sources:
         destination = directory / source.id / source.original_path.name
@@ -1515,7 +1512,7 @@ def _initialize_manifest(
 ) -> tuple[Path, dict[str, Any]]:
     """Create an in-memory initial invocation record and its unique path."""
     started_at = _utc_now()
-    # Under `config/runs/`, NOT a `provenance/` root of its own (R9 follow-up,
+    # Under `config/`, NOT a `provenance/` root of its own (R9 follow-up,
     # ruled 2026-08-05). The migration map's Finding 1 disqualified `logs/` for
     # the config snapshot because logs are what a user deletes to reclaim space
     # and their parts are merged-then-deleted by design, while the snapshot is
@@ -1523,7 +1520,7 @@ def _initialize_manifest(
     # same reasons, so the same reasoning places it here. `invocations/` is a
     # SIBLING of the `<workflow>/<digest>/` bundles rather than a fourth
     # workflow entry: an invocation spans workflows.
-    runs_dir = project_dir / "config" / "runs" / "_engine" / "invocations"
+    runs_dir = project_dir / "config" / "_engine" / "invocations"
     runs_dir.mkdir(parents=True, exist_ok=True)
     filename_stamp = started_at.replace("-", "").replace(":", "")
     filename = f"{filename_stamp}-{uuid.uuid4().hex[:12]}.json"

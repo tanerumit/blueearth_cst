@@ -1,6 +1,7 @@
 """Render retained CSV/NetCDF products and one recoverable caption inventory."""
 
 import json
+import math
 import re
 from pathlib import Path
 
@@ -14,12 +15,13 @@ from blueearth_cst.climate_analysis.diagnostic_captions import caption
 from blueearth_cst.climate_analysis.diagnostic_tables import write_json
 from blueearth_cst.climate_analysis.diagnostics import sen_trend
 from blueearth_cst.plotting.fundamentals import STYLE, add_caption, new_fig
-from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
+from blueearth_cst.plotting.prepared_maps import MapFrame, RasterMap, draw_raster_map
 from blueearth_cst.shared.map_reference import (
     drawing_frame,
     drawing_scale,
     field_edges,
     frame_intersection,
+    geographic_ticks,
     load_reference,
     reference_arguments,
     validate_fields,
@@ -38,14 +40,28 @@ def load_map_overlays(overlays):
 def prepared_map(
     field, counts, reference, variable, overlays, *, inside=None, cell_edges=True
 ):
-    """Adapt a native field to the declared frame and report displayed support."""
+    """Draw basin-focused native fields with the declared historical color scale."""
     field = field.transpose("latitude", "longitude")
     counts = counts.transpose("latitude", "longitude")
     mask = None
     if inside is not None:
         field, inside = xr.align(field, inside, join="exact")
         mask = inside.transpose("latitude", "longitude").values
-    support = frame_intersection(field, reference["frame"]["extent"])
+    frame = drawing_frame(reference)
+    if overlays.get("basins"):
+        import geopandas as gpd
+
+        from blueearth_cst.shared.cartographic_map import extent_from_layer
+
+        basins = gpd.GeoDataFrame.from_features(overlays["basins"], crs="EPSG:4326")
+        west, east, south, north = extent_from_layer(basins)
+        frame = MapFrame(
+            (west, east, south, north),
+            geographic_ticks(west, east),
+            geographic_ticks(south, north),
+            1 / math.cos(math.radians((south + north) / 2)),
+        )
+    support = frame_intersection(field, frame.extent)
     if mask is not None:
         support &= mask
     finite = support & np.isfinite(field.values)
@@ -58,7 +74,7 @@ def prepared_map(
     x, y = field_edges(field)
     fig = draw_raster_map(
         RasterMap(field.values, x, y, inside=mask, cell_edges=cell_edges),
-        drawing_frame(reference),
+        frame,
         drawing_scale(reference, variable),
         overlays,
     )
@@ -73,6 +89,13 @@ def prepared_map(
         "reference_id": reference["reference_id"],
         "reference_path": "data/climate/historical/_engine/map_reference.json",
         "frame": reference["frame"],
+        "display_frame": {
+            "extent": list(frame.extent),
+            "longitude_ticks": list(frame.longitude_ticks),
+            "latitude_ticks": list(frame.latitude_ticks),
+            "aspect": frame.aspect,
+            "crs": "EPSG:4326",
+        },
         "historical_reference": scale,
         "reference_completeness": reference["identity"]["completeness"],
         "displayed_cells": int(support.sum()),
@@ -93,6 +116,7 @@ def prepared_map(
     policy = reference["identity"]["completeness"]
     text = (
         f"Historical display reference: {periods}; native cells touching the closed selected-source frame. "
+        "Maps zoom to the basin bounds with spatial-map padding when basin geometry is available. "
         f"Reference eligibility permits at most {policy['max_missing_days_month']} missing days/month and "
         f"{policy['max_missing_days_year']} days/year. Equal classes do not imply equal support, periods or PET methods. "
         f"Displayed support: {info['finite_cells']} finite and {info['unavailable_cells']} unavailable cells. "
@@ -102,7 +126,7 @@ def prepared_map(
     else:
         text += f"Historical reference unavailable ({scale['reason']}): finite cells use neutral hatching without a numerical colorbar. "
     if not info["displayed_cells"]:
-        text += "No native support intersects the reference frame. "
+        text += "No native support intersects the displayed frame. "
     text += "Gray cells have no finite annual climatology; white cells are outside model support or raster coverage. No interpolation."
     return fig, info, text
 
@@ -289,7 +313,7 @@ def render(
     for form, filename in paths["figures"].items():
         availability = "available"
         support = (
-            "native source cells intersecting the common selected-source frame"
+            "native source cells intersecting the displayed map frame"
             if form.startswith("map-")
             else view.support
         )
@@ -328,7 +352,7 @@ def render(
                 ):
                     text += " This retained auxiliary field is excluded from the historical reference pool."
                 if not map_info["displayed_cells"]:
-                    availability = "not displayed: native support does not intersect the reference frame"
+                    availability = "not displayed: native support does not intersect the displayed frame"
                 elif not map_info["finite_cells"]:
                     availability = "unavailable: no complete annual map values"
                 elif map_info["scale_status"] == "unavailable":

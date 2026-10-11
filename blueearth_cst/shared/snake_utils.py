@@ -197,7 +197,7 @@ def declare_project_root(project_dir):
     directive prints, so this exists for the rules that have NONE -- the config
     snapshot (0.01/1.01/2.01/3.01) is the standing example. Those rows reach the
     console without passing the tee, so they were the only ones in a run still
-    printing ``test_case\\test_rapid\\config\\runs\\...`` -- full length, and
+    printing ``test_case\\test_rapid\\config\\build_model\\...`` -- full length, and
     backslashed, while every neighbouring row was short and forward-slashed.
     The project dir is stated once in the header either way, so nothing is lost
     by shortening them to match.

@@ -42,6 +42,9 @@ from blueearth_cst.shared.workflow_config_snapshot import (
     validate_archive,
 )
 
+_ALLOCATION_PATH = "experiments/_engine/allocation.json"
+_TRANSACTIONS_PATH = "experiments/_engine/transactions"
+
 
 @dataclass(frozen=True)
 class CapturedSource:
@@ -637,7 +640,7 @@ def validate_reservation(
 
 
 def _ledger(root: Path) -> dict:
-    path = _path(root, "config/experiments/allocation.json")
+    path = _path(root, _ALLOCATION_PATH)
     if not path.exists():
         return {
             "schema_version": "experiment-allocation/1",
@@ -701,7 +704,7 @@ def _ledger(root: Path) -> dict:
                 _ref(allocation["transaction"], root)
                 if (
                     allocation["transaction"]["path"]
-                    != f"config/experiments/_engine/transactions/{allocation['reservation_id']}/transaction.json"
+                    != f"{_TRANSACTIONS_PATH}/{allocation['reservation_id']}/transaction.json"
                     or allocation["legacy_owner"] is not None
                 ):
                     raise ValueError("reservation allocation owner disagrees")
@@ -770,12 +773,16 @@ def _add_allocation(ledger: dict, base: str, allocation: dict) -> None:
 
 def _reconcile(root: Path, ledger: dict) -> None:
     directory = _path(root, "experiments")
-    first = not _path(root, "config/experiments/allocation.json").exists()
+    first = not _path(root, _ALLOCATION_PATH).exists()
     known = {a["name"]: a for f in ledger["families"] for a in f["allocations"]}
     if directory.exists() and not directory.is_dir():
         raise ValueError("experiments root is not a directory")
     for child in directory.iterdir() if directory.exists() else ():
         _no_links(child)
+        if child.name == "_engine":
+            if not child.is_dir():
+                raise ValueError("experiment engine root is not a directory")
+            continue
         _name(child.name)
         if _dated(child.name):
             continue
@@ -817,7 +824,7 @@ def _reconcile(root: Path, ledger: dict) -> None:
 
 
 def _save_ledger(root: Path, ledger: dict) -> None:
-    path = _path(root, "config/experiments/allocation.json")
+    path = _path(root, _ALLOCATION_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
     ledger["revision"] += 1
     atomic_record(path, ledger, replace=path.exists())
@@ -974,7 +981,7 @@ def preview_experiment(
             metrics=metrics_only,
             recover=recover,
         )
-        transactions = _path(root, "config/experiments/_engine/transactions")
+        transactions = _path(root, _TRANSACTIONS_PATH)
         referenced = {
             a["reservation_id"] for f in ledger["families"] for a in f["allocations"]
         }
@@ -1095,9 +1102,7 @@ def _transaction(root: Path, allocation: dict) -> dict:
     if type(captures) is not list:
         raise ValueError("source_capture must be a list")
     roles = []
-    prefix = (
-        f"config/experiments/_engine/transactions/{metadata['reservation_id']}/sources/"
-    )
+    prefix = f"{_TRANSACTIONS_PATH}/{metadata['reservation_id']}/sources/"
     for source in captures:
         _fields(source, {"role", "original_path", "file"}, "captured source")
         roles.append(source["role"])
@@ -1120,7 +1125,7 @@ def _read_pair(
 ) -> dict:
     transaction = _transaction(root, allocation)
     relative = (
-        f"config/experiments/_engine/transactions/{allocation['reservation_id']}/experiment"
+        f"{_TRANSACTIONS_PATH}/{allocation['reservation_id']}/experiment"
         if stage
         else f"experiments/{allocation['name']}"
     )
@@ -1252,7 +1257,7 @@ def admit_experiment_owned(
         "simulation": None,
     }
     validate_reservation(reservation, root)
-    relative = f"config/experiments/_engine/transactions/{reservation_id}"
+    relative = f"{_TRANSACTIONS_PATH}/{reservation_id}"
     transaction_dir = _path(root, relative)
     transaction_dir.mkdir(parents=True, exist_ok=False)
     captures = []
@@ -1330,7 +1335,7 @@ def _publish_directory(root: Path, allocation: dict) -> None:
     _read_pair(root, allocation, stage=True, initial=True)
     staged = _path(
         root,
-        f"config/experiments/_engine/transactions/{allocation['reservation_id']}/experiment",
+        f"{_TRANSACTIONS_PATH}/{allocation['reservation_id']}/experiment",
     )
     target = _path(root, f"experiments/{allocation['name']}")
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -1389,7 +1394,7 @@ def recover_experiment_owned(
     _transaction(root, allocation)
     staged = _path(
         root,
-        f"config/experiments/_engine/transactions/{allocation['reservation_id']}/experiment",
+        f"{_TRANSACTIONS_PATH}/{allocation['reservation_id']}/experiment",
     )
     target = _path(root, f"experiments/{name}")
     if staged.exists() == target.exists():

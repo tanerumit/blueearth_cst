@@ -10,23 +10,36 @@ use a directory outside the toolbox checkout.
 
 ```text
 <project_dir>/
-  config/runs/                   configuration and run records
+  config/                        configuration archives and run records
+    analyze_climate/              latest WF0 run_record.yml and sources/
+    build_model/                  latest WF1 run_record.yml and sources/
+    analyze_projections/          latest WF2 run_record.yml and sources/
+    _engine/                      execution inputs, locks and invocation history
   data/spatial/                  basin geometry, locations and maps
   data/climate/                  historical forcing and projection products
   models/hydrology/wflow/         model, historical run and evaluation
   scenarios/_engine/requests/<request_id>/  scenario generation settings
   scenarios/_engine/collections/<id>/
     collection.json              collection inventory
-  scenarios/<id>/                generated climate series
+  scenarios/_engine/current.json  current scenario export identity and file inventory
+  scenarios/                     stable copies of the current collection
     scenario_run_lookup.csv      generated series and their relationships
     perturbation_lookup.csv      monthly temperature and precipitation changes
     series/<run_id>.nc            generated climate series, e.g. run_01.nc
+    config/                      copied creator configuration
+    weathergenr/                 copied generator settings, products and diagnostics
+  scenarios/<id>/                immutable collection, including original tables and series
+  experiments/_engine/
+    allocation.json             project-wide experiment numbering
+    transactions/               experiment creation and recovery records
   experiments/<name>/
     _engine/simulation.json      simulation settings used
     hydrology/wflow/output/      retained model responses
     _engine/metric_sets/<id>/
       metrics.json              indicator definitions and source records
       return_level_benchmark.json  scope of return-level checks
+    _engine/metric_sets/current.json  current export identity and file inventory
+    results/metric_sets/         stable CSV copies of the current metric set
     results/metric_sets/<id>/
       group_members.csv         group_id,run_id (including singleton groups)
       group_metadata.csv        group_id,st_id,is_reference
@@ -43,6 +56,16 @@ then by `st_id` to `perturbation_lookup.csv`. For a group response surface, join
 by `group_id` directly to `group_metadata.csv`, then by `st_id` to `perturbation_lookup.csv`.
 `group_members.csv` records the contributing runs. Reference groups have `is_reference=true`
 and an empty `st_id`; retain them explicitly rather than losing them in an inner coordinate join.
+
+Configuration archives are generated records. Edit the source configuration supplied to the runner;
+the archived `sources/` files preserve what an execution used. WF3 and WF4 retain their configuration
+inside the owning collection or experiment. The shared `experiments/_engine/` directory is reserved
+for allocation and creation recovery; it is not an experiment.
+
+New projects use this layout from October 2026: the former `config/runs/` contents now sit directly
+under `config/`, and former `config/experiments/` state sits under `experiments/_engine/`.
+Existing output trees are not migrated or supported through path aliases; use a fresh output root
+with this toolbox version.
 
 ### Climate extent and basin cells
 
@@ -71,9 +94,24 @@ Check `collection.json` or `metrics.json` in the corresponding `_engine/`
 metadata directory before treating a collection or
 indicator set as complete.
 
-The runners record each attempt under `config/runs/_engine/invocations/`,
+The runners record each attempt under `config/_engine/invocations/`,
 including failed runs and dry runs. These records help diagnose a run; they do
 not establish that its results are complete.
+
+## Reading scenario exports
+
+The stable `scenarios/` path mirrors every file from the selected hashed collection, including the lookup
+CSVs, `series/`, `config/`, and `weathergenr/` trees. Successful WF3 generation or reuse refreshes the copies.
+`scenarios/_engine/current.json` records the collection ID, revision, source marker, and exported file
+checksums. WF4 continues consuming an explicitly selected immutable collection. Copied configuration and
+provenance retain their original contents and references to the hashed collection.
+
+The series copies require additional disk space. Files that already match are not recopied. Read the
+export after workflow completion: updates replace individual files, not the whole set at once. Failed
+generation or validation leaves the previous export intact; ordinary export I/O failures roll back
+replaced files. Dry-runs do not refresh it. Only previously exported files are removed when absent from
+the new collection; unrelated files remain, and untracked filename collisions are refused. Rerun WF3
+to populate the stable paths in an existing project.
 
 ## Reading projection diagnostics
 
@@ -100,6 +138,18 @@ The former `plots/overview/` and `plots/windows/` figure paths are retired. Exis
 files at those paths are not current suite outputs and are not deleted automatically.
 
 ## Reading a metric set
+
+For post-processing, read CSVs directly from `experiments/<name>/results/metric_sets/`.
+Every successful WF4 invocation requesting indicators refreshes these copies, including reuse of an
+existing set. `_engine/metric_sets/current.json` records the selected hash, source manifest, and exported
+filenames with checksums. The hashed directories retain immutable results for reproducibility.
+
+Wait for workflow completion before reading the flat export: replacement is atomic per file, not across
+the whole set. Failed calculation or validation leaves the previous export intact; ordinary export I/O
+failures roll back the replaced files. Dry-runs and `simulations_only` do not refresh it. Files tracked by
+the previous export but absent from the new selection are removed; unrelated files are preserved, and
+untracked filename collisions are refused. Rerun an indicator request to populate exports in existing
+experiments. Export copies are managed outputs; keep custom tables under different filenames.
 
 Read `experiments/<name>/_engine/metric_sets/<id>/metrics.json` before
 its tables. It identifies the

@@ -179,7 +179,7 @@ def _strip_prefix(text, prefix, replacement=""):
     whenever the prefix arrived already forward-slashed -- exactly what a
     ``project_dir`` read from a shipped config is (``test_case/test_rapid``).
     A rule that printed the same folder OS-natively (``test_case\\test_rapid\\
-    config\\runs``, from a ``pathlib`` value interpolated into a message) then
+    config\\build_model``, from a ``pathlib`` value interpolated into a message) then
     matched neither spelling, so the row kept the full path AND its
     backslashes while every neighbouring row was stripped and forward-slashed.
     Canonicalizing first makes the two spellings genuinely independent of how
@@ -337,7 +337,7 @@ def _relativize_paths(text, project_root, tokens=()):
     # relative in every shipped config (`test_case/test_rapid`), and the two
     # emitters disagree about which form they print: hydromt resolves, so it
     # prints `C:\...\pipeline\test_case\test_rapid\models\...`, while `log_row`
-    # prints the configured `test_case\test_rapid\config\runs` as given.
+    # prints the configured `test_case\test_rapid\config\build_model` as given.
     #
     # Stripping only the relative form was actively WRONG on the absolute one:
     # `_strip_prefix` is unanchored, so it excised the root from the MIDDLE and

@@ -153,7 +153,6 @@ def render_forcing_figures(
     """Write nine canonical figures using the validated historical reference."""
     validate_current()
     features = load_map_overlays(overlays)
-    map_extent = reference["frame"]["extent"]
     fields, results, years = prepare_forcing(ds, inside, m0)
     map_inside = inside.rename(
         {
@@ -332,14 +331,16 @@ def render_forcing_figures(
                     "max_missing_days_year": max_year,
                     "trend": "Theil–Sen",
                     "monthly_spread": "p10–p90",
-                    "map_extent": map_extent if kind == "map" else None,
+                    "map_extent": (
+                        map_info["display_frame"]["extent"] if kind == "map" else None
+                    ),
                 },
             }
             if kind == "map":
                 records[name]["map_reference"] = map_info
                 if not map_info["displayed_cells"]:
                     records[name]["availability"] = (
-                        "not displayed: native support does not intersect the reference frame"
+                        "not displayed: native support does not intersect the displayed frame"
                     )
                 elif available and map_info["scale_status"] == "unavailable":
                     records[name]["availability"] = (

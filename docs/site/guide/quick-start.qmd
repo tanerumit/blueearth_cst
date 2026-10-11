@@ -87,11 +87,12 @@ test_case/test_rapid/
   data/climate/         the historical climate store, and the CMIP6 slices
   models/hydrology/     the Wflow-SBM model, its forcing, its run, its evaluation
   scenarios/_engine/requests/   scenario generation settings
-  scenarios/<id>/       generated climate series
+  scenarios/            full current collection: lookups, series/, config/, weathergenr/
+  scenarios/<id>/       immutable scenario collections
   experiments/<name>/   simulated responses and indicators
   logs/                 one log per workflow
   benchmarks/           per-rule timings
-  config/runs/          configuration and run records
+  config/              configuration archives and run records
 ```
 
 Find the hydrological indicators under

@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from blueearth_cst.experiment.simulation_record import capture_simulation_sources_v2
 from blueearth_cst.experiment.simulation_runner import (
+    current_targets,
     simulation_command,
     simulation_settings,
 )
@@ -110,6 +111,20 @@ def main(argv=None):
                 cwd=Path(__file__).resolve().parents[1],
                 writing=not preview,
             )
+            if (
+                result == 0
+                and not preview
+                and current_targets(args.target) != ["simulations_only"]
+            ):
+                from blueearth_cst.experiment.metric_export import (
+                    export_selected_metrics,
+                )
+
+                # Snakemake skips onsuccess when an explicit file target is current.
+                # Refresh here, still under project execution ownership, for all reuse.
+                export_selected_metrics(
+                    root / "experiments" / context.name, project, settings
+                )
         invocation_history.finish(record_path, record, exit_code=result)
         return result
     except ValueError as exc:

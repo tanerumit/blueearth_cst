@@ -272,7 +272,7 @@ def capture_simulation_sources_v2(config_path, project_root, invocation_id):
         raise ValueError("WF4 source capture requires an invocation ID")
     root = Path(project_root).resolve()
     directory = _simulation_path(
-        root, f"config/runs/_engine/invocations/{invocation_id}/config"
+        root, f"config/_engine/invocations/{invocation_id}/config"
     )
     sources = capture_configuration_sources(
         config_path,
@@ -285,7 +285,7 @@ def capture_simulation_sources_v2(config_path, project_root, invocation_id):
             raise ValueError("WF4 captured source has an invalid ID")
         target = _simulation_path(
             root,
-            f"config/runs/_engine/invocations/{invocation_id}/config/sources/{source.id}/{source.original_path.name}",
+            f"config/_engine/invocations/{invocation_id}/config/sources/{source.id}/{source.original_path.name}",
         )
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.exists():
@@ -318,7 +318,7 @@ def read_simulation_sources_v2(project_root, invocation_id):
     root = Path(project_root).resolve()
     manifest = read_canonical_json(
         _simulation_path(
-            root, f"config/runs/_engine/invocations/{invocation_id}/config/capture.json"
+            root, f"config/_engine/invocations/{invocation_id}/config/capture.json"
         )
     )
     _v2_fields(manifest, {"sources"}, "WF4 source capture")

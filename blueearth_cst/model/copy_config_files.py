@@ -612,7 +612,7 @@ if __name__ == "__main__":
         # R07 B9: the project config snapshot is split by KIND, so this is a
         # signature change rather than a rename -- one derived output_dir can
         # no longer serve. The project config lands where the rule declared it
-        # (config/runs/, or the experiment dir for wf3); catalogs go to
+        # (config/, or the experiment dir for wf3); catalogs go to
         # config/catalogs/; verbatim snapshots of shipped templates go to
         # config/templates/. Generated run-time configs live in
         # config/generated/, written by their own rules, not copied here.

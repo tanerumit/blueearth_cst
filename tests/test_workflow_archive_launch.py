@@ -50,6 +50,10 @@ def test_execution_inputs_ignore_source_locations_and_other_enable_flags(
         )[0]
 
     original = prepare(project_file)
+    assert not (project_root / "config/runs").exists()
+    assert "edit the source" in (project_root / "config/README.md").read_text(
+        encoding="utf-8"
+    )
     original_bytes = original.read_bytes()
     original_mtime = original.stat().st_mtime_ns
     for name in ("generate_scenarios", "simulate_system"):
@@ -72,7 +76,7 @@ def test_execution_inputs_ignore_source_locations_and_other_enable_flags(
     assert prepare(moved_project) == original
     assert original.read_bytes() == original_bytes
     assert original.stat().st_mtime_ns == original_mtime
-    record = read_archive(project_root, workflow_name, f"config/runs/{workflow_name}")
+    record = read_archive(project_root, workflow_name, f"config/{workflow_name}")
     archived_project = next(
         item for item in record["source_files"] if item["role"] == "project_config"
     )
@@ -120,9 +124,7 @@ def test_preparse_capture_survives_source_edit(tmp_path, capsys):
         targets=["all"],
     )
     workflow.write_bytes(source_bytes + b"\n# late comment\n")
-    record = read_archive(
-        project_root, "analyze_climate", "config/runs/analyze_climate"
-    )
+    record = read_archive(project_root, "analyze_climate", "config/analyze_climate")
     assert record["schema_version"] == "run-record/2"
     archived = next(
         entry
@@ -130,7 +132,7 @@ def test_preparse_capture_survives_source_edit(tmp_path, capsys):
         if entry["role"] == "workflow_config_analyze_climate"
     )
     assert (
-        project_root / "config/runs/analyze_climate" / archived["archived_path"]
+        project_root / "config/analyze_climate" / archived["archived_path"]
     ).read_bytes() == source_bytes
     execution_project = yaml.safe_load(execution.read_bytes())
     for name, stanza in execution_project["workflows"].items():
@@ -196,14 +198,14 @@ def test_shared_dependency_stages_once_across_workflows(tmp_path):
     catalog_c = yaml.safe_load(execution_c.read_bytes())["project"]["catalog"][0]
     assert catalog_a == catalog_b == catalog_c
     assert Path(catalog_a).is_relative_to(
-        project_root / "config/runs/_engine/execution-configs/_shared"
+        project_root / "config/_engine/execution-configs/_shared"
     )
     locations_a = yaml.safe_load(execution_a.read_bytes())["basin"]["output_locations"]
     locations_b = yaml.safe_load(execution_b.read_bytes())["basin"]["output_locations"]
     locations_c = yaml.safe_load(execution_c.read_bytes())["basin"]["output_locations"]
     assert locations_a == locations_b == locations_c
     assert Path(locations_a).is_relative_to(
-        project_root / "config/runs/_engine/execution-configs/_shared"
+        project_root / "config/_engine/execution-configs/_shared"
     )
 
 
@@ -350,10 +352,10 @@ def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
     command, kwargs = commands[0]
     assert command[command.index("--configfile") + 1] != str(config)
     assert CONTEXT_ENV in kwargs["env"]
-    record = read_archive(output, "analyze_climate", "config/runs/analyze_climate")
+    record = read_archive(output, "analyze_climate", "config/analyze_climate")
     assert record["schema_version"] == "run-record/2"
     assert record["invocation"]["entry_point"] == "scripts/run_workflows.py"
-    invocation_paths = (output / "config/runs/_engine/invocations").glob("*.json")
+    invocation_paths = (output / "config/_engine/invocations").glob("*.json")
     invocations = [
         json.loads(path.read_text(encoding="utf-8")) for path in invocation_paths
     ]
@@ -365,7 +367,7 @@ def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
         resolve_file_reference(
             child["configuration"]["run_record"], {"project_root": output}
         )
-        == output / "config/runs/analyze_climate/run_record.yml"
+        == output / "config/analyze_climate/run_record.yml"
     )
 
 

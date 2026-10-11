@@ -141,7 +141,7 @@ for _src in CANDIDATE_SOURCES:
 
 # The current-only run record, one per workflow (config-snapshot redesign,
 # 2026-08-13).
-RUN_RECORD = f"{project_dir}/config/runs/analyze_climate/run_record.yml"
+RUN_RECORD = f"{project_dir}/config/analyze_climate/run_record.yml"
 
 # Every external file this workflow's configuration points at. Hashed at parse
 # time so the digest moves when one is edited IN PLACE.
@@ -556,7 +556,7 @@ rule gather_logs:
 # scope the P0 probe established -- these fire only when at least one job
 # executed, so a gap in the dates means no work was done rather than that nobody
 # looked.
-JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 
 # One toolbox read per invocation, shared by both handlers, so a line pair

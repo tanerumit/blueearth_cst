@@ -62,4 +62,8 @@ The wrapper freezes historical climate, basin cells, the generator template, and
 
 ## Outputs
 
+After successful generation or reuse, the wrapper mirrors the full hashed collection directly under
+`scenarios/`, including lookup CSVs, `series/`, `config/`, and `weathergenr/`. Matching files are left untouched.
+`scenarios/_engine/current.json` identifies the exported collection; hashed collections remain immutable.
+
 The ready collection retains generated and perturbed climate series, a run/perturbation lookup, a collection inventory, and creator configuration. A ready marker signals publication; downstream consumers request explicit run IDs from a specific collection. Generation also writes logs and benchmarks. See [Reading the outputs](../guide/outputs.qmd) for the public collection layout and joins.

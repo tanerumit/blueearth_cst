@@ -4,11 +4,81 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from blueearth_cst.shared import output_capture
 from scripts import generate_scenarios
+
+
+@pytest.mark.parametrize("ready,exit_code", [(False, 0), (False, 9), (True, 0)])
+def test_success_and_ready_reuse_export_the_selected_collection(
+    tmp_path, monkeypatch, ready, exit_code
+):
+    from blueearth_cst.experiment import reservation_generation
+
+    config = tmp_path / "project.yml"
+    config.write_text("{}", encoding="utf-8")
+    plan = {
+        "outputs": {"record_root": "scenarios/_engine/collections/selected"},
+        "collection_id": "selected",
+    }
+    monkeypatch.setattr(
+        generate_scenarios, "_run_source_phase_quietly", lambda *a, **kw: 0
+    )
+    monkeypatch.setattr(
+        generate_scenarios,
+        "compose_config",
+        lambda *a, **kw: (
+            {
+                "project": {"project_dir": str(tmp_path)},
+                "workflows": {"generate_scenarios": {"enabled": True}},
+            },
+            {},
+        ),
+    )
+    monkeypatch.setattr(
+        reservation_generation,
+        "select_reserved_plan_owned",
+        lambda *a: (
+            {"request_path": str(tmp_path / "request.json")},
+            plan,
+            tmp_path / "plan.json",
+            "hash",
+            ready,
+        ),
+    )
+    monkeypatch.setattr(
+        generate_scenarios,
+        "initialize_generation",
+        lambda *a, **kw: tmp_path / "receipt.json",
+    )
+    children = []
+    monkeypatch.setattr(
+        generate_scenarios,
+        "run_project_child",
+        lambda *a, **kw: children.append(a) or exit_code,
+    )
+    exports = []
+    monkeypatch.setattr(
+        generate_scenarios, "export_scenario_collection", lambda *a: exports.append(a)
+    )
+    context = SimpleNamespace(
+        reservation_id="reserved", request={}, name="experiment", recheck=lambda: None
+    )
+    assert (
+        generate_scenarios.run_owned(
+            config, tmp_path, 1, [], invocation_id="test", reservation_context=context
+        )
+        == exit_code
+    )
+    assert len(children) == (0 if ready else 1)
+    assert exports == (
+        [(tmp_path, tmp_path / plan["outputs"]["record_root"] / "collection.json")]
+        if exit_code == 0
+        else []
+    )
 
 
 def test_source_phase_hides_console_chatter_only_on_success(capfd, monkeypatch):
@@ -110,6 +180,11 @@ def test_source_phase_replay_reaches_a_real_terminal_fd():
 
 @pytest.mark.parametrize("exit_code", [0, 9])
 def test_direct_dry_run_records_terminal_invocation(tmp_path, monkeypatch, exit_code):
+    monkeypatch.setattr(
+        generate_scenarios,
+        "export_scenario_collection",
+        lambda *a: pytest.fail("dry-run cannot export"),
+    )
     config = tmp_path / "project_config.yml"
     config.write_text("project: {}\n", encoding="utf-8")
     project = tmp_path / "project"
@@ -135,7 +210,7 @@ def test_direct_dry_run_records_terminal_invocation(tmp_path, monkeypatch, exit_
         )
         == exit_code
     )
-    (path,) = (project / "config/runs/_engine/invocations").glob("*.json")
+    (path,) = (project / "config/_engine/invocations").glob("*.json")
     record = json.loads(path.read_text(encoding="utf-8"))
     assert record["workflow"] == "generate_scenarios"
     assert record["contract_mode"] == "new_schema"
@@ -168,7 +243,7 @@ def test_direct_launch_exception_is_terminal(tmp_path, monkeypatch):
                 "--dry-run",
             ]
         )
-    (path,) = (project / "config/runs/_engine/invocations").glob("*.json")
+    (path,) = (project / "config/_engine/invocations").glob("*.json")
     record = json.loads(path.read_text(encoding="utf-8"))
     assert record["status"] == "failed"
     assert record["error"]["type"] == "OSError"

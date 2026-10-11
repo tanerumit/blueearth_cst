@@ -12,6 +12,7 @@ from blueearth_cst.shared.config_composition import (
     capture_configuration_sources,
     compose_captured_config,
 )
+from blueearth_cst.shared.output_capture import captured_output
 from blueearth_cst.shared.provenance import file_sha256
 
 
@@ -49,7 +50,11 @@ def _catalog_value(path):
 
     original = _ordinary_file(path)
     raw = yaml.safe_load(original.read_bytes())
-    resolved = DataCatalog(data_libs=[original.as_posix()]).to_dict()
+    # Admission and every consumer recheck resolve metadata before the handoff.
+    # Keep routine HydroMT parsing chatter out of the runner's console while
+    # retaining warnings and the complete diagnostics on a failed resolution.
+    with captured_output():
+        resolved = DataCatalog(data_libs=[original.as_posix()]).to_dict()
     # Raw semantic options preserve e.g. preprocess which HydroMT may omit on
     # serialization. Upstream resolved sources carry catalog-relative anchors.
     return _json_value({"document": raw, "resolved_sources": resolved})

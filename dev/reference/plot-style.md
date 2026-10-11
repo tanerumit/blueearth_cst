@@ -81,8 +81,10 @@ Identify the data as Wflow forcing in legends and captions; use ERA5 blue for th
 Maps retain their model-grid footprint and basin mask, with the reviewed coordinate labels, palettes,
 spatial overlays and gauge labels. WF0 source and WF1 forcing maps share the historical reference at
 `data/climate/historical/_engine/map_reference.json`. The selected source's outer cell edges determine
-their frame, ticks and fixed midpoint-latitude aspect. Historical candidate cells intersecting this frame
-determine pooled classes; borrowed CHIRPS temperature/PET do not contribute. Native source fields and
+the scale-reference frame. Historical candidate cells intersecting this frame determine pooled classes;
+borrowed CHIRPS temperature/PET do not contribute. Displayed maps zoom to the basin bounds with the same
+padding as spatial maps, with ticks and midpoint-latitude aspect derived from that viewport. Without basin
+geometry, they retain the reference frame. Native source fields and
 model-grid basin masks retain their scientific support. Common colors do not establish equal periods,
 eligibility policies or PET methods; captions state those differences.
 
@@ -148,8 +150,8 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 
 | Figure type | Agreed treatment |
 |---|---|
-| Historical climate maps | Extent exactly matches the native gridded layer's outer cell edges. |
-| Wflow forcing maps | Use the selected historical grid's exact frame, with no added padding. |
+| Historical climate maps | Zoom to the basin bounds with spatial-map padding. |
+| Wflow forcing maps | Use the same basin-focused viewport as historical climate maps. |
 | Map coordinates | Axis titles include degrees; tick labels are numeric, signed, without N/S/E/W. |
 | Annual series | Trend line and slope annotation on every applicable series; y-axis shows units only. |
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |

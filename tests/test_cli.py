@@ -271,7 +271,7 @@ def test_baseline_seed_config_does_not_warn():
     seed_cfg = join(SNAKEDIR, "test_case", "project_config_baseline.yml")
     result = _dry_run("build_model.smk", cfg=seed_cfg)
     combined = (result.stdout or "") + (result.stderr or "")
-    assert "inside the repository tree" not in combined, combined[-3000:]
+    assert "inside the repo tree" not in combined, combined[-3000:]
 
     # The exemption above is what this test is named for, and it holds in every
     # checkout. BUILDING the DAG is a different matter, and it is NOT a property

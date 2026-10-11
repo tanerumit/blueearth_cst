@@ -23,8 +23,11 @@ import math
 import os
 import platform
 import re
+import shlex
+import shutil
 import subprocess
 import sys
+import textwrap
 import time
 import uuid
 from collections.abc import Mapping
@@ -57,6 +60,7 @@ from blueearth_cst.shared.provenance import (  # noqa: E402
     file_sha256,
     toolbox_identity,
 )
+from blueearth_cst.shared.run_log_core import RUN_WARNING_TALLY_ENV  # noqa: E402
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _ANSI_FAIL,
     ADVANCED_SETTINGS,
@@ -326,13 +330,11 @@ def build_command(
 # is correct rather than a loss -- that floor exists to quieten rule logs, and
 # the runner's dozen lines are the frame around them.
 #
-# The rule is a FIXED 80 columns, not the terminal's width. A redirected run and
-# a console run must produce the same bytes: this output is routinely piped to a
-# file (`*> log.txt`), and a frame whose width depended on whether stdout was a
-# tty would make the same run look different depending on how it was launched.
+# Rules cap at 80 columns; readable rows fit the terminal. Redirected output
+# uses a stable 100-column fallback. Unwrapped arguments live in the command receipt.
 #
-# ASCII everywhere in this section EXCEPT the three rail glyphs below, and only
-# because `_enable_utf8_stdout` earns them. A Windows locale is cp1252 and a
+# Rail glyphs, disabled markers and km² units use UTF-8, which
+# `_enable_utf8_stdout` enables. A Windows locale is cp1252 and a
 # redirected stream raises UnicodeEncodeError on anything outside it -- the
 # constraint `console_style.rule_banner` still records for the rules, which do
 # not reconfigure anything. This runner declares UTF-8 on its own stdout before
@@ -351,11 +353,11 @@ _RULE = "=" * _RULE_WIDTH
 
 #: The sequence rail: a node per workflow threaded on a vertical line. Filled
 #: for a workflow that has completed, hollow for one that is not done (yet, or
-#: at all), so the state is legible before any of the text is read. Three characters,
-#: deliberately -- the rail replaced a framed box per workflow, which spent
+# at all), with a dash for disabled steps. The rail replaced a framed box per workflow, which spent
 #: three lines and forty columns to say what a node says in one.
 _NODE_ON = "●"  # ● -- completed
-_NODE_OFF = "○"  # ○ -- not done: pending, failed or disabled
+_NODE_OFF = "○"  # ○ -- pending or failed
+_NODE_DISABLED = "–"
 _RAIL = "│"  # │ -- the thread between them
 
 
@@ -403,17 +405,137 @@ def _clock() -> str:
 
 def _banner(head: str) -> list[str]:
     """A rule, one head line, a rule -- the wrapper announcing a block."""
-    return [_RULE, f"  {head}", _RULE]
+    rule = _RULE[: _console_width()]
+    return [rule, *_wrap_console(head, initial="  ", continuation="  "), rule]
 
 
-def _format_command(argv: list[str]) -> str:
-    """Display sanitized argv with each long option on an indented new line."""
+def _console_width() -> int:
+    """Return readable columns, with a stable width when output is redirected."""
+    if not sys.stdout.isatty():
+        return 100
+    return max(40, shutil.get_terminal_size(fallback=(100, 24)).columns)
+
+
+def _wrap_console(
+    text: str, *, initial: str = "", continuation: str = "", width: int | None = None
+) -> list[str]:
+    """Wrap display text without changing the arguments used for execution."""
+    return textwrap.wrap(
+        text,
+        width=width or _console_width(),
+        initial_indent=initial,
+        subsequent_indent=continuation,
+        break_on_hyphens=False,
+        replace_whitespace=False,
+    ) or [initial.rstrip()]
+
+
+def _command_groups(argv: list[str]) -> list[list[str]]:
+    """Keep each long option and its values together after redaction."""
     groups: list[list[str]] = [[]]
     for argument in sanitize_argv(argv):
         if argument.startswith("--") and groups[-1]:
             groups.append([])
         groups[-1].append(argument)
-    return "\n              ".join(" ".join(group) for group in groups)
+    return groups
+
+
+def _format_command(argv: list[str], *, width: int | None = None) -> str:
+    """Display option groups and long paths on aligned continuation lines."""
+    lines = []
+    for index, group in enumerate(_command_groups(argv)):
+        limit = width or _console_width()
+        if index and len(" ".join(group)) + 14 > limit:
+            lines.append(" " * 14 + group[0])
+            lines.extend(
+                _wrap_console(
+                    " ".join(group[1:]),
+                    initial=" " * 18,
+                    continuation=" " * 18,
+                    width=limit,
+                )
+            )
+            continue
+        lines.extend(
+            _wrap_console(
+                " ".join(group),
+                initial=" " * 14 if index else "",
+                continuation=" " * 18 if index else " " * 14,
+                width=width,
+            )
+        )
+    return "\n".join(lines)
+
+
+def _copyable_command(argv: list[str], *, powershell: bool) -> str:
+    """Quote complete arguments for copying, with valid shell continuations."""
+
+    def quote(argument: str) -> str:
+        if not powershell:
+            return shlex.quote(argument)
+        if argument != "--" and re.fullmatch(r"[\w./:=+\-]+", argument, flags=re.ASCII):
+            return argument
+        return "'" + argument.replace("'", "''") + "'"
+
+    groups = [
+        " ".join(quote(value) for value in group) for group in _command_groups(argv)
+    ]
+    if powershell:
+        groups[0] = "& " + groups[0]
+    return (" `\n    " if powershell else " \\\n    ").join(groups)
+
+
+def _write_command_receipt(
+    history_path: Path,
+    *,
+    config_path: str,
+    project_dir: Path,
+    flags: Mapping[str, bool],
+    cores: int,
+    extra: list[str],
+    simulation_targets: tuple[str, ...],
+) -> Path:
+    """Retain copyable owned-runner commands beside this invocation record."""
+    powershell = os.name == "nt"
+    directory = str(REPO_ROOT)
+    location = (
+        "Set-Location -LiteralPath '" + directory.replace("'", "''") + "'"
+        if powershell
+        else "cd " + shlex.quote(directory)
+    )
+    lines = [
+        "# Copy one workflow block; arguments are redacted where needed.",
+        location,
+    ]
+    for name in WORKFLOW_ORDER:
+        if not flags[name]:
+            continue
+        argv = [
+            "pixi",
+            "run",
+            "python",
+            "scripts/run_workflow.py",
+            name,
+            "--config",
+            str(Path(config_path).resolve()),
+            "--project-dir",
+            str(project_dir),
+            "--cores",
+            str(cores),
+        ]
+        if name == "simulate_system":
+            for target in simulation_targets:
+                argv.extend(["--target", target])
+        forwarded = [*PER_WORKFLOW_FLAGS[name], *extra]
+        if forwarded:
+            argv.extend(["--", *forwarded])
+        lines.extend(
+            ["", f"# {_label(name)}", _copyable_command(argv, powershell=powershell)]
+        )
+    path = history_path.with_suffix(".commands.txt")
+    with path.open("x", encoding="utf-8", newline="\n") as handle:
+        handle.write("\n".join(lines) + "\n")
+    return path
 
 
 def _handoff(tag: str, detail: str, *, note: str | None = None) -> str:
@@ -427,7 +549,7 @@ def _handoff(tag: str, detail: str, *, note: str | None = None) -> str:
     options continue on indented lines. A blank line separates the command
     from the title so the title does not read as part of the command.
     """
-    lines = [_RULE, f"{tag}  --  {detail}"]
+    lines = [_RULE[: _console_width()], *_wrap_console(f"{tag}  --  {detail}")]
     if note:
         # A blank line parts the title from the long command under it.
         lines.extend(["", note])
@@ -492,18 +614,25 @@ def _console_block(
     width = max((len(key) for key, _ in pairs), default=0)
     lines = _banner(head)
     for label, rows in groups:
-        lines.extend(["", f"  {label}"])
+        lines.extend(["", *_wrap_console(label, initial="  ", continuation="  ")])
         if rows and not any(isinstance(row, tuple) for row in rows):
             # A diagram, not key/value rows: a blank line parts it from its label.
             lines.append("")
         for row in rows:
             if isinstance(row, tuple):
                 key, value = row
-                lines.append(f"    {key.ljust(width)}  {value}")
+                prefix = f"    {key.ljust(width)}  "
+                lines.extend(
+                    _wrap_console(
+                        str(value), initial=prefix, continuation=" " * len(prefix)
+                    )
+                )
             else:
-                lines.append(f"    {row}".rstrip())
+                lines.extend(
+                    _wrap_console(str(row), initial="    ", continuation=" " * 14)
+                )
     if close:
-        lines.extend(["", _RULE])
+        lines.extend(["", _RULE[: _console_width()]])
     return "\n".join(lines)
 
 
@@ -518,17 +647,9 @@ def _sequence_lines(
     entries carry their `[position/total]` so the per-workflow timeline rows
     below can be matched to the plan without counting.
 
-    A rail since 2026-09-17, replacing the chain of framed boxes it had been
-    since 2026-08-18. The boxes were a picture of the sequence, which was the
-    point and which the bare list before them failed at -- but they drew it at
-    three lines and forty columns per workflow, and at five workflows the frame
-    was most of the ink. A node on a line says the same three things in one
-    character each: `●` that this is a step, filled against hollow that it has
-    completed (`done`; the opening block passes none, since nothing has run),
-    and the `│` between them that they are ordered. The box width was also
-    set by whichever DISABLED row was longest, so a run that skipped nothing
-    still paid for the widest `(disabled, not invoked)` label the config could
-    produce.
+    A compact rail replaces framed boxes: `●` means completed, `○` means
+    pending and `–` means disabled. The `│` between them states their order.
+    The opening block passes no completed workflows because nothing has run.
 
     Non-ASCII, which nothing else in this file's output is: see the section
     comment above and `_enable_utf8_stdout`, which is what makes it safe.
@@ -551,7 +672,7 @@ def _sequence_lines(
             lines.append(f"{node}  {mark}  {_label(name)}")
         else:
             mark = "-".center(mark_width)
-            lines.append(f"{_NODE_OFF}  {mark}  {_label(name)}  disabled")
+            lines.append(f"{_NODE_DISABLED}  {mark}  {_label(name)}  disabled")
     return lines
 
 
@@ -647,6 +768,32 @@ def _section(cfg: Mapping[str, Any], *keys: str) -> Mapping[str, Any]:
     return node if isinstance(node, Mapping) else {}
 
 
+def _format_region(region: Any) -> str:
+    """Describe a simple subbasin outlet without losing unsupported settings."""
+    original = str(region)
+    if isinstance(region, str):
+        try:
+            region = yaml.safe_load(region)
+        except yaml.YAMLError:
+            return original
+    if not isinstance(region, Mapping) or set(region) - {"subbasin", "uparea"}:
+        return original
+    outlet = region.get("subbasin")
+    if not isinstance(outlet, (list, tuple)) or len(outlet) != 2:
+        return original
+    if any(
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        for value in outlet
+    ):
+        return original
+    text = f"subbasin outlet ({outlet[0]:.4f}, {outlet[1]:.4f})"
+    if "uparea" in region:
+        text += f"; uparea >= {region['uparea']} km²"
+    return text
+
+
 def _settings_rows(cfg: Mapping[str, Any], project_dir: Path) -> list[tuple[str, str]]:
     """The basin the run is ABOUT: its region specification and its resolution.
 
@@ -678,7 +825,7 @@ def _settings_rows(cfg: Mapping[str, Any], project_dir: Path) -> list[tuple[str,
 
     region = basin.get("region")
     if region is not None:
-        rows.append(("region", str(region)))
+        rows.append(("region", _format_region(region)))
 
     region_path = Path(region_geojson_path(os.fspath(project_dir)))
     bbox = None
@@ -724,6 +871,7 @@ def _opening_block(
     config_path: str,
     dry_run: bool,
     flags: Mapping[str, bool],
+    experiment: tuple[str, str | None] | None = None,
 ) -> str:
     """The start-of-invocation block: which run this is, and what will run.
 
@@ -750,6 +898,9 @@ def _opening_block(
     in the command it is about to run.
     """
     rows: list[Any] = [("project", project_name)]
+    if experiment is not None:
+        name, action = experiment
+        rows.append(("experiment", f"{name} ({action})" if action else name))
     rows.extend(_settings_rows(cfg, project_dir))
     rows.append(("repository", os.fspath(_REPO_ROOT_PATH).replace(os.sep, "/")))
     rows.append(("folder", os.fspath(project_dir).replace(os.sep, "/")))
@@ -808,7 +959,25 @@ def _closing_block(
     """
     root = os.fspath(project_dir).replace(os.sep, "/")
     verdict = "FAILED" if failed else "done"
-    head = f"run_workflows {verdict} in {format_elapsed(elapsed_seconds)}"
+    counted = {
+        name: workflow.get("warning_count")
+        for name, workflow in manifest["workflows"].items()
+        if workflow.get("warning_count")
+    }
+    total_warnings = sum(counted.values())
+    unavailable = [
+        name
+        for name, workflow in manifest["workflows"].items()
+        if "warning_count" in workflow and workflow["warning_count"] is None
+    ]
+    warnings = (
+        f" with {total_warnings} warning{'s' if total_warnings != 1 else ''}"
+        if total_warnings
+        else ""
+    )
+    head = f"run_workflows {verdict}{warnings} in {format_elapsed(elapsed_seconds)}"
+    if unavailable:
+        head += " (warning count incomplete)"
     # `error_type` is set only on the path where a child never LAUNCHED (an
     # OSError out of subprocess.run). Two of the rows below are claims about a
     # child having produced something, and both are false there.
@@ -820,12 +989,25 @@ def _closing_block(
     elif manifest["no_op"]:
         groups.append(("nothing ran -- every workflow was disabled", []))
 
+    if counted or unavailable:
+        groups.append(
+            (
+                "warnings",
+                [(_label(name), str(count)) for name, count in counted.items()]
+                + [(_label(name), "count unavailable") for name in unavailable],
+            )
+        )
+
     # `project` defines the `<project>` token the rows below it use, the same
     # spelling the rule logs use (`run_log_core`).
     wrote: list[Any] = [("project", root)]
     if launched:
         wrote.append(("logs", "<project>/logs/"))
     wrote.append(("invocation", _under_project(manifest_path, project_dir)))
+    if manifest.get("command_receipt"):
+        wrote.append(
+            ("commands", _under_project(Path(manifest["command_receipt"]), project_dir))
+        )
     groups.append(("wrote", wrote))
 
     not_run = [
@@ -1014,6 +1196,7 @@ def _run_owned(
                 note=note,
                 recover=recover_reservation,
                 preview=manifest["dry_run"] or "--unlock" in extra,
+                announce=False,
             )
     except BaseException as exc:
         invocation_history.finish(history_path, history, exit_code=None, error=exc)
@@ -1026,6 +1209,27 @@ def _run_owned(
     if manifest["no_op"]:
         history["work_performed"] = "no"
     invocation_history.update(history_path, history)
+
+    if not manifest["no_op"]:
+        try:
+            receipt_path = _write_command_receipt(
+                history_path,
+                config_path=config_path,
+                project_dir=project_dir,
+                flags=flags,
+                cores=cores,
+                extra=extra,
+                simulation_targets=simulation_targets,
+            )
+            manifest["command_receipt"] = str(receipt_path)
+            history["command_receipt"] = file_reference(
+                receipt_path, "project_root", project_dir
+            )
+            invocation_history.update(history_path, history)
+        except OSError as exc:
+            print(
+                f"(copyable commands unavailable: {exc})", file=sys.stderr, flush=True
+            )
 
     # Every hand-off band below names the workflow it is about to start, so the
     # workflow's own opening block does not print its name a second time three
@@ -1051,6 +1255,9 @@ def _run_owned(
                 config_path=config_path,
                 dry_run=manifest["dry_run"],
                 flags=flags,
+                experiment=(reservation_context.name, reservation_context.action)
+                if reservation_context is not None
+                else None,
             ),
             flush=True,
         )
@@ -1114,6 +1321,15 @@ def _run_owned(
             child_path = history_path.with_name(f"{child_id}.json")
             child_record = None
             wf3_source_hash = None
+            warning_path = history_path.parent / f".{child_id}.warnings"
+            try:
+                with warning_path.open("x", encoding="utf-8"):
+                    pass
+                tracking_warnings = True
+            except OSError:
+                tracking_warnings = False
+            previous_tally = os.environ.get(RUN_WARNING_TALLY_ENV)
+            os.environ[RUN_WARNING_TALLY_ENV] = str(warning_path)
             try:
                 if name == "simulate_system":
                     from blueearth_cst.experiment.simulation_record import (
@@ -1176,11 +1392,15 @@ def _run_owned(
                                 console_style.ANNOUNCED_ENV: "1",
                                 invocation_history.PARENT_ENV: history["invocation_id"],
                                 invocation_history.INVOCATION_ENV: child_id,
+                                RUN_WARNING_TALLY_ENV: str(warning_path),
                             },
                         ),
                     )
                 else:
-                    env_for_child = child_env
+                    env_for_child = {
+                        **child_env,
+                        RUN_WARNING_TALLY_ENV: str(warning_path),
+                    }
                     if name == "generate_scenarios":
                         cmd = [
                             sys.executable,
@@ -1219,7 +1439,10 @@ def _run_owned(
                             invocation_id=child_id,
                         )
                         cmd[cmd.index("--configfile") + 1] = str(execution_config)
-                        env_for_child = {**child_env, CONTEXT_ENV: str(capture_context)}
+                        env_for_child = {
+                            **env_for_child,
+                            CONTEXT_ENV: str(capture_context),
+                        }
                         workflow["command"] = sanitize_argv(cmd)
                     child_path, child_record = invocation_history.start(
                         project_dir,
@@ -1291,6 +1514,28 @@ def _run_owned(
                 elapsed = format_elapsed(time.monotonic() - workflow_started)
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))
                 raise
+            finally:
+                if previous_tally is None:
+                    os.environ.pop(RUN_WARNING_TALLY_ENV, None)
+                else:
+                    os.environ[RUN_WARNING_TALLY_ENV] = previous_tally
+                try:
+                    with warning_path.open(encoding="utf-8") as handle:
+                        workflow["warning_count"] = sum(
+                            1 for line in handle if line.strip()
+                        )
+                except FileNotFoundError:
+                    workflow["warning_count"] = 0 if tracking_warnings else None
+                except OSError:
+                    workflow["warning_count"] = None
+                history.setdefault("warning_counts", {})[name] = workflow[
+                    "warning_count"
+                ]
+                try:
+                    warning_path.unlink(missing_ok=True)
+                except OSError:
+                    # Unique invocation paths cannot pollute a later run's count.
+                    pass
             elapsed = format_elapsed(time.monotonic() - workflow_started)
             if child_record is not None:
                 invocation_history.finish(

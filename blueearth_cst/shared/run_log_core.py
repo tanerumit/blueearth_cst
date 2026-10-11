@@ -1860,6 +1860,7 @@ def plural(count, singular, plural_form=None):
 
 
 _WARNING_TALLY_ENV = "CST_WARNING_TALLY"
+RUN_WARNING_TALLY_ENV = "CST_RUN_WARNING_TALLY"
 
 
 def note_warning(module="cst"):
@@ -1869,15 +1870,16 @@ def note_warning(module="cst"):
     parallel jobs this toolbox runs interleave rows rather than overwriting
     each other's -- a line count is all this file is ever read for.
     """
-    path = os.environ.get(_WARNING_TALLY_ENV)
-    if not path:
-        return
-    try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "a", encoding="utf-8") as handle:
-            handle.write(f"{module}\n")
-    except OSError:
-        pass
+    # The runner tally survives resets between WF3 source/generation phases.
+    # Each workflow keeps its existing tally and verdict independently.
+    paths = {os.environ.get(key) for key in (_WARNING_TALLY_ENV, RUN_WARNING_TALLY_ENV)}
+    for path in paths - {None, ""}:
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "a", encoding="utf-8") as handle:
+                handle.write(f"{module}\n")
+        except OSError:
+            pass
 
 
 def log_row(message, module="cst", level="INFO"):

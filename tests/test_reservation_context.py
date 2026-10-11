@@ -198,6 +198,15 @@ def reject_producers(monkeypatch):
     return calls
 
 
+def test_admission_can_return_selection_without_a_console_announcement(pending, capsys):
+    context = admit(pending, announce=False)
+    assert context.action == "create"
+    assert "Experiment:" not in capsys.readouterr().out
+    context = admit(pending)
+    assert context.action == "continue"
+    assert f"Experiment: {context.name} (continue)" in capsys.readouterr().out
+
+
 def test_initial_pending_continue_new_and_exact_pin_use_durable_ids(pending):
     first = admit(pending)
     assert first.name == "stress_test_01"

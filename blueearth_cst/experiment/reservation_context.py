@@ -52,6 +52,7 @@ class ReservationContext:
     execute_generation: bool
     execute_model: bool
     request: dict | None
+    action: str | None = None
 
     def compare(self, retained: dict, requested: dict) -> None:
         """Compare requests, allowing only already-bound producer/selector changes."""
@@ -147,6 +148,7 @@ def admit_context_owned(
     note: str | None = None,
     recover: bool = False,
     preview: bool = False,
+    announce: bool = True,
 ) -> ReservationContext:
     """Select before any producer; callers already hold project-execution ownership."""
     _, settings = simulation_settings(config_path)
@@ -208,9 +210,11 @@ def admit_context_owned(
         from blueearth_cst.experiment.reservation_freeze import finish_freeze_owned
 
         finish_freeze_owned(recipe.parent.parent, recover=recover)
-    print(
-        f"Experiment: {context.name} ({selected.action}); project: {context.root}",
-        flush=True,
-    )
+    context.action = selected.action
+    if announce:
+        print(
+            f"Experiment: {context.name} ({context.action}); project: {context.root}",
+            flush=True,
+        )
     context.recheck()
     return context

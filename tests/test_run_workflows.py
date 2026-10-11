@@ -7,6 +7,7 @@ monkeypatches subprocess.run to capture the argv list -- no real snakemake runs.
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -31,11 +32,14 @@ def wrapper_only_admission(monkeypatch):
 
     from blueearth_cst.experiment import reservation_context
 
+    monkeypatch.setattr(rw, "_console_width", lambda: 240)
+
     monkeypatch.setattr(
         reservation_context,
         "admit_context_owned",
         lambda *_args, **_kwargs: SimpleNamespace(
             name="test",
+            action="continue",
             reservation_id=None,
             recheck=lambda: None,
             bind_selection=lambda: None,
@@ -492,6 +496,208 @@ def test_sensitive_args_are_redacted_from_console(tmp_path, capture_runs, capsys
 # --- contract (h): the wrapper's own console narration ----------------------
 
 
+def test_command_display_wraps_long_options_without_changing_argv():
+    argv = rw.build_command(
+        "analyze_projections",
+        "C:/cases/gabon-ntoum/project_config.yml",
+        3,
+        ["--config", "api_token=secret", "threshold=4"],
+    )
+    original = argv.copy()
+    assert rw._format_command(argv).splitlines() == [
+        "snakemake all -c 3 -s analyze_projections.smk",
+        "              --configfile C:/cases/gabon-ntoum/project_config.yml",
+        "              --keep-going",
+        "              --config api_token=<redacted> threshold=4",
+    ]
+    assert argv == original
+
+
+@pytest.mark.parametrize("width", [40, 60, 100])
+def test_long_command_display_fits_terminal_without_mutating_arguments(width):
+    argv = rw.build_command(
+        "analyze_projections",
+        "C:/cases/" + "very-long-path/" * 8 + "project config.yml",
+        3,
+        [],
+    )
+    original = argv.copy()
+    lines = rw._format_command(argv, width=width).splitlines()
+    assert all(len(line) <= width for line in lines)
+    path_lines = lines[lines.index("              --configfile") + 1 : -1]
+    assert all(line.startswith(" " * 18) for line in path_lines)
+    assert argv == original
+
+
+def test_narrow_settings_keep_continuations_in_the_value_column(monkeypatch):
+    monkeypatch.setattr(rw, "_console_width", lambda: 60)
+    value = "C:/cases/" + "regional-assessment/" * 4 + "project_config.yml"
+    block = rw._console_block("settings preview", [("settings", [("config", value)])])
+    lines = block.splitlines()
+    assert all(len(line) <= 60 for line in lines)
+    start = next(
+        index for index, line in enumerate(lines) if line.startswith("    config")
+    )
+    assert all(line.startswith(" " * 12) for line in lines[start + 1 :])
+
+
+def test_command_receipt_uses_owned_runners_and_preserves_quoted_arguments(tmp_path):
+    config = tmp_path / "project config.yml"
+    project = tmp_path / "project"
+    receipt = rw._write_command_receipt(
+        tmp_path / "invocation.json",
+        config_path=str(config),
+        project_dir=project,
+        flags={name: True for name in rw.WORKFLOW_ORDER},
+        cores=3,
+        extra=["--config", "api_token=secret", "label=O'Brien $value"],
+        simulation_targets=("all",),
+    )
+    text = receipt.read_text(encoding="utf-8")
+    for name in rw.WORKFLOW_ORDER:
+        assert f"scripts/run_workflow.py {name}" in text
+    assert "secret" not in text
+    assert "api_token=<redacted>" in text
+    assert str(config.resolve()) in text
+    if os.name == "nt":
+        assert "'label=O''Brien $value'" in text
+        assert " `\n" in text
+    else:
+        assert " \\\n" in text
+
+
+@pytest.mark.skipif(
+    os.name != "nt", reason="PowerShell quoting applies to Windows receipts"
+)
+def test_copyable_powershell_preserves_arguments_as_literal_ast_values(tmp_path):
+    argv = [
+        "pixi",
+        "run",
+        "python",
+        "scripts/run_workflow.py",
+        "analyze_climate",
+        "--config",
+        "C:/project files/config.yml",
+        "--",
+        "--config",
+        "label=O'Brien $value",
+        "expression=$(throw 'injected');literal`",
+        "api_token=fake-secret",
+    ]
+    command_path = tmp_path / "command.txt"
+    command_path.write_text(
+        rw._copyable_command(argv, powershell=True), encoding="utf-8"
+    )
+    parser_path = tmp_path / "parse-command.ps1"
+    parser_path.write_text(
+        "param([string]$CommandPath)\n"
+        "$tokens = $null; $parseErrors = $null\n"
+        "$tree = [System.Management.Automation.Language.Parser]::ParseFile($CommandPath, [ref]$tokens, [ref]$parseErrors)\n"
+        "if ($parseErrors.Count) { throw 'Command has parse errors' }\n"
+        "$command = $tree.Find({param($node) $node -is [System.Management.Automation.Language.CommandAst]}, $true)\n"
+        "@($command.CommandElements | ForEach-Object { $_.Value }) | ConvertTo-Json -Compress\n",
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        ["pwsh", "-NoProfile", "-File", str(parser_path), str(command_path)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert json.loads(result.stdout) == rw.sanitize_argv(argv)
+
+
+def test_runner_restores_warning_tracking_after_a_launch_exception(
+    tmp_path, capture_runs, monkeypatch, capsys
+):
+    from blueearth_cst.shared.run_log_core import note_warning
+
+    config = tmp_path / "config.yml"
+    project = tmp_path / "project"
+    flags = {name: "false" for name in rw.WORKFLOW_ORDER}
+    flags["analyze_climate"] = "true"
+    _write_cfg(config, flags, project)
+    monkeypatch.delenv(rw.RUN_WARNING_TALLY_ENV, raising=False)
+
+    def failed_child(*_args, **_kwargs):
+        note_warning("preflight")
+        raise OSError("child launch failed")
+
+    monkeypatch.setattr(rw, "run_project_child", failed_child)
+    with pytest.raises(OSError, match="child launch failed"):
+        rw.run(str(config), 3, [])
+    assert rw.RUN_WARNING_TALLY_ENV not in os.environ
+    assert "run_workflows FAILED with 1 warning" in capsys.readouterr().out
+    assert not list((project / "config/_engine/invocations").glob(".*.warnings"))
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_runner_warning_summary_counts_only_this_invocation(
+    tmp_path, capture_runs, capsys, monkeypatch, fails
+):
+    from blueearth_cst.shared.run_log_core import note_warning
+
+    config = tmp_path / "c.yml"
+    project = tmp_path / "project"
+    flags = {name: "false" for name in rw.WORKFLOW_ORDER}
+    flags.update(analyze_climate="true", analyze_projections="true")
+    _write_cfg(config, flags, project)
+    (project / "logs").mkdir(parents=True)
+    stale = project / "logs/.wf0_analyze_climate.log.tally"
+    stale.write_text("old-warning\n" * 20, encoding="utf-8")
+    original = rw.run_project_child
+    inherited = str(tmp_path / "outer-tally")
+    monkeypatch.setenv(rw.RUN_WARNING_TALLY_ENV, inherited)
+
+    def emit_warnings(command, **kwargs):
+        assert (
+            kwargs["env"][rw.RUN_WARNING_TALLY_ENV]
+            == os.environ[rw.RUN_WARNING_TALLY_ENV]
+        )
+        count = 1 if "analyze_climate.smk" in command else 2
+        for _ in range(count):
+            note_warning("fixture")
+        result = original(command, **kwargs)
+        return 1 if fails and count == 2 else result
+
+    monkeypatch.setattr(rw, "run_project_child", emit_warnings)
+    for _ in range(2):
+        assert rw.run(str(config), 3, []) == int(fails)
+        output = capsys.readouterr().out
+        assert (
+            f"run_workflows {'FAILED' if fails else 'done'} with 3 warnings" in output
+        )
+        assert _group_rows(output, "warnings") == {
+            "wf0": "analyze_climate      1",
+            "wf2": "analyze_projections  2",
+        }
+        assert os.environ[rw.RUN_WARNING_TALLY_ENV] == inherited
+        assert not list((project / "config/_engine/invocations").glob(".*.warnings"))
+    for path in _manifests(project):
+        assert json.loads(path.read_text(encoding="utf-8"))["warning_counts"] == {
+            "analyze_climate": 1,
+            "analyze_projections": 2,
+        }
+    assert not Path(inherited).exists()
+    assert stale.read_text(encoding="utf-8").count("old-warning") == 20
+
+
+def test_experiment_selection_is_inside_opening_settings(
+    tmp_path, capture_runs, capsys
+):
+    _, output, _ = _run_and_capture(
+        tmp_path, capsys, {name: "true" for name in rw.WORKFLOW_ORDER}
+    )
+    assert _group_rows(output, "settings")["experiment"] == "test (continue)"
+    assert "Experiment:" not in output
+
+
+def test_region_description_keeps_unhandled_configuration():
+    region = {"subbasin": [9.666, 0.4476], "uparea": 100, "strord": 4}
+    assert rw._format_region(region) == str(region)
+    assert rw._format_region({"bbox": [0, 1, 2, 3]}) == "{'bbox': [0, 1, 2, 3]}"
+
+
 def _group_raw_lines(output, label):
     """The raw lines under one ``  <label>`` group, indentation intact."""
     lines = output.splitlines()
@@ -596,7 +802,7 @@ def test_the_sequence_is_drawn_as_a_rail_of_nodes(tmp_path, capture_runs, capsys
     assert lines[lines.index("sequence") + 1] == ""
 
     disabled = lines.index(next(ln for ln in lines if "wf2 analyze_projections" in ln))
-    assert lines[disabled].startswith(rw._NODE_OFF)
+    assert lines[disabled].startswith("–")
     # The nodes are threaded, not merely stacked.
     assert rw._RAIL in lines[enabled + 1 : disabled]
 
@@ -650,7 +856,7 @@ def test_the_opening_block_states_the_basin_settings(tmp_path, capture_runs, cap
     rows = _group_rows(out, "settings")
     lines = _group_lines(out, "settings")
 
-    assert rows["region"] == "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+    assert rows["region"] == "subbasin outlet (9.6660, 0.4476); uparea >= 100 km²"
     assert rows["resolution"].startswith("0.00833 deg")
     # The delineated box is the region row CONTINUING -- one setting, stated and
     # then answered -- so it carries no key of its own and is aligned into the
@@ -660,7 +866,7 @@ def test_the_opening_block_states_the_basin_settings(tmp_path, capture_runs, cap
         "lon 9.6000 .. 9.8000, lat 0.4000 .. 0.6000  (approx 22 x 22 km)"
     )
     raw = _group_raw_lines(out, "settings")
-    assert raw[region_at + 1].index("lon ") == raw[region_at].index("{'subbasin'")
+    assert raw[region_at + 1].index("lon ") == raw[region_at].index("subbasin outlet")
 
 
 def test_the_bbox_says_it_is_absent_rather_than_deriving_one(
@@ -701,7 +907,7 @@ def test_the_basin_rows_are_omitted_when_the_config_declares_no_basin(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     rows = _group_rows(out, "settings")
-    assert set(rows) == {"project", "repository", "folder", "config"}
+    assert set(rows) == {"project", "experiment", "repository", "folder", "config"}
     # No orphaned continuation either: with no region asked for, there is
     # nothing whose absence is worth a line.
     assert "not delineated yet" not in out
@@ -849,6 +1055,7 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     # Rows under the project use the token the project row defines.
     assert wrote["logs"] == "<project>/logs/"
     assert wrote["invocation"].startswith("<project>/config/_engine/invocations/")
+    assert wrote["commands"].startswith("<project>/config/_engine/invocations/")
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()
@@ -968,21 +1175,10 @@ def test_a_no_op_invocation_says_so_rather_than_printing_empty_groups(
     assert "  sequence" not in out
 
 
-def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
+def test_console_unicode_is_limited_to_the_reviewed_sequence_markers(
     tmp_path, capture_runs, capsys
 ):
-    """The non-ASCII budget is exactly `●`, `○` and `│`, and nothing else.
-
-    A Windows locale is cp1252 and RAISES on the rest, so until 2026-09-17 this
-    console was ASCII throughout. The rail spends three characters of that
-    budget and `_enable_utf8_stdout` is what pays for them; every other line
-    stays inside cp1252, which is what keeps a redirected run legible where the
-    Snakemake children write through the locale codec into the same file.
-
-    Pinned as a SET, not as a `.isascii()` flip: the cost of the reconfiguration
-    is that nothing raises any more, so a stray glyph added later would reach a
-    real console with no test between it and the user.
-    """
+    """Pending nodes, rails and disabled markers have distinct reviewed roles."""
     # One disabled workflow, so the sequence renders a hollow node as well as a
     # filled one. WHICH one is disabled is immaterial here; it is
     # `analyze_projections` rather than `build_model` only because disabling the
@@ -995,6 +1191,7 @@ def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
     assert set(out) - set(map(chr, range(128))) == {
         rw._NODE_OFF,
         rw._RAIL,
+        rw._NODE_DISABLED,
     }
     # The rest of the console still clears the bar it cleared before the rail.
     for line in out.splitlines():

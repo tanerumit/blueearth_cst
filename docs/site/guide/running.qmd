@@ -128,6 +128,21 @@ If a run exhausts memory, lower `--cores` and rerun it. Larger basins and longer
 scenario collections need more memory and disk space; timings and resource use
 are recorded under `<project_dir>/benchmarks/`.
 
+The all-workflow console includes the selected experiment and its action in the
+opening settings, describes subbasin outlets with their upstream-area threshold
+in km², and distinguishes disabled workflows from pending ones. Long settings
+and command paths wrap within the terminal width; redirected output uses 100 columns.
+
+The final summary totals the toolbox warning rows counted during this invocation
+and lists the contributing workflows. WF3's total includes its source and generation
+phases. The `commands` row points to a `.commands.txt` receipt beside the invocation
+record. Copy its location-setting line and one workflow block to rerun through the
+supported runner using the current configuration and experiment selection. The receipt
+preserves complete arguments and uses PowerShell
+continuations on Windows or shell continuations elsewhere. Credential-like values
+are redacted; replace those placeholders before use. Hard-wrapped display paths
+are for reading and must not be pasted as commands.
+
 When a job fails, the console prints a prominent `FAILED` block naming its rule
 (with the toolbox rule ID when available), Snakemake job ID, and individual log
 paths alongside the original error details. Concurrent failures and

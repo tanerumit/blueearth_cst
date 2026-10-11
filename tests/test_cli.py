@@ -533,7 +533,12 @@ def test_banner_fallback_cannot_raise(snakefile):
     fallback prints is not pinned here.
     """
     lines = Path(SNAKEDIR, snakefile).read_text(encoding="utf-8").splitlines()
-    sites = [i for i, line in enumerate(lines) if "unavailable: {exc}" in line]
+    sites = [
+        i
+        for i, line in enumerate(lines)
+        if "run header unavailable: {exc}" in line
+        or "run summary unavailable: {exc}" in line
+    ]
     assert len(sites) == 2, (
         f"{snakefile}: expected the _summary and _header fallbacks, found {len(sites)}"
     )

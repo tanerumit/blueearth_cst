@@ -4017,6 +4017,23 @@ def test_warning_tally_lives_beside_the_merged_log_not_in_the_parts_dir():
     assert "_parts" not in path
 
 
+def test_runner_warning_tally_survives_workflow_phase_resets(tmp_path, monkeypatch):
+    from blueearth_cst.shared.run_log_core import RUN_WARNING_TALLY_ENV
+
+    runner_path = tmp_path / "runner.tally"
+    monkeypatch.setenv(RUN_WARNING_TALLY_ENV, str(runner_path))
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "unused"))
+    su.declare_warning_tally(tmp_path, "wf3.log")
+    su.note_warning("source")
+    su.declare_warning_tally(tmp_path, "wf3.log")
+    su.note_warning("generation")
+    assert su.warning_count() == 1
+    assert runner_path.read_text(encoding="utf-8").splitlines() == [
+        "source",
+        "generation",
+    ]
+
+
 def test_log_row_counts_a_warning_it_prints_and_not_one_it_suppresses(
     tmp_path, monkeypatch, capsys
 ):

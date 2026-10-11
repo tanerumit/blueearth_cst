@@ -28,6 +28,7 @@ from blueearth_cst.climate_analysis.source_map_fields import (
     prepare_source_map_fields,
 )
 from blueearth_cst.plotting.prepared_maps import MapFrame, MapScale
+from blueearth_cst.shared.output_capture import captured_output
 from blueearth_cst.shared.wf3_science import (
     DEFAULT_BASIN_INDEX,
     DEFAULT_HYDROGRAPHY,
@@ -263,9 +264,12 @@ def _orography_descriptor(catalogs: Sequence[Path]) -> Any:
     """Qualify HydroMT's descriptor; preserve its root-relative logical URI."""
     import hydromt
 
-    source = hydromt.DataCatalog(data_libs=[str(path) for path in catalogs]).get_source(
-        "era5_orography"
-    )
+    # Planning runs before rule-log capture, including runner preflights and DAG
+    # parsing. Hide routine catalog chatter while retaining warnings and failures.
+    with captured_output():
+        source = hydromt.DataCatalog(
+            data_libs=[str(path) for path in catalogs]
+        ).get_source("era5_orography")
     if (
         source.data_type != "RasterDataset"
         or source.driver.name != "raster_xarray"

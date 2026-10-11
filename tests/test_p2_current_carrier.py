@@ -70,6 +70,7 @@ def carrier_state(built, tmp_path, monkeypatch):
     [
         "default",
         "all",
+        "simulations_only",
         "metrics",
         "selected",
         "selected-run",
@@ -93,6 +94,12 @@ def test_current_carrier_operation_target_matrix(
         return 0
 
     monkeypatch.setattr(harness, "run_project_child", launch)
+    from blueearth_cst.experiment import metric_export
+
+    exports = []
+    monkeypatch.setattr(
+        metric_export, "export_selected_metrics", lambda *args: exports.append(args)
+    )
     if operation == "simulate-and-metrics":
         # This launch-target matrix has no producer catalog. Real admission is
         # covered by the context tests and the fresh all-five execution.
@@ -102,12 +109,14 @@ def test_current_carrier_operation_target_matrix(
             reservation_context,
             "admit_context_owned",
             lambda *args, **kwargs: SimpleNamespace(
+                name=root.name,
                 bind_selection=lambda: None,
                 environment=lambda: {"CST_EXPERIMENT_NAME": root.name},
             ),
         )
     targets = {
         "all": ["all"],
+        "simulations_only": ["simulations_only"],
         "metrics": ["metrics"],
         "selected": [plan["targets"]["gwr_group"]],
         "selected-run": [plan["targets"]["gwr_run"]],
@@ -129,7 +138,8 @@ def test_current_carrier_operation_target_matrix(
     if target != "default":
         argv += ["--target", *targets[target]]
     allowed = (
-        operation == "simulate-and-metrics" and target in {"default", "all"}
+        operation == "simulate-and-metrics"
+        and target in {"default", "all", "simulations_only"}
     ) or (
         operation == "metrics-only"
         and target in {"metrics", "selected", "selected-run"}
@@ -139,6 +149,11 @@ def test_current_carrier_operation_target_matrix(
         assert not list(invocation_dir.glob("*.json"))
         assert harness.main(argv) == 0
         assert len(calls) == 1
+        if target == "simulations_only":
+            assert exports == []
+        else:
+            assert len(exports) == 1
+            assert exports[0][0] == root
         command, kwargs = calls[0]
         assert command[:3] == [sys.executable, "-m", "snakemake"]
         expected = "all" if target == "default" else targets[target][0]
@@ -158,3 +173,4 @@ def test_current_carrier_operation_target_matrix(
             harness.main(argv)
         assert error.value.code == 2
         assert calls == []
+        assert exports == []

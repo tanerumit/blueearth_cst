@@ -78,6 +78,7 @@ def test_a_dry_run_writes_nothing_and_a_stale_response_is_refused(tmp_path):
     assert re.search(r"prepare_indicator_plan\s+1", output), output
     assert not (root / "_engine/metric_requests").exists()
     assert not (root / "_engine/metric_sets").exists()
+    assert not (root / "results/metric_sets").exists()
 
     # Refused before any job is scheduled. A corrupt publication's refusal is
     # pinned in-process by test_metric_plan_v2, at a fraction of the cost.
@@ -108,6 +109,18 @@ def test_a_published_set_is_reused_byte_for_byte_under_forceall(tmp_path):
         "group_members.csv",
         "group_metadata.csv",
     } <= {path.name for path in published}
+
+    tracking = root / "_engine/metric_sets/current.json"
+    assert tracking.is_file()
+    stable = root / "results/metric_sets/gwr_run_indicators.csv"
+    original = stable.read_bytes()
+    stable.unlink()
+    # No immutable rule output is missing: successful no-op reuse repairs the export.
+    marker = next((root / "_engine/metric_sets").glob("*/metrics.json"))
+    code, output = _simulate(experiment, "--target", str(marker))
+    assert code == 0, output
+    assert stable.read_bytes() == original
+    assert _published(root) == published
 
     code, output = _simulate(experiment, "--forceall")
     assert code == 0, output

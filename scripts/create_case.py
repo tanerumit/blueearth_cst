@@ -253,12 +253,13 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         "| `data/climate/projections/` | GCM change-factor tables under `summary/` and figures under `plots/` (WF2) |\n"
         "| `scenarios/<collection_id>/` | Generated climate series under `series/`, scenario and perturbation lookup tables (WF3) |\n"
         "| `experiments/<name>/hydrology/wflow/output/` | Retained model responses to the climate scenarios (WF4) |\n"
-        "| `experiments/<name>/results/metric_sets/<id>/` | Run/group indicator tables, `group_members.csv`, and `group_metadata.csv` (WF4) |\n"
+        "| `experiments/<name>/results/metric_sets/` | Current run/group indicator tables and group lookups; immutable copies under `<id>/` (WF4) |\n"
         "| `logs/` | Workflow messages and failure details |\n"
         "| `benchmarks/` | Step timings and resource use |\n\n"
         "Collection inventories are in `scenarios/_engine/collections/<collection_id>/collection.json`. "
         "Indicator definitions and source records are in "
         "`experiments/<name>/_engine/metric_sets/<id>/metrics.json`. "
+        "The current CSV export is tracked by `_engine/metric_sets/current.json` within the experiment. "
         "Check these records before treating results from an interrupted run as complete.\n"
     ).encode("utf-8")
     files[Path("notes.md")] = (

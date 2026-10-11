@@ -19,6 +19,11 @@ metric request creates another metric set from retained responses without
 rerunning Wflow. Published products are validated before reuse and are not
 silently overwritten.
 
+For a stable post-processing path, WF4 also exports the selected CSVs directly into
+`experiments/<experiment_name>/results/metric_sets/` after success, including reuse.
+The mutable export inventory is `_engine/metric_sets/current.json` within the experiment.
+Read these copies after the workflow finishes; the hashed metric sets remain immutable.
+
 Use the owned launchers: `scripts/run_workflows.py` for generation and
 `scripts/simulate_system.py` for simulation. The
 [WF3 workflow](workflow-generate-scenarios.qmd),

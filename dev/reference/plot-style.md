@@ -61,6 +61,9 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
 
 ## Color scales and colorbars
 
+- Check on-map colorbars and legends against the drawn map frame after layout settles, including titles
+  and tick labels. Shorten overflowing colorbars and shift keys inward as needed. Reduce categorical
+  legend text only when the full legend exceeds the available area; warn if adjustment cannot fit it.
 - For independent color scales, use the full light-to-dark palette range, including its darkest or
   lightest endpoint at the high end. Keep comparable limits when plots share a scale.
 - Use perceptually clear gradients that preserve visibility of intermediate values. For dataset-specific

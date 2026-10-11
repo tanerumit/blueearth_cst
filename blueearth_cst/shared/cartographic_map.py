@@ -53,6 +53,7 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.lines import Line2D
 from matplotlib.path import Path as MplPath
 from matplotlib.ticker import MaxNLocator
+from matplotlib.transforms import Bbox
 from shapely.geometry import box as shapely_box
 
 from blueearth_cst.shared import plot_style
@@ -2971,6 +2972,7 @@ def _draw_raster(
     colorbar_axes.tick_params(
         labelsize=FONT_SIZE_COLORBAR_TICK, length=TICK_LENGTH, pad=TICK_PAD
     )
+    return colorbar_axes
 
 
 def category_entries(raster, style):
@@ -3357,6 +3359,113 @@ def _absorb_right_margin(fig, panel_items, passes=6):
         fig.draw_without_rendering()
 
 
+def _fit_map_key(fig, ax, colorbar_axes, legend):
+    """Fit the drawn on-map key inside the frame after layout has settled.
+
+    Measure titles and tick labels as well as the bar. Shorten the bar before
+    moving it; only oversized categorical legends need smaller text.
+    """
+    for _ in range(3):
+        fig.draw_without_rendering()
+        renderer = fig.canvas.get_renderer()
+        frame = ax.get_window_extent(renderer)
+        margin_x, margin_y = _KEY_MARGIN * frame.width, _KEY_MARGIN * frame.height
+        left, right = frame.x0 + margin_x, frame.x1 - margin_x
+        bottom, top = frame.y0 + margin_y, frame.y1 - margin_y
+        changed = False
+        if colorbar_axes is not None:
+            drawn = colorbar_axes.get_tightbbox(renderer)
+            bar = colorbar_axes.get_window_extent(renderer)
+            overflow = max(0.0, drawn.y1 - top) + max(0.0, bottom - drawn.y0)
+            height = max(bar.height - overflow, 1.0)
+            if overflow > 0.5:
+                changed = True
+            # Shrinking around the bottom leaves the title lower while retaining
+            # the corner selected for the key. Shift any remaining edge excess.
+            x_shift = max(0.0, left - drawn.x0) - max(0.0, drawn.x1 - right)
+            y_shift = max(0.0, bottom - drawn.y0)
+            if abs(x_shift) > 0.5 or abs(y_shift) > 0.5:
+                changed = True
+            bounds = Bbox.from_bounds(
+                bar.x0 + x_shift, bar.y0 + y_shift, bar.width, height
+            ).transformed(ax.transAxes.inverted())
+            # Keep the inset attached to the parent during later savefig draws.
+            colorbar_axes.set_axes_locator(
+                lambda _axes, _renderer, bounds=bounds: bounds.transformed(
+                    ax.transAxes
+                ).transformed(fig.transFigure.inverted())
+            )
+        if legend is not None:
+            drawn = legend.get_window_extent(renderer)
+            scale = min(
+                1.0, (right - left) / drawn.width, (top - bottom) / drawn.height
+            )
+            if scale < 1:
+                # Leave room for font-pixel rounding when the legend is redrawn.
+                scale *= 0.98
+                title_font = legend.get_title().get_fontproperties().copy()
+                title_font.set_size(title_font.get_size_in_points() * scale)
+                anchor = ax.transAxes.inverted().transform((drawn.x0, drawn.y1))
+                # Rebuild so row spacing and handle sizes shrink with the text.
+                # Changing Text alone leaves the legend's packed rows too tall.
+                legend = ax.legend(
+                    handles=legend.legend_handles,
+                    labels=[text.get_text() for text in legend.get_texts()],
+                    title=legend.get_title().get_text(),
+                    title_fontproperties=title_font,
+                    fontsize=legend.get_texts()[0].get_fontsize() * scale,
+                    loc="upper left",
+                    bbox_to_anchor=anchor,
+                    borderaxespad=0.0,
+                    alignment="left",
+                    frameon=_LEGEND_FRAME,
+                    framealpha=_LEGEND_FRAME_ALPHA,
+                    edgecolor=COLOR_BASIN_OUTLINE,
+                    facecolor="white",
+                    borderpad=_LEGEND_BORDER_PAD,
+                    handlelength=_LEGEND_HANDLE_LENGTH,
+                )
+                legend.set_in_layout(False)
+                fig.draw_without_rendering()
+                renderer = fig.canvas.get_renderer()
+                drawn = legend.get_window_extent(renderer)
+                changed = True
+            x_shift = max(0.0, left - drawn.x0) - max(0.0, drawn.x1 - right)
+            y_shift = max(0.0, bottom - drawn.y0) - max(0.0, drawn.y1 - top)
+            if abs(x_shift) > 0.5 or abs(y_shift) > 0.5:
+                anchor = legend.get_bbox_to_anchor().transformed(
+                    ax.transAxes.inverted()
+                )
+                legend.set_bbox_to_anchor(
+                    (
+                        anchor.x0 + x_shift / frame.width,
+                        anchor.y0 + y_shift / frame.height,
+                        anchor.width,
+                        anchor.height,
+                    ),
+                    transform=ax.transAxes,
+                )
+                changed = True
+        if not changed:
+            return legend
+    fig.draw_without_rendering()
+    renderer = fig.canvas.get_renderer()
+    for item in (colorbar_axes, legend):
+        if item is None:
+            continue
+        drawn = item.get_tightbbox(renderer)
+        if (
+            drawn.x0 < left - 0.5
+            or drawn.x1 > right + 0.5
+            or drawn.y0 < bottom - 0.5
+            or drawn.y1 > top + 0.5
+        ):
+            warnings.warn(
+                "Map key still exceeds the frame after layout adjustment", stacklevel=2
+            )
+    return legend
+
+
 def _measure_key_inches(style, categories):
     """``(width, height)`` in inches of the on-map key, without the bar itself.
 
@@ -3720,12 +3829,13 @@ def _plot_raster_map(
         # Two encodings, one figure. A nominal raster took its whole legend
         # above and needs no colourbar; everything else takes the classified
         # ramp and the side panel's bar.
+        colorbar_axes = None
         if categories:
             _draw_categorical_raster(
                 ax, raster, categories, alpha=getattr(style, "alpha", 1.0)
             )
         else:
-            _draw_raster(
+            colorbar_axes = _draw_raster(
                 fig,
                 ax,
                 raster,
@@ -3843,6 +3953,8 @@ def _plot_raster_map(
         # right edge -- and it is local to `_draw_raster` anyway.
         if not key_on_map:
             _absorb_right_margin(fig, (locator_axes, legend))
+        else:
+            legend = _fit_map_key(fig, ax, colorbar_axes, legend)
         # Flush to the MAP AXES' left edge, not the sheet's -- one rule for
         # every figure family (`plot_style.align_caveat_to_plot_area`).
         align_caveat_to_plot_area(fig, ax)

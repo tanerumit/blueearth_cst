@@ -19,6 +19,7 @@ from blueearth_cst.experiment.generation_plan import (
     select_generation_plan,
 )
 from blueearth_cst.experiment.generation_publication import initialize_generation
+from blueearth_cst.experiment.scenario_export import export_scenario_collection
 from blueearth_cst.shared import invocation_history
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.output_capture import captured_output
@@ -147,6 +148,10 @@ def run_owned(
                 reservation_context.name,
             )
         if ready:
+            export_scenario_collection(
+                project_root,
+                project_root / plan["outputs"]["record_root"] / "collection.json",
+            )
             if history_pair is not None:
                 history_path, history = history_pair
                 history["plan"] = {
@@ -200,7 +205,13 @@ def run_owned(
     }
     if reservation_context is not None:
         reservation_context.recheck()
-    return run_project_child(command, cwd=REPO_ROOT, env=generation_env)
+    result = run_project_child(command, cwd=REPO_ROOT, env=generation_env)
+    if result == 0:
+        export_scenario_collection(
+            project_root,
+            project_root / plan["outputs"]["record_root"] / "collection.json",
+        )
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:

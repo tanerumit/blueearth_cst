@@ -17,10 +17,14 @@ use a directory outside the toolbox checkout.
   scenarios/_engine/requests/<request_id>/  scenario generation settings
   scenarios/_engine/collections/<id>/
     collection.json              collection inventory
-  scenarios/<id>/                generated climate series
+  scenarios/_engine/current.json  current scenario export identity and file inventory
+  scenarios/                     stable copies of the current collection
     scenario_run_lookup.csv      generated series and their relationships
     perturbation_lookup.csv      monthly temperature and precipitation changes
     series/<run_id>.nc            generated climate series, e.g. run_01.nc
+    config/                      copied creator configuration
+    weathergenr/                 copied generator settings, products and diagnostics
+  scenarios/<id>/                immutable collection, including original tables and series
   experiments/<name>/
     _engine/simulation.json      simulation settings used
     hydrology/wflow/output/      retained model responses
@@ -76,6 +80,21 @@ indicator set as complete.
 The runners record each attempt under `config/runs/_engine/invocations/`,
 including failed runs and dry runs. These records help diagnose a run; they do
 not establish that its results are complete.
+
+## Reading scenario exports
+
+The stable `scenarios/` path mirrors every file from the selected hashed collection, including the lookup
+CSVs, `series/`, `config/`, and `weathergenr/` trees. Successful WF3 generation or reuse refreshes the copies.
+`scenarios/_engine/current.json` records the collection ID, revision, source marker, and exported file
+checksums. WF4 continues consuming an explicitly selected immutable collection. Copied configuration and
+provenance retain their original contents and references to the hashed collection.
+
+The series copies require additional disk space. Files that already match are not recopied. Read the
+export after workflow completion: updates replace individual files, not the whole set at once. Failed
+generation or validation leaves the previous export intact; ordinary export I/O failures roll back
+replaced files. Dry-runs do not refresh it. Only previously exported files are removed when absent from
+the new collection; unrelated files remain, and untracked filename collisions are refused. Rerun WF3
+to populate the stable paths in an existing project.
 
 ## Reading projection diagnostics
 

@@ -1,10 +1,10 @@
 ---
 title: Add local-input E2E tests for all five workflows
 type: todo-item
-status: backlog
+status: active
 effort: 2
 area: validation
-queue: 9
+queue: 1
 created: 2026-10-12
 updated: 2026-10-12
 ---
@@ -38,6 +38,24 @@ Existing gates apply until that policy changes.
 
 Speedup is inferred, not measured; Julia startup and simulation costs remain. Reuse sample-bundle
 staging where appropriate.
+
+## Current evidence
+
+Staging prerequisite committed as `a52e398c`: preserve FlatGeobuf outputs and optionally retain empty
+vector layers. Checks: 63 staging/incremental/CMIP tests passed; the remaining worker-pool test passed
+with named-pipe access. `pixi run lint` and `pixi run format-check` passed. No local E2E mode exists yet.
+
+The pinned catalog requires five FGB sources; the existing local mirror uses older GPKG paths.
+Stage exact pinned sources with unchanged adapters, full 2000–2016 history and seven native ERA5
+variables. Confirm reservoir overlap against the pinned FGB before claiming no remote JRC access.
+
+All four existing CMIP raw slices match current catalog/index components against their source
+polygon, but fail the standing rapid polygon fingerprint. Bounds agree; symmetric-difference area
+is about 3.15e-15 degree². Do not restamp caches or reuse generated regions. Check fresh delineation,
+then restage if required. Recipe and coverage probes remain in task-owned scratch in session-1.
+
+The fresh acquisition-inclusive profile on `c438df08` is running; timing and speedup are unmeasured.
+Next: complete that profile and check its region fingerprint before staging the matched local bundle.
 
 ## Refs
 

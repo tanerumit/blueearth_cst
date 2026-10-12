@@ -114,13 +114,13 @@ one directory per scenario collection and one per experiment, and a single slot
 here would be claimed by whichever ran last and would describe the others
 wrongly.
 
-Their snapshot is therefore written **inside the artifact it describes**, under
-the same name:
+Their frozen configuration archive is therefore written **inside the artifact
+it describes**:
 
-| workflow | its `composed_config.yml` |
+| workflow | configuration archive |
 |---|---|
-| `generate_scenarios` | `scenarios/collections/<id>/composed_config.yml` |
-| `simulate_system` | `experiments/<name>/config/composed_config.yml` |
+| `generate_scenarios` | `scenarios/_engine/data/<id>/config/` |
+| `simulate_system` | `experiments/<name>/config/` |
 
 Two collections mean two snapshots, each true of its own. Both are sealed with
 the artifact, so neither can be edited once results exist.

@@ -528,7 +528,7 @@ def build_project_tree_rules(
     # run-record rows use -- one constant, so a tree written by the engine and a
     # tree this tool accepts cannot disagree about name length.
     digest = _hex
-    collection = rf"scenarios/{digest}"
+    collection = rf"scenarios/(?:_engine/data/)?{digest}"
     for leaf in (
         "config/run_record.yml",
         "scenario_run_lookup.csv",

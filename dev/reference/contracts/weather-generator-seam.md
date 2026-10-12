@@ -220,7 +220,7 @@ do not. The magnitude witness is local CHIRPS evidence; tests cover the shared
 
 ## WG-3 — weathergenr config surface
 
-- **path pattern:** `scenarios/<collection_id>/weathergenr/weather_generation_input.yml` —
+- **path pattern:** `scenarios/_engine/data/<collection_id>/weathergenr/weather_generation_input.yml` —
   **one file** since C29.
 - **producer:** wrapper step 3.06 `prepare_weather_generator_settings`, using
   `generation_plan.py` and `prepare_weathergen_config.py`.

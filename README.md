@@ -219,11 +219,13 @@ $ pixi run python scripts/run_workflows.py \
 
 ### Retained results and metrics-only
 
-Collections live under `scenarios/<collection_id>/`, selected by the
+Immutable collection data live under `scenarios/_engine/data/<collection_id>/`, selected by the
 exact `scenarios/_engine/requests/<generation_request_id>/request.json` or an explicit manifest.
 Simulation never creates missing collections. A missing or stale plan names the
 generation command required to resolve it; no directory scan or latest fallback
-is used.
+is used. The current collection is exported directly to `scenarios/` for inspection.
+Existing collections at `scenarios/<collection_id>/` remain readable and reusable in place;
+new runs no longer create that visible hashed directory.
 
 Each `experiments/<experiment_name>/` retains `_engine/simulation.json`, its native
 `hydrology/wflow/output/<run_id>.csv` responses and

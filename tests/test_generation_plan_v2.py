@@ -143,11 +143,11 @@ def test_candidate_intent_uses_wf3_only_seed_projection(tmp_path, monkeypatch):
     assert plan["outputs"]["temporary_members"] == [
         {
             "run_id": "run_01",
-            "path": f"scenarios/{intent['collection_id'][:12]}/weathergenr/output/run_01.nc",
+            "path": f"scenarios/_engine/data/{intent['collection_id'][:12]}/weathergenr/output/run_01.nc",
         },
         {
             "run_id": "run_06",
-            "path": f"scenarios/{intent['collection_id'][:12]}/weathergenr/output/run_06.nc",
+            "path": f"scenarios/_engine/data/{intent['collection_id'][:12]}/weathergenr/output/run_06.nc",
         },
     ]
     assert generation_plan.publish_plan_pointer(settings, plan) == (path, digest)
@@ -165,3 +165,56 @@ def test_candidate_intent_uses_wf3_only_seed_projection(tmp_path, monkeypatch):
     data_root.mkdir(parents=True)
     with pytest.raises(ValueError, match="partial collection namespace"):
         generation_plan.select_generation_plan(settings, intent)
+
+
+@pytest.mark.parametrize("legacy_storage", [False, True], ids=["engine-data", "legacy"])
+def test_reuse_preserves_creator_storage_for_every_output(tmp_path, legacy_storage):
+    from blueearth_cst.experiment.content_identity import read_canonical_json
+    from tests._v2_experiment import build_v2_experiment
+
+    case = build_v2_experiment(tmp_path, legacy_storage=legacy_storage)
+    marker = read_canonical_json(case.collection_marker)
+    intent = read_canonical_json(
+        case.collection_marker.parent / "collection_intent.json"
+    )
+    settings = {
+        "project_dir": case.project,
+        "request": {"schema_version": "generation-request/2", "settings": {}},
+        "n_realizations": 1,
+        "n_design_points": 1,
+        "capacity": 2,
+    }
+    before = {
+        path: path.read_bytes() for path in case.project.rglob("*") if path.is_file()
+    }
+    plan = generation_plan.select_generation_plan(settings, intent)
+    assert plan["decision"] == "reuse_ready"
+    assert plan["collection_id"] == intent["collection_id"]
+    assert plan["collection_revision"] == marker["collection_revision"]
+    outputs = plan["outputs"]
+    data = marker["data_root"]
+    assert outputs["data_root"] == data
+    for name, suffix in (
+        ("archive_root", "config"),
+        ("generator_input", "weathergenr/weather_generation_input.yml"),
+        ("scenario_run_lookup", "scenario_run_lookup.csv"),
+        ("perturbation_lookup", "perturbation_lookup.csv"),
+        ("diagnostic_root", "weathergenr/evaluation/plots"),
+    ):
+        assert outputs[name] == f"{data}/{suffix}"
+    for group in ("series", "temporary_members", "date_products"):
+        assert outputs[group]
+        assert all(item["path"].startswith(f"{data}/") for item in outputs[group])
+    assert outputs["series"][0]["path"] == marker["series"][0]["file"]["path"]
+    assert before == {
+        path: path.read_bytes() for path in case.project.rglob("*") if path.is_file()
+    }
+
+
+def test_partial_legacy_namespace_is_not_adopted(tmp_path):
+    from tests.test_scenario_collection_v2 import collection_intent_v2
+
+    intent = collection_intent_v2()
+    (tmp_path / "scenarios" / intent["collection_id"][:12]).mkdir(parents=True)
+    with pytest.raises(ValueError, match="partial collection namespace"):
+        generation_plan.select_generation_plan({"project_dir": tmp_path}, intent)

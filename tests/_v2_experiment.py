@@ -351,7 +351,9 @@ def _archive(
     publish_archive(project, owner_id[:12], target, record, payloads)
 
 
-def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
+def _publish_collection(
+    project: Path, config: Path, capacity: int, *, legacy_storage: bool = False
+) -> Path:
     """Write a ready scenario-collection/3 the way WF3 publication does."""
     from blueearth_cst.experiment.content_identity import (
         atomic_record,
@@ -364,7 +366,12 @@ def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
     intent = collection_intent_v2(capacity)
     segment = identity_segment(intent["collection_id"], "collection_id")
     record = project / "scenarios/_engine/collections" / segment
-    data = project / "scenarios" / segment
+    data_relative = (
+        f"scenarios/{segment}"
+        if legacy_storage
+        else f"scenarios/_engine/data/{segment}"
+    )
+    data = project / data_relative
     record.mkdir(parents=True)
     (data / "series").mkdir(parents=True)
     (data / "weathergenr/output").mkdir(parents=True)
@@ -390,7 +397,7 @@ def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
         PROJECTION,
         "scenario_collection",
         intent["collection_id"],
-        f"scenarios/{segment}/config",
+        f"{data_relative}/config",
         generated=[products[2]],
     )
     atomic_record(record / "collection_intent.json", intent)
@@ -432,7 +439,7 @@ def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
         "status": "ready",
         "collection_id": intent["collection_id"],
         "collection_revision": "0" * 64,
-        "data_root": f"scenarios/{segment}",
+        "data_root": data_relative,
         "intent": file_reference(
             record / "collection_intent.json", "record_directory", record
         ),
@@ -607,6 +614,7 @@ def build_v2_experiment(
     *,
     capacity: int = 2,
     publish: bool = True,
+    legacy_storage: bool = False,
 ) -> V2Experiment:
     """Build one retained v2 experiment under ``base``.
 
@@ -619,7 +627,9 @@ def build_v2_experiment(
     root = project / "experiments" / EXPERIMENT
     root.mkdir(parents=True)
     config = _write_configs(base, project)
-    marker = _publish_collection(project, config, capacity)
+    marker = _publish_collection(
+        project, config, capacity, legacy_storage=legacy_storage
+    )
     _freeze_simulation(project, config, root, marker, base, responses)
     _write_native_runs(root, responses)
     if publish:

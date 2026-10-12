@@ -251,7 +251,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         "| `data/climate/historical/` | Historical climate series, analysis plots, and source comparisons (WF0) |\n"
         "| `models/hydrology/wflow/` | Hydrological model, historical run, and evaluation (WF1) |\n"
         "| `data/climate/projections/` | GCM change-factor tables under `summary/` and figures under `plots/` (WF2) |\n"
-        "| `scenarios/` | Full current collection: lookups, `series/`, `config/`, `weathergenr/`; immutable copies under `<collection_id>/` (WF3) |\n"
+        "| `scenarios/` | Full current collection: lookups, `series/`, `config/`, `weathergenr/`; immutable copies under `_engine/data/<collection_id>/` (WF3) |\n"
         "| `experiments/<name>/hydrology/wflow/output/` | Retained model responses to the climate scenarios (WF4) |\n"
         "| `experiments/<name>/results/metric_sets/` | Current run/group indicator tables and group lookups; immutable copies under `<id>/` (WF4) |\n"
         "| `logs/` | Workflow messages and failure details |\n"

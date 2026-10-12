@@ -262,6 +262,11 @@ COVERED: dict[str, list[str]] = {
     ],
 }
 
+COVERED["collections"].extend(
+    rel.replace(f"scenarios/{PK}/", f"scenarios/_engine/data/{PK}/", 1)
+    for rel in list(COVERED["collections"])
+    if rel.startswith(f"scenarios/{PK}/")
+)
 ALL_COVERED = [(section, rel) for section, rows in COVERED.items() for rel in rows]
 
 
@@ -321,6 +326,9 @@ UNDECLARED = [
     f"scenarios/{PK}/series/run_01.tmp.nc",
     f"scenarios/{PK}/weathergenr/output/unknown_dates.csv",
     f"scenarios/{PK[:-1]}/series/run_01.nc",
+    f"scenarios/_engine/data/{PK}/unknown.csv",
+    f"scenarios/_engine/data/{PK}/series/run_01.tmp.nc",
+    f"scenarios/_engine/data/{PK[:-1]}/series/run_01.nc",
     f"scenarios/_engine/requests/{PK}/{'a' * 63}.json",
     f"scenarios/_engine/requests/{PK}/initializations/invocation.json",
     f"scenarios/collections/{PK}/collection.json",

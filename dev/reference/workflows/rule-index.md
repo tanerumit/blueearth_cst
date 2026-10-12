@@ -177,7 +177,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
 | `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
-| `<wg>/` | `<project>/scenarios/<collection_id>/weathergenr/` (current products; predecessor captures use `<exp>/climate/weathergenr/`) |
+| `<wg>/` | `<project>/scenarios/_engine/data/<collection_id>/weathergenr/` |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
 
 ---
@@ -969,10 +969,12 @@ it moved up one number in the 2026-09-24 rule-naming migration.
 
 Requests and plans live under `scenarios/_engine/requests/<request>/`. A
 collection's scientific records live under
-`scenarios/_engine/collections/<collection>/`, and its user-facing products under
-`scenarios/<collection>/`: `series/`, `scenario_run_lookup.csv`,
+`scenarios/_engine/collections/<collection>/`, and its immutable products under
+`scenarios/_engine/data/<collection>/`: `series/`, `scenario_run_lookup.csv`,
 `perturbation_lookup.csv`, `weathergenr/` and the creator `config/` archive. The
 frozen plan identifies the collection; consumers never scan for the latest match.
+The current products are exported directly to `scenarios/`. Existing collections at
+`scenarios/<collection>/` remain readable and reusable without migration.
 
 # WF4 — system simulation (`simulate_system.smk`)
 

@@ -54,6 +54,8 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
   Reduce panel widths as needed while retaining the intended overall canvas width.
 - Place slope annotations far enough from their trend lines to avoid overlap. Position point labels to
   avoid overlaps with other labels and underlying map features; use the standard label background.
+- Climate and spatial maps prefer each location's `station_name`; missing or blank labels fall back
+  to `wflow_id`. Preserve IDs in data products and model output columns.
 - Use contrasting point colors over map layers. For scatter plots, use partly transparent fills and
   darker outlines so points remain visible. The reviewed enlarged scatter points use area 36 pt²,
   alpha 0.7 and an approximately 0.7 pt dark edge; adapt where the plot density requires it.

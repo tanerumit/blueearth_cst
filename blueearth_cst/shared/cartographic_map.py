@@ -56,6 +56,7 @@ from matplotlib.ticker import MaxNLocator
 from matplotlib.transforms import Bbox
 from shapely.geometry import box as shapely_box
 
+from blueearth_cst.plotting.location_labels import location_label
 from blueearth_cst.shared import plot_style
 
 # The toolbox-wide page/typography settings. Bound HERE, in this module's
@@ -150,7 +151,7 @@ FONT_SIZE_TICK = 6.0  #: the coordinate graticule labels
 FONT_SIZE_LEGEND = 6.0  #: legend entries and the legend's own title
 FONT_SIZE_COLORBAR_LABEL = 6.5  #: the colourbar's title
 FONT_SIZE_COLORBAR_TICK = 5.5  #: the numbers beside the colourbar
-FONT_SIZE_GAUGE_LABEL = 5.5  #: the wflow_id beside each gauge marker
+FONT_SIZE_GAUGE_LABEL = 5.5  #: the location label beside each gauge marker
 FONT_SIZE_SCALE_BAR = 5.5  #: the 0 / 2.5 / 5 km numbers
 FONT_SIZE_NORTH_ARROW = 7.0  #: the "N"
 
@@ -738,12 +739,8 @@ DEM_INTERPOLATION = "none"
 # These three are the DEFAULTS of ``plot_basin_map`` parameters, so a caller
 # overrides them per call rather than by patching the module.
 
-#: Gauge marker label. ``wflow_id`` is what the wflow output columns
-#: (``Q_101``) and the observation file's rows are keyed on, so it is the label
-#: that lets a reader join this map to a hydrograph. ``station_name`` is longer,
-#: collides more, and answers a question the caption can answer instead — swap
-#: it here if the names matter more than the join.
-GAUGE_LABEL_COLUMN = "wflow_id"
+#: Prefer human-readable location labels; missing or blank names use wflow_id.
+GAUGE_LABEL_COLUMN = "station_name"
 
 #: Clip the river network to the basin before drawing it. The engine-neutral
 #: river layer is the REGIONAL network, so unclipped it runs well past the
@@ -3133,11 +3130,14 @@ def _draw_points(ax, layer, facecolor, marker, label_column=None, zorder=Z_MARKE
         linewidth=WIDTH_MARKER_EDGE,
         zorder=zorder,
     )
-    if label_column is None or label_column not in layer.columns:
+    if label_column is None:
         return
-    layer.apply(
-        lambda row: ax.annotate(
-            text=str(row[label_column]),
+    for _, row in layer.iterrows():
+        text = location_label(row, label_column)
+        if not text:
+            continue
+        ax.annotate(
+            text=text,
             xy=row.geometry.coords[0],
             xytext=GAUGE_LABEL_OFFSET,
             textcoords="offset points",
@@ -3148,9 +3148,7 @@ def _draw_points(ax, layer, facecolor, marker, label_column=None, zorder=Z_MARKE
             path_effects=[
                 pe.withStroke(linewidth=HALO_WIDTH_GAUGE_LABEL, foreground=COLOR_HALO)
             ],
-        ),
-        axis=1,
-    )
+        )
 
 
 def _present(layer):
@@ -3647,7 +3645,8 @@ def _plot_raster_map(
         bounding box plus proportional padding. Set it to frame several basins
         alike, or to crop.
     gauge_label_column : str or None
-        Column annotated beside each gauge; ``None`` draws the markers unlabelled.
+        Column annotated beside each gauge; station names fall back to Wflow IDs
+        when absent or blank. ``None`` draws the markers unlabelled.
     river_order_column : str or None
         Numeric column scaling the river widths; ``None`` or an absent column
         draws every reach at ``RIVER_WIDTH_UNIFORM``.

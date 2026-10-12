@@ -204,6 +204,8 @@ def test_the_hydrograph_is_drawn_without_observations(tmp_path):
 
 
 def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
+    import json
+
     simulated = _plottable()
     observed = simulated * 1.1
     metrics = pd.DataFrame(
@@ -217,6 +219,7 @@ def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
         plot_dir=str(tmp_path),
         metrics=metrics,
         signatures=True,
+        caveat="Synthetic observations for demonstration.",
         log=lambda m: None,
     )
     written = {path.name for path in tmp_path.glob("*.png")}
@@ -226,6 +229,15 @@ def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
         "signatures_lows_1010.png",
         "performance_1010.png",
     }
+    captions = json.loads(
+        (tmp_path / "_engine" / "figure_captions.json").read_text(encoding="utf-8")
+    )["figures"]
+    assert set(captions) == written
+    for kind in ("peaks", "lows"):
+        caption = captions[f"signatures_{kind}_1010.png"]["caption"]
+        assert "Synthetic observations for demonstration." in caption
+        assert all(f"{letter})" in caption for letter in "abc")
+        assert "auto_01" in caption
 
 
 def test_without_observations_only_the_hydrograph_is_drawn_and_it_is_reported(tmp_path):

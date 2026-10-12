@@ -138,6 +138,13 @@ line legend inside the upper-left of the scatter, below its panel label. Keep ta
 `performance_metrics.csv`. Use common typography, soft frames/grids and a concise publication caption
 that explains each labelled panel, without displayed titles or figure footers.
 
+WF1 peaks and lows signature sheets use the same typography, soft frames, horizontal grids and
+borderless label backgrounds. Retain the three-panel layout, inside panel letters and a stacked
+inside legend for the daily series. Frequency and daily axes show discharge units alone; scatter
+axes retain observed/simulated labels to distinguish their roles. Use translucent points with dark
+edges. Station identity, selected year, methods and caveats belong in the station caption inventory,
+without displayed titles or figure footers. Preserve the existing annual extremes and plotting positions.
+
 WF1 hydrological output figures default to two single-axis products per variable: a basin-average
 annual series and seasonal cycle. Optional subbasin figures repeat both products individually, never
 as panels. These figures have no displayed titles. Reconstruct the basin's native grid-cell mean from

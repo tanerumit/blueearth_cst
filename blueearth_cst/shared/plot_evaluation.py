@@ -167,91 +167,11 @@ class Station:
 # ---------------------------------------------------------------------------
 
 
-def _rc():
-    """The rcParams every evaluation sheet is drawn under.
-
-    The page settings come from ``plot_style`` — the same 180 mm and 600 dpi the
-    maps and the climate figures use. What is added here is picture-level: a
-    grid (a hydrograph is read by value, unlike a map). Panel identities
-    are annotations, following the toolbox convention of no titles.
-    """
-    params = plot_style.rcparams(axes_linewidth=0.6)
-    params.update(
-        {
-            "axes.grid": True,
-            "grid.color": COLOR_GRID,
-            "grid.linewidth": 0.4,
-            "axes.edgecolor": "0.3",
-            "figure.facecolor": "white",
-        }
-    )
-    return params
-
-
 def _figure_size(height_mm):
     return (
         plot_style.FIGURE_WIDTH_MM / plot_style.MM_PER_INCH,
         height_mm / plot_style.MM_PER_INCH,
     )
-
-
-def _panel(ax, letter, title):
-    """Identify one panel with a letter; retain its quantity for the caption key."""
-    ax._evaluation_panel_caption = f"{letter}) {title}"
-    ax.annotate(
-        f"{letter.rstrip(')')})",
-        (0.01, 1.02),
-        xycoords="axes fraction",
-        va="bottom",
-        fontsize=plot_style.FONT_SIZE_BASE,
-        bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8},
-    )
-
-
-def _identity(fig, station, subject, legend_ax=None):
-    """Station identity footnote and one figure-level legend.
-
-    A single legend rather than one per panel: every panel on a sheet draws the
-    same two series, so repeating the key is noise. ``legend_ax`` is whichever
-    axes carries both handles.
-    """
-    import textwrap
-
-    key = "; ".join(
-        ax._evaluation_panel_caption
-        for ax in fig.axes
-        if hasattr(ax, "_evaluation_panel_caption")
-    )
-    fig.supxlabel(
-        f"{station.caption} · {subject}\n{textwrap.fill(key, width=110)}",
-        fontsize=plot_style.FONT_SIZE_CAVEAT,
-        color=plot_style.COLOR_CAVEAT,
-        wrap=True,
-    )
-    if legend_ax is not None:
-        handles, labels = legend_ax.get_legend_handles_labels()
-        if handles:
-            fig.legend(
-                handles,
-                labels,
-                loc="outside upper right",
-                ncols=2,
-                frameon=False,
-                fontsize=plot_style.FONT_SIZE_LEGEND,
-            )
-
-
-def _caveat(fig, text):
-    if text:
-        identity = getattr(fig, "_supxlabel", None)
-        if identity is not None:
-            text = f"{identity.get_text()}\n{text}"
-        fig.supxlabel(
-            text,
-            fontsize=plot_style.FONT_SIZE_CAVEAT,
-            color=plot_style.COLOR_CAVEAT,
-            wrap=True,
-        )
 
 
 def _draw_series(ax, simulated, observed, x_sim=None, x_obs=None):
@@ -290,24 +210,6 @@ def _reference_line(ax, high):
     )
     ax.set_xlim(0, high)
     ax.set_ylim(0, high)
-
-
-def _score_box(ax, text):
-    """A boxed corner label, rather than text floating at a fixed fraction.
-
-    Its predecessor placed scores at hard-coded axes fractions (0.2, 0.7) and
-    (0.5, 0.05), which lands on the data as soon as the data changes shape.
-    """
-    ax.text(
-        0.04,
-        0.96,
-        text,
-        transform=ax.transAxes,
-        va="top",
-        ha="left",
-        fontsize=plot_style.FONT_SIZE_LEGEND,
-        bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.75", lw=0.4),
-    )
 
 
 def _month_axis(ax):
@@ -357,6 +259,8 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
     """
     import numpy as np
 
+    from blueearth_cst.plotting import fundamentals as artists
+
     count = simulated.time.size
     b = 1.0 - 2.0 * _PLOTTING_POSITION_A
     probability = (np.arange(1, count + 1.0) - _PLOTTING_POSITION_A) / (count + b)
@@ -374,15 +278,20 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
         reduced,
         simulated.sortby(simulated, ascending=ascending),
         "o",
-        ms=2.8,
+        ms=artists.MS_POINT,
         mfc=COLOR_SIMULATED,
-        mec="none",
+        mec=COLOR_NEUTRAL,
+        mew=0.5,
+        alpha=0.7,
         label="simulated",
     )
+    # Reserve headroom for the return-period labels without covering the largest mark.
+    bottom, top = ax.get_ylim()
+    ax.set_ylim(bottom, top + 0.22 * (top - bottom))
     top = ax.get_ylim()[1]
     for period in RETURN_PERIODS:
         position = -np.log(-np.log(1 - 1.0 / period))
-        ax.axvline(position, color="0.75", lw=0.5, zorder=1)
+        ax.axvline(position, color=artists.BOUNDARY, lw=0.5, alpha=0.7, zorder=1)
         ax.text(
             position,
             top,
@@ -390,9 +299,9 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
             rotation=90,
             va="top",
             ha="right",
-            fontsize=plot_style.FONT_SIZE_CAVEAT,
-            color="0.45",
-            bbox=dict(boxstyle="square,pad=0.12", fc="white", ec="none", alpha=0.85),
+            fontsize=artists.FS_NOTE,
+            color=artists.MUTED,
+            bbox=artists.LABEL_BOX,
         )
     ax.set_xlabel("Gumbel reduced variate (–)")
     ax.set_ylabel(ylabel)
@@ -913,6 +822,8 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
     import matplotlib.pyplot as plt
     from matplotlib import gridspec, rc_context
 
+    from blueearth_cst.plotting import fundamentals as artists
+
     if kind not in ("peaks", "lows"):
         raise ValueError(f"kind={kind!r}; expected 'peaks' or 'lows'")
     peaks = kind == "peaks"
@@ -921,8 +832,12 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
     wet, dry = wettest_and_driest_year(simulated)
     year = wet if peaks else dry
 
-    with rc_context(_rc()):
+    with rc_context(artists.STYLE):
         fig = plt.figure(figsize=_figure_size(HEIGHT_EXTREMES_MM), layout="constrained")
+        fig.get_layout_engine().set(
+            w_pad=artists.OUTER_PAD_X_MM * artists.MM,
+            h_pad=artists.OUTER_PAD_Y_MM * artists.MM,
+        )
         grid = gridspec.GridSpec(2, 2, figure=fig, height_ratios=[1.32, 1.0])
         ax_frequency = fig.add_subplot(grid[0, 0])
         ax_scatter = fig.add_subplot(grid[0, 1])
@@ -932,20 +847,20 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
             ax_frequency,
             obs_extreme,
             sim_extreme,
-            "annual max Q (m$^3$ s$^{-1}$)" if peaks else "NM7Q (m$^3$ s$^{-1}$)",
+            "m³ s⁻¹",
             ascending=peaks,
         )
-        _panel(ax_frequency, "a", "Flood frequency" if peaks else "Low-flow frequency")
 
-        high = float(max(obs_extreme.max(), sim_extreme.max()) * 1.08)
+        high = float(max(obs_extreme.max(), sim_extreme.max()) * 1.2)
         ax_scatter.plot(
             obs_extreme,
             sim_extreme,
             "o",
-            ms=3.2,
+            ms=artists.MS_POINT,
             mfc=COLOR_SIMULATED,
-            mec="white",
-            mew=0.4,
+            mec=COLOR_NEUTRAL,
+            mew=0.5,
+            alpha=0.7,
             ls="none",
             zorder=2,
         )
@@ -965,29 +880,127 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
                 label="period mean",
             )
             ax_scatter.legend(
-                loc="lower right",
-                frameon=False,
-                fontsize=plot_style.FONT_SIZE_CAVEAT,
+                loc="upper right",
+                frameon=True,
+                facecolor="white",
+                edgecolor="none",
+                framealpha=0.88,
                 handletextpad=0.3,
             )
         _reference_line(ax_scatter, high)
-        _panel(ax_scatter, "b", "Annual maximum" if peaks else "Annual 7-day minimum")
-        ax_scatter.set_xlabel("observed (m$^3$ s$^{-1}$)")
-        ax_scatter.set_ylabel("simulated (m$^3$ s$^{-1}$)")
-        _score_box(ax_scatter, f"R$^2$ = {r_squared(obs_extreme, sim_extreme):.2f}")
+        # Keep zero-flow points fully visible at the frame.
+        ax_scatter.set_xlim(-0.025 * high, high)
+        ax_scatter.set_ylim(-0.025 * high, high)
+        ax_scatter.set_xlabel("Observed (m³ s⁻¹)")
+        ax_scatter.set_ylabel("Simulated (m³ s⁻¹)")
+        ax_scatter.text(
+            0.975,
+            0.84 if peaks else 0.975,
+            f"R$^2$ = {r_squared(obs_extreme, sim_extreme):.2f}",
+            transform=ax_scatter.transAxes,
+            ha="right",
+            va="top",
+            fontsize=artists.FS_NOTE,
+            bbox=artists.LABEL_BOX,
+        )
 
         _draw_series(
             ax_year, simulated.sel(time=str(year)), observed.sel(time=str(year))
         )
-        _panel(ax_year, "c", f"{'Wettest' if peaks else 'Driest'} year · {year}")
-        ax_year.set_ylabel("Q (m$^3$ s$^{-1}$)")
+        ax_year.set_ylabel("m³ s⁻¹")
         ax_year.margins(x=0.01)
         _month_axis(ax_year)
 
-        _identity(fig, station, "high flows" if peaks else "low flows", ax_year)
-        _caveat(fig, caveat)
+        for ax, letter in ((ax_frequency, "a)"), (ax_scatter, "b)"), (ax_year, "c)")):
+            ax.grid(axis="y", alpha=0.7)
+            ax.text(
+                0.025,
+                0.975,
+                letter,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=artists.FS_LABEL,
+                fontweight="bold",
+                bbox=artists.LABEL_BOX,
+                zorder=5,
+            )
+        handles, _ = ax_year.get_legend_handles_labels()
+        artists.inside_legend(
+            fig,
+            ax_year,
+            handles=handles,
+            lines=ax_year.lines,
+        )
+        legend = ax_year.get_legend()
+        if (
+            legend.get_window_extent().x0
+            < ax_year.get_window_extent().x0 + ax_year.bbox.width / 2
+        ):
+            # Leave room for c) only when the less occupied corner is on the left.
+            legend.set_bbox_to_anchor((0, 0, 1, 0.88))
         stem = f"signatures_{'peaks' if peaks else 'lows'}_{station.wflow_id}"
+        _extremes_caption(simulated, station, plot_dir, kind, year, caveat)
         return _save(fig, plot_dir, stem)
+
+
+def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
+    """Keep signature context and methods in the station caption inventory."""
+    import json
+    from pathlib import Path
+
+    peaks = kind == "peaks"
+    period = [str(value)[:10] for value in simulated.time.values[[0, -1]]]
+    extreme = "annual maximum" if peaks else "annual minimum seven-day mean"
+    caption = (
+        f"{'High' if peaks else 'Low'} flows at {station.caption}, {'–'.join(period)}. "
+        f"a) {extreme.capitalize()} discharge on a Gumbel reduced-variate axis; "
+        "T marks return periods in years. Blue crosses denote observations and "
+        "vermillion circles simulations. "
+        f"b) Simulated versus observed {extreme} discharge; the dashed line denotes "
+        "1:1 agreement and R² is squared Pearson correlation. "
+        + ("The black diamond marks the period mean. " if peaks else "")
+        + f"c) Daily discharge in the {'wettest' if peaks else 'driest'} simulated "
+        f"calendar year ({year}), selected by annual mean discharge. "
+        "Observations are blue and dashed; simulations are vermillion and solid. "
+        "Annual maxima use September–August water years; seven-day minima use calendar years. "
+        "Frequency positions use (rank − 0.3)/(n + 0.4), without fitting an extreme-value distribution. "
+        + (caveat or "")
+    ).strip()
+    root = Path(plot_dir)
+    engine = root / "_engine"
+    engine.mkdir(parents=True, exist_ok=True)
+    path = engine / "figure_captions.json"
+    inventory = (
+        json.loads(path.read_text(encoding="utf-8"))
+        if path.exists()
+        else {"schema_version": 1, "figures": {}}
+    )
+    inventory["figures"][f"signatures_{kind}_{station.wflow_id}.png"] = {
+        "caption": caption,
+        "sources": ["simulated", "observed"],
+        "period": period,
+        "support": f"wflow_id {station.wflow_id}",
+        "encoding": f"signatures_{kind}",
+        "availability": "available",
+        "captioned_path": None,
+    }
+    inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_captions.md",
+        "_engine/figure_captions.json",
+    ]
+    path.write_text(
+        json.dumps(inventory, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (root / "figure_captions.md").write_text(
+        "# Figure captions\n\n"
+        + "\n\n".join(
+            f"## {name}\n\n{record['caption']}"
+            for name, record in inventory["figures"].items()
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 #: Row positions of the metrics table, in axes fractions: the group band, the

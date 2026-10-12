@@ -240,6 +240,38 @@ def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
         assert "auto_01" in caption
 
 
+@pytest.mark.parametrize("kind", ["peaks", "lows"])
+def test_signature_context_retains_full_record_and_highlights_selected_year(
+    tmp_path, monkeypatch, kind
+):
+    import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
+
+    simulated = _plottable(days=365 * 4)
+    observed = simulated * 1.1
+    wet, dry = wettest_and_driest_year(simulated)
+    year = wet if kind == "peaks" else dry
+
+    def inspect(fig, plot_dir, stem):
+        ax = fig.axes[2]
+        for line, expected in zip(ax.lines, (observed, simulated), strict=True):
+            np.testing.assert_array_equal(line.get_ydata(), expected.values)
+            np.testing.assert_array_equal(line.get_xdata(), expected.time.values)
+        band = ax.patches[0]
+        assert band.get_x() == mdates.date2num(pd.Timestamp(year, 1, 1))
+        assert band.get_x() + band.get_width() == mdates.date2num(
+            pd.Timestamp(year + 1, 1, 1)
+        )
+        np.testing.assert_allclose(
+            ax.get_xlim(), mdates.date2num(simulated.time.values[[0, -1]])
+        )
+        plt.close(fig)
+        return str(tmp_path / f"{stem}.png")
+
+    monkeypatch.setattr(plot_evaluation, "_save", inspect)
+    plot_evaluation.plot_extremes(simulated, observed, Station(1010), tmp_path, kind)
+
+
 def test_without_observations_only_the_hydrograph_is_drawn_and_it_is_reported(tmp_path):
     """ "There are no observations" and "the figure failed" look identical in an
     empty folder, so the skip is announced."""

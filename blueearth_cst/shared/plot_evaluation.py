@@ -7,7 +7,7 @@ One station, four figures, split by the question a reader is asking:
   means, the mean annual cycle and both flow-duration curves. The ONLY sheet
   that needs no observations, so it is drawn for every station on every run.
 * ``signatures_peaks_<wflow_id>`` — the high end. Flood frequency, the
-  year-by-year annual maximum against observed, and the wettest year.
+  year-by-year annual maximum against observed, and the full record with its wettest year highlighted.
 * ``signatures_lows_<wflow_id>`` — the dry end, in the same three places, so the
   two sheets read against each other without re-learning the layout.
 * ``performance_<wflow_id>`` — goodness of fit: the daily scatter, the
@@ -210,14 +210,6 @@ def _reference_line(ax, high):
     )
     ax.set_xlim(0, high)
     ax.set_ylim(0, high)
-
-
-def _month_axis(ax):
-    import matplotlib.dates as mdates
-
-    ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 3, 5, 7, 9, 11)))
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
-    ax.set_xlabel("")
 
 
 def _draw_fdc(ax, simulated, observed, log_scale):
@@ -814,12 +806,14 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
     """One end of the distribution: frequency, year-by-year, and one year.
 
     ``kind`` is ``"peaks"`` or ``"lows"``. The two sheets are deliberately
-    identical in shape — analysis on the top row, the illustrating year full
-    width below — so a reader moving between them re-reads the layout for free.
+    identical in shape — analysis on the top row, the full daily record with
+    the selected year highlighted below.
 
     Both need observations: two of the three panels compare against them.
     """
+    import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
+    import pandas as pd
     from matplotlib import gridspec, rc_context
 
     from blueearth_cst.plotting import fundamentals as artists
@@ -904,24 +898,42 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
             bbox=artists.LABEL_BOX,
         )
 
-        _draw_series(
-            ax_year, simulated.sel(time=str(year)), observed.sel(time=str(year))
+        _draw_series(ax_year, simulated, observed)
+        ax_year.axvspan(
+            pd.Timestamp(year, 1, 1),
+            pd.Timestamp(year + 1, 1, 1),
+            facecolor=artists.MUTED,
+            edgecolor=artists.MUTED,
+            alpha=0.16,
+            linewidth=0.6,
+            label=f"{'Wettest' if peaks else 'Driest'} year ({year})",
+            zorder=1,
         )
         ax_year.set_ylabel("m³ s⁻¹")
-        ax_year.margins(x=0.01)
-        _month_axis(ax_year)
+        start, end = (
+            pd.Timestamp(simulated.time.values[0]),
+            pd.Timestamp(simulated.time.values[-1]),
+        )
+        ax_year.set_xlim(start, end)
+        span = end.year - start.year
+        step = 10 if span > 35 else 5 if span > 12 else 2 if span > 5 else 1
+        ax_year.xaxis.set_major_locator(mdates.YearLocator(step))
+        ax_year.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+        ax_year.xaxis.set_minor_locator(mdates.YearLocator())
+        ax_year.tick_params(axis="x", which="minor", length=2)
 
         for ax, letter in ((ax_frequency, "a)"), (ax_scatter, "b)"), (ax_year, "c)")):
             ax.grid(axis="y", alpha=0.7)
-            ax.text(
-                0.025,
-                0.975,
+            ax.annotate(
                 letter,
-                transform=ax.transAxes,
+                xy=(0, 1),
+                xycoords="axes fraction",
+                xytext=(5, -5),
+                textcoords="offset points",
                 ha="left",
                 va="top",
                 fontsize=artists.FS_LABEL,
-                fontweight="bold",
+                fontweight="normal",
                 bbox=artists.LABEL_BOX,
                 zorder=5,
             )
@@ -960,8 +972,9 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         f"b) Simulated versus observed {extreme} discharge; the dashed line denotes "
         "1:1 agreement and R² is squared Pearson correlation. "
         + ("The black diamond marks the period mean. " if peaks else "")
-        + f"c) Daily discharge in the {'wettest' if peaks else 'driest'} simulated "
-        f"calendar year ({year}), selected by annual mean discharge. "
+        + "c) Daily discharge over the full supplied simulation period; the shaded vertical band "
+        f"marks the {'wettest' if peaks else 'driest'} simulated calendar year ({year}), "
+        "selected by annual mean discharge. "
         "Observations are blue and dashed; simulations are vermillion and solid. "
         "Annual maxima use September–August water years; seven-day minima use calendar years. "
         "Frequency positions use (rank − 0.3)/(n + 0.4), without fitting an extreme-value distribution. "
@@ -984,6 +997,7 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         "encoding": f"signatures_{kind}",
         "availability": "available",
         "captioned_path": None,
+        "highlighted_year": int(year),
     }
     inventory["produced_paths"] = list(inventory["figures"]) + [
         "figure_captions.md",

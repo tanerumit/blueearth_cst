@@ -139,8 +139,12 @@ line legend inside the upper-left of the scatter, below its panel label. Keep ta
 that explains each labelled panel, without displayed titles or figure footers.
 
 WF1 peaks and lows signature sheets use the same typography, soft frames, horizontal grids and
-borderless label backgrounds. Retain the three-panel layout, inside panel letters and a stacked
-inside legend for the daily series. Frequency and daily axes show discharge units alone; scatter
+borderless label backgrounds. Retain the three-panel layout, regular-weight inside panel letters
+with equal physical offsets from each panel's top-left corner, and a stacked inside legend for the
+daily series. Panel c shows the full supplied simulation record with calendar-year ticks and a
+translucent vertical band spanning the selected wettest/driest calendar year. Preserve the existing
+warm-up exclusion and observation-overlap selection upstream. Frequency and daily axes show discharge
+units alone; scatter
 axes retain observed/simulated labels to distinguish their roles. Use translucent points with dark
 edges. Station identity, selected year, methods and caveats belong in the station caption inventory,
 without displayed titles or figure footers. Preserve the existing annual extremes and plotting positions.

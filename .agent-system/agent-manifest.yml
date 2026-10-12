@@ -34,7 +34,7 @@ skills:
   # Root-only — no active role binds these promotingly, so this list is the
   # sole main-thread activation. Removing a line removes the skill.
   - design-review-loop
-  - design-scoping
+  - design-exploration
   - diagram-design
   - pixi-env                # pixi + R-outside-lock + juliaup env management, CI
   - python-plotting         # dataviz-designer binds `always (role-only)`, which

@@ -217,26 +217,25 @@ def _check_window_coverage(ds, starttime, endtime, clim_source, enforce_min_year
     )
 
 
-def _validate_requested_source_coverage(data_catalog, source, starttime, endtime):
-    """Refuse a request outside a source's catalog-advertised time range.
+def _resolve_source_window(data_catalog, source, starttime, endtime):
+    """Return the widest catalog-advertised overlap, warning when it narrows.
 
-    HydroMT can return the overlap when a raster source covers only part of the
-    requested period. That remains useful for sources without an explicit
-    catalog contract, but an advertised boundary must not be silently crossed.
-    In particular, Deltares' ERA5 daily Zarr ends on 2023-02-01.
+    Keep the original request when metadata is absent; the delivered time axis
+    still determines actual coverage and the selected forcing's length floor.
+    No overlap and invalid catalog bounds remain errors.
     """
     source_spec = data_catalog.to_dict().get(source)
     if not isinstance(source_spec, Mapping):
-        return
+        return starttime, endtime
     metadata = source_spec.get("metadata")
     extent = metadata.get("extent") if isinstance(metadata, Mapping) else None
     time_range = extent.get("time_range") if isinstance(extent, Mapping) else None
     if not isinstance(time_range, Mapping):
-        return
+        return starttime, endtime
     available_start = time_range.get("start")
     available_end = time_range.get("end")
     if available_start is None or available_end is None:
-        return
+        return starttime, endtime
 
     try:
         requested = (pd.Timestamp(starttime).date(), pd.Timestamp(endtime).date())
@@ -250,24 +249,40 @@ def _validate_requested_source_coverage(data_catalog, source, starttime, endtime
             f"{available_start!r}..{available_end!r}"
         ) from exc
 
-    if requested[0] < available[0] or requested[1] > available[1]:
+    if any(pd.isna(bound) for bound in available) or available[0] > available[1]:
         raise ValueError(
-            f"{source!r} cannot satisfy requested "
-            f"{requested[0]}..{requested[1]}; the catalog advertises "
-            f"{available[0]}..{available[1]}. Choose a window within that "
-            "coverage or select a catalog source that holds the required dates"
+            f"{source!r} has an invalid catalog metadata.extent.time_range: "
+            f"{available_start!r}..{available_end!r}"
         )
+    overlap = max(requested[0], available[0]), min(requested[1], available[1])
+    if overlap[0] > overlap[1]:
+        raise ValueError(
+            f"{source!r} has no overlap with requested "
+            f"{requested[0]}..{requested[1]}; the catalog advertises "
+            f"{available[0]}..{available[1]}"
+        )
+    if overlap != requested:
+        log_row(
+            f"{source}: catalog does not cover requested {requested[0]}..{requested[1]}; available "
+            f"{available[0]}..{available[1]}; extracting "
+            f"{overlap[0]}..{overlap[1]} (widest overlap)",
+            module="extract",
+            level="WARNING",
+        )
+        return overlap[0].isoformat(), overlap[1].isoformat()
+    return starttime, endtime
 
 
 def _read_source(data_catalog, source, *, requested, **kwargs):
-    """``get_rasterdataset`` with a NoDataException that names the window.
+    """Read the catalog overlap; name the requested window when no data exists.
 
-    Partial coverage never reaches here: the convention resolver globs one URI
-    per year and simply skips the years a source has no file for, and hydromt's
-    temporal slice returns the overlap. ``NoDataException`` therefore means ZERO
-    overlap -- the one shortfall no widest-possible-range can rescue -- and
-    hydromt's own message names neither the source nor the window that missed.
+    Missing year files and a shorter actual time axis can narrow coverage
+    further. HydroMT returns their overlap; ``NoDataException`` means no usable
+    data, whose native message names neither the source nor the requested dates.
     """
+    kwargs["time_range"] = _resolve_source_window(
+        data_catalog, source, *kwargs.get("time_range", requested)
+    )
     try:
         return data_catalog.get_rasterdataset(source, **kwargs)
     except NoDataException as exc:
@@ -608,9 +623,6 @@ def prep_historical_climate(
     if is_precip_only and forcing_required:
         sources.append("era5")
     data_catalog = _align_chunks_to_store(data_catalog, sources)
-    if clim_source == "era5" or (is_precip_only and forcing_required):
-        _validate_requested_source_coverage(data_catalog, "era5", starttime, endtime)
-
     # Extract climate data
     log_row("Extracting historical climate grid", module="extract")
     if is_precip_only:

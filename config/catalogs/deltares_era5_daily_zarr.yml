@@ -5,8 +5,8 @@
 # at source level, not a recursive YAML merge.
 #
 # The Zarr store ends earlier than the netCDF series. The extraction validates
-# requested ERA5 dates against this metadata before reading, so a request after
-# 2023-02-01 fails instead of returning a silently shortened record.
+# requested ERA5 dates against this metadata before reading. A request extending
+# beyond it warns and reads the overlap; delivered coverage is checked afterwards.
 
 meta:
   roots:

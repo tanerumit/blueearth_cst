@@ -47,6 +47,12 @@ The project file, for example `test_case/project_config_rapid.yml`, supplies `pr
 `workflows.analyze_climate` stanza enables the workflow and resolves `config_path` relative to the project
 file. The selected source leads the figures; comparing sources does not change that selection.
 
+When a source covers only part of `climate.window`, extraction warns and uses the widest available
+overlap inside the requested dates. A missing first day, such as ERA5 starting on January 2, does not
+abort the run. Sources with no overlap still fail; the selected forcing must deliver at least 16 years.
+For CHIRPS forcing, the store uses the common overlap with its ERA5 companion variables. WF1 separately
+checks that the resulting store covers the explicitly configured Wflow simulation period.
+
 The workflow file owns the optional diagnostic settings below. Candidate sources and analysis years remain in
 the project file. Start from `config/templates/project_config.analyze_climate.template.yml`.
 

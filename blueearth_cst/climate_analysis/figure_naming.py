@@ -57,6 +57,7 @@ PLOT_CONTEXTS = {
     "monthly_clim_band": "monthly climatology and 10th–90th percentile band",
     "annual_timing": "cumulative annual precipitation timing",
     "monthly_anomaly": "monthly departure calendar",
+    "monthly_percentile": "calendar-month precipitation percentile",
     "monthly_spi": "multiscale SPI calendar",
     "spi_events": "SPI drought duration and severity",
     "annual_rx1day_ts": "annual maximum one-day precipitation",

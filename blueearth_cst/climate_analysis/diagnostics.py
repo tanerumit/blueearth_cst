@@ -194,6 +194,38 @@ def temperature_climatology(
     ).reindex(month_order(m0))
 
 
+def monthly_reference_diagnostics(
+    monthly: pd.DataFrame, reference: tuple[int, int]
+) -> tuple[pd.Series, list[dict]]:
+    """Empirical midrank percentiles and actual support for each calendar month.
+
+    Uses retained monthly totals before display clipping. Percentiles are
+    100 * (count below + half the count equal) / reference count; ties therefore
+    share a percentile, including zero-rainfall months. No fit or extrapolation.
+    """
+    percentiles = pd.Series(np.nan, index=monthly.index, dtype=float)
+    support = []
+    for month in range(1, 13):
+        rows = monthly[monthly.calendar_month == month]
+        ref = rows[rows.reporting_year.between(*reference) & np.isfinite(rows.total)]
+        n = len(ref)
+        support.append(
+            {
+                "calendar_month": month,
+                "start": int(ref.reporting_year.min()) if n else None,
+                "end": int(ref.reporting_year.max()) if n else None,
+                "count": n,
+            }
+        )
+        if n:
+            values = np.sort(ref.total.to_numpy())
+            valid = rows[np.isfinite(rows.total)]
+            below = np.searchsorted(values, valid.total, side="left")
+            through = np.searchsorted(values, valid.total, side="right")
+            percentiles.loc[valid.index] = 50 * (below + through) / n
+    return percentiles, support
+
+
 def monthly_anomaly(p: pd.Series, m0: int, reference: tuple[int, int]) -> pd.DataFrame:
     """Monthly total minus the reference-period mean for that calendar month (mm); months x reporting years."""
     mt = monthly_totals(p)

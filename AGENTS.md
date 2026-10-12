@@ -102,8 +102,8 @@ session to claim itself with `task-start --task <task> --session <name> --base m
 from the primary checkout; never create the branch by hand. The user controls switching and landing.
 At new-session entry, synchronize a clean local unpushed lane with `main` by rebase; published lanes
 use merge unless rewriting is authorized. Resolve dirty state/conflicts without automatic stash/reset.
-Do not repeat synchronization per follow-up. Commit tasks with focused checks; run combined gates
-at approved landing after synchronization and executable edits. Task completion does not authorize
+Do not repeat synchronization per follow-up. Commit tasks with focused checks; select landing gates
+from the unverified delta and affected consumers, retaining applicable evidence. Completion does not authorize
 landing/pushing. After a verified merge, prove ancestry, detach/free the lane, then delete its branch;
 on failure preserve the lane and branch for recovery.
 
@@ -113,15 +113,19 @@ on failure preserve the lane and branch for recovery.
 | Pre-commit | CLI tests for rule/input/script-signature edits; scoped Ruff for touched Python |
 | Final Python batch | `pixi run lint` and `pixi run format-check` once |
 | Merge | `pixi run test-fast`, unless covered by `test-full` or exempt-only diff |
-| Shared runtime/config/script contract; milestone seal | `pixi run test-full` |
-| Cross-workflow change, release, milestone | Fresh all-five `pixi run test-e2e`; no required skips |
+| Console wording only; confined internal or script-contract change | Fast plus affected contract tests |
+| Broad runtime/config/orchestration/dependency change; release or milestone | Full plus all-five E2E |
 | Confined workflow behavior | Execute affected workflow and output consumers with rapid inputs |
-| Numeric output or milestone seal | Baseline check; semantic tree diff if shape changed |
+| Numeric output | Independent numerical check and affected consumers; baseline for whole-tree claims |
+| Milestone seal | Baseline check; semantic tree diff if shape changed |
 | Push | Classify unpushed delta and read last CI; rules below |
 | After push | Read the latest CI run, including both platforms |
 
 Apply the reference's evidence-reuse contract: full covers fast on the same candidate/environment;
 equivalent merges need tree-equality and ancestry proof. Missing or skipped required checks never pass.
+Classify behavior and consumers, not directory names. A small follow-up invalidates only affected
+claims; use reviewed delta evidence rather than repeating a preceding broad gate. Unknown or broad
+impact escalates. Console changes affecting control flow, exit status or parsed output are behavioral.
 
 Push exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root
 `AGENTS.md` and root `README.md`. Renames/deletions are never exempt. `dev/scripts/`, `dev/records/`,

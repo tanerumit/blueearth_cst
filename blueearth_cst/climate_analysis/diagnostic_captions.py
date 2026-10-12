@@ -28,13 +28,6 @@ DESCRIPTIONS = {
         "The continuous colour scale is symmetric about zero, spans all pooled finite departures, "
         "and is shared across sources and years. No temporal smoothing is applied."
     ),
-    "percentile": (
-        "Monthly precipitation percentiles relative to each calendar month's reference distribution. "
-        "Brown indicates lower and teal higher totals, with a neutral midpoint at the 50th percentile. "
-        "Empirical midranks use 100 × (number below + half the number equal) / reference count; "
-        "ties, including zero totals, share a percentile. Percentiles describe relative rank, not "
-        "rainfall magnitude or fitted return periods. Gray marks unavailable totals or references."
-    ),
     "spi": (
         "Standardized Precipitation Index at 3-, 6- and 12-month accumulation scales. "
         "Red indicates dryness, blue wetness and gray unavailable values; the distribution is fitted "
@@ -112,7 +105,7 @@ def caption(name: str, view: View) -> str:
             " Dashed lines show Theil–Sen trends; source-colored labels give slopes "
             "per decade."
         )
-    if name in {"anomaly", "percentile"}:
+    if name == "anomaly":
         detail += f" Requested reference: {view.reference[0]}–{view.reference[1]}."
         for source in plotted:
             month_support = view.results[source]["anomaly_reference_support"]

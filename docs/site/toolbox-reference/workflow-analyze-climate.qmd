@@ -152,10 +152,7 @@ Daily basin series use equal weights over the toolbox's retained `basin_cells`.
 Missing dates remain gaps. Completeness tolerances govern valid months and reporting years;
 amounts may be infilled with the month's observed mean, while extremes use observed days.
 Monthly anomaly calendars subtract each calendar month's reference mean in mm. A continuous
-brown–white–teal scale shows dry-to-wet departures without temporal smoothing. A companion
-`monthly_percentile` calendar compares each monthly total with that calendar month's reference
-distribution: 100 × (number below + half the number equal) / reference count. Ties share a rank;
-percentiles show relative unusualness rather than rainfall magnitude. Captions report the requested
+brown–white–teal scale shows dry-to-wet departures without temporal smoothing. Captions report the requested
 reference and each source's usable year span and sample-count range; JSON retains support per month.
 Reference samples are drawn from the full retained monthly table before display clipping.
 

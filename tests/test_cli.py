@@ -257,7 +257,7 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
 
 
 @pytest.mark.workflow_contract
-def test_baseline_seed_config_does_not_warn():
+def test_baseline_seed_config_does_not_warn(tmp_path):
     """The exemption holds for the config the baseline gate actually runs.
 
     That is test_case/project_config_baseline.yml (project_dir:
@@ -269,7 +269,12 @@ def test_baseline_seed_config_does_not_warn():
     convenient in-repo scratch dir.
     """
     seed_cfg = join(SNAKEDIR, "test_case", "project_config_baseline.yml")
-    result = _dry_run("build_model.smk", cfg=seed_cfg)
+    cfg = load_composed_config(seed_cfg)
+    # Keep the baseline project_dir and gauge request, but isolate the warning
+    # contract from the P-drive data mirror unavailable on both CI platforms.
+    cfg["project"]["catalog"] = load_composed_config(config_fn)["project"]["catalog"]
+    hermetic_cfg = write_config(tmp_path, cfg, stem="project_config_baseline")
+    result = _dry_run("build_model.smk", cfg=str(hermetic_cfg))
     combined = (result.stdout or "") + (result.stderr or "")
     assert "inside the repo tree" not in combined, combined[-3000:]
 

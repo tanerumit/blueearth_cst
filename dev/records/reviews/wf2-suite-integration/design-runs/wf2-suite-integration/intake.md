@@ -1,5 +1,12 @@
 # Intake — WF2 starter-suite integration
 
+> **Window contract superseded (2026-10-12).** The owner now requires diagnostics to use the configured
+> reference/future calendar bounds, retaining only complete water years inside them. Recentring, extension,
+> and reference fallback described below no longer apply. The seasonal minimum remains 27 observations.
+> Current behavior: `docs/site/toolbox-reference/workflow-analyze-projections.qmd`. The original decisions
+> and verification below are retained as historical evidence.
+
+
 Run: `wf2-suite-integration` · Task: `t2610071652` · Target repo: `blueearth_cst` · Lane:
 `feat/wf2-cmip6-improvements` (session-1) · Genre: `decision-record` (milestone-style design: goal, what changes,
 alternatives, commit plan) · Opened 2026-10-07.

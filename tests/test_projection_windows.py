@@ -19,43 +19,93 @@ def _series(start, end, calendar="standard", scenario="ssp245"):
 
 
 @pytest.mark.parametrize(
-    "month,horizon,used,shifted,joined",
+    "month,horizon,used",
     [
-        ("Jan", (2046, 2054), (2036, 2065), False, False),
-        ("Jan", (2081, 2100), (2071, 2100), True, False),
-        ("Oct", (2081, 2100), (2070, 2099), True, False),
-        ("Jan", (2015, 2030), (2008, 2037), False, True),
-        ("Jan", (1950, 1950), (1950, 1979), True, True),
+        ("Jan", (2041, 2060), (2041, 2060)),
+        ("Jan", (2081, 2100), (2081, 2100)),
+        ("Oct", (2081, 2100), (2081, 2099)),
+        ("Jan", (2015, 2030), (2015, 2030)),
+        ("Jan", (2050, 2050), (2050, 2050)),
     ],
 )
-def test_analysis_windows_keep_complete_acquisition_years(
-    month, horizon, used, shifted, joined
-):
+def test_analysis_windows_keep_complete_configured_years(month, horizon, used):
     record = change.analysis_windows({"future": horizon}, month, (1985, 2014))["future"]
     assert record["used"] == used
     assert record["window_id"] == f"{used[0]}-{used[1]}"
-    assert record["shifted"] is shifted
-    assert record["joined"] is joined
+    assert record["requested"] == used
+    assert record["shifted"] is False
+    assert record["joined"] is False
     assert record["available"] is True
     if month == "Jan":
         assert record["reference"] == (1985, 2014)
     else:
-        assert record["reference"] == (1984, 2013)
-        assert record["reference_rule"] == "fallback_last_30"
+        assert record["reference"] == (1985, 2013)
+        assert record["effective"]["reference"] == {
+            "start": "1985-10-01",
+            "end": "2014-09-30",
+            "n_water_years": 29,
+        }
         assert change.analysis_windows({"f": horizon}, "Oct", (1970, 2014))["f"][
             "reference"
-        ] == (1984, 2013)
-        assert change.analysis_windows({"f": horizon}, "Oct", (2014, 2014))["f"][
-            "reference"
-        ] == (1984, 2013)
+        ] == (1970, 2013)
     long_reference = change.analysis_windows({}, "Jan", (1970, 2014))
     assert long_reference == {}
     assert change.analysis_windows({"f": horizon}, "Jan", (1970, 2014))["f"][
         "reference"
-    ] == (1985, 2014)
+    ] == (1970, 2014)
     assert change.analysis_windows({"f": horizon}, "Jan", (2000, 2014))["f"][
         "reference"
-    ] == (1985, 2014)
+    ] == (2000, 2014)
+
+
+@pytest.mark.parametrize(
+    "future,reference,month,reason",
+    [
+        ((2041, 2060), (2014, 2014), "Oct", "no complete"),
+        ((2050, 2050), (1985, 2014), "Oct", "no complete"),
+        ((2010, 2030), (1985, 2014), "Jan", "outside acquisition"),
+        ((2090, 2110), (1985, 2014), "Jan", "outside acquisition"),
+        ((2041, 2060), (1985, 2015), "Jan", "outside acquisition"),
+        ((2060, 2041), (1985, 2014), "Jan", "start must not exceed"),
+    ],
+)
+def test_analysis_windows_refuse_invalid_bounds(future, reference, month, reason):
+    with pytest.raises(ValueError, match=reason):
+        change.analysis_windows({"future": future}, month, reference)
+
+
+def test_twenty_year_window_excludes_outside_values_and_scales_season_threshold():
+    record = change.analysis_windows({"future": (2041, 2060)})["future"]
+    historical = _series("1985-01-01", "2014-12-01")
+    future = _series("2036-01-01", "2065-12-01")
+    historical["temp"][:] = 10
+    future["temp"][:] = 999
+    future["temp"].loc[{"time": slice("2041", "2060")}] = 12
+    reference = change.analysis_slice(historical, record["reference"])
+    selected = change.analysis_slice(future, record["used"])
+    assert selected.sizes["time"] == 240
+    assert record["effective"]["future"] == {
+        "start": "2041-01-01",
+        "end": "2060-12-31",
+        "n_water_years": 20,
+    }
+    annual = change.get_change_annual_clim_proj(
+        reference.expand_dims("scenario"),
+        selected.expand_dims("scenario"),
+        stats=["mean"],
+    )
+    assert annual.temp.item() == pytest.approx(2)
+    seasons = change.get_change_seasonal_clim_proj(reference, selected)
+    assert {row["status"] for row in seasons} == {"ok"}
+    assert {
+        row["absolute"]
+        for row in seasons
+        if row["variable"] == "temp" and row["statistic"] == "mean"
+    } == {2}
+    rejected = change.get_change_seasonal_clim_proj(
+        reference, selected, min_season_years=27
+    )
+    assert {row["status"] for row in rejected} == {"insufficient_observations"}
 
 
 def test_analysis_slice_joins_same_member_and_refuses_unavailable_span():
@@ -87,6 +137,68 @@ def test_analysis_slice_joins_same_member_and_refuses_unavailable_span():
     assert not isinstance(corrupt.value, change.AnalysisWindowUnavailable)
     with pytest.raises(ValueError, match="asymmetric"):
         change.get_change_seasonal_clim_proj(historical.drop_vars("temp"), future)
+
+
+@pytest.mark.parametrize("calendar", ["standard", "noleap", "360_day"])
+@pytest.mark.parametrize("month", ["Jan", "Oct"])
+def test_unequal_season_windows_keep_calendar_rates_and_boundary_ownership(
+    calendar, month
+):
+    record = change.analysis_windows({"f": (2041, 2060)}, month)["f"]
+    historical = _series("1985-01-01", "2014-12-01", calendar)
+    future = _series("2041-01-01", "2060-12-01", calendar)
+    historical["temp"] = xr.full_like(historical.temp, 10)
+    historical["precip"] = xr.full_like(historical.precip, 2)
+    future["temp"] = xr.full_like(future.temp, 12)
+    future["precip"] = xr.full_like(future.precip, 3)
+    rows = change.get_change_seasonal_clim_proj(
+        change.analysis_slice(historical, record["reference"], month),
+        change.analysis_slice(future, record["used"], month),
+        stats=["mean"],
+    )
+    assert {row["status"] for row in rows} == {"ok"}
+    for row in rows:
+        assert row["absolute"] == pytest.approx(2 if row["variable"] == "temp" else 1)
+        if row["variable"] == "precip":
+            assert row["relative"] == pytest.approx(50)
+        expected = (29, 19) if month == "Oct" or row["season"] == "DJF" else (30, 20)
+        if month == "Oct" and row["season"] == "SON":
+            expected = (28, 18)
+        assert (row["n_reference"], row["n_future"]) == expected
+
+
+@pytest.mark.parametrize(
+    "side,missing,eligible",
+    [
+        ("reference", 3, True),
+        ("reference", 4, False),
+        ("future", 2, True),
+        ("future", 3, False),
+    ],
+)
+def test_missing_seasons_do_not_shrink_required_window_coverage(
+    side, missing, eligible
+):
+    historical = _series("1985-01-01", "2014-12-01")
+    future = _series("2041-01-01", "2060-12-01")
+    target = historical if side == "reference" else future
+    first = 1985 if side == "reference" else 2041
+    # Remove internal months entirely, rather than merely using NaN values.
+    target = target.drop_sel(time=[f"{first + i}-04-01" for i in range(missing)])
+    if side == "reference":
+        historical = target
+    else:
+        future = target
+    rows = change.get_change_seasonal_clim_proj(historical, future, stats=["mean"])
+    mam = [row for row in rows if row["season"] == "MAM"]
+    assert {(row["status"] == "ok") for row in mam} == {eligible}
+    assert all(np.isfinite(row["change"]) == eligible for row in mam)
+
+
+def test_default_season_eligibility_requires_at_least_three_observations():
+    short = _series("2000-01-01", "2001-12-01")
+    rows = change.get_change_seasonal_clim_proj(short, short)
+    assert {row["status"] for row in rows} == {"insufficient_observations"}
 
 
 @pytest.mark.parametrize(

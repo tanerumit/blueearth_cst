@@ -1,5 +1,12 @@
 # WF2 suite integration — design v1
 
+> **Window contract superseded (2026-10-12).** The owner now requires diagnostics to use the configured
+> reference/future calendar bounds, retaining only complete water years inside them. Recentring, extension,
+> and reference fallback described below no longer apply. The seasonal minimum remains 27 observations.
+> Current behavior: `docs/site/toolbox-reference/workflow-analyze-projections.qmd`. The original decisions
+> and verification below are retained as historical evidence.
+
+
 - **Status:** draft (stage 1, design-review loop `wf2-suite-integration`; gates G1/G2 pending)
 - **Genre:** decision record, milestone style (goal, what changes, alternatives, commit plan)
 - **Task:** `t2610071652` · lane `feat/wf2-cmip6-improvements` (session-1) · **Date:** 2026-10-07

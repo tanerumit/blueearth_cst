@@ -169,6 +169,8 @@ def _validate_recipe(root: Path, recipe: dict) -> tuple[dict, dict]:
         payloads[relative] = actual.read_bytes()
     expected_paths = {entry["archived_path"] for entry in record["source_files"]} | {
         "sources/SOURCES.md"
+        if record["archive_schema_version"] == "source-archive/1"
+        else "SOURCES.md"
     }
     if set(payloads) != expected_paths:
         raise ValueError("simulation freeze payload inventory differs")

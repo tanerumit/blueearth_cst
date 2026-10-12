@@ -528,7 +528,10 @@ def read_collection_v2(marker_path: Path) -> dict[str, Any]:
         )
     full_id = _digest(marker["collection_id"], "collection_id")
     segment = identity_segment(full_id, "collection_id")
-    if record_dir.name != segment or marker["data_root"] != f"scenarios/{segment}":
+    if record_dir.name != segment or marker["data_root"] not in (
+        f"scenarios/_engine/data/{segment}",
+        f"scenarios/{segment}",  # Completed collections retain their original paths.
+    ):
         raise ValueError("collection full ID, engine path, and data root differ")
     data_root = project_root / marker["data_root"]
     if not data_root.is_dir() or data_root.is_symlink():

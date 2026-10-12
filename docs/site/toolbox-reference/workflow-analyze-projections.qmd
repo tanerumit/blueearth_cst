@@ -65,13 +65,25 @@ Inputs are the basin polygon, cataloged CMIP6 data, and the selected model/scena
 
 WF2 retains the acquired slices and basin monthly series, a change-factor product by model, scenario, and horizon, projection figures, and merged logs and benchmarks. Interpret these as plausibility context alongside the response surface, not as forcing for its simulations.
 
-The `analysis/` tables use 30 complete water years around each configured future horizon. The reference is
-the last 30 complete configured water years, or the historical fallback (January: WY 1985–2014; October:
-WY 1984–2013). These windows are separate from the configured windows of the overlay CSVs. The
-`_engine/analysis_record.json` records shifts, historical joins, eligibility, equal-model reductions
+The `analysis/` tables use the configured `reference_window` and `future_windows`, retaining complete water
+years inside their calendar bounds. January 2041–2060 uses all 20 years; an October start uses WY 2041–2059
+(October 2041–September 2060). Windows are never recentered, extended or replaced by a reference fallback.
+Bounds outside CMIP6 acquisition coverage, or without a complete water year, are rejected.
+The `_engine/analysis_record.json` records configured bounds, effective dates/counts, eligibility, reductions
 and product availability. Seasonal precipitation changes use weighted mean rates; this differs from the lab's
 total-based percentages. Precipitation CV uses period integrals. Analysis arithmetic uses float64 inputs;
 the aligned change-factor arithmetic retains its existing precision and dry-reference rule.
+
+Seasonal diagnostics require at least 90% of each owned window's water-year count, rounded up,
+with a minimum of three complete seasons. Reference and future thresholds are separate: 30- and 20-year
+windows require 27 and 18 observations respectively. Each season still needs three finite months inside
+its window; partial boundary seasons are excluded. Missing months never reduce the thresholds.
+The analysis record retains both thresholds per window. Insufficient coverage remains explicit as
+`insufficient_observations`, including in variability diagnostics.
+`methods.season_min_years` now maps window IDs to `reference`/`future` thresholds, replacing the scalar
+`27` in older records. Rerun analysis and rendering to apply this eligibility change to existing cases.
+Rerunning an older case changes period folder names and diagnostic values to the configured windows;
+previously generated folders are not the current run's products.
 
 Rule 2.06 reads only the analysis tables and record. Figures live in `plots/full_period/` and one
 `plots/period_<start>_<end>/` folder per distinct analysis window. Availability determines the PNGs:

@@ -370,6 +370,7 @@ def build_project_tree_rules(
     # WF0--WF2 publish exact source archives and use immutable execution views.
     for workflow_name in ("analyze_climate", "build_model", "analyze_projections"):
         same(f"config/{workflow_name}/sources/")
+        same_rx(rf"config/{workflow_name}/(?:catalogs/)?[^/]+")
     same("config/_engine/execution-configs/")
     same("config/_engine/archive-transactions/")
     same("experiments/_engine/allocation.json")
@@ -528,7 +529,7 @@ def build_project_tree_rules(
     # run-record rows use -- one constant, so a tree written by the engine and a
     # tree this tool accepts cannot disagree about name length.
     digest = _hex
-    collection = rf"scenarios/{digest}"
+    collection = rf"scenarios/(?:_engine/data/)?{digest}"
     for leaf in (
         "config/run_record.yml",
         "scenario_run_lookup.csv",
@@ -541,6 +542,7 @@ def build_project_tree_rules(
     # Source archives preserve caller-supplied filenames; diagnostic plots are
     # provider-owned. Neither is a fixed leaf set.
     same_rx(rf"{collection}/config/sources/[^/]+")
+    same_rx(rf"{collection}/config/(?:catalogs/)?[^/]+")
     same_rx(rf"{collection}/series/run_[0-9]+\.nc")
     same_rx(rf"{collection}/weathergenr/output/run_[0-9]+\.nc")
     same_rx(rf"{collection}/weathergenr/evaluation/plots/[^/]+\.(png|pdf)")
@@ -573,9 +575,10 @@ def build_project_tree_rules(
             same(f"experiments/{e}/_engine/{leaf}")
         same(f"experiments/{e}/config/run_record.yml")
         same(f"experiments/{e}/config/sources/")
+        same_rx(rf"experiments/{exp}/config/(?:catalogs/)?[^/]+")
         same(f"experiments/{e}/_engine/response_inventory.json")
         same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
-        metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
+        metric_set = rf"experiments/{exp}/(?:results/metric_sets/{digest}|_engine/metric_sets/{digest}/data)"
         # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
         # copied into every set so a reader can validate it without the installed
         # asset or the estimator dependency. It is a leaf of the set like the rest.
@@ -589,6 +592,11 @@ def build_project_tree_rules(
             )
         same_rx(rf"{metric_set}/group_(members|metadata)\.csv")
         same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_(run|group)_indicators\.csv")
+        same(f"experiments/{e}/_engine/metric_sets/current.json")
+        same_rx(rf"experiments/{exp}/results/metric_sets/group_(members|metadata)\.csv")
+        same_rx(
+            rf"experiments/{exp}/results/metric_sets/[a-z][a-z0-9_]*_(run|group)_indicators\.csv"
+        )
         native = rf"experiments/{exp}/hydrology/wflow"
         same_rx(rf"{native}/run_settings/run_[0-9]+\.(toml|yml|temporal\.json)")
         same(
@@ -603,6 +611,7 @@ def build_project_tree_rules(
         same_rx(
             rf"experiments/{exp}/_engine/freeze-payloads/sources/(?:catalogs/)?[^/]+"
         )
+        same_rx(rf"experiments/{exp}/_engine/freeze-payloads/(?:catalogs/)?[^/]+")
         same_rx(rf"experiments/{exp}/_engine/batch_staging/run_[0-9]+\.(csv|expect|ok)")
     return rules
 

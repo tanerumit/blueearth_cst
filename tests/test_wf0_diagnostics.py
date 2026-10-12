@@ -10,6 +10,36 @@ def daily(start: str, end: str, value: float = 0.0) -> pd.Series:
     return pd.Series(value, index=idx, dtype=float)
 
 
+def test_monthly_percentiles_use_calendar_month_reference_and_midrank_ties():
+    monthly = pd.DataFrame(
+        {
+            "calendar_month": [1] * 7 + [2, 2, 3],
+            "reporting_year": [
+                2000,
+                2001,
+                2002,
+                2003,
+                2004,
+                2005,
+                2006,
+                2000,
+                2001,
+                2005,
+            ],
+            "total": [0, 0, 10, 20, 5, 30, np.nan, 100, 100, 10],
+        }
+    )
+    percentiles, support = dg.monthly_reference_diagnostics(monthly, (2000, 2003))
+    np.testing.assert_allclose(
+        percentiles,
+        [25, 25, 62.5, 87.5, 50, 100, np.nan, 50, 50, np.nan],
+        equal_nan=True,
+    )
+    assert support[0] == {"calendar_month": 1, "start": 2000, "end": 2003, "count": 4}
+    assert support[1]["count"] == 2
+    assert support[2] == {"calendar_month": 3, "start": None, "end": None, "count": 0}
+
+
 def test_wet_days_and_sdii_use_threshold():
     p = daily("2001-01-01", "2001-12-31")
     p.iloc[[0, 1, 2]] = [0.9, 1.0, 5.0]

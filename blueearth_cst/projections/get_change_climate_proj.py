@@ -573,13 +573,19 @@ def _to_str_tuple(value):
 
 
 # Analysis-only constants: none is referenced by a Stage B kernel root.
-ANALYSIS_LENGTH = 30
-ANALYSIS_REFERENCE = (1985, 2014)  # calendar span; last 30 complete WY are used
-MIN_SEASON_YEARS = 27
+ANALYSIS_REFERENCE = (1985, 2014)  # default calendar span
+MIN_SEASON_COVERAGE = 0.9
+
+
+def seasonal_min_years(window_years):
+    """Require 90% of the owned window's years, with at least three seasons."""
+    import math
+
+    return max(3, math.ceil(MIN_SEASON_COVERAGE * window_years))
 
 
 class AnalysisWindowUnavailable(ValueError):
-    """A valid member series cannot supply the fixed analysis-window span."""
+    """A valid member series cannot supply the configured analysis-window span."""
 
 
 def _analysis_month_number(water_year_start):
@@ -596,14 +602,13 @@ def _analysis_month_number(water_year_start):
 def analysis_windows(
     horizons, water_year_start="Jan", reference_window=ANALYSIS_REFERENCE
 ):
-    """Place 30-WY analysis windows inside the declared acquisition spans.
+    """Keep complete water years inside the configured calendar-year bounds.
 
     Return horizon-keyed plain records. ``requested`` and ``used`` are WY start
-    labels; ``configured`` retains calendar-year bounds. The reference uses the
-    last 30 complete WY of a sufficiently long configured calendar span, else
-    the last 30 complete WY ending inside 1985–2014. Thus October fallback is
-    WY1984–2013 (owner ruling 2026-10-07), without joining a reference scenario.
-    No individual member's data can move these parse-time windows.
+    labels; ``configured`` retains calendar-year bounds and ``effective`` reports
+    the inclusive dates and counts actually used. Partial water years are trimmed,
+    never replaced by years outside the configured span. Invalid bounds raise;
+    missing member coverage is handled downstream without moving these windows.
     """
     import pandas as pd
 
@@ -612,53 +617,46 @@ def analysis_windows(
 
     month = _analysis_month_number(water_year_start)
 
-    def complete_years(span):
-        time = pd.date_range(str(span[0]), str(span[1]), freq="MS")
+    def complete_years(span, acquisition, label):
+        lower, upper = (int(bound[:4]) for bound in acquisition)
+        if span[0] < lower or span[1] > upper:
+            raise ValueError(
+                f"{label} window {span[0]}-{span[1]} is outside acquisition "
+                f"{lower}-{upper}"
+            )
+        time = pd.date_range(f"{span[0]}-01-01", f"{span[1]}-12-31", freq="MS")
         start, end, count = hydrological_year_bounds(
             {"time": pd.Series(time), "time.year": pd.Series(time.year)},
             water_year_start,
         )
-        return start.year, end.year - (end.month < month), count
+        return (start.year, end.year - (end.month < month)), {
+            "start": start.strftime("%Y-%m-%d"),
+            "end": (end + pd.offsets.MonthEnd(0)).strftime("%Y-%m-%d"),
+            "n_water_years": count,
+        }
 
-    first, last, count = complete_years(
-        (ACQUISITION_WINDOWS["historical"][0], ACQUISITION_WINDOWS["_scenario"][1])
-    )
-    scenario_first, _, _ = complete_years(ACQUISITION_WINDOWS["_scenario"])
     ref_configured = parse_horizon_period(reference_window)
-    ref_last = min(ref_configured[1], int(ACQUISITION_WINDOWS["historical"][1][:4]))
-    ref_first = max(ref_configured[0], int(ACQUISITION_WINDOWS["historical"][0][:4]))
-    ref_count = max(0, ref_last - ref_first + (month == 1))
-    if ref_count:
-        _, ref_last, ref_count = complete_years(
-            (f"{ref_first}-01-01", f"{ref_last}-12-31")
-        )
-    reference_rule = "configured_last_30"
-    if ref_count < ANALYSIS_LENGTH:
-        reference_rule = "fallback_last_30"
-        _, ref_last, _ = complete_years(
-            (f"{ANALYSIS_REFERENCE[0]}-01-01", f"{ANALYSIS_REFERENCE[1]}-12-31")
-        )
-    reference = (ref_last - ANALYSIS_LENGTH + 1, ref_last)
+    reference, ref_effective = complete_years(
+        ref_configured, ACQUISITION_WINDOWS["historical"], "reference"
+    )
     records = {}
     for name, horizon in horizons.items():
         configured = parse_horizon_period(horizon)
-        centre = sum(configured) // 2
-        requested = (centre - 14, centre + 15)
-        start = max(first, min(requested[0], last - ANALYSIS_LENGTH + 1))
-        used = (start, start + ANALYSIS_LENGTH - 1)
+        used, effective = complete_years(
+            configured, ACQUISITION_WINDOWS["_scenario"], f"future {name!r}"
+        )
         records[name] = {
             "configured": {"reference": ref_configured, "future": configured},
+            "effective": {"reference": ref_effective, "future": effective},
             "reference": reference,
-            "reference_rule": reference_rule,
-            "requested": requested,
+            "reference_rule": "configured_complete_water_years",
+            "requested": used,
             "used": used,
             "window_id": f"{used[0]}-{used[1]}",
-            "shifted": used != requested,
-            "joined": used[0] < scenario_first,
-            "available": count >= ANALYSIS_LENGTH,
-            "reason": ""
-            if count >= ANALYSIS_LENGTH
-            else "fewer than 30 complete acquisition water years",
+            "shifted": False,
+            "joined": False,
+            "available": True,
+            "reason": "",
         }
     return records
 
@@ -799,7 +797,9 @@ def get_change_seasonal_clim_proj(
     calendar=None,
     variable_spec=None,
     *,
-    min_season_years=MIN_SEASON_YEARS,
+    min_season_years=None,
+    reference_window_years=None,
+    future_window_years=None,
 ):
     """Seasonal change rows from already-owned analysis slices, never outside them.
 
@@ -812,6 +812,11 @@ def get_change_seasonal_clim_proj(
     (owner ruling 2026-10-07). The lab instead uses integrals for precipitation
     percentages, so those rows are excluded from lab parity when season lengths
     differ. Precipitation CV continues to use the period integrals.
+    By default each period needs 90% of its owned window's years (rounded up),
+    with at least three complete seasons. Supply window lengths when coordinate
+    endpoints may be missing; otherwise their inclusive month span defines the
+    window length. Missing values never reduce the required coverage. A numeric
+    ``min_season_years`` overrides the threshold for both periods.
     """
     import numpy as np
 
@@ -836,8 +841,19 @@ def get_change_seasonal_clim_proj(
     unknown = set(stats) - {"mean", "std", "std_detrended", "cv_detrended"}
     if unknown:
         raise ValueError(f"unsupported seasonal statistics: {sorted(unknown)}")
-    if min_season_years < 1:
+    if min_season_years is not None and min_season_years < 1:
         raise ValueError("min_season_years must be positive")
+
+    def minimum(dataset, window_years):
+        if min_season_years is not None:
+            return min_season_years
+        if window_years is None:
+            months = dataset.time.dt.year.values * 12 + dataset.time.dt.month.values
+            window_years = (months[-1] - months[0] + 1) / 12
+        return seasonal_min_years(window_years)
+
+    min_ref = minimum(ds_hist_time, reference_window_years)
+    min_fut = minimum(ds_clim_time, future_window_years)
     rows = []
     for variable in ds_hist_time.data_vars:
         for season in ("DJF", "MAM", "JJA", "SON"):
@@ -847,7 +863,7 @@ def get_change_seasonal_clim_proj(
             fut_years, fut_values, fut_integrals = _analysis_season_values(
                 ds_clim_time, variable, season, calendar
             )
-            enough = min(len(ref_years), len(fut_years)) >= min_season_years
+            enough = len(ref_years) >= min_ref and len(fut_years) >= min_fut
 
             def statistic(values, integrals, years, name):
                 if not values.size:

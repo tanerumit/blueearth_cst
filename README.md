@@ -219,16 +219,26 @@ $ pixi run python scripts/run_workflows.py \
 
 ### Retained results and metrics-only
 
-Collections live under `scenarios/<collection_id>/`, selected by the
+Immutable collection data live under `scenarios/_engine/data/<collection_id>/`, selected by the
 exact `scenarios/_engine/requests/<generation_request_id>/request.json` or an explicit manifest.
 Simulation never creates missing collections. A missing or stale plan names the
 generation command required to resolve it; no directory scan or latest fallback
-is used.
+is used. The current collection is exported directly to `scenarios/` for inspection.
+Existing collections at `scenarios/<collection_id>/` remain readable and reusable in place;
+new runs no longer create that visible hashed directory.
+
+Across all five workflows, configuration archives put captured project/workflow files and
+`SOURCES.md` beside `run_record.yml`, with catalogs in `catalogs/`. New archives use
+`source-archive/2`; existing `source-archive/1` archives retain their `sources/` layout and remain
+readable without migration. Reserved or colliding names receive deterministic suffixes, with original
+paths recorded in the manifest and source index. Execution and recovery roots stay under `_engine/`.
 
 Each `experiments/<experiment_name>/` retains `_engine/simulation.json`, its native
 `hydrology/wflow/output/<run_id>.csv` responses and
 `_engine/response_inventory.json`. Metric sets live in
-`results/metric_sets/<metric_set_id>/`. Each variable has separate
+`_engine/metric_sets/<metric_set_id>/data/`, with the selected tables exported directly to
+`results/metric_sets/`. Existing sets under `results/metric_sets/<metric_set_id>/` remain readable
+and reusable in place. Each variable has separate
 `<token>_run_indicators.csv` (`metric,location,run_id,value`) and
 `<token>_group_indicators.csv` (`metric,location,group_id,value`) tables.
 Text IDs such as `run_01` and `group_01` use independent namespaces.

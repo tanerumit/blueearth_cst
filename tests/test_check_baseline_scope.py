@@ -64,6 +64,7 @@ def _write_metric_plan_fixture(project_dir):
         "status": "ready",
         "metric_set_id": set_id,
         "response_inventory": {"sha256": "b" * 64},
+        "result_root": f"results/metric_sets/{set_id[:12]}",
     }
     marker["metrics_manifest_sha256"] = content_sha256(marker)
     target = (
@@ -702,6 +703,29 @@ def test_a_pattern_accepts_any_segment_length(project):
     assert pattern.match(f"{base}/{'a' * 64}/q_group_indicators.csv")
     assert pattern.match(f"{base}/{'a' * 12}/q_group_indicators.csv")
     assert not pattern.match(f"{base}/{'a' * 12}/other.csv")
+    internal = f"{root}/experiments/{cb.EXPERIMENT_NAME}/_engine/metric_sets"
+    assert pattern.match(f"{internal}/{'a' * 12}/data/q_group_indicators.csv")
+    assert not pattern.match(f"{internal}/{'a' * 12}/q_group_indicators.csv")
+
+
+def test_baseline_resolves_internal_metric_payloads(tmp_path):
+    from blueearth_cst.experiment.content_identity import (
+        canonical_json_bytes,
+        content_sha256,
+    )
+
+    _, path = _write_metric_plan_fixture(str(tmp_path))
+    marker = json.loads(path.read_bytes())
+    marker["result_root"] = f"_engine/metric_sets/{marker['metric_set_id'][:12]}/data"
+    marker["metrics_manifest_sha256"] = content_sha256(
+        {
+            key: value
+            for key, value in marker.items()
+            if key != "metrics_manifest_sha256"
+        }
+    )
+    path.write_bytes(canonical_json_bytes(marker))
+    assert cb.resolve_metric_set_dir(str(tmp_path)) == (path.parent / "data").as_posix()
 
 
 def test_a_scoped_record_does_not_clear_an_orphan(project, capsys):

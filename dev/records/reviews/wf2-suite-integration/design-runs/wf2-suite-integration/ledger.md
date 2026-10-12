@@ -1,5 +1,12 @@
 # Ledger — wf2-suite-integration
 
+> **Window contract superseded (2026-10-12).** The owner now requires diagnostics to use the configured
+> reference/future calendar bounds, retaining only complete water years inside them. Recentring, extension,
+> and reference fallback described below no longer apply. The seasonal minimum remains 27 observations.
+> Current behavior: `docs/site/toolbox-reference/workflow-analyze-projections.qmd`. The original decisions
+> and verification below are retained as historical evidence.
+
+
 | ID | Round | Severity | Disposition (accepted / rejected / deferred / withdrawn) | Resolution or rationale | Doc version |
 |---|---|---|---|---|---|
 | dom-1 | internal | major | accepted | G1 ruling: configured reference if ≥ 30 WY else 1985–2014; both window pairs in record and captions (§ 5.5, § 4). Hollow aligned marker on F3.6b not adopted. | design-v2.md |

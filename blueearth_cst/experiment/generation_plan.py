@@ -530,13 +530,15 @@ def build_candidate_intent(settings: dict) -> dict:
     return intent
 
 
-def build_create_plan(settings: dict, intent: dict) -> dict:
+def build_create_plan(
+    settings: dict, intent: dict, *, data_root: str | None = None
+) -> dict:
     """Build the immutable create decision before a generation DAG is parsed."""
     request = settings["request"]
     request_id = content_sha256(request)
     collection_id = intent["collection_id"]
     segment = identity_segment(collection_id, "collection_id")
-    data = f"scenarios/{segment}"
+    data = data_root or f"scenarios/_engine/data/{segment}"
     record = f"scenarios/_engine/collections/{segment}"
     rows = stochastic_rows(
         settings["n_realizations"],
@@ -629,7 +631,7 @@ def build_reuse_plan(settings: dict, candidate: dict, marker_path: Path) -> dict
     ):
         if candidate[field] != creator[field]:
             raise ValueError(f"ready creator {field} differs from candidate")
-    plan = build_create_plan(settings, candidate)
+    plan = build_create_plan(settings, candidate, data_root=marker["data_root"])
     plan.update(
         decision="reuse_ready",
         intent=creator,
@@ -650,12 +652,13 @@ def select_generation_plan(settings: dict, candidate: dict) -> dict:
     """Choose create or ready reuse without adopting a partial namespace."""
     project_root = Path(settings["project_dir"]).resolve()
     segment = identity_segment(candidate["collection_id"], "collection_id")
-    data_root = project_root / "scenarios" / segment
+    data_root = project_root / "scenarios" / "_engine" / "data" / segment
+    legacy_data_root = project_root / "scenarios" / segment
     record_root = project_root / "scenarios" / "_engine" / "collections" / segment
     marker = record_root / "collection.json"
     if marker.is_file():
         return build_reuse_plan(settings, candidate, marker)
-    if data_root.exists() or record_root.exists():
+    if data_root.exists() or legacy_data_root.exists() or record_root.exists():
         raise ValueError(
             "partial collection namespace exists; a fresh project or explicit repair is required"
         )

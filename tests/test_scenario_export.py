@@ -9,9 +9,11 @@ from blueearth_cst.experiment.content_identity import canonical_json_bytes
 from tests._v2_experiment import build_v2_experiment, copy_v2_experiment
 
 
-@pytest.fixture(scope="module")
-def built(tmp_path_factory):
-    return build_v2_experiment(tmp_path_factory.mktemp("scenario-export"))
+@pytest.fixture(scope="module", params=[False, True], ids=["engine-data", "legacy"])
+def built(tmp_path_factory, request):
+    return build_v2_experiment(
+        tmp_path_factory.mktemp("scenario-export"), legacy_storage=request.param
+    )
 
 
 @pytest.fixture
@@ -32,7 +34,8 @@ def _snapshot(root):
 
 
 def test_export_copies_entire_collection_and_reuse_does_not_rewrite(case):
-    source = case.project / "scenarios" / case.collection_marker.parent.name
+    marker = json.loads(case.collection_marker.read_text())
+    source = case.project / marker["data_root"]
     # Include a product outside the explicit ready-marker lists, as a full mirror must.
     extra = source / "weathergenr/evaluation/plots/additional.png"
     extra.parent.mkdir(parents=True, exist_ok=True)
@@ -40,7 +43,9 @@ def test_export_copies_entire_collection_and_reuse_does_not_rewrite(case):
     (source / "weathergenr/empty").mkdir()
     before = _snapshot(source)
     _export(case)
-    destination = source.parent
+    destination = case.project / "scenarios"
+    if marker["data_root"].startswith("scenarios/_engine/data/"):
+        assert not (destination / case.collection_marker.parent.name).exists()
     record = json.loads((destination / "_engine/current.json").read_text())
     assert set(record["files"]) == {p.relative_to(source).as_posix() for p in before}
     assert {
@@ -107,7 +112,8 @@ def test_export_failure_preserves_previous_outputs(case, monkeypatch, failure):
         raise OSError("injected export failure")
 
     if failure == "source":
-        (root / case.collection_marker.parent.name / "series/run_1.nc").write_bytes(
+        marker = json.loads(case.collection_marker.read_text())
+        (case.project / marker["data_root"] / "series/run_1.nc").write_bytes(
             b"corrupt source"
         )
     elif failure == "copy":

@@ -30,6 +30,7 @@ FORMS = {
     "temperature": ("temp", "monthly_clim_band"),
     "timing": ("precip", "annual_timing"),
     "anomaly": ("precip", "monthly_anomaly"),
+    "percentile": ("precip", "monthly_percentile"),
     "spi": ("precip", "monthly_spi"),
     "drought-events": ("precip", "spi_events"),
     "extreme-Rx1day": ("precip", "annual_rx1day_ts"),

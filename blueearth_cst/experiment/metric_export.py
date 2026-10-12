@@ -86,6 +86,7 @@ def export_metric_set(experiment_root: Path, manifest_path: Path) -> None:
         "manifest": f"{manifest['engine_root']}/metrics.json",
         "files": files,
     }
+    destination.mkdir(parents=True, exist_ok=True)
     staging = tracking.parent / f".export-{uuid.uuid4().hex}"
     staging.mkdir()
     changed = []

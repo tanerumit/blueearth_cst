@@ -50,13 +50,15 @@ def test_shared_windows_compute_once_with_identity_checks(tmp_path):
         "reference_series_key": "hist",
         "series_key": "fut",
     }
-    windows = analysis_windows({"far1": (2080, 2099), "far2": (2081, 2100)})
+    windows = analysis_windows(
+        {"far1": (2081, 2100), "far2": (2081, 2100)}, reference_window=(2000, 2014)
+    )
     tables, record = producer.prepare_tables([point], windows, region_fp=region)
     assert len(record["windows"]) == 1
     assert record["windows"][0]["horizons"] == ["far1", "far2"]
     assert (
         record["windows"][0]["horizon_windows"]["far1"]["requested"]
-        != record["windows"][0]["horizon_windows"]["far2"]["requested"]
+        == record["windows"][0]["horizon_windows"]["far2"]["requested"]
     )
     keys = [
         "model",
@@ -69,7 +71,19 @@ def test_shared_windows_compute_once_with_identity_checks(tmp_path):
         "quantity",
     ]
     assert not tables["changes"].duplicated(keys).any()
-    assert tables["changes"].window_id.unique().tolist() == ["2071-2100"]
+    assert tables["changes"].window_id.unique().tolist() == ["2081-2100"]
+    assert record["reference"] == (2000, 2014)
+    annual = tables["changes"].loc[tables["changes"].period == "annual"]
+    assert set(annual.n_reference) == {15}
+    assert set(annual.n_future) == {20}
+    assert set(annual.status) == {"ok"}
+    seasonal = tables["changes"].loc[
+        tables["changes"].period.isin(["DJF", "MAM", "JJA", "SON"])
+    ]
+    assert set(seasonal.status) == {"ok"}
+    assert record["methods"]["season_min_years"] == {
+        "2081-2100": {"reference": 14, "future": 18}
+    }
     assert tables["member_anomalies"].year.min() == 1950
     assert tables["member_anomalies"].year.max() == 2100
     assert len(tables["availability"]) == 19

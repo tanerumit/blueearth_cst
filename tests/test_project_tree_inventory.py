@@ -85,6 +85,10 @@ COVERED: dict[str, list[str]] = {
         f"experiments/_engine/transactions/{'a' * 32}/experiment/_engine/reservation.json",
         "config/build_model/sources/project_config_baseline.yml",
         "config/analyze_projections/sources/project_config_baseline.yml",
+        "config/analyze_climate/project_config_rapid.yml",
+        "config/build_model/project_config_rapid_build_model.yml",
+        "config/analyze_projections/catalogs/cmip6_data.yml",
+        "config/analyze_projections/SOURCES.md",
         "config/_engine/execution-configs/build_model/abc/project_config_baseline.yml",
         "config/_engine/archive-transactions/build_model.json",
         # The wrapper's per-invocation manifest. Not reachable through the
@@ -205,6 +209,12 @@ COVERED: dict[str, list[str]] = {
         f"experiments/{E}/_engine/model_reference.yml",
         f"experiments/{E}/config/run_record.yml",
         f"experiments/{E}/config/sources/SOURCES.md",
+        f"experiments/{E}/config/SOURCES.md",
+        f"experiments/{E}/config/simulate_system.yml",
+        f"experiments/{E}/config/catalogs/custom-catalog.yml",
+        f"experiments/{E}/_engine/freeze-payloads/SOURCES.md",
+        f"experiments/{E}/_engine/freeze-payloads/simulate_system.yml",
+        f"experiments/{E}/_engine/freeze-payloads/catalogs/custom-catalog.yml",
         f"experiments/{E}/_engine/response_inventory.json",
         f"experiments/{E}/_engine/metric_requests/{'a' * 12}.json",
         f"experiments/{E}/_engine/metric_sets/{'b' * 12}/metrics.json",
@@ -214,6 +224,15 @@ COVERED: dict[str, list[str]] = {
         f"experiments/{E}/results/metric_sets/{'b' * 12}/group_metadata.csv",
         f"experiments/{E}/results/metric_sets/{'b' * 12}/q_run_indicators.csv",
         f"experiments/{E}/results/metric_sets/{'b' * 12}/q_group_indicators.csv",
+        f"experiments/{E}/_engine/metric_sets/{'b' * 12}/data/group_members.csv",
+        f"experiments/{E}/_engine/metric_sets/{'b' * 12}/data/group_metadata.csv",
+        f"experiments/{E}/_engine/metric_sets/{'b' * 12}/data/q_run_indicators.csv",
+        f"experiments/{E}/_engine/metric_sets/{'b' * 12}/data/q_group_indicators.csv",
+        f"experiments/{E}/_engine/metric_sets/current.json",
+        f"experiments/{E}/results/metric_sets/group_members.csv",
+        f"experiments/{E}/results/metric_sets/group_metadata.csv",
+        f"experiments/{E}/results/metric_sets/q_run_indicators.csv",
+        f"experiments/{E}/results/metric_sets/q_group_indicators.csv",
         f"experiments/{E}/hydrology/wflow/run_settings/run_001.toml",
         f"experiments/{E}/hydrology/wflow/run_settings/run_001.temporal.json",
         f"experiments/{E}/hydrology/wflow/run_settings/run_001.yml",
@@ -240,6 +259,9 @@ COVERED: dict[str, list[str]] = {
         f"scenarios/_engine/collections/{PK}/collection_intent.json",
         f"scenarios/{PK}/config/run_record.yml",
         f"scenarios/{PK}/config/sources/custom-project.yml",
+        f"scenarios/{PK}/config/custom-project.yml",
+        f"scenarios/{PK}/config/SOURCES.md",
+        f"scenarios/{PK}/config/catalogs/custom-catalog.yml",
         f"scenarios/{PK}/scenario_run_lookup.csv",
         f"scenarios/{PK}/perturbation_lookup.csv",
         f"scenarios/{PK}/series/run_001.nc",
@@ -262,6 +284,11 @@ COVERED: dict[str, list[str]] = {
     ],
 }
 
+COVERED["collections"].extend(
+    rel.replace(f"scenarios/{PK}/", f"scenarios/_engine/data/{PK}/", 1)
+    for rel in list(COVERED["collections"])
+    if rel.startswith(f"scenarios/{PK}/")
+)
 ALL_COVERED = [(section, rel) for section, rows in COVERED.items() for rel in rows]
 
 
@@ -312,7 +339,7 @@ UNDECLARED = [
     f"experiments/_engine/transactions/{'a' * 32}/sources/catalog_00.bin",
     f"experiments/_engine/transactions/{'a' * 32}/sources/project.bin.bak",
     f"experiments/_engine/transactions/{'a' * 32}/experiment/_engine/unknown.json",
-    f"experiments/{E}/_engine/freeze-payloads/unknown.json",
+    f"experiments/{E}/_engine/freeze-payloads/unknown/nested.json",
     f"experiments/{E}/_engine/freeze-payloads/sources/nested/orphan.json",
     f"experiments/{E}/_engine/batch_staging/run_01.unknown",
     "experiments/unknown_run/_engine/reservation.json",
@@ -321,14 +348,21 @@ UNDECLARED = [
     f"scenarios/{PK}/series/run_01.tmp.nc",
     f"scenarios/{PK}/weathergenr/output/unknown_dates.csv",
     f"scenarios/{PK[:-1]}/series/run_01.nc",
+    f"scenarios/_engine/data/{PK}/unknown.csv",
+    f"scenarios/_engine/data/{PK}/series/run_01.tmp.nc",
+    f"scenarios/_engine/data/{PK[:-1]}/series/run_01.nc",
     f"scenarios/_engine/requests/{PK}/{'a' * 63}.json",
     f"scenarios/_engine/requests/{PK}/initializations/invocation.json",
     f"scenarios/collections/{PK}/collection.json",
-    f"experiments/{E}/config/simulation.json",
+    f"experiments/{E}/config/unknown/simulation.json",
     f"experiments/{E}/hydrology/wflow/config/run_01.toml",
     f"experiments/{E}/results/metric_sets/{PK}/metrics.json",
     f"experiments/{E}/results/metric_sets/{PK}/metric_run_lookup.csv",
     f"experiments/{E}/results/metric_sets/{PK}/q_indicators.csv",
+    f"experiments/{E}/_engine/metric_sets/{PK}/data/q_indicators.csv",
+    f"experiments/{E}/_engine/metric_sets/{PK}/data/metrics.json",
+    f"experiments/{E}/results/metric_sets/metrics.json",
+    f"experiments/{E}/results/metric_sets/q_indicators.csv",
     f"experiments/{E}/_engine/metric_sets/{PK}/unknown.json",
     f"data/climate/ancillary/era5/{PK[:-1]}/orography.nc",
     "logs/.wf3_anything.log.tally",
@@ -352,7 +386,9 @@ UNDECLARED = [
     # whole, which would have accepted a leftover `_work/` silently -- the
     # migration's own orphan riding the very rule meant to report it.
     f"experiments/{E}/climate/weathergenr/_work/st_4.csv",
-    f"experiments/{E}/config/stress_test_design.csv",
+    # Flat source archives can capture any root filename, including a legacy
+    # product name; undeclared nested directories still remain distinguishable.
+    f"experiments/{E}/config/retired/stress_test_design.csv",
     f"experiments/{E}/indicators/Qstats.csv",  # the pre-R9 name, now retired
     # The pre-2026-08-11 WF3 run records. Stale output from an earlier run, and
     # the guard on the new "root" rows: an inventory that kept the old

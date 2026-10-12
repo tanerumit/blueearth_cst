@@ -69,8 +69,12 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
 - Use perceptually clear gradients that preserve visibility of intermediate values. For dataset-specific
   heatmaps, use the dataset hue with light-to-dark intensity encoding the displayed quantity.
 - Use rectangular colorbar extension ends and consistent title spacing (current title pad: 10 pt).
-- Do not force a zero midpoint tick into the reviewed anomaly colorbars; retain their approved ticks.
-  This supersedes the earlier request to always label zero in anomaly plots.
+- Monthly precipitation departure calendars use continuous `BrBG` (brown dry, teal wet), centred on
+  zero with symmetric limits spanning all finite pooled anomalies. Label the colourbar
+  `Precipitation anomaly (mm)` and omit cell borders to reduce visual clutter. Calendar-month
+  percentile companions use the same continuous palette over 0–100, neutral at 50, with a
+  `Precipitation percentile (%)` colourbar. Missing values remain gray. This supersedes the
+  discrete monthly-anomaly classes; SPI retains its separate conventions below.
 - Remove missing/unavailable legend rows from anomaly plots and explain missing-value handling in captions.
 - The reviewed SPI heatmaps use boundaries `-3, -2, -1, 1, 2, 3`, without a zero tick, and a colorbar
   height of 80% of the plotting area. Their final figure height is 56% of the original height.
@@ -134,6 +138,17 @@ line legend inside the upper-left of the scatter, below its panel label. Keep ta
 `performance_metrics.csv`. Use common typography, soft frames/grids and a concise publication caption
 that explains each labelled panel, without displayed titles or figure footers.
 
+WF1 peaks and lows signature sheets use the same typography, soft frames, horizontal grids and
+borderless label backgrounds. Retain the three-panel layout, regular-weight inside panel letters
+with equal physical offsets from each panel's top-left corner, and a stacked inside legend for the
+daily series. Panel c shows the full supplied simulation record with calendar-year ticks and a
+translucent vertical band spanning the selected wettest/driest calendar year. Preserve the existing
+warm-up exclusion and observation-overlap selection upstream. Frequency and daily axes show discharge
+units alone; scatter
+axes retain observed/simulated labels to distinguish their roles. Use translucent points with dark
+edges. Station identity, selected year, methods and caveats belong in the station caption inventory,
+without displayed titles or figure footers. Preserve the existing annual extremes and plotting positions.
+
 WF1 hydrological output figures default to two single-axis products per variable: a basin-average
 annual series and seasonal cycle. Optional subbasin figures repeat both products individually, never
 as panels. These figures have no displayed titles. Reconstruct the basin's native grid-cell mean from
@@ -173,6 +188,10 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | SPI fit checks | Dataset-hued p-value heatmaps; minimal panel titles; no x-axis title `Month`. |
 | Trend sensitivity | Separate slope points with confidence error bars for each eligible starting year. |
 | Monthly coverage | Compact dataset rows of monthly cells; complete, gapped and unusable states. |
+
+Trend-sensitivity panels use sparse, calendar-aligned integer year labels with minor ticks at other
+eligible starting years. Share the start-year extent across panels and name the fixed end year in the
+x-axis title; retain every slope estimate and interval regardless of label density.
 
 For WF2 change strips, tighten the gap between the horizontal scenario legend and panel titles, add short
 caps to the full-range lines, and make median bars slightly thicker than the box outlines.

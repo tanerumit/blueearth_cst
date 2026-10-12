@@ -1,5 +1,12 @@
 # WF2 suite integration — design
 
+> **Window contract superseded (2026-10-12).** The owner now requires diagnostics to use the configured
+> reference/future calendar bounds, retaining only complete water years inside them. Recentring, extension,
+> and reference fallback described below no longer apply. The seasonal minimum remains 27 observations.
+> Current behavior: `docs/site/toolbox-reference/workflow-analyze-projections.qmd`. The original decisions
+> and verification below are retained as historical evidence.
+
+
 > Verification procedure update (2026-10-07): future follow-ups use
 > [the live validation guidance](../../../reference/validation-ladder.md#planning-and-reusing-verification).
 > A passing full suite covers fast. Reuse the all-five fresh rapid outputs for WF2 acceptance checks;

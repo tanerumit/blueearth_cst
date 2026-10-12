@@ -13,11 +13,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.colors import BoundaryNorm, ListedColormap, to_hex, to_rgb
+from matplotlib.colors import BoundaryNorm, ListedColormap, Normalize, to_hex, to_rgb
 from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from matplotlib.ticker import FixedLocator, MaxNLocator, StrMethodFormatter
 
 from blueearth_cst.climate_analysis.diagnostics import SPI_SCALES, month_order
 from blueearth_cst.plotting import prepared_charts as pc
@@ -173,13 +174,7 @@ FREE_SLOTS = (("#009E73", "o"), ("#CC79A7", "o"))
 DODGE = 0.2
 
 
-DIVERGING_CLASSES = 7
-
-
 SPI_BOUNDS = [-3, -2, -1, 1, 2, 3]
-
-
-LADDER = (1, 1.5, 2, 3, 4, 5, 6, 8)
 
 
 UNITS = {
@@ -216,27 +211,11 @@ def tint(color: str) -> str:
     return to_hex(0.45 * np.array(to_rgb(color)) + 0.55)
 
 
-def diverging_cmap() -> ListedColormap:
-    return ListedColormap(
-        plt.get_cmap("RdBu", DIVERGING_CLASSES)(np.arange(DIVERGING_CLASSES))
-    )
-
-
 def anomaly_bounds(values: np.ndarray) -> list[float]:
-    """Symmetric class bounds for the anomaly calendar from pooled |anomaly| (figure-rules §3.4)."""
+    """Symmetric continuous scale spanning all finite pooled monthly anomalies."""
     a = np.abs(values[np.isfinite(values)])
-    if not a.size:
-        return [-1.0, 1.0]
-    breaks: list[float] = []
-    for q in np.quantile(a, [0.33, 0.67, 0.90]):
-        if q <= 0:
-            continue
-        exp = 10.0 ** np.floor(np.log10(q))
-        cand = np.array(LADDER + (10,)) * exp
-        b = float(cand[np.argmin(np.abs(cand - q))])
-        if not breaks or b > breaks[-1]:
-            breaks.append(b)
-    return [-b for b in reversed(breaks)] + breaks
+    limit = float(a.max()) if a.size and a.max() > 0 else 1.0
+    return [-limit, limit]
 
 
 def fmt_signed(x: float, digits: int = 0) -> str:
@@ -505,22 +484,35 @@ def _stack(v: View):
 
 
 def anomaly(v: View) -> Figure:
+    """Absolute monthly departures on a continuous, zero-centred shared scale."""
+    return _monthly_departures(v, percentile=False)
+
+
+def percentile(v: View) -> Figure:
+    """Calendar-month empirical percentiles, neutral at the reference median."""
+    return _monthly_departures(v, percentile=True)
+
+
+def _monthly_departures(v: View, *, percentile: bool) -> Figure:
+    """Draw comparable monthly calendars with continuous dry-to-wet colours."""
     bounds = v.anom_bounds or [-1.0, 1.0]
-    norm = BoundaryNorm(bounds, DIVERGING_CLASSES, extend="both")
+    limit = max(abs(bounds[0]), abs(bounds[-1]))
+    norm = Normalize(0, 100) if percentile else Normalize(-limit, limit)
+    key = "percentile" if percentile else "anomaly"
+    cmap = plt.get_cmap("BrBG").with_extremes(bad=MISSING)
     fig, axs, stack = _stack(v)
     mesh = None
     for i, (ax, s) in enumerate(zip(axs[:, 0], v.sources)):
         ax.set_facecolor(MISSING)
         heatmap_frame(ax)
-        grid = v.results[s]["anomaly"].reindex(columns=v.years)
+        grid = v.results[s][key].reindex(columns=v.years)
         mesh = ax.pcolormesh(
             v.years,
             np.arange(1, 13),
             grid,
-            cmap=diverging_cmap(),
+            cmap=cmap,
             norm=norm,
-            edgecolors=GRID,
-            linewidth=0.25,
+            edgecolors="none",
             rasterized=True,
         )
         heatmap_months(ax, v.m0)
@@ -528,7 +520,16 @@ def anomaly(v: View) -> Figure:
             ax.set_title(f"{chr(97 + i)}) {v.labels[s]}")
     axs[-1, 0].set_xlim(v.years[0] - 0.5, v.years[-1] + 0.5)
     five_year_ticks(axs[-1, 0], v.years)
-    colourbar(fig, mesh, axs[:, 0].tolist(), "Precip.\n(mm)", bounds, stack)
+    ticks = (
+        [0, 25, 50, 75, 100]
+        if percentile
+        else MaxNLocator(nbins=4).tick_values(-limit, limit)
+    )
+    ticks = [tick for tick in ticks if norm.vmin <= tick <= norm.vmax]
+    label = (
+        "Precipitation\npercentile (%)" if percentile else "Precipitation\nanomaly (mm)"
+    )
+    colourbar(fig, mesh, axs[:, 0].tolist(), label, ticks, stack)
     fig.get_layout_engine().set(rect=(0, 0, 0.94, 1))
     return fig
 
@@ -1033,15 +1034,21 @@ def _annual_trends(
 def sensitivity(v: View) -> Figure:
     """Sen slope with dependence-adjusted interval for each start year (end fixed); filled = p < 0.05."""
     fig, axs = new_fig(H_SIDE2, 1, 2, width_mm=W_FULL, sharex=True)
+    starts = sorted(
+        {
+            year
+            for s in v.sources
+            for key in ("total", "Rx1day")
+            for year in v.results[s]["sensitivity"][key].index
+        }
+    )
     for i, (ax, (key, title)) in enumerate(
         zip(axs[0], (("total", "Annual precipitation"), ("Rx1day", "Rx1day")))
     ):
-        starts = set()
         for j, s in enumerate(v.sources):
             t = v.results[s]["sensitivity"][key]
             if t.empty:
                 continue
-            starts.update(t.index)
             x = t.index.to_numpy() + dodge(j, len(v.sources))
             c = v.color(s)
             edge = to_hex(0.65 * np.array(to_rgb(c)))
@@ -1067,13 +1074,18 @@ def sensitivity(v: View) -> Figure:
                     capthick=1.2,
                     zorder=3,
                 )
-        ax.set_xticks(sorted(starts))
+        ax.xaxis.set_major_locator(
+            MaxNLocator(nbins=5, integer=True, steps=[1, 2, 5, 10])
+        )
+        ax.xaxis.set_major_formatter(StrMethodFormatter("{x:.0f}"))
+        ax.xaxis.set_minor_locator(FixedLocator(starts))
+        ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
         if starts:
             ax.set_xlim(min(starts) - 0.5, max(starts) + 0.5)
         ax.axhline(0, color=MUTED, lw=LW_REF)
         ax.set_title(f"{chr(97 + i)}) {title}")
         ax.set_ylabel(UNITS["mm_decade"])
-        ax.set_xlabel(f"Start year (end {v.years[-1]})")
+        ax.set_xlabel(f"Trend start year (fixed end: {v.years[-1]})")
         ygrid(ax)
     sig = [
         Line2D(
@@ -1166,6 +1178,7 @@ CHARTS: dict[str, Callable[[View], Figure | str]] = {
     "temperature": temperature,
     "timing": timing,
     "anomaly": anomaly,
+    "percentile": percentile,
     "spi": spi,
     "drought-events": drought_events,
     **{f"extreme-{m}": extremes(m) for m in EXTREME_LABELS},

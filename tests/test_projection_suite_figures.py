@@ -126,6 +126,29 @@ def suite():
     return tables, record
 
 
+def test_seasonal_strip_explains_unavailable_panels(suite):
+    tables, record = suite
+    models = tables["model_changes"].copy()
+    models.loc[models.period.isin(["DJF", "MAM", "JJA", "SON"]), "value"] = np.nan
+    tables = {
+        **tables,
+        "model_changes": models,
+        "change_summary": analysis.ensemble_summary(models),
+    }
+    fig = render_product(
+        "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
+        tables,
+        record,
+        window_id="2036-2065",
+    )
+    assert not fig.axes[0].texts
+    for ax in fig.axes[1:]:
+        assert [text.get_text() for text in ax.texts] == [
+            "No eligible\nmodel estimates"
+        ]
+    plt.close(fig)
+
+
 def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
     tables, record = suite
     for row in tables["availability"].to_dict("records"):
@@ -210,7 +233,11 @@ def test_captions_and_distinct_folder_contract(suite):
     ):
         assert phrase in text
     horizons = {"far": [2071, 2100], "later": [2081, 2100]}
-    assert contract.suite_folders(horizons) == ["full_period", "period_2071_2100"]
+    assert contract.suite_folders(horizons) == [
+        "full_period",
+        "period_2071_2100",
+        "period_2081_2100",
+    ]
     assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 19
 
 

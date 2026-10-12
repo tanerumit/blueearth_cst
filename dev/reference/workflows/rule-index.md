@@ -177,7 +177,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
 | `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
-| `<wg>/` | `<project>/scenarios/<collection_id>/weathergenr/` (current products; predecessor captures use `<exp>/climate/weathergenr/`) |
+| `<wg>/` | `<project>/scenarios/_engine/data/<collection_id>/weathergenr/` |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
 
 ---
@@ -410,7 +410,8 @@ the launcher archive, the merged log and the benchmark table) so one
 
 **Launcher archive.** `scripts/run_workflow.py` captures source bytes before
 Snakemake parses configuration and publishes
-`config/build_model/{run_record.yml,sources/}`. There is no rule 1.01.
+`config/build_model/`: `run_record.yml`, captured inputs, `SOURCES.md`, and `catalogs/`.
+There is no rule 1.01.
 
 #### 1.01 · `delineate_region`
 
@@ -809,7 +810,8 @@ plots, the merged log and the benchmark table.
 **Writes.** Nothing of its own.
 
 **Launcher archive.** `scripts/run_workflow.py` publishes
-`config/analyze_projections/{run_record.yml,sources/}` before WF2 starts.
+`config/analyze_projections/` before WF2 starts, with captured files beside
+`run_record.yml` and catalogs in `catalogs/`.
 There is no rule 2.01.
 
 #### 2.01 · `delineate_region`
@@ -873,17 +875,20 @@ figure rendering. Kept as one rule deliberately: stage B has no fan-out.
 
 #### 2.05b · `prepare_projection_analysis`
 
-**Does.** Computes 30-WY analysis diagnostics from the same declared scalar series as 2.05, asserting
-their identities against the current polygon. Future windows are centred, shifted at acquisition ends,
-and joined with the same member's historical series when necessary. The reference uses the last 30
-complete configured WY, otherwise January WY 1985–2014 or October WY 1984–2013. Each distinct future
+**Does.** Computes diagnostics from the same declared scalar series as 2.05, asserting
+their identities against the current polygon. Reference and future windows retain complete water years
+inside their configured calendar bounds, without extending or recentering. Invalid acquisition bounds
+or spans with no complete water year are rejected. Each distinct future
 window is computed once. Reductions give each model equal weight; retained year coordinates feed the
 seeded white-noise variability benchmark. Unavailable products carry reasons rather than placeholders.
 
 **Writes.** `<proj>/analysis/*.csv` and `_engine/analysis_record.json`: coverage, changes, equal-model summaries,
 family sign agreement, climatology, annual anomalies, variability ratios and final product availability.
-The record distinguishes these analysis windows and the mean-keyed dry rule from the aligned CSVs'
-configured windows and per-statistic dry rule. Seasonal precipitation percentages use rates, a documented
+The record reports configured bounds, effective dates/counts and seasonal eligibility thresholds.
+Seasonal diagnostics require 90% of each owned window's years, rounded up, with a minimum of three
+complete observations; reference and future thresholds are separate.
+The mean-keyed dry rule differs from the aligned CSVs' per-statistic rule.
+Seasonal precipitation percentages use rates, a documented
 lab-parity exception; CV uses integrals. Analysis-only float64 promotion preserves the aligned kernels.
 
 #### 2.06 · `plot_climate_projections`
@@ -966,10 +971,12 @@ it moved up one number in the 2026-09-24 rule-naming migration.
 
 Requests and plans live under `scenarios/_engine/requests/<request>/`. A
 collection's scientific records live under
-`scenarios/_engine/collections/<collection>/`, and its user-facing products under
-`scenarios/<collection>/`: `series/`, `scenario_run_lookup.csv`,
+`scenarios/_engine/collections/<collection>/`, and its immutable products under
+`scenarios/_engine/data/<collection>/`: `series/`, `scenario_run_lookup.csv`,
 `perturbation_lookup.csv`, `weathergenr/` and the creator `config/` archive. The
 frozen plan identifies the collection; consumers never scan for the latest match.
+The current products are exported directly to `scenarios/`. Existing collections at
+`scenarios/<collection>/` remain readable and reusable without migration.
 
 # WF4 — system simulation (`simulate_system.smk`)
 

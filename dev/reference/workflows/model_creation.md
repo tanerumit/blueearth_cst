@@ -44,9 +44,9 @@ to have one home.
   figures). Subject to `MIN_HISTORICAL_YEARS`, which is weathergenr's floor.
 - `workflows.build_model.simulation_window` — the period the model is RUN
   over (rule 1.09): the forcing prepared for it and the wflow TOML's `[time]`
-  window, which are necessarily the same span. **Optional**; absent means exact
-  passthrough of `historical_window`, so a config predating the key is
-  unaffected. Must sit INSIDE the record: rule 1.09 builds the forcing from the
+  window, which are necessarily the same span. **Required**; declare inclusive
+  `{start, end}` years explicitly, even when they equal `climate.window`.
+  Must sit INSIDE the record: rule 1.09 builds the forcing from the
   extracted store, so a simulation period outside it has no data behind it.
   (This was unconstrained when the key shipped, while the forcing still came
   from the data catalog.) No length floor applies — the ≥16-year minimum is

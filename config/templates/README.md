@@ -57,8 +57,8 @@ support a stress test at all. The floor is `constraints.min_historical_years` in
 `config/advanced_settings.yml` and is **not** overridable per project.
 
 The window is inclusive water years; the model's own run period
-(`simulation_window` in the build_model file) may be shorter and must sit inside
-it.
+(`simulation_window` in the build_model file) is required, may be shorter, and
+must sit inside it. It does not default to the full climate record.
 
 ### `members.preference` — why four labels, not one
 

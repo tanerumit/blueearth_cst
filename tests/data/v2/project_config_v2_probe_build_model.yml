@@ -19,6 +19,5 @@ engine:
 observations:
   river discharge: null
 
-# `simulation_window` is deliberately ABSENT. It is C-71, which P1 already
-# moved; it is optional and falls back to `climate.window`. Leaving it out
-# keeps this file to what P1b changed.
+# The Wflow run period must now be explicit; retain this probe's former period.
+simulation_window: {start: 2000, end: 2020}

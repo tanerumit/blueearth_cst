@@ -8,12 +8,14 @@ record, because rule 1.10 builds its forcing from the extracted store. The key
 shipped unconstrained, correctly at the time: the forcing then came from the
 data catalog and the extraction was not in its path at all.
 
-The load-bearing property here is the passthrough. Every config written before
-this key existed carries only `historical_window`, so "absent" has to mean
-exactly that window — not a default that happens to look like it.
+The run period is mandatory: omitting it must not turn a long climate record
+into an unintended long Wflow simulation.
 """
 
+from pathlib import Path
+
 import pytest
+import yaml
 
 from blueearth_cst.shared.snake_utils import resolve_simulation_window
 
@@ -29,27 +31,20 @@ def _shared(start=2000, end=2020):
     return {"window": _window(start, end)}
 
 
-# --- the default path: what every pre-existing config takes --------------------
+# --- an explicit run period is required ---------------------------------------
 
 
-def test_absent_key_passes_the_historical_window_through():
-    shared = _shared()
-    assert resolve_simulation_window(shared, {}) == shared["window"]
-
-
-def test_passthrough_is_the_same_object_not_a_reconstruction():
-    """A rebuilt-but-equal mapping would drift the moment either side gains a
-    field. Identity makes 'unchanged behaviour' structural rather than asserted."""
-    shared = _shared()
-    assert resolve_simulation_window(shared, {}) is shared["window"]
-
-
-def test_an_explicit_null_is_still_passthrough():
-    """A commented-out key that gets uncommented empty is a plausible edit, and
-    it should behave as absent rather than crash."""
-    shared = _shared()
-    got = resolve_simulation_window(shared, {"simulation_window": None})
-    assert got == shared["window"]
+@pytest.mark.parametrize("model", [{}, {"simulation_window": None}])
+def test_missing_window_names_the_key_and_owning_file(model):
+    with pytest.raises(ValueError) as error:
+        resolve_simulation_window(
+            _shared(1970, 2020), model, model_source="project_config_build_model.yml"
+        )
+    message = str(error.value)
+    assert "build_model.simulation_window" in message
+    assert "is required" in message
+    assert "project_config_build_model.yml" in message
+    assert "does not default to the full climate record" in message
 
 
 # --- the override path ---------------------------------------------------------
@@ -59,6 +54,21 @@ def test_an_explicit_window_wins_over_the_historical_one():
     sim = _window(2010, 2015)
     got = resolve_simulation_window(_shared(), {"simulation_window": sim})
     assert got == sim
+
+
+def test_scaffold_declares_a_shorter_model_run_inside_the_climate_record():
+    templates = Path(__file__).resolve().parents[1] / "config/templates"
+    project = yaml.safe_load(
+        (templates / "project_config.template.yml").read_text(encoding="utf-8")
+    )
+    model = yaml.safe_load(
+        (templates / "project_config.build_model.template.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    window = resolve_simulation_window(project["climate"], model)
+    record = project["climate"]["window"]
+    assert window["end"] - window["start"] < record["end"] - record["start"]
 
 
 def test_the_simulation_window_must_sit_inside_the_record():
@@ -115,7 +125,7 @@ def test_a_window_overhanging_either_end_is_rejected():
 
 
 def test_a_window_equal_to_the_record_is_accepted():
-    """Inside is inclusive — the default case is exactly this window."""
+    """Inside is inclusive; explicitly choosing the full record is allowed."""
     record = _shared(2000, 2020)
     sim = _window(2000, 2020)
     assert resolve_simulation_window(record, {"simulation_window": sim}) == sim

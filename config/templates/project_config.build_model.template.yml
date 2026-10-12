@@ -26,11 +26,11 @@ observations:
 #  RUN PERIOD
 # -----------------------------------------------------------------------------
 
-# Years the model runs over, inclusive. Default: all of `climate.window`.
-# Must lie inside `climate.window`. Can be short.
-#simulation_window:
-#  start: 2000
-#  end: 2020
+# Required inclusive years for the Wflow run, inside `climate.window`.
+# Choose this separately from the longer climate record; short runs are allowed.
+simulation_window:
+  start: 2010
+  end: 2016
 
 
 # -----------------------------------------------------------------------------

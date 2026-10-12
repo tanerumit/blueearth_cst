@@ -157,6 +157,25 @@ def test_model_recipe_guard_precedes_model_existence(case):
     assert before != after
 
 
+@pytest.mark.parametrize("settings", [{}, {"simulation_window": None}])
+def test_missing_model_window_is_refused_upfront(case, settings):
+    case[3].write_text(
+        "# simulation_window is commented out.\n" + yaml.safe_dump(settings),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="build_model.simulation_window.*is required"):
+        project_request(case, execute_model=True)
+
+
+def test_model_window_outside_climate_record_is_refused_upfront(case):
+    case[3].write_text(
+        yaml.safe_dump({"simulation_window": {"start": 1999, "end": 2016}}),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="not inside climate.window"):
+        project_request(case, execute_model=True)
+
+
 def test_unclassified_simulation_field_refused(case):
     document = yaml.safe_load(case[2].read_bytes())
     document["new_scientific_parameter"] = 3

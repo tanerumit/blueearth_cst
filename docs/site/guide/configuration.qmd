@@ -176,6 +176,12 @@ observations:
 simulation_window: {start: 2010, end: 2016}
 ```
 
+`build_model.simulation_window` is required and must fit inside `climate.window`.
+Choose the Wflow run period separately from the longer climate analysis record.
+Existing configs that omitted or commented out this setting must add inclusive
+`start` and `end` years. Use the climate record's endpoints explicitly to retain
+the former full-record run, or select a shorter period.
+
 Use unquoted `true` or `false` for `enabled:`.
 
 You can omit `config_path:` when a workflow is disabled and has no settings

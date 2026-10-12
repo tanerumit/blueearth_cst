@@ -541,9 +541,9 @@ which builds the forcing for the model grid and — through the recipe's
 `setup_config` step — writes the run window and forcing pointer into the model
 TOML.
 
-The window is `workflows.build_model.simulation_window`, falling back to
-`shared.historical_window` when unset (2026-08-10). That is the SIMULATION
-period, not the extraction period, and it must sit inside the record.
+The required window is `workflows.build_model.simulation_window`, declared as
+inclusive `{start, end}` years. That is the SIMULATION period, not the extraction
+period, and it must sit inside `climate.window`.
 
 **Reads the climate store, not the catalog.** This rule declares
 `extract_historical.nc` as an input and generates a one-entry catalog

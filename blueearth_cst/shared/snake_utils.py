@@ -603,11 +603,11 @@ def resolve_simulation_window(
     keeping the >=16-year record a stress test needs — which the single-key
     form could not express.
 
-    OPTIONAL, and absent means EXACT passthrough of ``historical_window`` — not
-    a default that happens to coincide. Every config written before this key
-    existed therefore behaves identically.
+    REQUIRED: declare the model run period explicitly, even when it equals
+    ``climate.window``. A long climate record must not silently become a long
+    Wflow simulation when this key is omitted or commented out.
 
-    Returns a mapping with ``starttime``/``endtime``; raises ``ValueError``
+    Returns a mapping with inclusive ``start``/``end`` years; raises ``ValueError``
     naming the offending key if the window is malformed.
     ``shared_source`` and ``model_source`` name the FILES the two values were
     authored in, and appear in the refusal below. Both default to ``None``, so
@@ -626,7 +626,12 @@ def resolve_simulation_window(
     where_shared = f" (in {shared_source})" if shared_source else ""
     window = get_config(model_cfg, "simulation_window", None)
     if window is None:
-        return get_config(climate_cfg, "window", optional=False)
+        raise ValueError(
+            f"workflows.build_model.simulation_window{where_model} is required: "
+            "declare {start: YEAR, end: YEAR} in the build_model config. "
+            "The Wflow run period must sit inside climate.window; it does not "
+            "default to the full climate record"
+        )
     # R14 `C-71`: years on this side too, so the two windows a user compares are
     # written in one unit. `historical_window_bounds` is the only parser, so a
     # malformed value is diagnosed once, in one voice, wherever it was authored.

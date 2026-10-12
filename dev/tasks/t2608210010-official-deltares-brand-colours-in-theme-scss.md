@@ -5,7 +5,7 @@ status: backlog
 effort: 1
 area: docs
 origin: quarto-docs-site (2026-08-19)
-queue: 20
+queue: 21
 created: 2026-08-21
 updated: 2026-10-10
 ---

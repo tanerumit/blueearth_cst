@@ -2,7 +2,10 @@
 
 import copy
 import hashlib
+import logging
 import shutil
+import subprocess
+import sys
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,6 +14,7 @@ import pytest
 import yaml
 
 from blueearth_cst.experiment import reservation, reservation_context
+from blueearth_cst.experiment import reservation_request as request_module
 from blueearth_cst.experiment.reservation_request import capture_request
 from blueearth_cst.experiment.response_inventory import publish_response_inventory_v2
 from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
@@ -27,6 +31,16 @@ from scripts import generate_scenarios, run_workflows
 from tests import _v2_experiment as helper
 
 REPOSITORY = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture
+def catalog_console(monkeypatch):
+    """Exercise the real HydroMT console logger, independent of pytest's setup."""
+    logger = logging.getLogger("hydromt.data_catalog.data_catalog")
+    monkeypatch.setattr(logger, "handlers", [])
+    monkeypatch.setattr(logger, "level", logging.INFO)
+    monkeypatch.setattr(logger, "propagate", False)
+    yield logger
 
 
 def write_yaml(path, document):
@@ -258,8 +272,20 @@ def test_new_flag_with_disabled_simulation_refuses_before_producers(
     assert not (pending.project / "experiments/_engine").exists()
 
 
-def test_public_runner_reserves_before_first_producer(pending, monkeypatch):
+def test_public_runner_reserves_before_first_producer(
+    pending, monkeypatch, capfd, catalog_console
+):
+    # Bind in the test call phase: pytest replaces streams after fixture setup.
+    catalog_console.addHandler(logging.StreamHandler(sys.stderr))
     observed = []
+    catalog_reads = []
+    original_catalog_value = request_module._catalog_value
+
+    def catalog_value(path):
+        catalog_reads.append(path)
+        return original_catalog_value(path)
+
+    monkeypatch.setattr(request_module, "_catalog_value", catalog_value)
 
     def first_producer(*args, **kwargs):
         context = kwargs["reservation_context"]
@@ -281,12 +307,71 @@ def test_public_runner_reserves_before_first_producer(pending, monkeypatch):
         run_workflows.run(str(pending.config), 1, [], project_dir=pending.project) == 17
     )
     assert len(observed) == 1
+    assert len(catalog_reads) >= 3  # Admission, its recheck, and the first handoff.
+    captured = capfd.readouterr()
+    output = captured.out + captured.err
+    assert "run_workflows" in output
+    assert "Parsing data catalog" not in output
+    assert "Logging error" not in output
     assert (
         reservation.read_reservation(pending.project, "stress_test_01")[
             "reservation_id"
         ]
         == observed[0]
     )
+
+
+@pytest.mark.parametrize("failed", [False, True])
+def test_catalog_resolution_keeps_warnings_and_failed_diagnostics(
+    pending, monkeypatch, capfd, catalog_console, failed
+):
+    import hydromt
+
+    catalog_console.addHandler(logging.StreamHandler(sys.stderr))
+
+    def catalog(*args, **kwargs):
+        catalog_console.info("Parsing data catalog from tiny-catalog.yml")
+        catalog_console.warning("WARNING: catalog source diagnostic")
+        if failed:
+            raise ValueError("catalog resolution failed")
+        return type("ResolvedCatalog", (), {"to_dict": lambda self: {}})()
+
+    monkeypatch.setattr(hydromt, "DataCatalog", catalog)
+    if failed:
+        with pytest.raises(ValueError, match="catalog resolution failed"):
+            request_module._catalog_value(pending.catalog)
+    else:
+        request_module._catalog_value(pending.catalog)
+    captured = capfd.readouterr()
+    output = captured.out + captured.err
+    assert "WARNING: catalog source diagnostic" in output
+    assert ("Parsing data catalog" in output) is failed
+    assert "Logging error" not in output
+
+
+@pytest.mark.process_isolation
+def test_catalog_metadata_resolution_is_quiet_in_fresh_process(pending):
+    """Use HydroMT's own startup handler, without pytest's logging setup."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from blueearth_cst.experiment.reservation_request import _catalog_value; "
+            "import sys; "
+            "values = [_catalog_value(sys.argv[1]) for _ in range(3)]; "
+            "assert values[0] == values[1] == values[2]; "
+            "assert 'elevation' in values[0]['resolved_sources']; "
+            "print('catalog checks complete')",
+            str(pending.catalog),
+        ],
+        cwd=REPOSITORY,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.strip() == "catalog checks complete"
+    assert result.stderr == ""
 
 
 @pytest.mark.parametrize("state", ["pending", "resolved", "simulation_bound"])

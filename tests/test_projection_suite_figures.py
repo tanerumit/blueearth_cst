@@ -210,7 +210,11 @@ def test_captions_and_distinct_folder_contract(suite):
     ):
         assert phrase in text
     horizons = {"far": [2071, 2100], "later": [2081, 2100]}
-    assert contract.suite_folders(horizons) == ["full_period", "period_2071_2100"]
+    assert contract.suite_folders(horizons) == [
+        "full_period",
+        "period_2071_2100",
+        "period_2081_2100",
+    ]
     assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 19
 
 

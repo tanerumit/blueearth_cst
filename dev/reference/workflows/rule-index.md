@@ -873,17 +873,18 @@ figure rendering. Kept as one rule deliberately: stage B has no fan-out.
 
 #### 2.05b · `prepare_projection_analysis`
 
-**Does.** Computes 30-WY analysis diagnostics from the same declared scalar series as 2.05, asserting
-their identities against the current polygon. Future windows are centred, shifted at acquisition ends,
-and joined with the same member's historical series when necessary. The reference uses the last 30
-complete configured WY, otherwise January WY 1985–2014 or October WY 1984–2013. Each distinct future
+**Does.** Computes diagnostics from the same declared scalar series as 2.05, asserting
+their identities against the current polygon. Reference and future windows retain complete water years
+inside their configured calendar bounds, without extending or recentering. Invalid acquisition bounds
+or spans with no complete water year are rejected. Each distinct future
 window is computed once. Reductions give each model equal weight; retained year coordinates feed the
 seeded white-noise variability benchmark. Unavailable products carry reasons rather than placeholders.
 
 **Writes.** `<proj>/analysis/*.csv` and `_engine/analysis_record.json`: coverage, changes, equal-model summaries,
 family sign agreement, climatology, annual anomalies, variability ratios and final product availability.
-The record distinguishes these analysis windows and the mean-keyed dry rule from the aligned CSVs'
-configured windows and per-statistic dry rule. Seasonal precipitation percentages use rates, a documented
+The record reports configured bounds and effective dates/counts. Seasonal changes still require 27 complete
+observations in each period. The mean-keyed dry rule differs from the aligned CSVs' per-statistic rule.
+Seasonal precipitation percentages use rates, a documented
 lab-parity exception; CV uses integrals. Analysis-only float64 promotion preserves the aligned kernels.
 
 #### 2.06 · `plot_climate_projections`

@@ -317,7 +317,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "analyze_projections",
         "png",
-        "{clim_project_dir}/plots/period_2036_2065/cmip6_precip_temp_annual_change_cloud_basin_avg.png",
+        "{clim_project_dir}/plots/period_2046_2054/cmip6_precip_temp_annual_change_cloud_basin_avg.png",
     ),
     (
         "analyze_projections",

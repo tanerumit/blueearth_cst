@@ -131,6 +131,11 @@ def caption(filename, record, window_id="", counts=None):
                     f"Configured future window: {configured[0]}–{configured[1]}."
                 )
             text.append("The change-factor CSV uses the configured windows.")
+            for period, bounds in window.get("effective", {}).items():
+                text.append(
+                    f"Effective {period}: {bounds['start']}–{bounds['end']} "
+                    f"({bounds['n_water_years']} complete water years)."
+                )
             original = window.get("horizon_windows", {"window": window})
             for horizon, supplied in original.items():
                 if supplied.get("shifted"):

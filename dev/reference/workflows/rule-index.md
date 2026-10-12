@@ -410,7 +410,8 @@ the launcher archive, the merged log and the benchmark table) so one
 
 **Launcher archive.** `scripts/run_workflow.py` captures source bytes before
 Snakemake parses configuration and publishes
-`config/build_model/{run_record.yml,sources/}`. There is no rule 1.01.
+`config/build_model/`: `run_record.yml`, captured inputs, `SOURCES.md`, and `catalogs/`.
+There is no rule 1.01.
 
 #### 1.01 · `delineate_region`
 
@@ -809,7 +810,8 @@ plots, the merged log and the benchmark table.
 **Writes.** Nothing of its own.
 
 **Launcher archive.** `scripts/run_workflow.py` publishes
-`config/analyze_projections/{run_record.yml,sources/}` before WF2 starts.
+`config/analyze_projections/` before WF2 starts, with captured files beside
+`run_record.yml` and catalogs in `catalogs/`.
 There is no rule 2.01.
 
 #### 2.01 · `delineate_region`

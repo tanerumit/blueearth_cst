@@ -227,6 +227,12 @@ is used. The current collection is exported directly to `scenarios/` for inspect
 Existing collections at `scenarios/<collection_id>/` remain readable and reusable in place;
 new runs no longer create that visible hashed directory.
 
+Across all five workflows, configuration archives put captured project/workflow files and
+`SOURCES.md` beside `run_record.yml`, with catalogs in `catalogs/`. New archives use
+`source-archive/2`; existing `source-archive/1` archives retain their `sources/` layout and remain
+readable without migration. Reserved or colliding names receive deterministic suffixes, with original
+paths recorded in the manifest and source index. Execution and recovery roots stay under `_engine/`.
+
 Each `experiments/<experiment_name>/` retains `_engine/simulation.json`, its native
 `hydrology/wflow/output/<run_id>.csv` responses and
 `_engine/response_inventory.json`. Metric sets live in

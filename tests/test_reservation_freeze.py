@@ -211,8 +211,22 @@ def interrupt(pending, monkeypatch, boundary):
             freeze(pending)
 
 
-def test_initial_freeze_publishes_checked_pair_and_repeat_is_byte_noop(pending):
-    assert freeze(pending) == pending.intent
+@pytest.mark.parametrize("legacy_archive", [False, True])
+def test_initial_freeze_publishes_checked_pair_and_repeat_is_byte_noop(
+    pending, monkeypatch, legacy_archive
+):
+    from blueearth_cst.shared import workflow_config_snapshot as snapshot
+    from tests.test_source_archive import _legacy_archive
+
+    writer = snapshot.run_record_document
+    with monkeypatch.context() as patch:
+        if legacy_archive:
+            patch.setattr(
+                snapshot,
+                "run_record_document",
+                lambda **kwargs: _legacy_archive(*writer(**kwargs)),
+            )
+        assert freeze(pending) == pending.intent
     assert_bound_pair(pending)
     before = inventory(pending.project)
     assert freeze(pending) == pending.intent

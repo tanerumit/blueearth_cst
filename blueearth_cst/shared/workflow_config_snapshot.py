@@ -219,7 +219,11 @@ def write_snapshot(
 
 
 RUN_RECORD_VERSION = "run-record/2"
-ARCHIVE_VERSION = "source-archive/1"
+ARCHIVE_VERSION = "source-archive/2"
+_LEGACY_ARCHIVE_VERSION = "source-archive/1"
+_ARCHIVE_RESERVED_NAMES = frozenset(
+    {"run_record.yml", "sources.md", "catalogs", "sources", "_engine", "predecessor"}
+)
 TRANSACTION_VERSION = "archive-transaction/1"
 
 
@@ -299,54 +303,47 @@ def _is_catalog_role(role: str) -> bool:
 
 
 def source_archive_paths(sources: Sequence[CapturedSource]) -> dict[str, str]:
-    """Return each source's flat archive path: ``sources/<name>``, no nesting.
+    """Place captured files beside the record, with catalogs in ``catalogs/``.
 
-    Every non-catalog source lands directly under ``sources/``; a catalog
-    (``"catalog"`` anywhere in ``role``, e.g. ``data_catalog``,
-    ``projection_catalog``, plus ``projection_store_index`` which travels
-    with ``projection_catalog``) lands under ``sources/catalogs/`` instead,
-    for convenience only -- there is no third bucket. Neither reflects where
-    the file actually lived: that directory is not spent on path structure here.
-    It is retained plainly, per source, in ``run_record.yml``'s
-    ``original_path`` field, and mirrored for a reader who does not want to
-    open that record by :func:`write_source_index`'s generated
-    ``sources/SOURCES.md``.
-
-    The one thing a flat layout can lose that a mirrored tree could not is two
-    DIFFERENT files sharing a basename (a project catalog and a build config
-    both plausibly named ``config.yml`` from separate directories). Detected by
-    original path, not by content: two sources with the same original path are
-    the same file captured under two ids and legitimately share one archive
-    path. Two DIFFERENT original paths that would collide are disambiguated by
-    suffixing the losing name with :func:`~blueearth_cst.shared.provenance.
-    short_digest` of its own content hash -- deterministic, and the same
-    naming convention already used for a bundle's own directory name.
+    Original locations remain in the record and ``SOURCES.md``. Names are
+    compared case-insensitively on every platform so archives stay portable.
+    Reserved names and colliding basenames gain a deterministic suffix from
+    their original path and bytes; equal bytes at different paths stay distinct.
     """
     if not sources:
         raise ValueError("an archive needs at least the project source")
     paths: dict[str, str] = {}
-    occupied: dict[str, str] = {}
+    occupied: dict[str, str | None] = dict.fromkeys(_ARCHIVE_RESERVED_NAMES)
     for source in sorted(sources, key=lambda item: item.id):
-        bucket = "sources/catalogs" if _is_catalog_role(source.role) else "sources"
+        bucket = "catalogs/" if _is_catalog_role(source.role) else ""
         name = source.original_path.name
-        candidate = f"{bucket}/{name}"
-        key = candidate.casefold() if os.name == "nt" else candidate
+        if not name or name in {".", ".."} or any(c in name for c in "\\/:"):
+            raise ValueError(f"unsafe source basename: {name!r}")
+        candidate = f"{bucket}{name}"
+        key = candidate.casefold()
         original = str(source.original_path)
         if key in occupied and occupied[key] != original:
-            digest = short_digest(hashlib.sha256(source.data).hexdigest())
+            digest = short_digest(
+                hashlib.sha256(
+                    original.encode("utf-8") + b"\0" + source.data
+                ).hexdigest()
+            )
             stem = source.original_path.stem
             suffix = source.original_path.suffix
-            candidate = f"{bucket}/{stem}-{digest}{suffix}"
-            key = candidate.casefold() if os.name == "nt" else candidate
-            if key in occupied and occupied[key] != original:
-                raise ValueError(f"source archive path collision: {candidate}")
+            candidate = f"{bucket}{stem}-{digest}{suffix}"
+            key = candidate.casefold()
+            counter = 2
+            while key in occupied and occupied[key] != original:
+                candidate = f"{bucket}{stem}-{digest}-{counter}{suffix}"
+                key = candidate.casefold()
+                counter += 1
         occupied[key] = original
         paths[source.id] = candidate
     return paths
 
 
 def write_source_index(sources: Sequence[CapturedSource]) -> str:
-    """Render ``sources/SOURCES.md``: the flat-name -> original-directory map.
+    """Render ``SOURCES.md``: the archive-name -> original-directory map.
 
     Generated at publish time from the same data as ``run_record.yml``'s
     ``original_path`` field -- it is a convenience mirror, not a second source
@@ -361,7 +358,7 @@ def write_source_index(sources: Sequence[CapturedSource]) -> str:
     lines = [
         "# Source directories",
         "",
-        "Flat names under `sources/` do not carry their original directory --",
+        "Captured files beside this index do not carry their original directory --",
         "this is a generated index, not a source file itself. The same fact is",
         "recorded per source in `run_record.yml`'s `original_path` field.",
         "",
@@ -397,9 +394,7 @@ def _source_entries(
         previous = payloads.setdefault(archive_path, source.data)
         if previous != source.data:
             raise ValueError(f"conflicting source bytes: {archive_path}")
-    if "sources/SOURCES.md" in payloads:
-        raise ValueError("a captured source already occupies sources/SOURCES.md")
-    payloads["sources/SOURCES.md"] = write_source_index(sources).encode("utf-8")
+    payloads["SOURCES.md"] = write_source_index(sources).encode("utf-8")
     return entries, payloads
 
 
@@ -729,10 +724,9 @@ def _validate_run_record_shape(record: Any) -> None:
         },
         "run-record/2",
     )
-    if (
-        record["schema_version"] != RUN_RECORD_VERSION
-        or record["archive_schema_version"] != ARCHIVE_VERSION
-    ):
+    if record["schema_version"] != RUN_RECORD_VERSION or record[
+        "archive_schema_version"
+    ] not in (ARCHIVE_VERSION, _LEGACY_ARCHIVE_VERSION):
         raise ValueError("unsupported run record or source archive")
     _digest(record["archive_id"], "archive_id")
     for key in ("workflow", "invocation_id"):
@@ -794,7 +788,7 @@ def _validate_run_record_shape(record: Any) -> None:
     if not isinstance(sources, list) or not sources:
         raise ValueError("source_files must be nonempty")
     source_ids = []
-    archive_paths = []
+    archive_paths = {}
     for entry in sources:
         _keys(
             entry,
@@ -826,23 +820,36 @@ def _validate_run_record_shape(record: Any) -> None:
             },
             "source entry",
         )
-        if entry["path_base"] != "record_directory" or not entry[
-            "archived_path"
-        ].startswith("sources/"):
+        relative = entry["archived_path"]
+        parts = relative.split("/")
+        if record["archive_schema_version"] == _LEGACY_ARCHIVE_VERSION:
+            valid_path = relative.startswith("sources/")
+        else:
+            valid_path = (
+                len(parts) == 1 and relative.casefold() not in _ARCHIVE_RESERVED_NAMES
+            ) or (len(parts) == 2 and parts[0] == "catalogs")
+        if entry["path_base"] != "record_directory" or not valid_path:
             raise ValueError("source entry has wrong archive base")
         if type(entry["recoverable"]) is not bool or not entry["recoverable"]:
             raise ValueError("captured source must be recoverable")
         if entry["git_blob"] is not None and not isinstance(entry["git_blob"], str):
             raise ValueError("invalid source git blob")
         source_ids.append(entry["id"])
-        archive_paths.append(
-            entry["archived_path"].casefold()
-            if os.name == "nt"
-            else entry["archived_path"]
+        key = (
+            relative.casefold()
+            if record["archive_schema_version"] == ARCHIVE_VERSION or os.name == "nt"
+            else relative
         )
-    if source_ids != sorted(set(source_ids)) or len(archive_paths) != len(
-        set(archive_paths)
-    ):
+        identity = (
+            relative,
+            entry["original_path"],
+            entry["sha256"],
+            entry["size_bytes"],
+        )
+        if key in archive_paths and archive_paths[key] != identity:
+            raise ValueError("source archive paths collide")
+        archive_paths[key] = identity
+    if source_ids != sorted(set(source_ids)):
         raise ValueError("source ids or archive paths are duplicate/unsorted")
     if record["source_config"] not in source_ids:
         raise ValueError("project source pointer is absent")
@@ -1069,7 +1076,7 @@ def validate_archive(directory: Path) -> dict[str, Any]:
             raise ValueError(f"source bytes differ: {source_id}")
     expected = collection_sha256(
         {
-            "schema_version": ARCHIVE_VERSION,
+            "schema_version": record["archive_schema_version"],
             "workflow": record["workflow"],
             "invocation_id": record["invocation_id"],
             "source_files": [

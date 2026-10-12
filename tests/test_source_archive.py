@@ -3,6 +3,7 @@
 import hashlib
 import json
 import shutil
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -55,13 +56,157 @@ def _archive(
     return record, payloads
 
 
+def _legacy_archive(record, payloads):
+    """Reproduce the retained v1 wire layout without changing its source bytes."""
+    record = deepcopy(record)
+    record["archive_schema_version"] = "source-archive/1"
+    for entry in record["source_files"]:
+        entry["archived_path"] = "sources/" + entry["archived_path"]
+    identity = {
+        key: record[key]
+        for key in (
+            "workflow",
+            "invocation_id",
+            "loaded_config",
+            "advanced_settings",
+            "configuration_projection",
+            "referenced_inputs",
+            "generated_inputs",
+            "rerun",
+        )
+    }
+    identity["schema_version"] = "source-archive/1"
+    identity["source_files"] = [
+        {
+            key: entry[key]
+            for key in ("id", "role", "archived_path", "sha256", "size_bytes")
+        }
+        for entry in record["source_files"]
+    ]
+    record["archive_id"] = snapshot.collection_sha256(identity)
+    return record, {"sources/" + path: data for path, data in payloads.items()}
+
+
+@pytest.mark.parametrize(
+    "workflow,target,owner",
+    [
+        ("analyze_climate", "config/analyze_climate", "workflow"),
+        ("build_model", "config/build_model", "workflow"),
+        ("analyze_projections", "config/analyze_projections", "workflow"),
+        (
+            "generate_scenarios",
+            "scenarios/_engine/data/123456abcdef/config",
+            "scenario_collection",
+        ),
+        ("simulate_system", "experiments/test/config", "experiment"),
+    ],
+)
+def test_all_workflows_publish_flat_captured_archives(
+    tmp_path, workflow, target, owner
+):
+    sources = []
+    for source_id, role, name in (
+        ("project", "project_config", "project.yml"),
+        ("workflow", f"workflow_config_{workflow}", f"{workflow}.yml"),
+        ("catalog", "data_catalog", "catalog.yml"),
+    ):
+        path = tmp_path / name
+        path.write_bytes(b"# retained\r\nx: 1\r\n")
+        sources.append((source_id, role, path))
+    record, payloads = run_record_document(
+        workflow=workflow,
+        invocation_id="flat",
+        owner_kind=owner,
+        owner_id=workflow,
+        loaded_config={},
+        advanced_settings={},
+        projection=[],
+        toolbox={},
+        environment={},
+        invocation={
+            "entry_point": "test",
+            "command": [],
+            "targets": [],
+            "working_directory": str(tmp_path),
+            "overrides": {},
+        },
+        sources=capture_sources(sources),
+    )
+    project = tmp_path / "output"
+    publish_archive(project, workflow, target, record, payloads)
+    directory = project / target
+    assert validate_archive(directory) == record
+    assert record["archive_schema_version"] == "source-archive/2"
+    assert {
+        path.relative_to(directory).as_posix()
+        for path in directory.rglob("*")
+        if path.is_file()
+    } == {
+        "run_record.yml",
+        "SOURCES.md",
+        "project.yml",
+        f"{workflow}.yml",
+        "catalogs/catalog.yml",
+    }
+    assert not (directory / "sources").exists()
+
+
+def test_reserved_and_equal_content_basenames_are_portably_disambiguated(tmp_path):
+    captures = []
+    names = [
+        "run_record.yml",
+        "SOURCES.md",
+        "catalogs",
+        "sources",
+        "_engine",
+        "predecessor",
+        "same.yml",
+        "SAME.yml",
+        "same.yml",
+    ]
+    for index, name in enumerate(names):
+        path = tmp_path / str(index) / name
+        path.parent.mkdir()
+        path.write_bytes(b"identical")
+        captures.append((str(index), "input", path))
+    sources = capture_sources(captures)
+    paths = source_archive_paths(sources)
+    assert paths == source_archive_paths(tuple(reversed(sources)))
+    assert len({path.casefold() for path in paths.values()}) == len(names)
+    assert not set(map(str.casefold, paths.values())) & snapshot._ARCHIVE_RESERVED_NAMES
+
+
+@pytest.mark.parametrize(
+    "name", ["run_record.yml", "SOURCES.md", "catalogs", "sources", "_engine"]
+)
+def test_flat_reader_refuses_reserved_source_paths(tmp_path, name):
+    record, _ = _archive(tmp_path, "invalid")
+    record["source_files"][0]["archived_path"] = name
+    with pytest.raises(ValueError, match="wrong archive base"):
+        snapshot._validate_run_record_shape(record)
+
+
+def test_duplicate_capture_of_same_original_can_be_published(tmp_path):
+    record, _ = _archive(tmp_path, "duplicate")
+    source = tmp_path / "original/project_config.yml"
+    entries, payloads = snapshot._source_entries(
+        capture_sources(
+            [("project", "project_config", source), ("shared", "input", source)]
+        )
+    )
+    record["source_files"] = entries
+    snapshot._validate_run_record_shape(record)
+    assert entries[0]["archived_path"] == entries[1]["archived_path"]
+    assert set(payloads) == {"project_config.yml", "SOURCES.md"}
+
+
 def test_captured_bytes_survive_live_mutation_and_publish(tmp_path):
     record, payloads = _archive(tmp_path, "first")
     root = tmp_path / "output"
     publish_archive(root, "build_model", "config/build_model", record, payloads)
     loaded = read_archive(root, "build_model", "config/build_model")
     entry = loaded["source_files"][0]
-    assert entry["archived_path"] == "sources/project_config.yml"
+    assert entry["archived_path"] == "project_config.yml"
     assert (
         root / "config/build_model" / entry["archived_path"]
     ).read_bytes() == b"# comment\r\nx: 1\r\n"
@@ -185,9 +330,12 @@ def test_experiment_owner_is_an_archive_owner_kind(tmp_path):
         ("new_installed", "committed"),
     ],
 )
-def test_recovery_and_next_writer(tmp_path, failure_after, expected):
+@pytest.mark.parametrize("legacy", [False, True])
+def test_recovery_and_next_writer(tmp_path, failure_after, expected, legacy):
     root = tmp_path / "output"
     first, first_payloads = _archive(tmp_path, "first")
+    if legacy:
+        first, first_payloads = _legacy_archive(first, first_payloads)
     publish_archive(root, "build_model", "config/build_model", first, first_payloads)
     second, second_payloads = _archive(tmp_path, "second", b"new: true\n")
     with pytest.raises(RuntimeError, match="injected failure"):
@@ -274,15 +422,8 @@ def test_contradictory_candidate_refuses_recovery_reader_and_next_writer(
     assert path.read_bytes() == b"corrupt"
 
 
-def test_duplicate_basenames_are_disambiguated_by_content_digest(tmp_path):
-    """Two DIFFERENT files sharing a basename get a flat, digest-suffixed name.
-
-    Regression for the pre-flat-layout behaviour, which kept the two files
-    apart by mirroring their original directories (`sources/a/settings.yml`,
-    `sources/b/settings.yml`). The flat layout has no directory left to
-    disambiguate with, so the loser (by sorted id, same as everywhere else in
-    this module) gets a short content-hash suffix instead.
-    """
+def test_duplicate_basenames_are_disambiguated_by_source_digest(tmp_path):
+    """Distinct source paths with the same basename get deterministic suffixes."""
     first = tmp_path / "a" / "settings.yml"
     second = tmp_path / "b" / "settings.yml"
     first.parent.mkdir()
@@ -293,15 +434,15 @@ def test_duplicate_basenames_are_disambiguated_by_content_digest(tmp_path):
         [("a", "catalog_a", first), ("b", "data_catalog", second)]
     )
     paths = source_archive_paths(sources)
-    assert paths["a"] == "sources/catalogs/settings.yml"
-    digest = hashlib.sha256(b"two\n").hexdigest()[:12]
-    assert paths["b"] == f"sources/catalogs/settings-{digest}.yml"
+    assert paths["a"] == "catalogs/settings.yml"
+    digest = hashlib.sha256(str(second).encode() + b"\0two\n").hexdigest()[:12]
+    assert paths["b"] == f"catalogs/settings-{digest}.yml"
 
 
 def test_projection_store_index_travels_with_its_catalog(tmp_path):
     """`projection_store_index` (cmip6_store_index.json) has no "catalog" in its
     own role name, but ships beside `projection_catalog` and is bucketed with
-    it for convenience rather than left in flat `sources/`."""
+    it for convenience rather than beside the record."""
     catalog = tmp_path / "cmip6_data.yml"
     index = tmp_path / "cmip6_store_index.json"
     catalog.write_bytes(b"meta: {}\n")
@@ -314,8 +455,8 @@ def test_projection_store_index_travels_with_its_catalog(tmp_path):
     )
     paths = source_archive_paths(sources)
     assert paths == {
-        "projection_catalog": "sources/catalogs/cmip6_data.yml",
-        "projection_index": "sources/catalogs/cmip6_store_index.json",
+        "projection_catalog": "catalogs/cmip6_data.yml",
+        "projection_index": "catalogs/cmip6_store_index.json",
     }
 
 
@@ -328,14 +469,14 @@ def test_a_shared_original_path_is_not_a_collision(tmp_path):
     )
     paths = source_archive_paths(sources)
     assert paths == {
-        "a": "sources/catalogs/catalog.yml",
-        "b": "sources/catalogs/catalog.yml",
+        "a": "catalogs/catalog.yml",
+        "b": "catalogs/catalog.yml",
     }
 
 
 def test_non_catalog_sources_are_flat_with_no_directory_structure(tmp_path):
     """A project config and a build config in different directories both land
-    directly under `sources/`, with no mirrored subdirectory."""
+    directly beside the record, with no mirrored subdirectory."""
     project = tmp_path / "outer" / "project_config.yml"
     build_config = tmp_path / "inner" / "wflow_build_model.yml"
     project.parent.mkdir()
@@ -349,13 +490,13 @@ def test_non_catalog_sources_are_flat_with_no_directory_structure(tmp_path):
         ]
     )
     assert source_archive_paths(sources) == {
-        "project": "sources/project_config.yml",
-        "build_config": "sources/wflow_build_model.yml",
+        "project": "project_config.yml",
+        "build_config": "wflow_build_model.yml",
     }
 
 
 def test_source_index_maps_flat_names_to_original_directories(tmp_path):
-    """`sources/SOURCES.md` mirrors what `run_record.yml` already records."""
+    """`SOURCES.md` mirrors what `run_record.yml` already records."""
     project = tmp_path / "outer" / "project_config.yml"
     catalog = tmp_path / "inner" / "catalog.yml"
     project.parent.mkdir()
@@ -369,8 +510,8 @@ def test_source_index_maps_flat_names_to_original_directories(tmp_path):
         ]
     )
     index = snapshot.write_source_index(sources)
-    assert f"| `sources/project_config.yml` | `{project.parent}` |" in index
-    assert f"| `sources/catalogs/catalog.yml` | `{catalog.parent}` |" in index
+    assert f"| `project_config.yml` | `{project.parent}` |" in index
+    assert f"| `catalogs/catalog.yml` | `{catalog.parent}` |" in index
 
 
 def test_file_reference_refuses_tampered_bytes_and_unbound_paths(tmp_path):
@@ -444,9 +585,12 @@ def test_builder_refuses_unclassified_rerun_overlay(tmp_path):
         )
 
 
-def test_rerun_retains_predecessor_after_original_is_removed(tmp_path):
+@pytest.mark.parametrize("legacy", [False, True])
+def test_rerun_retains_predecessor_after_original_is_removed(tmp_path, legacy):
     first_root = tmp_path / "A"
     first, payloads = _archive(tmp_path, "first")
+    if legacy:
+        first, payloads = _legacy_archive(first, payloads)
     publish_archive(first_root, "build_model", "config/build_model", first, payloads)
     predecessor = first_root / "config/build_model"
     second_root = tmp_path / "B"

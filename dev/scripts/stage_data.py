@@ -5,6 +5,10 @@ What it does
 Mirrors the source directory tree under a local root, clipping each dataset
 to a bbox so only a fraction of bytes lands locally. The matching data
 catalog yaml then just needs its ``meta.root`` swapped to the local path.
+Vector outputs preserve FlatGeobuf for ``.fgb`` paths; other existing vector
+paths use GeoPackage. Set ``allow_empty: true`` on a vector entry when a local
+catalog must retain a readable, schema-preserving layer even without features
+inside the requested bbox. Without that option, no-overlap vectors are skipped.
 
 Configuration
 -------------
@@ -401,6 +405,7 @@ def _fingerprint(
     time_range=None,
     variables=None,
     columns=None,
+    allow_empty=None,
 ) -> dict:
     return {
         "src": str(src).replace("\\", "/"),
@@ -408,6 +413,10 @@ def _fingerprint(
         "time_range": list(time_range) if time_range else None,
         "variables": list(variables) if variables else None,
         "columns": list(columns) if columns else None,
+        "allow_empty": allow_empty,
+        # Older staging wrote GPKG bytes even under an .fgb name. Invalidate
+        # those outputs without invalidating unchanged GPKG/raster staging.
+        "vector_format": "FlatGeobuf" if src.suffix.lower() == ".fgb" else None,
     }
 
 
@@ -795,17 +804,20 @@ def subset_raster(src: Path, dst: Path, bbox) -> tuple[str, str]:
     return WRITTEN, ""
 
 
-@staged(fingerprint_keys=("columns",))
-def subset_vector(src: Path, dst: Path, bbox, *, columns=None) -> tuple[str, str]:
+@staged(fingerprint_keys=("columns", "allow_empty"))
+def subset_vector(
+    src: Path, dst: Path, bbox, *, columns=None, allow_empty=False
+) -> tuple[str, str]:
     # Single open: bbox read first, validate CRS from the result. If the
     # CRS turns out projected, the bbox (lon/lat scale) will match no
     # features and the validation below raises before any write — so the
     # cost of the wasted query is bounded and no bad output is produced.
     gdf = gpd.read_file(src, **_vector_read_kwargs(bbox, columns))
     _validate_lonlat_crs(gdf.crs, "vector", src)
-    if len(gdf) == 0:
+    if len(gdf) == 0 and not allow_empty:
         return SKIPPED, "no overlap"
-    gdf.to_file(dst, driver="GPKG")
+    driver = "FlatGeobuf" if dst.suffix.lower() == ".fgb" else "GPKG"
+    gdf.to_file(dst, driver=driver)
     return WRITTEN, f"{len(gdf)} features"
 
 
@@ -1439,7 +1451,7 @@ DESCRIBERS = {
 EXTRA_KEYS = {
     "zarr": ("time_range", "variables"),
     "netcdf": ("time_range", "variables"),
-    "vector": ("columns",),
+    "vector": ("columns", "allow_empty"),
 }
 
 

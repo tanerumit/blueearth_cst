@@ -18,6 +18,8 @@ bbox: [8.5, -0.5, 11.0, 1.5]
 #   pattern : glob, for raster_glob (default "*.tif") / netcdf_glob (default "*.nc")
 #   workers : optional parallel file workers for *_glob (default: 4 for >5 files)
 #   columns : optional vector columns to read/write for type=vector
+#   allow_empty : write an empty, schema-preserving vector when bbox has no features
+#                 (default false); .fgb paths retain FlatGeobuf format
 #   time_range : optional [start, end] date clip for zarr | netcdf | netcdf_glob
 #   variables : optional NATIVE var names to keep for zarr | netcdf | netcdf_glob
 #                (filtered BEFORE hydromt applies its rename -> use source names)

@@ -34,7 +34,7 @@ def test_orography_planning_hides_catalog_info_and_preserves_warnings(
 
     monkeypatch.setattr(hydromt, "DataCatalog", catalog_with_warning)
     try:
-        catalogs = [Path("config/catalogs/deltares_data.yml")]
+        catalogs = [Path("tests/data/tests_data_catalog.yml")]
         if fails:
             with pytest.raises(ValueError, match="catalog planning failed"):
                 mr._orography_descriptor(catalogs)

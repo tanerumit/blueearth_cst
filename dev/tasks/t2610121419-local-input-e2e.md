@@ -11,7 +11,7 @@ updated: 2026-10-12
 
 > [!note] Overview
 > **What changes** — Add a local-input E2E mode running all five workflows from staged data into fresh outputs.
-> **Why it matters** — Repeated remote acquisition slows validation when acquisition code is unaffected.
+> **Why it matters** — Repeated P-drive and network reads slow validation when acquisition code is unaffected.
 > **What it takes** — Stage and validate inputs, preserve downstream coverage, and measure the actual speedup.
 
 ## Progress
@@ -22,19 +22,22 @@ updated: 2026-10-12
 - [ ] Add bundle provenance, checksums and compatibility checks; fail without remote fallback.
 - [ ] Add test-e2e-local using the owned runner, fresh outputs and shared deliverable assertions.
 - [ ] Compare downstream outputs and timings against a matched acquisition-inclusive run.
-- [ ] Document coverage exclusions, bundle refresh and eligibility in the validation ladder.
+- [ ] Cover fetching with focused tests; document local/live gate eligibility and bundle refresh.
 
 ## Scope and acceptance
 
-Reuse source inputs only: regenerate historical extracts, the hydrological model, scenarios and
-simulations. Keep the input bundle outside Git; preserve variables, units, calendars and sufficient spatial buffers.
+Reuse source inputs only; regenerate extracts, models, scenarios and simulations. Keep the bundle
+outside Git, preserving variables, units, calendars and spatial buffers.
 
-The local gate is intended for changes that leave acquisition unaffected. Retain acquisition-inclusive
-checks for source addressing, catalog adapters, acquisition windows, clipping and cache identity.
-Retain the existing release and milestone gate initially.
+Use local-input E2E for routine validation, with focused fetching tests when acquisition code changes.
+Keep live acquisition opt-in for catalog, addressing, window, clipping and cache changes. Document
+that unit tests cannot establish live data availability or detect every upstream format change.
 
-The expected acquisition-related speedup is inferred from the current input dependencies, not measured
-in this assessment. Julia startup and simulation costs remain. Reuse staging machinery from the related sample-bundle task where appropriate.
+Define release/milestone eligibility and update the ladder and repository instructions together.
+Existing gates apply until that policy changes.
+
+Speedup is inferred, not measured; Julia startup and simulation costs remain. Reuse sample-bundle
+staging where appropriate.
 
 ## Refs
 

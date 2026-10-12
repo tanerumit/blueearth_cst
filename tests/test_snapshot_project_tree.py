@@ -371,3 +371,90 @@ def test_scaffold_refuses_dynamic_workflows_before_config_read_or_output(tmp_pat
             ]
         )
     assert not output.exists()
+
+
+def test_scaffold_refuses_nonempty_destination_without_touching_it(tmp_path, capsys):
+    import scaffold_project_tree as scaffold
+
+    output = tmp_path / "existing"
+    output.mkdir()
+    sentinel = output / "valuable.txt"
+    sentinel.write_bytes(b"keep these bytes")
+    with pytest.raises(SystemExit) as error:
+        scaffold.main(["--config", str(tmp_path / "absent.yml"), "--out", str(output)])
+    assert error.value.code == 2
+    assert sentinel.read_bytes() == b"keep these bytes"
+    assert list(output.iterdir()) == [sentinel]
+    assert "--out is not empty" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("destination", ["new", "empty", "keep"])
+def test_scaffold_adds_placeholders_without_replacing_files(
+    tmp_path, monkeypatch, destination
+):
+    import scaffold_project_tree as scaffold
+
+    output = tmp_path / "scaffold"
+    if destination != "new":
+        output.mkdir()
+    retained = output / scaffold.cross_workflow_inputs.LEAF_WF1_SNAPSHOT
+    if destination == "keep":
+        retained.parent.mkdir(parents=True)
+        retained.write_bytes(b"existing prerequisite")
+        (output / "existing.txt").write_bytes(b"existing output")
+    config = tmp_path / "config.yml"
+    config.write_text("project: {}\nworkflows: {}\n", encoding="utf-8")
+    monkeypatch.setattr(scaffold, "_summary", lambda *_: ["existing.txt", "new.txt"])
+    monkeypatch.setattr(scaffold, "_log_paths", lambda *_: [])
+    args = [
+        "--config",
+        str(config),
+        "--out",
+        str(output),
+        "--workflows",
+        "0",
+        "--extras",
+        str(tmp_path / "no-extras.yml"),
+    ]
+    if destination == "keep":
+        args.append("--keep")
+    assert scaffold.main(args) == 0
+    assert (output / "new.txt").is_file()
+    assert (output / "existing.txt").is_file()
+    if destination == "keep":
+        assert retained.read_bytes() == b"existing prerequisite"
+        assert (output / "existing.txt").read_bytes() == b"existing output"
+
+
+def test_scaffold_stops_on_summary_failure_without_reporting_success(
+    tmp_path, monkeypatch, capsys
+):
+    import subprocess
+
+    import scaffold_project_tree as scaffold
+
+    output = tmp_path / "scaffold"
+    config = tmp_path / "config.yml"
+    config.write_text("project: {}\nworkflows: {}\n", encoding="utf-8")
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        if len(calls) == 1:
+            return subprocess.CompletedProcess(
+                command, 0, "new.txt\tdate\trule\tstatus\n", ""
+            )
+        return subprocess.CompletedProcess(
+            command, 1, "Building DAG of jobs...\n", "MissingInputException: missing.nc"
+        )
+
+    monkeypatch.setattr(scaffold.subprocess, "run", run)
+    monkeypatch.setattr(scaffold, "_log_paths", lambda *_: [])
+    assert scaffold.main(["--config", str(config), "--out", str(output)]) == 1
+    captured = capsys.readouterr()
+    assert len(calls) == 2  # Stop at WF1; never attempt WF2.
+    assert "build_model.smk --summary failed (exit 1)" in captured.err
+    assert "Building DAG of jobs" in captured.err
+    assert "MissingInputException: missing.nc" in captured.err
+    assert "scaffolded" not in captured.out + captured.err
+    assert not (output / "new.txt").exists()

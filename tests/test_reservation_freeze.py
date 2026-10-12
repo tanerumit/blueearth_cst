@@ -4,6 +4,7 @@ import copy
 import hashlib
 import shutil
 import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -48,10 +49,19 @@ class PendingFreeze:
         return self.root / "config/run_record.yml"
 
 
+@pytest.fixture(scope="module")
+def built(tmp_path_factory: pytest.TempPathFactory) -> Iterator[helper.V2Experiment]:
+    """Build retained evidence once and ensure test mutations never reach it."""
+    fixture = helper.build_v2_experiment(tmp_path_factory.mktemp("freeze-base"))
+    before = inventory(fixture.config.parent)
+    yield fixture
+    assert inventory(fixture.config.parent) == before
+
+
 @pytest.fixture
-def pending(tmp_path):
-    """Use upstream fixture producers; only environmental input bytes are synthetic."""
-    fixture = helper.build_v2_experiment(tmp_path)
+def pending(built: helper.V2Experiment, tmp_path: Path) -> PendingFreeze:
+    """Copy retained evidence; admit and prepare a private reservation for each case."""
+    fixture = helper.copy_v2_experiment(built, tmp_path)
     project = fixture.project
     marker = read_collection_v2(fixture.collection_marker)
     manifest = file_reference(fixture.collection_marker, "project_root", project)

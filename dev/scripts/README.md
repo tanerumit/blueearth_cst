@@ -84,6 +84,10 @@ transfer probes remain historical measurement evidence, described by the
 | [`prune_climate_store.py`](prune_climate_store.py) | Orphaned historical-climate stores; dry run unless `--delete`. |
 | [`estimate_batch_makespan.py`](estimate_batch_makespan.py) | LPT makespan estimate behind WF4's batch size; see board item `t2608071217`. |
 
+The scaffolder requires a new or empty `--out` directory. Use `--keep` to add missing placeholders
+while preserving existing files; it never deletes the destination. A failed workflow summary stops
+with a nonzero exit status and diagnostics. Staged prerequisites may remain in the incomplete tree.
+
 ## Figures and console
 
 | Script | What it does |

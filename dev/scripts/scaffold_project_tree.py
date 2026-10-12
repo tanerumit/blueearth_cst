@@ -6,6 +6,11 @@ rewrites paths through a rename map, and materializes the result as empty files
 (with small placeholders where the file's *shape* is the thing under review —
 logs and benchmark reports). Nothing is computed and no workflow runs.
 
+The destination must be new or empty unless ``--keep`` is supplied. Existing
+files are preserved with ``--keep``; the tool never deletes a destination tree.
+A failed workflow summary stops the command with a nonzero exit status. Any
+staged prerequisite placeholders remain for inspection; no success is reported.
+
 Two gaps are covered deliberately rather than pretended away:
 
 - `--summary` sees only declared outputs. Undeclared artifacts (``signatures_*.png``,
@@ -39,7 +44,6 @@ from __future__ import annotations
 
 import argparse
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -103,7 +107,12 @@ def _stage_cross_workflow_inputs(project_dir: Path, config_path: Path) -> None:
     `data/spatial/geoms/region.geojson` and declare it as an OUTPUT, so staging
     one would pre-empt a file the workflow is about to write.
     """
-    cross_workflow_inputs.stage(project_dir, config_path.read_text(encoding="utf-8"))
+    missing = [
+        rel for rel in cross_workflow_inputs.LEAVES if not (project_dir / rel).exists()
+    ]
+    cross_workflow_inputs.stage(
+        project_dir, config_path.read_text(encoding="utf-8"), leaves=missing
+    )
 
 
 def _summary(snakefile: str, config_path: Path) -> list[str]:
@@ -128,8 +137,9 @@ def _summary(snakefile: str, config_path: Path) -> list[str]:
         errors="replace",
     )
     if proc.returncode != 0:
-        sys.stderr.write(f"\n!! {snakefile} --summary failed:\n{proc.stderr[-2000:]}\n")
-        return []
+        raise subprocess.CalledProcessError(
+            proc.returncode, cmd, output=proc.stdout, stderr=proc.stderr
+        )
 
     paths: list[str] = []
     for line in proc.stdout.splitlines():
@@ -330,7 +340,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--rename-map", type=Path, default=None)
     ap.add_argument("--extras", type=Path, default=DEFAULT_EXTRAS)
     ap.add_argument("--print-tree", action="store_true")
-    ap.add_argument("--keep", action="store_true", help="do not wipe --out first")
+    ap.add_argument(
+        "--keep",
+        action="store_true",
+        help="add missing placeholders; preserve existing files",
+    )
     args = ap.parse_args(argv)
 
     # The tree uses box-drawing characters; Windows consoles default to cp1252.
@@ -347,8 +361,14 @@ def main(argv: list[str] | None = None) -> int:
             "Use --workflows 0,1,2 for model/climate layout scaffolds."
         )
     project_dir = args.out.resolve()
-    if project_dir.exists() and not args.keep:
-        shutil.rmtree(project_dir)
+    if project_dir.exists():
+        if not project_dir.is_dir():
+            ap.error(f"--out must be a directory: {project_dir}")
+        if not args.keep and any(project_dir.iterdir()):
+            ap.error(
+                f"--out is not empty: {project_dir}. Choose a new or empty directory, "
+                "or use --keep to add missing placeholders without replacing files."
+            )
     project_dir.mkdir(parents=True, exist_ok=True)
 
     scratch_cfg = _scratch_config(
@@ -358,7 +378,16 @@ def main(argv: list[str] | None = None) -> int:
 
     raw: list[str] = []
     for w in workflows:
-        found = _summary(SNAKEFILES[w], scratch_cfg)
+        try:
+            found = _summary(SNAKEFILES[w], scratch_cfg)
+        except subprocess.CalledProcessError as error:
+            combined = (error.stdout or "") + (error.stderr or "")
+            print(
+                f"{SNAKEFILES[w]} --summary failed (exit {error.returncode}). "
+                f"Scaffold incomplete: {project_dir}\n{combined[-3000:]}",
+                file=sys.stderr,
+            )
+            return 1
         # WF3/WF4 were refused above; these workflows have no experiment name.
         logs = _log_paths(SNAKEFILES[w])
         print(

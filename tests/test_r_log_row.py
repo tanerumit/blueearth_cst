@@ -9,8 +9,9 @@ declaration, no rule consumes a log line, and a WF3 run is green whatever the
 rows say.
 
 Cheap for the same reason `test_read_member_grid.py` is: `global.R` sources
-nothing and needs neither `weathergenr` nor a netCDF, so each case is one
-`Rscript -e`. Rows go to stderr (the function uses `message()`, like the calls
+nothing and needs neither `weathergenr` nor a netCDF. Grammar checks share one
+`Rscript -e`; each log-level environment gets its own process. Rows go to stderr
+(the function uses `message()`, like the calls
 it replaced), so that is where they are read from.
 
 cwd is pinned to the repo root because this repo's R scripts are sourced by
@@ -62,48 +63,28 @@ def _emit(calls, env=None):
 
 
 @pytest.mark.skipif(shutil.which("Rscript") is None, reason=_NO_RSCRIPT)
-def test_info_row_carries_no_level_field():
-    """The INFO case is 259 of 272 rows on a WF1 build; the field is omitted."""
-    (row,) = _emit('log_row("Reading weather netcdf: x.nc")')
-    match = INFO_ROW.match(row)
-    assert match, row
-    assert match.group("message") == "Reading weather netcdf: x.nc"
-
-
-@pytest.mark.skipif(shutil.which("Rscript") is None, reason=_NO_RSCRIPT)
-def test_positional_parts_concatenate_and_cannot_bind_module():
-    """`...` comes FIRST so a multi-part call cannot silently mangle a row.
-
-    With `log_row(message, module, level)` the second positional argument would
-    bind to `module` -- no error, just `12:00:00 - 2 - ...`. R matches arguments
-    after `...` by exact name only, which is what forecloses it, so the shape of
-    the signature is the guard and this is its falsifier.
-    """
-    (row,) = _emit('log_row("Resampling on ", 2, " basin cell(s) of ", 20)')
-    match = INFO_ROW.match(row)
-    assert match, row
-    assert match.group("message") == "Resampling on 2 basin cell(s) of 20"
-
-
-@pytest.mark.skipif(shutil.which("Rscript") is None, reason=_NO_RSCRIPT)
-def test_non_info_level_is_shown_uppercased():
-    (row,) = _emit('log_row("state file not found", level = "warning")')
+def test_row_grammar_and_unfiltered_levels():
+    """One unset-floor process checks grammar, argument binding, and DEBUG output."""
+    info, parts, warning, module, debug = _emit(
+        'log_row("Reading weather netcdf: x.nc"); '
+        'log_row("Resampling on ", 2, " basin cell(s) of ", 20); '
+        'log_row("state file not found", level = "warning"); '
+        'log_row("perturbing", module = "change"); '
+        'log_row("b", level = "DEBUG")'
+    )
+    # INFO omits the level field; extra positional parts must not bind module.
+    for row, message in (
+        (info, "Reading weather netcdf: x.nc"),
+        (parts, "Resampling on 2 basin cell(s) of 20"),
+    ):
+        match = INFO_ROW.fullmatch(row)
+        assert match, row
+        assert match.group("message") == message
     assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - weathergen - WARNING - state file not found", row
-    ), row
-
-
-@pytest.mark.skipif(shutil.which("Rscript") is None, reason=_NO_RSCRIPT)
-def test_module_column_is_overridable():
-    (row,) = _emit('log_row("perturbing", module = "change")')
-    assert re.fullmatch(r"\d\d:\d\d:\d\d - change - perturbing", row), row
-
-
-@pytest.mark.skipif(shutil.which("Rscript") is None, reason=_NO_RSCRIPT)
-def test_unset_level_emits_everything():
-    """Quiet mode is opt-in: nothing changes until `CST_LOG_LEVEL` is set."""
-    rows = _emit('log_row("a"); log_row("b", level = "DEBUG")')
-    assert len(rows) == 2, rows
+        r"\d\d:\d\d:\d\d - weathergen - WARNING - state file not found", warning
+    ), warning
+    assert re.fullmatch(r"\d\d:\d\d:\d\d - change - perturbing", module), module
+    assert re.fullmatch(r"\d\d:\d\d:\d\d - weathergen - DEBUG - b", debug), debug
 
 
 @pytest.mark.skipif(shutil.which("Rscript") is None, reason=_NO_RSCRIPT)

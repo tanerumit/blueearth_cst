@@ -42,8 +42,8 @@ V2_CLEAN = (
 )
 
 
-def _dry_run(snakefile: str) -> str:
-    """Dry-run one entry point on the v2 config; return the combined output.
+def _dry_run(snakefile: str) -> subprocess.CompletedProcess[str]:
+    """Dry-run one entry point on the v2 config; return the completed process.
 
     ``generate_scenarios.smk`` refuses a bare dry-run since P5 (`c83ead70`):
     it requires ``CST_GENERATION_PHASE`` to name which of the launcher's two
@@ -56,7 +56,7 @@ def _dry_run(snakefile: str) -> str:
     env = {**os.environ}
     if snakefile == "generate_scenarios":
         env["CST_GENERATION_PHASE"] = "source"
-    result = subprocess.run(
+    return subprocess.run(
         f"snakemake all -c 1 -s {snakefile}.smk --configfile {V2_CONFIG} --dry-run",
         shell=True,
         capture_output=True,
@@ -64,7 +64,6 @@ def _dry_run(snakefile: str) -> str:
         cwd=REPO_ROOT,
         env=env,
     )
-    return (result.stdout or "") + (result.stderr or "")
 
 
 def test_the_v2_fixture_composes():
@@ -92,7 +91,9 @@ def test_the_v2_fixture_composes():
 @pytest.mark.parametrize("snakefile", V2_CLEAN)
 def test_an_entry_point_dry_runs_clean_on_v2(snakefile):
     """P1's acceptance criterion, for the entry points it reaches."""
-    combined = _dry_run(snakefile)
+    result = _dry_run(snakefile)
+    combined = (result.stdout or "") + (result.stderr or "")
+    assert result.returncode == 0, combined[-3000:]
     assert "Building DAG of jobs" in combined, combined[-3000:]
     assert "Error in file" not in combined, combined[-3000:]
 

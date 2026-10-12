@@ -1,11 +1,12 @@
 # Default verification posture for this repo, read by the `testing-policy` skill.
 # Schema: ~/workspace/brain/artifacts/skills/testing-policy/references/configuration.md
 #
-# rapid — targeted checks per task; the full suite is reserved for a milestone
-# seal or a change touching `shared/`, since CI runs the whole suite on both
-# platforms from every push and the local gate is `test-fast`.
+# rapid — focused checks per task; fast plus affected contracts at ordinary merges.
+# Full and all-five execution cover broad behavior changes, releases and milestones.
+# Classify the delta since applicable verification, not the preceding batch or folder.
 # The per-gate commands: AGENTS.md, validation ladder.
 scope: rapid
 
 # `numerical:` is left at its default. A change that moves a number escalates
-# per task, and the repo's own numeric gate is `dev/scripts/check_baseline.py`.
+# per claim. Independent numerical checks cover confined changes; whole-tree
+# baseline claims use `dev/scripts/check_baseline.py` with current inputs.

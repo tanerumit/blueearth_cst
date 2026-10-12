@@ -20,7 +20,9 @@ the existing task evidence. A command's successful exit does not discharge claim
 - Complete synchronization and executable edits before final gates. Reuse earlier passes only after
   comparing the tested candidate with the final candidate. Exact tree equivalence permits reuse;
   otherwise classify every changed path, including test-read documentation and transitive inputs.
-  Recheck the affected coverage. Environment or input changes invalidate dependent evidence.
+  Recheck affected coverage and retain unchanged claims using reviewed delta evidence below.
+  A prior broad change does not escalate a subsequent narrow change. Environment or input changes
+  invalidate dependent evidence.
 - At landing, an executable `task-land --verify` may verify recorded passing evidence and candidate
   equivalence instead of rerunning expensive gates. It must fail for missing evidence, failed/skipped
   required checks, or unclassified changes. After an equivalent merge, prove tree equality and ancestry;
@@ -62,7 +64,9 @@ path outside the checkout must explicitly choose one; ordinary fixtures now live
 
 ## Tiering
 
-`test-fast` deselects the `workflow_contract` and `process_isolation` markers. Those tests each spawn a fresh Python process and build a Snakemake DAG, so they cost around fifty times what an ordinary test costs: they are roughly 2% of the suite and the large majority of its runtime. Count them with
+`test-fast` deselects the `workflow_contract` and `process_isolation` markers. They include expensive
+fresh-process and Snakemake DAG checks. Other tests also incur setup and rendering costs; use current
+duration evidence before optimizing either tier. Count the selected cases with
 `pytest tests/ -m "workflow_contract or process_isolation" --collect-only -q` rather than trusting a number written here — it drifts every time a rule gains a contract test.
 
 When the fast gate is owed, run the whole cheap tier rather than hand-picking relevant files. A passing
@@ -76,7 +80,10 @@ full suite covers that tier too; do not rerun fast merely to satisfy a second ga
 
 **A push gates the unpushed delta, not the session.** `origin/main` passed `test-fast` before it was pushed and CI ran on it, so `origin/main..main` is the only untested surface. That is why the push row skips work in two cases. The first is a merge-then-push: `task-land --verify` already ran `test-fast` on the candidate and proved `main` has the same tree. Board-closure commits after it add only exempt paths, so a second run re-tests content already covered: the `8508645b` push differed from its tested candidate `1cb444a9` by one `dev/tasks/` note. The second is a delta of push-exempt paths, where the ruff hook is enough. Both shortcuts assume `origin/main` is green: a red or unread CI run voids them. The exempt list in `AGENTS.md` was drawn from the test tree on 2026-10-05: `dev/scripts/` and `dev/records/` are imported or read by tests, `test_activation_links.py` resolves every link under `dev/reference/`, and `config/templates/` and `docs/notebooks/` are read directly. Re-derive it by grepping `tests/` before widening it. A label-based rule would have been wrong the same day: `74ad4310`, a "conform `dev/`" chore landed after the `8508645b` push, also changed `.github/workflows/ci.yml`, `README.md` and `test_case/project_config_baseline_linux.yml`.
 
-Run `test-full` at batch landing when the combined diff changed shared runtime/configuration contracts or a `script:` signature, and before a milestone seal. Individual tasks use focused checks and separate commits; do not repeat the full gate per task. Those are the cases where meeting a failure on two platforms at once costs more than the wait.
+Run `test-full` for broad runtime, configuration, orchestration or dependency changes, releases and
+milestone seals. Classify the unverified behavior and its consumers, not the directory or the preceding
+batch's gate. A confined script-signature change needs fast and affected producer/consumer contract
+checks, plus affected execution. Individual tasks use focused checks and separate commits.
 
 Between merges and the next push, a `workflow_contract` regression can sit on local `main` across several branches, so bisect across all of them. Reading the CI run after each push is what bounds that window. `ci.yml` cancels an in-flight run when the same ref is pushed again, so after quick successive pushes the latest run is the one to read; it covers the whole tree.
 
@@ -112,7 +119,48 @@ the helper does not infer blast radius or schedule coverage.
 
 Only after reviewing each changed path may `--allow-path exact/path.md` permit an intervening
 Markdown change. Do not allow test-read documentation without rechecking the affected coverage.
-Code changes require fresh evidence. No wildcard exclusions are supported.
+Code changes require fresh affected checks and the reviewed delta route below. No wildcard exclusions
+are supported.
+
+### Reviewed follow-up changes
+
+Keep the earlier evidence file and logs intact. Record new checks in a separate evidence file on the
+clean, committed follow-up candidate, using the same named inputs. Review the complete diff from the
+earlier tested commit, including transitive consumers, deletions and both paths of renames. Repeated
+follow-ups use that complete cumulative delta; do not chain unchecked attestations.
+
+Write a JSON review in task scratch with exactly these fields (replace the Git identity placeholders):
+
+```json
+{
+  "base_commit": "FULL_EARLIER_TESTED_COMMIT",
+  "candidate_tree": "CURRENT_GIT_TREE",
+  "paths": {
+    "blueearth_cst/shared/snake_utils.py": "Wording only; no parsed output or control flow changed."
+  },
+  "retained_gates": {
+    "test-full": "Earlier non-console coverage remains applicable; fast and console checks reran.",
+    "test-e2e": "Workflow commands, data, calculations and handoffs are unchanged."
+  },
+  "require_gates": ["test-fast", "console"]
+}
+```
+
+Use actual changed paths; the console path above is illustrative. Every path needs its impact and
+coverage rationale. Every retained gate needs a reason its remaining claims still hold. Gate names
+in `require_gates` must pass in the new evidence. For example, record `console` with the affected
+console test command and `test-fast` with its normal command, then verify:
+
+```powershell
+pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/scratchpad/landing/base.json --delta-evidence .tmp/scratchpad/landing/followup.json --delta-review .tmp/scratchpad/landing/review.json --require-gate test-full --require-gate test-e2e --require-gate test-fast
+```
+
+The verifier checks exact path coverage, base ancestry, candidate tree, matching environment and input
+identities, and required log integrity/results. It does not infer impact or judge the review's prose;
+the gate owner must review the diff and choose discriminating checks. This is selective reuse, never
+a claim that the full suite or E2E ran on the new candidate. Broad or uncertain impact requires fresh
+broad gates. Release and milestone gates remain fresh. Changed inputs/environment require new evidence;
+this helper conservatively refuses delta reuse even when an individual claim might survive.
 
 A zero exit records command success, not scientific acceptance or proof that every required test ran.
 Inspect the log for required skips and use `--skipped` when a required check did not execute; never
@@ -126,10 +174,16 @@ run scoped lint/format checks before each commit and repository-wide lint/format
 batch verification. A later Python edit invalidates the relevant final check; a commit or gate label
 alone does not. Focused tests remain the development loop.
 
-All-five execution is required for shared runtime/configuration, orchestration, cross-workflow
-interfaces, releases and milestone seals. Classify by behavior and callers, not merely directory:
+All-five execution is required for broad runtime/configuration, orchestration, cross-workflow
+interfaces or runtime dependency changes, releases and milestone seals. Classify by behavior and callers:
 shared plotting changes that affect only terminal figures remain render/inspection work. A shared
 runtime helper or configuration change affecting several workflows takes the all-five gate.
+
+Console wording or formatting alone takes fast plus affected console tests and representative output
+inspection. A change to exit status, exception handling, machine-readable output or control flow is
+behavioral and takes affected consumer checks/execution. A file under `shared/` does not alone escalate.
+Confined numerical changes need an independent oracle and affected consumers, not automatically all-five
+execution or a whole-tree baseline comparison. Use a current baseline for whole-tree numerical claims.
 
 For behavior confined to one workflow, search callers and output consumers, then execute that workflow
 and the consumers affected by the changed contract with rapid inputs. State the coverage and omitted
@@ -146,8 +200,8 @@ pipeline check. Escalate a confined change when focused verification exposes wid
 through `scripts/run_workflows.py`, on the rapid config, in a fresh temporary
 project root. It needs what CI cannot provide (the data mirror, juliaup Julia,
 `weathergenr`, network for WF2), so it is a local gate, and the ladder in
-`AGENTS.md` says when it is owed: a batch that changes what a workflow runs, a
-release, a milestone seal.
+`AGENTS.md` says when it is owed; the execution-coverage section above distinguishes broad changes
+from confined workflow changes. Releases and milestone seals always require it.
 
 It writes nowhere under `test_case/`, so it cannot disturb the baseline tree, and
 nothing an earlier run left behind can make it pass. It skips by name when a

@@ -19,7 +19,9 @@ def repo(tmp_path):
     _git(tmp_path, "init")
     _git(tmp_path, "config", "user.email", "test@example.invalid")
     _git(tmp_path, "config", "user.name", "Test")
-    (tmp_path / ".gitignore").write_text("evidence.json\n*.log\n", encoding="utf-8")
+    (tmp_path / ".gitignore").write_text(
+        "evidence.json\ndelta.json\nreview.json\n*.log\n", encoding="utf-8"
+    )
     for name in ("pixi.lock", "code.py", "guide.md", "input.txt"):
         (tmp_path / name).write_text("original\n", encoding="utf-8")
     _git(tmp_path, "add", ".")
@@ -154,3 +156,102 @@ def test_record_refuses_unstable_identity(repo, fault):
         else None
     )
     assert _record(repo, command=command).returncode == 1
+
+
+@pytest.mark.parametrize(
+    "fault,diagnostic",
+    [
+        (None, "Retained earlier claims: suite"),
+        ("unreviewed", "exactly every changed path"),
+        ("stale-review", "does not match base and candidate"),
+        ("reason", "explicit reasons"),
+        ("missing", "Required gate did not pass"),
+        ("failed", "Required gate did not pass"),
+        ("skipped", "Required gate did not pass"),
+        ("base-log", "Gate log changed"),
+        ("delta-log", "Gate log changed"),
+        ("environment", "Environment identity differs"),
+        ("input-omitted", "same named inputs"),
+        ("later-edit", "current tree"),
+        ("overlap", "both retained and freshly required"),
+        ("no-fresh-check", "fresh required gates"),
+        ("no-review", "together"),
+        ("allow-path", "cannot be combined"),
+    ],
+)
+def test_reviewed_delta_reuse(repo, fault, diagnostic):
+    assert _record(repo).returncode == 0
+    base = json.loads((repo / "evidence.json").read_text())
+    (repo / "code.py").write_text("console wording changed\n")
+    _git(repo, "add", "code.py")
+    _git(repo, "commit", "-m", "wording")
+    result = _cli(
+        repo,
+        "record",
+        "--evidence",
+        "delta.json",
+        "--gate",
+        "console",
+        "--log",
+        "delta.log",
+        "--input",
+        "input.txt",
+        *(["--skipped"] if fault == "skipped" else []),
+        "--",
+        sys.executable,
+        "-c",
+        "raise SystemExit(1)" if fault == "failed" else "print('checked wording')",
+    )
+    assert result.returncode == (1 if fault == "failed" else 0), result.stderr
+    delta = json.loads((repo / "delta.json").read_text())
+    review = {
+        "base_commit": base["commit"],
+        "candidate_tree": delta["tree"],
+        "paths": {
+            "code.py": "Only human-readable wording changed; console check covers it."
+        },
+        "retained_gates": {
+            "suite": "Runtime control flow and output contracts unchanged."
+        },
+        "require_gates": ["console"],
+    }
+    if fault == "unreviewed":
+        review["paths"] = {"guide.md": "Wrong path"}
+    if fault == "stale-review":
+        review["candidate_tree"] = base["tree"]
+    if fault == "reason":
+        review["paths"]["code.py"] = " "
+    if fault == "missing":
+        review["require_gates"] = ["missing"]
+    if fault == "overlap":
+        review["require_gates"] = ["suite"]
+    if fault == "no-fresh-check":
+        review["require_gates"] = []
+    if fault in {"base-log", "delta-log"}:
+        (repo / ("gate.log" if fault == "base-log" else "delta.log")).write_text(
+            "edited"
+        )
+    if fault == "environment":
+        delta["environment"]["python_version"] = "different"
+    if fault == "input-omitted":
+        delta["inputs"] = {}
+    (repo / "delta.json").write_text(json.dumps(delta))
+    (repo / "review.json").write_text(json.dumps(review))
+    if fault == "later-edit":
+        (repo / "code.py").write_text("another change")
+        _git(repo, "add", "code.py")
+        _git(repo, "commit", "-m", "later")
+    result = _cli(
+        repo,
+        "verify",
+        "--evidence",
+        "evidence.json",
+        "--require-gate",
+        "suite",
+        "--delta-evidence",
+        "delta.json",
+        *([] if fault == "no-review" else ["--delta-review", "review.json"]),
+        *(["--allow-path", "guide.md"] if fault == "allow-path" else []),
+    )
+    assert result.returncode == (0 if fault is None else 1), result.stderr
+    assert diagnostic in result.stdout + result.stderr

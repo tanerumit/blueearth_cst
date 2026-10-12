@@ -882,8 +882,10 @@ seeded white-noise variability benchmark. Unavailable products carry reasons rat
 
 **Writes.** `<proj>/analysis/*.csv` and `_engine/analysis_record.json`: coverage, changes, equal-model summaries,
 family sign agreement, climatology, annual anomalies, variability ratios and final product availability.
-The record reports configured bounds and effective dates/counts. Seasonal changes still require 27 complete
-observations in each period. The mean-keyed dry rule differs from the aligned CSVs' per-statistic rule.
+The record reports configured bounds, effective dates/counts and seasonal eligibility thresholds.
+Seasonal diagnostics require 90% of each owned window's years, rounded up, with a minimum of three
+complete observations; reference and future thresholds are separate.
+The mean-keyed dry rule differs from the aligned CSVs' per-statistic rule.
 Seasonal precipitation percentages use rates, a documented
 lab-parity exception; CV uses integrals. Analysis-only float64 promotion preserves the aligned kernels.
 

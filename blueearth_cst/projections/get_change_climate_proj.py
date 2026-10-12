@@ -574,7 +574,14 @@ def _to_str_tuple(value):
 
 # Analysis-only constants: none is referenced by a Stage B kernel root.
 ANALYSIS_REFERENCE = (1985, 2014)  # default calendar span
-MIN_SEASON_YEARS = 27
+MIN_SEASON_COVERAGE = 0.9
+
+
+def seasonal_min_years(window_years):
+    """Require 90% of the owned window's years, with at least three seasons."""
+    import math
+
+    return max(3, math.ceil(MIN_SEASON_COVERAGE * window_years))
 
 
 class AnalysisWindowUnavailable(ValueError):
@@ -790,7 +797,9 @@ def get_change_seasonal_clim_proj(
     calendar=None,
     variable_spec=None,
     *,
-    min_season_years=MIN_SEASON_YEARS,
+    min_season_years=None,
+    reference_window_years=None,
+    future_window_years=None,
 ):
     """Seasonal change rows from already-owned analysis slices, never outside them.
 
@@ -803,6 +812,11 @@ def get_change_seasonal_clim_proj(
     (owner ruling 2026-10-07). The lab instead uses integrals for precipitation
     percentages, so those rows are excluded from lab parity when season lengths
     differ. Precipitation CV continues to use the period integrals.
+    By default each period needs 90% of its owned window's years (rounded up),
+    with at least three complete seasons. Supply window lengths when coordinate
+    endpoints may be missing; otherwise their inclusive month span defines the
+    window length. Missing values never reduce the required coverage. A numeric
+    ``min_season_years`` overrides the threshold for both periods.
     """
     import numpy as np
 
@@ -827,8 +841,19 @@ def get_change_seasonal_clim_proj(
     unknown = set(stats) - {"mean", "std", "std_detrended", "cv_detrended"}
     if unknown:
         raise ValueError(f"unsupported seasonal statistics: {sorted(unknown)}")
-    if min_season_years < 1:
+    if min_season_years is not None and min_season_years < 1:
         raise ValueError("min_season_years must be positive")
+
+    def minimum(dataset, window_years):
+        if min_season_years is not None:
+            return min_season_years
+        if window_years is None:
+            months = dataset.time.dt.year.values * 12 + dataset.time.dt.month.values
+            window_years = (months[-1] - months[0] + 1) / 12
+        return seasonal_min_years(window_years)
+
+    min_ref = minimum(ds_hist_time, reference_window_years)
+    min_fut = minimum(ds_clim_time, future_window_years)
     rows = []
     for variable in ds_hist_time.data_vars:
         for season in ("DJF", "MAM", "JJA", "SON"):
@@ -838,7 +863,7 @@ def get_change_seasonal_clim_proj(
             fut_years, fut_values, fut_integrals = _analysis_season_values(
                 ds_clim_time, variable, season, calendar
             )
-            enough = min(len(ref_years), len(fut_years)) >= min_season_years
+            enough = len(ref_years) >= min_ref and len(fut_years) >= min_fut
 
             def statistic(values, integrals, years, name):
                 if not values.size:

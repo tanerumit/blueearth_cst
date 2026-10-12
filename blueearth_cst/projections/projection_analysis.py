@@ -18,13 +18,13 @@ import pandas as pd
 
 from blueearth_cst.projections.calendar_weights import month_length_weights
 from blueearth_cst.projections.get_change_climate_proj import (
-    MIN_SEASON_YEARS,
     AnalysisWindowUnavailable,
     analysis_slice,
     detrended_std,
     get_change_annual_clim_proj,
     get_change_monthly_clim_proj,
     get_change_seasonal_clim_proj,
+    seasonal_min_years,
 )
 from blueearth_cst.projections.projection_coverage import family_metadata
 from blueearth_cst.projections.projection_figures import FIGURE_FILENAMES, period_folder
@@ -229,7 +229,7 @@ def analysis_change_table(
     water_year_start="Jan",
     variable_spec=None,
     min_reference=None,
-    min_season_years=MIN_SEASON_YEARS,
+    min_season_years=None,
 ):
     """One member's flat analysis rows, keyed by one distinct window_id.
 
@@ -238,6 +238,8 @@ def analysis_change_table(
     still raises. Retained arrays are JSON numeric strings, not opaque objects.
     Annual precipitation kernel percentages retain integral semantics; seasonal
     percentages use rates per owner ruling. Absolute companions always use rates.
+    Seasonal eligibility requires 90% of each owned window's years (rounded up,
+    minimum three), or the same explicit ``min_season_years`` in both periods.
     """
     if set(historical.data_vars) != set(future.data_vars):
         raise ValueError("analysis has asymmetric historical/scenario variables")
@@ -250,6 +252,18 @@ def analysis_change_table(
         "future_end": future_window[1],
     }
     variables = list(historical.data_vars)
+    reference_window_years = reference_window[1] - reference_window[0] + 1
+    future_window_years = future_window[1] - future_window[0] + 1
+    min_ref_seasons = (
+        seasonal_min_years(reference_window_years)
+        if min_season_years is None
+        else min_season_years
+    )
+    min_fut_seasons = (
+        seasonal_min_years(future_window_years)
+        if min_season_years is None
+        else min_season_years
+    )
     reason = ""
     try:
         hist = analysis_slice(historical, reference_window, water_year_start)
@@ -294,6 +308,8 @@ def analysis_change_table(
             hist[supported],
             fut[supported],
             min_season_years=min_season_years,
+            reference_window_years=reference_window_years,
+            future_window_years=future_window_years,
             variable_spec=spec,
         )
     rows = []
@@ -428,11 +444,10 @@ def analysis_change_table(
                     "unavailable"
                     if unavailable
                     else "insufficient_observations"
-                    if min(n_ref, n_fut)
-                    < (
-                        min_season_years
+                    if (
+                        (n_ref < min_ref_seasons or n_fut < min_fut_seasons)
                         if period in ("DJF", "MAM", "JJA", "SON")
-                        else 3
+                        else min(n_ref, n_fut) < 3
                     )
                     else "ok"
                 )

@@ -254,7 +254,18 @@ def prepare_tables(
             "aligned_dry_rule": "kernel per-statistic reference threshold",
             "monthly_water_year": "analysis passes configured start; aligned monthly convention retained",
             "season_year": "middle month calendar year; all three months inside slice; calendar-day weighted rates",
-            "season_min_years": analysis.MIN_SEASON_YEARS,
+            "season_min_years": {
+                window["window_id"]: {
+                    "reference": analysis.seasonal_min_years(
+                        window["reference"][1] - window["reference"][0] + 1
+                    ),
+                    "future": analysis.seasonal_min_years(
+                        window["used"][1] - window["used"][0] + 1
+                    ),
+                }
+                for window in windows
+            },
+            "season_coverage_rule": "ceil(0.9 * owned window years), minimum 3; separate reference and future thresholds",
             "seasonal_precipitation_parity_exception": "percentages use mean rates; lab uses totals",
             "precipitation_cv": "detrended SD of period integrals divided by integral mean",
             "detrending": "OLS on actual retained year coordinates; residual SD ddof=0",

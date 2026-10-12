@@ -80,7 +80,10 @@ def test_shared_windows_compute_once_with_identity_checks(tmp_path):
     seasonal = tables["changes"].loc[
         tables["changes"].period.isin(["DJF", "MAM", "JJA", "SON"])
     ]
-    assert set(seasonal.status) == {"insufficient_observations"}
+    assert set(seasonal.status) == {"ok"}
+    assert record["methods"]["season_min_years"] == {
+        "2081-2100": {"reference": 14, "future": 18}
+    }
     assert tables["member_anomalies"].year.min() == 1950
     assert tables["member_anomalies"].year.max() == 2100
     assert len(tables["availability"]) == 19

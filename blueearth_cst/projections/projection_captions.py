@@ -149,6 +149,18 @@ def caption(filename, record, window_id="", counts=None):
         text.append(
             "Seasonal precipitation absolute and percentage changes use rates; the lab's total-based percentages are a documented parity exception. CV uses period integrals."
         )
+    if (
+        filename.startswith(("change-", "variability-ratio-"))
+        and "cloud" not in filename
+    ):
+        minimums = record.get("methods", {}).get("season_min_years", {})
+        if isinstance(minimums, dict) and window_id in minimums:
+            minimum = minimums[window_id]
+            text.append(
+                f"Seasonal eligibility requires at least {minimum['reference']} complete reference "
+                f"and {minimum['future']} complete future seasons (90% of each owned window, "
+                "rounded up, minimum three). Each season needs three finite in-window months."
+            )
     if filename.startswith(("change-", "variability-ratio-", "trajectory-")):
         text.append(
             f"Ensemble spread across {plural(models, 'model')} (equal model weight), not a confidence interval; models from one code family count separately."

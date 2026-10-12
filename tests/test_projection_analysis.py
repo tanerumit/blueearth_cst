@@ -60,6 +60,56 @@ def test_float32_analysis_reductions_match_promoted_source_values():
     assert hist.temp.dtype == np.float32
 
 
+@pytest.mark.parametrize(
+    "missing_side,missing,eligible",
+    [
+        ("future", 0, True),
+        ("future", 2, True),
+        ("future", 3, False),
+        ("reference", 4, False),
+    ],
+)
+def test_seasonal_changes_and_variability_use_separate_owned_window_thresholds(
+    missing_side, missing, eligible
+):
+    alternating = (-1.0) ** np.arange(30)
+    hist = _series(1985, 2 + alternating / 10, 10 + alternating, "historical")
+    future = _series(2041, 3 + alternating / 5, 12 + 2 * alternating, "ssp245")
+    target = hist if missing_side == "reference" else future
+    start = 1985 if missing_side == "reference" else 2041
+    # Remove leading complete years while retaining original acquisition coverage.
+    # The configured window, not the shortened finite data, still owns the threshold.
+    for variable in ("temp", "precip"):
+        target[variable] = target[variable].where(
+            target.time.dt.year >= start + missing
+        )
+    options = dict(
+        identity=IDENTITY,
+        window_id="2041-2060",
+        reference_window=(1985, 2014),
+        future_window=(2041, 2060),
+    )
+    changes = analysis.analysis_change_table(hist, future, **options)
+    mam = changes.loc[changes.period == "MAM"]
+    assert set(mam.mean_change_eligible) == {eligible}
+    assert set(mam.status) == {"ok" if eligible else "insufficient_observations"}
+    ratios = analysis.member_ratios(changes)
+    assert set(ratios.loc[ratios.period == "MAM", "variability_eligible"]) == {eligible}
+    if missing == 0:
+        assert set(changes.loc[changes.period == "DJF", "n_reference"]) == {29}
+        assert set(changes.loc[changes.period == "DJF", "n_future"]) == {19}
+        assert _row(changes, "temp", "MAM").value == pytest.approx(2)
+        assert _row(
+            changes, "precip", "MAM", quantity="change_pct"
+        ).value == pytest.approx(50)
+        strict = analysis.analysis_change_table(
+            hist, future, min_season_years=27, **options
+        )
+        assert set(strict.loc[strict.period == "MAM", "status"]) == {
+            "insufficient_observations"
+        }
+
+
 def test_mean_keyed_dry_rule_restores_wet_low_sd_and_keeps_dry_absolute():
     alternating = (-1.0) ** np.arange(30)
     hist = _series(1985, 0.5 + 0.05 * alternating, 10 + alternating, "historical")

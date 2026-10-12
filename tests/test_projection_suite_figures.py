@@ -126,6 +126,29 @@ def suite():
     return tables, record
 
 
+def test_seasonal_strip_explains_unavailable_panels(suite):
+    tables, record = suite
+    models = tables["model_changes"].copy()
+    models.loc[models.period.isin(["DJF", "MAM", "JJA", "SON"]), "value"] = np.nan
+    tables = {
+        **tables,
+        "model_changes": models,
+        "change_summary": analysis.ensemble_summary(models),
+    }
+    fig = render_product(
+        "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
+        tables,
+        record,
+        window_id="2036-2065",
+    )
+    assert not fig.axes[0].texts
+    for ax in fig.axes[1:]:
+        assert [text.get_text() for text in ax.texts] == [
+            "No eligible\nmodel estimates"
+        ]
+    plt.close(fig)
+
+
 def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
     tables, record = suite
     for row in tables["availability"].to_dict("records"):

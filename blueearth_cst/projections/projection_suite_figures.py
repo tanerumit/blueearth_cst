@@ -148,6 +148,19 @@ def dot_strip(
         ax.tick_params(axis="both", length=3)
         ygrid(ax)
         ax.axhline(baseline, color=MUTED, lw=LW_REF)
+        panel_values = selected.loc[selected.period == period, "value"].to_numpy(float)
+        if not np.isfinite(panel_values).any():
+            ax.text(
+                0.5,
+                0.5,
+                "No eligible\nmodel estimates",
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+                color=MUTED,
+                fontsize=FS_NOTE,
+                bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.88},
+            )
         for j, s in enumerate(scen):
             values = (
                 selected.loc[

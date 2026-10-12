@@ -18,6 +18,7 @@ from matplotlib.figure import Figure
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
+from matplotlib.ticker import FixedLocator, MaxNLocator, StrMethodFormatter
 
 from blueearth_cst.climate_analysis.diagnostics import SPI_SCALES, month_order
 from blueearth_cst.plotting import prepared_charts as pc
@@ -1033,15 +1034,21 @@ def _annual_trends(
 def sensitivity(v: View) -> Figure:
     """Sen slope with dependence-adjusted interval for each start year (end fixed); filled = p < 0.05."""
     fig, axs = new_fig(H_SIDE2, 1, 2, width_mm=W_FULL, sharex=True)
+    starts = sorted(
+        {
+            year
+            for s in v.sources
+            for key in ("total", "Rx1day")
+            for year in v.results[s]["sensitivity"][key].index
+        }
+    )
     for i, (ax, (key, title)) in enumerate(
         zip(axs[0], (("total", "Annual precipitation"), ("Rx1day", "Rx1day")))
     ):
-        starts = set()
         for j, s in enumerate(v.sources):
             t = v.results[s]["sensitivity"][key]
             if t.empty:
                 continue
-            starts.update(t.index)
             x = t.index.to_numpy() + dodge(j, len(v.sources))
             c = v.color(s)
             edge = to_hex(0.65 * np.array(to_rgb(c)))
@@ -1067,13 +1074,18 @@ def sensitivity(v: View) -> Figure:
                     capthick=1.2,
                     zorder=3,
                 )
-        ax.set_xticks(sorted(starts))
+        ax.xaxis.set_major_locator(
+            MaxNLocator(nbins=5, integer=True, steps=[1, 2, 5, 10])
+        )
+        ax.xaxis.set_major_formatter(StrMethodFormatter("{x:.0f}"))
+        ax.xaxis.set_minor_locator(FixedLocator(starts))
+        ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
         if starts:
             ax.set_xlim(min(starts) - 0.5, max(starts) + 0.5)
         ax.axhline(0, color=MUTED, lw=LW_REF)
         ax.set_title(f"{chr(97 + i)}) {title}")
         ax.set_ylabel(UNITS["mm_decade"])
-        ax.set_xlabel(f"Start year (end {v.years[-1]})")
+        ax.set_xlabel(f"Trend start year (fixed end: {v.years[-1]})")
         ygrid(ax)
     sig = [
         Line2D(

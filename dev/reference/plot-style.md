@@ -174,6 +174,10 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | Trend sensitivity | Separate slope points with confidence error bars for each eligible starting year. |
 | Monthly coverage | Compact dataset rows of monthly cells; complete, gapped and unusable states. |
 
+Trend-sensitivity panels use sparse, calendar-aligned integer year labels with minor ticks at other
+eligible starting years. Share the start-year extent across panels and name the fixed end year in the
+x-axis title; retain every slope estimate and interval regardless of label density.
+
 For WF2 change strips, tighten the gap between the horizontal scenario legend and panel titles, add short
 caps to the full-range lines, and make median bars slightly thicker than the box outlines.
 

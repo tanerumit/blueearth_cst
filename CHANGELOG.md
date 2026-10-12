@@ -53,6 +53,8 @@ Git release tags remain authoritative.
 
 ### Known limitations
 
+- The owner waived the all-five E2E release gate for `0.4.1` only after slow P-drive reads. The fresh
+  run was interrupted during WF0; it is not evidence of complete end-to-end execution.
 - Diagnostic changes affect scientific results; no whole-tree numerical equivalence is claimed.
   The baseline manifest remains stale after the P-drive/GlobCover input switch and cannot qualify
   current numerical results without fresh baseline generation and accepted re-recording.

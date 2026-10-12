@@ -28,7 +28,7 @@ use a directory outside the toolbox checkout.
     series/<run_id>.nc            generated climate series, e.g. run_01.nc
     config/                      copied creator configuration
     weathergenr/                 copied generator settings, products and diagnostics
-  scenarios/<id>/                immutable collection, including original tables and series
+  scenarios/_engine/data/<id>/   immutable collection, including original tables and series
   experiments/_engine/
     allocation.json             project-wide experiment numbering
     transactions/               experiment creation and recovery records
@@ -40,7 +40,7 @@ use a directory outside the toolbox checkout.
       return_level_benchmark.json  scope of return-level checks
     _engine/metric_sets/current.json  current export identity and file inventory
     results/metric_sets/         stable CSV copies of the current metric set
-    results/metric_sets/<id>/
+    _engine/metric_sets/<id>/data/
       group_members.csv         group_id,run_id (including singleton groups)
       group_metadata.csv        group_id,st_id,is_reference
       <token>_run_indicators.csv    metric,location,run_id,value
@@ -61,6 +61,10 @@ Configuration archives are generated records. Edit the source configuration supp
 the archived `sources/` files preserve what an execution used. WF3 and WF4 retain their configuration
 inside the owning collection or experiment. The shared `experiments/_engine/` directory is reserved
 for allocation and creation recovery; it is not an experiment.
+
+Fresh collections and metric sets keep their immutable data under `_engine/`. Readers still accept
+completed legacy data at `scenarios/<id>/` and `results/metric_sets/<id>/`; their manifests retain those
+paths. Stable exports remain at `scenarios/` and `experiments/<name>/results/metric_sets/`.
 
 New projects use this layout from October 2026: the former `config/runs/` contents now sit directly
 under `config/`, and former `config/experiments/` state sits under `experiments/_engine/`.

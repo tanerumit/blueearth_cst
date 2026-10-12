@@ -4308,6 +4308,23 @@ def test_a_warning_line_is_painted_orange_whatever_emitted_it(line):
     assert out == f"\033[{su._ANSI_ALERT}m{line}\033[0m", repr(out)
 
 
+def test_structured_warning_uses_colour_without_a_console_level(tmp_path):
+    row = "13:42:17 - spatial - WARNING - Output location coordinates adjusted:\n"
+    console = _TTYWriter()
+    log = tmp_path / "rule.log"
+    with log.open("w", encoding="utf-8") as handle:
+        tee = su._Tee(console, handle)
+        tee.write(row)
+        tee.close()
+    assert console.getvalue().endswith(
+        f"\033[{su._ANSI_ALERT}m13:42:17 - spatial - "
+        "Output location coordinates adjusted:\033[0m\n"
+    )
+    assert "WARNING - " not in console.getvalue()
+    assert log.read_text(encoding="utf-8") == row
+    assert su._paint_body(row, False) == row
+
+
 @pytest.mark.parametrize(
     "line",
     [

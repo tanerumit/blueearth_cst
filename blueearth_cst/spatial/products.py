@@ -526,11 +526,18 @@ def _snap_gauge_points(
             rtol=0,
         )
     )
-    for index in np.flatnonzero(changed):
+    changed_indices = np.flatnonzero(changed)
+    if changed_indices.size:
+        log_row(
+            "Output location coordinates adjusted:",
+            module="spatial",
+            level="WARNING",
+        )
+    for index in changed_indices:
         original = original_wgs84.iloc[index]
         resolved = snapped_wgs84.geometry.iloc[index]
         log_row(
-            f"Output location coordinates adjusted: {original.station_name} "
+            f"{original.station_name} "
             f"(lon={original.geometry.x:.9f}, lat={original.geometry.y:.9f}) -> "
             f"(lon={resolved.x:.9f}, lat={resolved.y:.9f})",
             module="spatial",

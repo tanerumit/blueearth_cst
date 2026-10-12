@@ -49,8 +49,8 @@ def _log_row_text(hms, module, level, message):
 
     On a colour-capable console that second row is also painted (orange for a
     warning, red for a failure) — see ``_SEVERITY_PATTERNS``, which keys off
-    this very spelling. The text is the durable signal and the colour is the
-    console's amplification of it; the log file carries only the text.
+    this very spelling. The orange console row omits the WARNING field;
+    plain output and log files retain it as the durable severity signal.
 
     Absence therefore MEANS ``INFO``; the log header says so. Every row in these
     logs goes through here -- :func:`_compact_log_line` for hydromt's records,
@@ -2198,7 +2198,8 @@ def _paint_line(line, code):
     an error arriving as body text -- from our scripts, or from hydromt, R,
     Julia or wflow stdout -- is painted for what it says rather than for the
     tier its emitter assumed, stamp and module column included. Dimming half of
-    such a row would say it is partly routine.
+    such a row would say it is partly routine. A structured warning omits its
+    WARNING field after severity detection; orange carries it on this console.
 
     Otherwise a row in our own grammar has its stamp and module column dimmed
     and its message left in the body tier, so a run's messages stand clear of
@@ -2207,6 +2208,11 @@ def _paint_line(line, code):
     """
     severity = _severity_code(line)
     if severity:
+        # Detect severity before removing its field from the coloured console.
+        # Keep durable rows and unstructured warning text intact.
+        match = _ROW_PREFIX_RE.match(line)
+        if match and match.group(2).startswith("WARNING - "):
+            line = match.group(1) + match.group(2).removeprefix("WARNING - ")
         return _ansi(line, severity)
     # Splitting a line into fields is a property of the BODY tier and of
     # nothing else. A caller that passes an explicit tier is saying this whole

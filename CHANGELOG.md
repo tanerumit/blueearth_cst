@@ -9,6 +9,57 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+## [v0.4.1] — 2026-10-12
+
+Owner-approved versioning exception: this release uses a patch number despite new features and
+incompatible output paths since `v0.4.0`. Read the migration notes before reusing existing projects.
+Git release tags remain authoritative.
+
+### Breaking and migration
+
+- Configuration archives move from `config/runs/` to `config/`; experiment allocation and recovery
+  metadata move from `config/experiments/` to `experiments/_engine/`. Existing output trees are not
+  migrated or supported through path aliases. Use a fresh output root; retain older trees for reference.
+- Fresh immutable scenario data live under `scenarios/_engine/data/<id>/`; fresh metric tables live
+  under `experiments/<name>/_engine/metric_sets/<id>/data/`. Readers preserve completed legacy layouts.
+  Use the source manifests for immutable paths and the stable exports described in the
+  [output guide](docs/site/guide/outputs.qmd) for post-processing.
+- Generation, simulation and metric identities track imported code. These changes can invalidate
+  reuse; create a new experiment when the runner refuses a changed simulation identity.
+- WF2 diagnostic tables now use complete water years within the configured reference and future
+  windows, replacing fixed 30-year windows and historical fallbacks. Seasonal eligibility requires
+  90% of each owned window, rounded up, with at least three seasons. The analysis record now stores
+  separate reference/future thresholds per window. Rerun analysis and rendering; diagnostic values
+  and period folders can change. Overlay change-factor arithmetic is unchanged. See the
+  [WF2 reference](docs/site/toolbox-reference/workflow-analyze-projections.qmd).
+
+### Added
+
+- Stable scenario exports mirror the selected collection at `scenarios/`; stable metric CSV exports
+  publish the selected set at `experiments/<name>/results/metric_sets/`. Engine inventories identify
+  exported files and checksums. Exports refresh after successful generation or indicator requests,
+  including reuse; read them after completion and keep custom files under distinct names.
+- Monthly empirical percentile calendars with reference-support reporting, clearer precipitation
+  anomalies, and improved station-extreme and signature figures.
+- Runner summaries report warning counts and write command receipts for supported reruns.
+
+### Fixed
+
+- Climate and forcing maps fit basin extents and retain readable spatial keys after layout.
+- Console settings and command options wrap within the terminal width; catalog chatter is captured.
+- Case scaffolding preserves requested destinations, and summary failures are reported explicitly.
+- Seasonal diagnostics scale coverage to each configured analysis window rather than requiring
+  27 seasons for every window. Shorter valid windows can now produce previously unavailable results.
+
+### Known limitations
+
+- Diagnostic changes affect scientific results; no whole-tree numerical equivalence is claimed.
+  The baseline manifest remains stale after the P-drive/GlobCover input switch and cannot qualify
+  current numerical results without fresh baseline generation and accepted re-recording.
+- Linux/Docker full-pipeline scientific replication remains unqualified. Local all-five execution
+  requires the data mirror, Julia, `weathergenr` and CMIP6 network access.
+- Stable exports duplicate retained data and replace files individually; read after workflow completion.
+
 ## [v0.4.0] — 2026-10-10
 
 Pre-1.0 minor release with incompatible experiment identities and output contracts since `v0.3.0`.

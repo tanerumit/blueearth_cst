@@ -56,7 +56,22 @@ def test_metric_environment_records_the_estimator_source():
     )
 
 
-def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "preexisting",
+    [
+        "absent",
+        "empty-data",
+        "unknown-dir",
+        "partial-data",
+        "engine-file",
+        "data-file",
+        "legacy-data",
+        "aliased-data",
+    ],
+)
+def test_metric_set_v2_publishes_paired_paths_and_headers(
+    tmp_path, monkeypatch, preexisting
+):
     """The v2 marker and user-facing tables use one short-ID identity."""
     import csv
     from dataclasses import asdict
@@ -133,19 +148,53 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch)
         "verify_declaration",
         lambda *_: None,
     )
-    marker = metric_plan._publish_metric_set_v2(tmp_path, plan)
     short = identity_segment(plan["metric_set_id"], "metric_set_id")
     engine = tmp_path / "_engine/metric_sets" / short
-    result = tmp_path / "results/metric_sets" / short
+    result = engine / "data"
+    if preexisting == "empty-data":
+        result.mkdir(parents=True)
+    elif preexisting == "unknown-dir":
+        (engine / "unknown").mkdir(parents=True)
+    elif preexisting == "partial-data":
+        result.mkdir(parents=True)
+        (result / "group_members.csv").write_bytes(b"partial")
+    elif preexisting == "engine-file":
+        engine.parent.mkdir(parents=True)
+        engine.write_bytes(b"foreign")
+    elif preexisting == "data-file":
+        engine.mkdir(parents=True)
+        result.write_bytes(b"foreign")
+    elif preexisting == "legacy-data":
+        legacy = tmp_path / "results/metric_sets" / short
+        legacy.mkdir(parents=True)
+        (legacy / "group_members.csv").write_bytes(b"partial")
+    elif preexisting == "aliased-data":
+        external = tmp_path / "external"
+        external.mkdir()
+        engine.mkdir(parents=True)
+        result.symlink_to(external, target_is_directory=True)
+    if preexisting not in {"absent", "empty-data"}:
+        monkeypatch.setattr(
+            metric_plan,
+            "reduce_metric_plan",
+            lambda *_: pytest.fail("refuse before reduction"),
+        )
+        with pytest.raises(
+            metric_plan.ImmutableMetricSetError, match="partial|aliased"
+        ):
+            metric_plan._publish_metric_set_v2(tmp_path, plan)
+        assert not (engine / "metrics.json").exists()
+        return
+    marker = metric_plan._publish_metric_set_v2(tmp_path, plan)
     assert marker["schema_version"] == "metric-set/3"
     assert engine.joinpath("metrics.json").is_file()
     assert result.joinpath("group_members.csv").is_file()
     assert marker["group_members"]["path"] == (
-        f"results/metric_sets/{short}/group_members.csv"
+        f"_engine/metric_sets/{short}/data/group_members.csv"
     )
     assert [item["file"]["path"] for item in marker["tables"]] == [
-        f"results/metric_sets/{short}/gwr_run_indicators.csv",
-        f"results/metric_sets/{short}/gwr_group_indicators.csv",
+        f"_engine/metric_sets/{short}/data/gwr_run_indicators.csv",
+        f"_engine/metric_sets/{short}/data/gwr_group_indicators.csv",
     ]
     with result.joinpath("group_members.csv").open(
         newline="", encoding="utf-8"

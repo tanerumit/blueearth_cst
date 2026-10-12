@@ -8,6 +8,7 @@ wherever a test plans against it, because publication re-observes it.
 """
 
 import csv
+import shutil
 from copy import deepcopy
 
 import numpy as np
@@ -26,6 +27,7 @@ from blueearth_cst.experiment.metric_plan import (
     MetricPlanStale,
     build_metric_plan,
     current_metric_request,
+    metric_result_pattern,
     publish_metric_set,
     read_metric_set,
     verify_metric_plan,
@@ -90,7 +92,7 @@ def published(_published_once, tmp_path, monkeypatch):
     source, short = _published_once
     root = copy_v2_experiment(source, tmp_path).root
     marker = root / "_engine/metric_sets" / short / "metrics.json"
-    return root, marker, root / "results/metric_sets" / short
+    return root, marker, marker.parent / "data"
 
 
 def _plan(root, tokens=("gwr",)):
@@ -104,7 +106,33 @@ def _engine(root, plan):
 
 def _result(root, plan):
     short = identity_segment(plan["metric_set_id"], "metric_set_id")
-    return root / "results/metric_sets" / short
+    return root / "_engine/metric_sets" / short / "data"
+
+
+def test_simulations_only_does_not_resolve_metric_requirements(experiment, monkeypatch):
+    from blueearth_cst.experiment import metric_plan, simulation_runner
+
+    monkeypatch.setattr(
+        metric_plan,
+        "current_metric_request",
+        lambda *_: pytest.fail("simulations_only must not resolve metrics"),
+    )
+    monkeypatch.setattr(
+        simulation_runner, "validate_targets", lambda *_: "simulate-and-metrics"
+    )
+    _, environment = simulation_runner.simulation_command(
+        experiment.config, ["responses"], 1
+    )
+    assert environment["CST_SIMULATION_TARGET"] == "simulations_only"
+    assert (
+        metric_result_pattern(
+            experiment.root,
+            ["q"],
+            "YS-JAN",
+            target=environment["CST_SIMULATION_TARGET"],
+        )
+        == (experiment.root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
+    )
 
 
 def test_the_fixture_is_a_ready_v2_experiment_wherever_it_is_copied(experiment):
@@ -139,13 +167,91 @@ def test_a_v2_metric_set_publishes_once_and_is_reused_byte_for_byte(experiment):
     manifest = publish_metric_set(root, plan)
     marker = _engine(root, plan) / "metrics.json"
     assert (_result(root, plan) / "gwr_run_indicators.csv").is_file()
-    files = sorted(
-        p for d in (marker.parent, _result(root, plan)) for p in d.rglob("*")
+    assert not (root / "results/metric_sets").exists()
+    assert (
+        metric_result_pattern(root, ["gwr"], "YS-JAN")
+        == (root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
     )
+    assert (
+        plan["targets"]["unit_index"]
+        == (_result(root, plan) / "group_members.csv").as_posix()
+    )
+    files = sorted(p for p in marker.parent.rglob("*") if p.is_file())
     before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
     assert read_metric_set(root, marker) == manifest
     assert publish_metric_set(root, _plan(root)) == manifest
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
+
+
+def test_legacy_metric_storage_reuses_original_plan_and_exports(published):
+    from blueearth_cst.experiment.metric_export import export_metric_set
+
+    root, marker, result = published
+    manifest = read_metric_set(root, marker)
+    legacy = root / "results/metric_sets" / marker.parent.name
+    legacy.parent.mkdir(parents=True)
+    shutil.move(result, legacy)
+    manifest["result_root"] = legacy.relative_to(root).as_posix()
+    for reference in [
+        manifest["group_members"],
+        manifest["group_metadata"],
+        *(item["file"] for item in manifest["tables"]),
+    ]:
+        reference["path"] = (
+            f"{manifest['result_root']}/{reference['path'].split('/')[-1]}"
+        )
+    manifest["metrics_manifest_sha256"] = content_sha256(
+        {
+            key: value
+            for key, value in manifest.items()
+            if key != "metrics_manifest_sha256"
+        }
+    )
+    marker.write_bytes(canonical_json_bytes(manifest))
+    request = current_metric_request(root, ["gwr"], "YS-JAN")
+    plan = write_metric_plan(root, request)
+    assert plan["targets"]["gwr_run"] == (legacy / "gwr_run_indicators.csv").as_posix()
+    assert (
+        metric_result_pattern(root, ["gwr"], "YS-JAN")
+        == (root / "results/metric_sets/{metric_set_id}").as_posix()
+    )
+    files = [marker, *legacy.iterdir()]
+    before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files}
+    assert verify_metric_plan(root, request) == plan
+    assert publish_metric_set(root, plan) == manifest
+    export_metric_set(root, marker)
+    export_metric_set(root, marker)
+    assert before == {
+        path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files
+    }
+    assert not result.exists()
+    assert (legacy.parent / "gwr_run_indicators.csv").read_bytes() == (
+        legacy / "gwr_run_indicators.csv"
+    ).read_bytes()
+
+
+@pytest.mark.parametrize("changed", ["root", "lookup", "table"])
+def test_mixed_or_escaping_metric_layout_is_refused(published, changed):
+    root, marker, _ = published
+    manifest = read_metric_set(root, marker)
+    if changed == "root":
+        manifest["result_root"] = "../outside"
+    elif changed == "lookup":
+        manifest["group_members"]["path"] = (
+            f"results/metric_sets/{marker.parent.name}/group_members.csv"
+        )
+    else:
+        manifest["tables"][0]["file"]["path"] = "../outside.csv"
+    manifest["metrics_manifest_sha256"] = content_sha256(
+        {
+            key: value
+            for key, value in manifest.items()
+            if key != "metrics_manifest_sha256"
+        }
+    )
+    marker.write_bytes(canonical_json_bytes(manifest))
+    with pytest.raises(ImmutableMetricSetError, match="identity|reference"):
+        read_metric_set(root, marker)
 
 
 def test_the_metric_environment_changes_only_the_metric_identity(experiment):
@@ -164,7 +270,7 @@ def test_stable_export_tracks_selection_and_preserves_immutable_sets(published):
     from blueearth_cst.experiment.metric_export import export_metric_set
 
     root, marker, result = published
-    destination = result.parent
+    destination = root / "results/metric_sets"
     tracking = root / "_engine/metric_sets/current.json"
     immutable = {path: path.read_bytes() for path in result.iterdir()}
     export_metric_set(root, marker)
@@ -205,7 +311,7 @@ def test_failed_export_preserves_previous_files(published, monkeypatch, failure)
 
     root, marker, result = published
     metric_export.export_metric_set(root, marker)
-    destination = result.parent
+    destination = root / "results/metric_sets"
     tracking = root / "_engine/metric_sets/current.json"
     # Distinct previous bytes prove rollback, even for files already replaced.
     (destination / "group_members.csv").write_bytes(b"previous export")

@@ -12,12 +12,18 @@ project writers elsewhere. It replaces the R12 prototype checkpoint gates (t2610
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+from blueearth_cst.experiment.content_identity import (
+    canonical_json_bytes,
+    content_sha256,
+    read_canonical_json,
+)
 from tests._v2_experiment import RUN_IDS, build_v2_experiment
 
 pytestmark = pytest.mark.workflow_contract
@@ -95,12 +101,52 @@ def test_a_dry_run_writes_nothing_and_a_stale_response_is_refused(tmp_path):
     reason="run_project_child refuses project writers off Windows: no verified "
     "lifetime guarantee for their descendants",
 )
-def test_a_published_set_is_reused_byte_for_byte_under_forceall(tmp_path):
+@pytest.mark.parametrize("legacy_storage", [False, True], ids=["engine-data", "legacy"])
+def test_a_published_set_is_reused_byte_for_byte_under_forceall(
+    tmp_path, legacy_storage
+):
     experiment = build_v2_experiment(tmp_path)
     root = experiment.root
 
     code, output = _simulate(experiment)
     assert code == 0, output
+    marker = next((root / "_engine/metric_sets").glob("*/metrics.json"))
+    assert (marker.parent / "data").is_dir()
+    assert not (root / "results/metric_sets" / marker.parent.name).exists()
+    if legacy_storage:
+        manifest = read_canonical_json(marker)
+        source = root / manifest["result_root"]
+        legacy = root / "results/metric_sets" / marker.parent.name
+        shutil.move(source, legacy)
+        old_prefix = source.as_posix()
+        manifest["result_root"] = legacy.relative_to(root).as_posix()
+        references = [
+            manifest["group_members"],
+            manifest["group_metadata"],
+            *(item["file"] for item in manifest["tables"]),
+        ]
+        for reference in references:
+            reference["path"] = (
+                f"{manifest['result_root']}/{Path(reference['path']).name}"
+            )
+        manifest["metrics_manifest_sha256"] = content_sha256(
+            {
+                key: value
+                for key, value in manifest.items()
+                if key != "metrics_manifest_sha256"
+            }
+        )
+        marker.write_bytes(canonical_json_bytes(manifest))
+        for path in (root / "_engine/metric_requests").glob("*.json"):
+            plan = read_canonical_json(path)
+            plan["targets"] = {
+                key: value.replace(old_prefix + "/", legacy.as_posix() + "/")
+                for key, value in plan["targets"].items()
+            }
+            plan["request_sha256"] = content_sha256(
+                {key: value for key, value in plan.items() if key != "request_sha256"}
+            )
+            path.write_bytes(canonical_json_bytes(plan))
     published = _published(root)
     assert len(list((root / "_engine/metric_sets").glob("*/metrics.json"))) == 1
     assert {

@@ -236,7 +236,9 @@ paths recorded in the manifest and source index. Execution and recovery roots st
 Each `experiments/<experiment_name>/` retains `_engine/simulation.json`, its native
 `hydrology/wflow/output/<run_id>.csv` responses and
 `_engine/response_inventory.json`. Metric sets live in
-`results/metric_sets/<metric_set_id>/`. Each variable has separate
+`_engine/metric_sets/<metric_set_id>/data/`, with the selected tables exported directly to
+`results/metric_sets/`. Existing sets under `results/metric_sets/<metric_set_id>/` remain readable
+and reusable in place. Each variable has separate
 `<token>_run_indicators.csv` (`metric,location,run_id,value`) and
 `<token>_group_indicators.csv` (`metric,location,group_id,value`) tables.
 Text IDs such as `run_01` and `group_01` use independent namespaces.

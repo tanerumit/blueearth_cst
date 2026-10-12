@@ -475,8 +475,12 @@ def build_metric_plan(experiment_root, request):
         ),
     }
     identity = content_sha256(identity_projection)
+    engine = root / "_engine/metric_sets" / identity_segment(identity, "metric_set_id")
+    marker = engine / "metrics.json"
     destination = (
-        root / "results/metric_sets" / identity_segment(identity, "metric_set_id")
+        root / read_metric_set(root, marker)["result_root"]
+        if marker.is_file()
+        else engine / "data"
     )
     plan = {
         "schema_version": "metric-request/3",
@@ -519,6 +523,26 @@ def build_metric_plan(experiment_root, request):
     }
     plan["request_sha256"] = content_sha256(plan)
     return plan
+
+
+def metric_result_pattern(experiment_root, tokens, water_year_anchor, *, target=None):
+    """Choose the output template for this invocation's single selected set.
+
+    Snakemake needs static output patterns before its checkpoint resolves. A
+    completed simulation can already identify a retained set; preserve that
+    set's layout for forced reuse. Fresh simulations and metric sets use data
+    under the engine. The runner holds project execution ownership throughout.
+    """
+    root = Path(experiment_root).resolve()
+    if target == "simulations_only":
+        return (root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
+    if (root / "_engine/simulation.json").is_file():
+        request = current_metric_request(root, tokens, water_year_anchor)
+        plan = build_metric_plan(root, request)
+        result = Path(plan["targets"]["unit_index"]).parent
+        if result.parent == root / "results/metric_sets":
+            return (root / "results/metric_sets/{metric_set_id}").as_posix()
+    return (root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
 
 
 def _v2_run_groups(units):
@@ -796,18 +820,30 @@ def publish_metric_set(experiment_root, plan):
 
 
 def _publish_metric_set_v2(experiment_root, plan):
-    """Publish the v2 engine marker and paired user-facing result directory."""
+    """Publish immutable data beside its engine marker; preserve ready layouts."""
     root = Path(experiment_root).resolve()
     short = identity_segment(plan["metric_set_id"], "metric_set_id")
     engine = root / "_engine/metric_sets" / short
-    result = root / "results/metric_sets" / short
+    result = engine / "data"
+    legacy_result = root / "results/metric_sets" / short
     marker = engine / "metrics.json"
-    if engine.resolve() != engine or result.resolve() != result:
+    if any(
+        path.is_symlink() or path.is_junction() or path.resolve() != path
+        for path in (engine, result, legacy_result)
+    ):
         raise ImmutableMetricSetError("metric-set directory is aliased")
     if marker.exists():
         return read_metric_set(root, marker)
     check_live_metric_environment(plan)
-    if any(path.exists() and any(path.iterdir()) for path in (engine, result)):
+    # Snakemake pre-creates declared output parents. Accept only the empty
+    # expected data directory, never a partly written or foreign payload.
+    if (
+        engine.exists()
+        and (not engine.is_dir() or any(path != result for path in engine.iterdir()))
+    ) or any(
+        path.exists() and (not path.is_dir() or any(path.iterdir()))
+        for path in (result, legacy_result)
+    ):
         raise ImmutableMetricSetError("partial metric set cannot be overwritten")
     tables, evidence = reduce_metric_plan(root, plan)
     declarations_by_name = {
@@ -876,6 +912,7 @@ def _publish_metric_set_v2(experiment_root, plan):
     (engine / return_level_validation.REPORT_FILENAME).write_bytes(report)
     (engine / RETURN_LEVEL_EVIDENCE_FILENAME).write_bytes(evidence_payload)
     simulation = read_simulation_v2(root)
+    result_relative = result.relative_to(root).as_posix()
     manifest = {
         "schema_version": "metric-set/3",
         "canonicalization_id": "collection-canon/1",
@@ -891,9 +928,9 @@ def _publish_metric_set_v2(experiment_root, plan):
         "environment_sha256": content_sha256(plan["request"]["metric_environment"]),
         "groups": plan["groups"],
         "run_groups": plan["units"],
-        "group_members": ref(f"results/metric_sets/{short}/group_members.csv", lookup),
+        "group_members": ref(f"{result_relative}/group_members.csv", lookup),
         "group_metadata": ref(
-            f"results/metric_sets/{short}/group_metadata.csv", metadata_payload
+            f"{result_relative}/group_metadata.csv", metadata_payload
         ),
         "declarations": plan["request"]["declarations"],
         "expected_result_keys": plan["expected_result_keys"],
@@ -902,7 +939,7 @@ def _publish_metric_set_v2(experiment_root, plan):
                 "token": token,
                 "scope": scope,
                 "file": ref(
-                    f"results/metric_sets/{short}/{token}_{scope}_indicators.csv",
+                    f"{result_relative}/{token}_{scope}_indicators.csv",
                     payloads[f"{token}_{scope}_indicators.csv"],
                 ),
             }
@@ -911,7 +948,7 @@ def _publish_metric_set_v2(experiment_root, plan):
         ],
         "return_level_benchmark": ref(return_level_validation.REPORT_FILENAME, report),
         "return_level_evidence": ref(RETURN_LEVEL_EVIDENCE_FILENAME, evidence_payload),
-        "result_root": f"results/metric_sets/{short}",
+        "result_root": result_relative,
         "engine_root": f"_engine/metric_sets/{short}",
     }
     manifest["metrics_manifest_sha256"] = content_sha256(manifest)
@@ -970,10 +1007,23 @@ def _read_metric_set_v2(experiment_root, marker):
         or manifest["engine_root"] != f"_engine/metric_sets/{short}"
     ):
         raise ImmutableMetricSetError("metric-set engine identity differs")
-    if manifest["result_root"] != f"results/metric_sets/{short}":
+    result_relative = manifest["result_root"]
+    if result_relative not in (
+        f"_engine/metric_sets/{short}/data",
+        f"results/metric_sets/{short}",
+    ):
         raise ImmutableMetricSetError("metric-set result identity differs")
     engine = root / manifest["engine_root"]
     result = root / manifest["result_root"]
+    if (
+        marker.absolute() != engine / "metrics.json"
+        or marker.resolve() != marker.absolute()
+        or engine.resolve() != engine
+        or result.resolve() != result
+    ):
+        raise ImmutableMetricSetError(
+            "metric-set directory is aliased or outside experiment"
+        )
     if manifest["response_inventory"]["path"] != "../../response_inventory.json":
         raise ImmutableMetricSetError("metric inventory reference differs")
     artifacts = [manifest["environment"], manifest["return_level_benchmark"]]
@@ -984,9 +1034,7 @@ def _read_metric_set_v2(experiment_root, marker):
         if file_sha256(engine / item["path"]) != item["sha256"]:
             raise ImmutableMetricSetError(f"metric artifact differs: {item['path']}")
     lookup = result / "group_members.csv"
-    if manifest["group_members"]["path"] != (
-        f"results/metric_sets/{short}/group_members.csv"
-    ):
+    if manifest["group_members"]["path"] != (f"{result_relative}/group_members.csv"):
         raise ImmutableMetricSetError("metric lookup reference differs")
     if file_sha256(lookup) != manifest["group_members"]["sha256"]:
         raise ImmutableMetricSetError("metric lookup differs")
@@ -1006,8 +1054,7 @@ def _read_metric_set_v2(experiment_root, marker):
         raise ImmutableMetricSetError("group membership differs or contains duplicates")
     metadata = result / "group_metadata.csv"
     if (
-        manifest["group_metadata"]["path"]
-        != f"results/metric_sets/{short}/group_metadata.csv"
+        manifest["group_metadata"]["path"] != f"{result_relative}/group_metadata.csv"
         or file_sha256(metadata) != manifest["group_metadata"]["sha256"]
     ):
         raise ImmutableMetricSetError("group metadata reference or bytes differ")
@@ -1032,7 +1079,7 @@ def _read_metric_set_v2(experiment_root, marker):
             raise ImmutableMetricSetError("duplicate or unknown metric table scope")
         seen.add((item["token"], scope))
         if item["file"]["path"] != (
-            f"results/metric_sets/{short}/{item['token']}_{scope}_indicators.csv"
+            f"{result_relative}/{item['token']}_{scope}_indicators.csv"
         ):
             raise ImmutableMetricSetError("metric table reference differs")
         path = result / Path(item["file"]["path"]).name

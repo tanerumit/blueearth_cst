@@ -286,10 +286,12 @@ synthetic schema checks. `--notemp` does not recreate this retired output.
 
 ## HM-7 — retained metric-set interchange
 
-- **Path:** `<exp>/results/metric_sets/<short id>/<token>_run_indicators.csv`,
+- **Path:** `<exp>/_engine/metric_sets/<short id>/data/<token>_run_indicators.csv`,
   `<token>_group_indicators.csv`, `group_members.csv` and `group_metadata.csv`; the ready marker is
   `<exp>/_engine/metric_sets/<short id>/metrics.json` (`metric-set/3`), written
-  last.
+  last. The selected CSVs are exported directly to `<exp>/results/metric_sets/`.
+  Existing `metric-set/3` sets at `results/metric_sets/<short id>/` remain readable and reusable
+  without relocation.
 - **Producer:** `prepare_indicator_plan` resolves response-dependent declarations,
   units and references; `derive_system_indicators` publishes complete results.
 - **Consumer:** terminal reporting, CST-API and notebooks. Readers validate

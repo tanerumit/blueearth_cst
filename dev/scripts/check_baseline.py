@@ -465,8 +465,21 @@ def target_pattern(template: str, project_dir: str) -> re.Pattern[str]:
             f"{root}/experiments/{EXPERIMENT_NAME}/results/metric_sets/{sentinel}"
         ),
     )
+    patterns = [filled]
+    if "{metric_set_dir}" in template:
+        patterns.append(
+            filled.replace(
+                f"/results/metric_sets/{sentinel}",
+                f"/_engine/metric_sets/{sentinel}/data",
+            )
+        )
     return re.compile(
-        re.escape(filled).replace(re.escape(sentinel), _SEGMENT_RE) + r"\Z"
+        "(?:"
+        + "|".join(
+            re.escape(path).replace(re.escape(sentinel), _SEGMENT_RE)
+            for path in patterns
+        )
+        + r")\Z"
     )
 
 
@@ -575,7 +588,6 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     ):
         raise ValueError("baseline metric set id is not canonical SHA-256")
     segment = identity_segment(identity, "metric_set_id")
-    destination = experiment / "results/metric_sets" / segment
     marker = read_canonical_json(
         experiment / "_engine/metric_sets" / segment / "metrics.json"
     )
@@ -598,6 +610,13 @@ def resolve_metric_set_dir(project_dir: str) -> str:
         != plan.get("response_inventory_sha256")
     ):
         raise ValueError("baseline metric marker differs from the selected plan")
+    result_root = marker.get("result_root")
+    if result_root not in (
+        f"_engine/metric_sets/{segment}/data",
+        f"results/metric_sets/{segment}",
+    ):
+        raise ValueError("baseline metric result root differs from selected set")
+    destination = experiment / result_root
     return destination.as_posix()
 
 

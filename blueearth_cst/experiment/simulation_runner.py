@@ -140,6 +140,7 @@ def simulation_command(config_path, targets, cores, extra=()):
     environment = {
         **os.environ,
         "CST_SIMULATION_OPERATION": operation,
+        "CST_SIMULATION_TARGET": current_targets(targets)[0],
         "CST_SIMULATION_INVOCATION_ID": uuid.uuid4().hex,
     }
     return command, environment

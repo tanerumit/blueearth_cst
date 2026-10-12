@@ -578,7 +578,7 @@ def build_project_tree_rules(
         same_rx(rf"experiments/{exp}/config/(?:catalogs/)?[^/]+")
         same(f"experiments/{e}/_engine/response_inventory.json")
         same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
-        metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
+        metric_set = rf"experiments/{exp}/(?:results/metric_sets/{digest}|_engine/metric_sets/{digest}/data)"
         # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
         # copied into every set so a reader can validate it without the installed
         # asset or the estimator dependency. It is a leaf of the set like the rest.
@@ -592,6 +592,11 @@ def build_project_tree_rules(
             )
         same_rx(rf"{metric_set}/group_(members|metadata)\.csv")
         same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_(run|group)_indicators\.csv")
+        same(f"experiments/{e}/_engine/metric_sets/current.json")
+        same_rx(rf"experiments/{exp}/results/metric_sets/group_(members|metadata)\.csv")
+        same_rx(
+            rf"experiments/{exp}/results/metric_sets/[a-z][a-z0-9_]*_(run|group)_indicators\.csv"
+        )
         native = rf"experiments/{exp}/hydrology/wflow"
         same_rx(rf"{native}/run_settings/run_[0-9]+\.(toml|yml|temporal\.json)")
         same(

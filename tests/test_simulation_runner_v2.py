@@ -72,6 +72,20 @@ def test_project_selector_checks_pinned_candidate(tmp_path, monkeypatch):
         "decision": "create",
         "outputs": {"record_root": f"scenarios/_engine/collections/{'c' * 12}"},
     }
+    plan_digest = content_sha256(plan)
+    plan_path = request_dir / f"{plan_digest}.json"
+    atomic_record(plan_path, plan)
+    atomic_record(
+        pointer,
+        {
+            "schema_version": "scenario-request/2",
+            "generation_request_id": request_id,
+            "plan_path": plan_path.name,
+            "path_base": "request_directory",
+            "plan_sha256": plan_digest,
+        },
+        replace=True,
+    )
     monkeypatch.setattr(simulation_runner, "simulation_settings", lambda _: ({}, {}))
     monkeypatch.setattr(
         simulation_runner, "verify_selected_collection_source", lambda *_: "era5"
@@ -102,6 +116,12 @@ def test_project_selector_checks_pinned_candidate(tmp_path, monkeypatch):
     )
     assert selection["manifest_path"] == marker.as_posix()
     assert selection["collection_revision"] == collection["collection_revision"]
+    selected, record, reference = simulation_runner.resolve_collection_with_plan(
+        pointer, tmp_path
+    )
+    assert (selected, record) == (selection, collection)
+    assert reference["sha256"] == plan_digest
+    assert project / reference["path"] == plan_path
     settings["request"] = {"schema_version": "generation-request/2", "fixture": "drift"}
     with pytest.raises(ValueError, match="project request pointer differs"):
         simulation_runner.resolve_selected_collection(pointer, tmp_path)

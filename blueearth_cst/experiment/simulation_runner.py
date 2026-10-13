@@ -148,6 +148,17 @@ def simulation_command(config_path, targets, cores, extra=()):
 
 def resolve_selected_collection(config_path, repository):
     """Consume an exact ready collection; never invoke its producers."""
+    selection, marker, _ = resolve_collection_with_plan(config_path, repository)
+    return selection, marker
+
+
+def resolve_collection_with_plan(config_path, repository):
+    """Return ready selection, marker and its validated generation plan reference.
+
+    Explicit manifests have no generation plan binding. Project selections retain
+    the exact plan checked here so experiment admission can bind its seed without
+    rebuilding a candidate or rereading the mutable request pointer.
+    """
     from blueearth_cst.experiment.collection_resolution import (
         GeneratedCollectionUnavailable,
         resolve_explicit_collection_v2,
@@ -169,7 +180,7 @@ def resolve_selected_collection(config_path, repository):
             settings["scenario_collection"]
         )
         verify_selected_collection_source(project, selection, marker)
-        return selection, marker
+        return selection, marker, None
     composed, _ = compose_config(
         project,
         config_path,
@@ -205,8 +216,9 @@ def resolve_selected_collection(config_path, repository):
             raise ValueError("unsupported scenario request pointer")
         if Path(pointer["plan_path"]).name != pointer["plan_path"]:
             raise ValueError("scenario plan escapes request directory")
+        plan_path = pointer_path.parent / pointer["plan_path"]
         plan = read_pinned_plan(
-            pointer_path.parent / pointer["plan_path"],
+            plan_path,
             pointer["plan_sha256"],
             Path(generation["project_dir"]),
         )
@@ -240,7 +252,14 @@ def resolve_selected_collection(config_path, repository):
         "collection_revision": marker["collection_revision"],
     }
     verify_selected_collection_source(project, selection, marker)
-    return selection, marker
+    from blueearth_cst.shared.workflow_config_snapshot import file_reference
+
+    plan_reference = file_reference(
+        plan_path, "project_root", generation["project_dir"]
+    )
+    if plan_reference["sha256"] != pointer["plan_sha256"]:
+        raise ValueError("generation plan changed after selection")
+    return selection, marker, plan_reference
 
 
 def verify_selected_collection_source(project, selection, marker):

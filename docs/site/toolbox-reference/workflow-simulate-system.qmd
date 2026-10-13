@@ -54,6 +54,10 @@ operation: simulate-and-metrics
 
 ## Inputs
 
+WF4 can run with WF3 disabled when its selected collection is already ready. For a project-generation
+selection, the runner binds any pending experiment seed from the validated existing generation plan
+together with the collection. It preserves an already-bound seed and does not regenerate scenarios.
+
 WF4 requires the completed WF1 model and an explicitly selected ready WF3 collection and run IDs. It checks the model reference and freezes the selected collection, model, settings, and environment identity for the experiment. It does not consume WF2 projections.
 
 ## Outputs

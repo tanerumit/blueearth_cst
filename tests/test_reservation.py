@@ -653,6 +653,127 @@ def test_legacy_requires_paired_archive_and_readable_complete_records(
     assert api.preview_experiment(fixture.project, helper.EXPERIMENT).action == "refuse"
 
 
+@pytest.mark.parametrize(
+    "failure", [None, "plan digest", "plan capacity", "seed request"]
+)
+def test_wf4_only_binds_existing_plan_seed_atomically(
+    api, prepared, helper, monkeypatch, failure
+):
+    from blueearth_cst.experiment import reservation_context
+    from blueearth_cst.experiment.content_identity import content_sha256
+    from blueearth_cst.experiment.generation_plan import build_create_plan
+    from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
+    from blueearth_cst.shared.workflow_config_snapshot import file_reference
+
+    root, request, _ = prepared
+    selected = admit(api, prepared)
+    fixture = helper.build_v2_experiment(root.parent)
+    marker = read_collection_v2(fixture.collection_marker)
+    intent = read_canonical_json(
+        fixture.collection_marker.with_name("collection_intent.json")
+    )
+    plan = build_create_plan(
+        {
+            "request": {"fixture": "wf4-only"},
+            "n_realizations": 1,
+            "n_design_points": 1,
+            "capacity": 2,
+        },
+        intent,
+    )
+    plan_path = (
+        root
+        / "scenarios/_engine/requests"
+        / plan["generation_request_id"][:12]
+        / f"{content_sha256(plan)}.json"
+    )
+    plan_path.parent.mkdir(parents=True)
+    atomic_record(plan_path, plan)
+    reference = file_reference(plan_path, "project_root", root)
+    if failure == "plan digest":
+        reference["sha256"] = "0" * 64
+    elif failure == "plan capacity":
+        other = helper.collection_intent_v2(capacity=3)
+        other_plan = build_create_plan(
+            {
+                "request": {"fixture": "other"},
+                "n_realizations": 1,
+                "n_design_points": 1,
+                "capacity": 3,
+            },
+            other,
+        )
+        other_path = (
+            root
+            / "scenarios/_engine/requests"
+            / other_plan["generation_request_id"][:12]
+            / f"{content_sha256(other_plan)}.json"
+        )
+        other_path.parent.mkdir(parents=True)
+        atomic_record(other_path, other_plan)
+        reference = file_reference(other_path, "project_root", root)
+    elif failure == "seed request":
+        request = copy.deepcopy(request)
+        request["generation"]["requested_seed"] = 42
+        selected = admit(api, (root, request, prepared[2]), new_experiment=True)
+    context = reservation_context.ReservationContext(
+        root,
+        fixture.config,
+        root.parent,
+        selected.name,
+        selected.reservation_id,
+        False,
+        False,
+        request,
+    )
+    monkeypatch.setattr(
+        reservation_context, "capture_request", lambda *args, **kwargs: (request, [])
+    )
+    monkeypatch.setattr(
+        reservation_context,
+        "resolve_collection_with_plan",
+        lambda *args: (
+            {
+                "resolution_mode": "project-generation",
+                "manifest_path": str(fixture.collection_marker),
+            },
+            marker,
+            reference,
+        ),
+    )
+    before = inventory(root)
+    with archive_lock(root, "project-execution"):
+        if failure:
+            with pytest.raises(ValueError):
+                context.bind_selection()
+            assert inventory(root) == before
+            return
+        from blueearth_cst.experiment.reservation_generation import (
+            bind_ready_collection_owned,
+        )
+
+        # Reproduce the old WF4 handoff: a collection alone cannot bind a pending seed.
+        with pytest.raises(
+            ValueError, match="resolution cannot precede generation seed binding"
+        ):
+            bind_ready_collection_owned(root, selected.name, fixture.collection_marker)
+        assert inventory(root) == before
+        context.bind_selection()
+        bound = api.read_reservation(root, selected.name)
+        after = inventory(root)
+        context.bind_selection()
+    assert bound["state"] == "resolved"
+    assert bound["seed"]["state"] == "bound"
+    assert bound["seed"]["plan"] == reference
+    assert (
+        bound["seed"]["resolved"]
+        == intent["documents"]["generation_config"]["seed"]["resolved"]
+    )
+    assert bound["resolution"]["collection_id"] == marker["collection_id"]
+    assert bound["revision"] == 1
+    assert inventory(root) == after
+
+
 def test_seed_binding_is_monotonic_plan_verified_and_retry_is_byte_identical(
     api, prepared, helper
 ):

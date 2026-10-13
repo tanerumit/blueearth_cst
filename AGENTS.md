@@ -126,9 +126,13 @@ equivalent merges need tree-equality and ancestry proof. Missing or skipped requ
 Classify behavior and consumers, not directory names. A small follow-up invalidates only affected
 claims; use reviewed delta evidence rather than repeating a preceding broad gate. Unknown or broad
 impact escalates. Console changes affecting control flow, exit status or parsed output are behavioral.
-For every proposed check, state the distinct failure or claim it covers. Focused checks suffice for
-task commits; do not pull landing gates forward into each task. Full covers fast; E2E covers its affected
-workflow executions. Do not run included subsets again without a changed claim or diagnostic need.
+Optimize verification for safety with the fewest sufficient tests and procedures. Add a test, gate,
+receipt or review step only for a concrete risk not covered by existing evidence or a simpler check;
+prefer extending or replacing an existing check. Do not turn a one-off diagnostic into a standing gate.
+Focused checks suffice for task commits; do not pull landing gates forward into each task. Full covers
+fast; E2E covers its affected workflow executions. Stop once required coverage is sound; repeat only
+for invalidated evidence or a concrete diagnostic need. Keep rationale in existing task notes or the
+completion report; this rule requires no new checklist, document or approval step.
 Use policy-tooling tests only when changing that tooling or its contracts, not merely using its verifier.
 
 Push exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root

@@ -4,6 +4,13 @@ The ladder table lives in `AGENTS.md` § Validation ladder. This file holds what
 
 ## Planning and reusing verification
 
+Safety with the fewest sufficient tests and procedures is the policy's design objective. Before adding
+a lasting test or process requirement, identify the concrete uncovered failure and why existing
+coverage or a simpler check cannot catch it. Prefer strengthening or replacing existing coverage;
+remove redundant requirements when their purpose is covered elsewhere. A one-off diagnostic does not
+become a standing gate by precedent. Preserve independent numerical and visual acceptance where needed.
+Use existing task notes or the completion report for the rationale, not another form or approval step.
+
 For every new or revised task design, map each acceptance claim to a check and its input case before
 scheduling runs. Reference the live ladder instead of copying a fixed list of gate commands into the
 design. Record the tested commit, command, result, environment, input/config identity and output root in
@@ -28,7 +35,7 @@ the existing task evidence. A command's successful exit does not discharge claim
   required checks, or unclassified changes. After an equivalent merge, prove tree equality and ancestry;
   do not repeat gates. Push retains the CI and delta checks in `AGENTS.md`.
 
-Use a compact table in task designs:
+For designs with several distinct claims, a compact table can help; simple changes need only a sentence:
 
 | Claim | Check | Input case / output root | Extra coverage or reuse |
 |---|---|---|---|

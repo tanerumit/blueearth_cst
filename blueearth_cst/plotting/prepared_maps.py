@@ -19,6 +19,8 @@ from matplotlib.ticker import FuncFormatter
 from matplotlib.transforms import Bbox
 from numpy.typing import NDArray
 
+from blueearth_cst.plotting.location_labels import location_label
+
 
 @dataclass(frozen=True)
 class MapFrame:
@@ -191,12 +193,9 @@ def _draw_overlays(
                     zorder=5,
                 )
                 properties = feature["properties"]
-                label = properties.get(
-                    "wflow_id",
-                    properties.get("station_name", properties.get("location_code", "")),
-                )
-                if str(label):
-                    labels.append((x, y, str(label)))
+                label = location_label(properties)
+                if label:
+                    labels.append((x, y, label))
             for coordinates in _geometry_lines(geometry):
                 points = np.asarray(coordinates)
                 (artist,) = ax.plot(

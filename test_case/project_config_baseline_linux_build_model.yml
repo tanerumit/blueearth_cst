@@ -7,3 +7,5 @@ engine:
 
 observations:
   river discharge: test_case/test_data/observations_timeseries.csv
+
+simulation_window: {start: 2000, end: 2016}

@@ -226,7 +226,7 @@ def test_supplied_points_reject_invalid_drainage(fault, role):
         _snap_gauge_points(gauges, maps, flow, 10000, outlet_by_basin=outlets)
 
 
-def test_supplied_points_support_multiple_parents_and_downstream_snap():
+def test_supplied_points_support_multiple_parents_and_downstream_snap(monkeypatch):
     maps, flow, _, outlets, _ = _two_parent_maps()
     maps["river_mask"].values[:] = False
     for outlet in outlets.values():
@@ -239,10 +239,24 @@ def test_supplied_points_support_multiple_parents_and_downstream_snap():
         geometry="geometry",
         crs=4326,
     )
+    rows = []
+    monkeypatch.setattr(
+        products_module,
+        "log_row",
+        lambda message, **kwargs: rows.append((message, kwargs)),
+    )
     result = _snap_gauge_points(gauges, maps, flow, 10000, outlet_by_basin=outlets)
     assert set(result["basin_id"]) == set(outlets)
     assert set(result["snapped_index"]) == set(outlets.values())
     assert (result["snapped_distance_m"] > 0).all()
+    assert [message.split(" (", 1)[0] for message, _ in rows] == [
+        "Output location coordinates adjusted:",
+        "West",
+        "East",
+    ]
+    assert all(
+        options == {"module": "spatial", "level": "WARNING"} for _, options in rows
+    )
 
 
 @pytest.mark.parametrize("role", ["control", "observation"])
@@ -269,8 +283,9 @@ def test_supplied_coordinate_adjustments_are_warned(monkeypatch, role, adjustmen
     if adjustment == "unchanged":
         assert rows == []
     else:
-        assert len(rows) == 1
-        message, options = rows[0]
+        assert len(rows) == 2
+        assert rows[0][0] == "Output location coordinates adjusted:"
+        message, options = rows[1]
         assert options == {"module": "spatial", "level": "WARNING"}
         assert "Supplied station" in message
         assert "lon=" in message and "lat=" in message and "->" in message

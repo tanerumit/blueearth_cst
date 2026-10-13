@@ -1016,6 +1016,25 @@ def test_gauge_labels_can_be_switched_off_without_dropping_the_markers():
         plt.close(fig)
 
 
+@pytest.mark.parametrize("name", ["Alexandria", None, np.nan, "", "   "])
+def test_climate_and_spatial_locations_prefer_names_with_id_fallback(name):
+    import matplotlib.pyplot as plt
+
+    from blueearth_cst.plotting.prepared_maps import _draw_overlays
+
+    gauges = _layers()["gauges"].iloc[:1].copy()
+    gauges["station_name"] = name
+    expected = "Alexandria" if name == "Alexandria" else "101"
+    fig, ax = plt.subplots()
+    try:
+        carto._draw_points(ax, gauges, "red", "o", carto.GAUGE_LABEL_COLUMN)
+        assert [text.get_text() for text in ax.texts] == [expected]
+        labels = _draw_overlays(ax, {"locations": list(gauges.iterfeatures())}, "mm")
+        assert [label for _, _, label in labels] == [expected]
+    finally:
+        plt.close(fig)
+
+
 @pytest.mark.parametrize(
     ("position", "expect_title", "expect_ylabel"),
     [("top", True, False), ("right", False, True)],

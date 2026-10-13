@@ -46,6 +46,10 @@ def _to_datetime_index(ds):
 # also the last unconverted 5e site outside stage A's resample.
 
 
+class NoCompleteHydrologicalYear(ValueError):
+    """A valid selected period contains no complete water year."""
+
+
 def hydrological_year_bounds(ds_time, start_month_hyd_year="Jan"):
     """First/last timestamp of the COMPLETE hydrological years in ``ds_time``.
 
@@ -55,14 +59,17 @@ def hydrological_year_bounds(ds_time, start_month_hyd_year="Jan"):
     window and must report the window the change factors actually used — a second
     implementation would eventually disagree with the numbers it annotates.
 
-    The count is exact by construction rather than by date arithmetic: ``end`` is
-    the start month of the final year minus one month, so the span is precisely
-    ``last_year - first_year`` complete hydrological years.
+    Bounds include every complete water year contained in the monthly record;
+    leading and trailing partial years are dropped.
 
     Returns ``(start, end, n_hydrological_years)``.
     """
     import pandas as pd
 
+    if len(ds_time["time"].values) == 0:
+        raise NoCompleteHydrologicalYear(
+            "Cannot determine complete hydrological years from an empty time axis"
+        )
     data_start = pd.Timestamp(ds_time["time"].values[0])
     data_end = pd.Timestamp(ds_time["time"].values[-1])
 
@@ -94,7 +101,7 @@ def hydrological_year_bounds(ds_time, start_month_hyd_year="Jan"):
 
     n_years = last - first + 1
     if n_years <= 0:
-        raise ValueError(
+        raise NoCompleteHydrologicalYear(
             f"no complete hydrological year (start month {start_month_hyd_year}) "
             f"between {data_start.date()} and {data_end.date()}. An empty "
             "reference would propagate as an empty denominator into every "

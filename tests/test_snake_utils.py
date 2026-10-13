@@ -2802,13 +2802,8 @@ def test_console_finish_line_drops_the_num_suffix_the_banner_drops():
     assert "[rlz 1 | st 2]" in out and "rlz_num" not in out
 
 
-def test_console_finish_line_drops_the_key_suffix_the_banner_drops():
-    """`series_key` is the WILDCARD's name; `series` is the console's, on both lines.
-
-    WF2's banners write `series {wildcards.series_key}`, so a finish line
-    rendering the raw key put `[series_key cmip6_x]` directly under
-    `[series cmip6_x]` -- the `_num` defect one suffix along.
-    """
+def test_console_finish_line_shows_series_identifier_without_label():
+    """CMIP6 identifiers remain visible without a redundant series label."""
     handler = _console_handler()
     out = _emit(
         handler,
@@ -2816,7 +2811,8 @@ def test_console_finish_line_drops_the_key_suffix_the_banner_drops():
         _console_record(event="job_finished", job_id=1),
         _console_record(event="progress", done=1, total=1),
     )
-    assert "[series cmip6_x]" in out and "series_key" not in out
+    assert "[cmip6_x]" in out
+    assert "[series " not in out and "series_key" not in out
 
 
 def test_console_finish_line_drops_the_id_suffix_the_banner_drops():
@@ -4306,6 +4302,23 @@ def test_tee_does_not_colour_a_console_that_is_not_a_terminal(tmp_path):
 def test_a_warning_line_is_painted_orange_whatever_emitted_it(line):
     out = su._paint_body(line, True)
     assert out == f"\033[{su._ANSI_ALERT}m{line}\033[0m", repr(out)
+
+
+def test_structured_warning_uses_colour_without_a_console_level(tmp_path):
+    row = "13:42:17 - spatial - WARNING - Output location coordinates adjusted:\n"
+    console = _TTYWriter()
+    log = tmp_path / "rule.log"
+    with log.open("w", encoding="utf-8") as handle:
+        tee = su._Tee(console, handle)
+        tee.write(row)
+        tee.close()
+    assert console.getvalue().endswith(
+        f"\033[{su._ANSI_ALERT}m13:42:17 - spatial - "
+        "Output location coordinates adjusted:\033[0m\n"
+    )
+    assert "WARNING - " not in console.getvalue()
+    assert log.read_text(encoding="utf-8") == row
+    assert su._paint_body(row, False) == row
 
 
 @pytest.mark.parametrize(

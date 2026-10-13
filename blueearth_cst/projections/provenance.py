@@ -3,7 +3,7 @@
 The design lists what it must carry: resolved sources with their **verified
 physical store paths** (D12), the region polygon fingerprint (D9), nominal and
 effective windows with per-end dropped months and the clip flag (A1),
-`shared.historical_window` and the alignment result, the reducer module hash, the
+the reducer module hash, unavailable analysis windows, the
 config digest, the variable spec, the catalog and index `crawled_on`, run-level
 composition counts, and flagged months.
 
@@ -41,6 +41,7 @@ def build(
     region_fingerprint,
     horizons,
     weighting_scheme,
+    unavailable_windows=None,
 ):
     """Assemble the provenance document from facts the run already produced.
 
@@ -60,6 +61,9 @@ def build(
     taking the same values rather than recomputing.
     """
     resolved = [row for row in composition_rows if row.get("status") == "resolved"]
+    usable = [
+        row for row in composition_rows if row.get("status") in {"resolved", "partial"}
+    ]
 
     windows = dict(effective_windows or {})
     sources = []
@@ -92,7 +96,7 @@ def build(
         )
 
     institutions = {}
-    for row in resolved:
+    for row in usable:
         institutions.setdefault(row.get("institution", ""), set()).add(
             row.get("source_id", "")
         )
@@ -101,8 +105,7 @@ def build(
         "schema_version": PROVENANCE_SCHEMA_VERSION,
         "clim_project": clim_project,
         # --- windows (A1): nominal AND effective, never one without the other
-        # Run-level: what was REQUESTED, whether it was clipped, and how it
-        # aligns with shared.historical_window. The effective window lives
+        # Run-level: what was REQUESTED and whether it was clipped. Effective windows live
         # per source above -- it depends on the data each one has.
         "reference_window": dict(reference_record),
         "horizon_windows": {
@@ -127,15 +130,17 @@ def build(
         "catalog_crawled_on": catalog_crawled_on,
         # --- what the run actually resolved to
         "sources": sources,
+        "unavailable_windows": [dict(row) for row in (unavailable_windows or [])],
         "composition": {
             "requested": len(composition_rows),
             "resolved": len(resolved),
+            "usable": len(usable),
             "unresolved_by_status": _count_by_status(composition_rows),
-            "models": len({row.get("dataset", "") for row in resolved}),
+            "models": len({row.get("dataset", "") for row in usable}),
             "institutions": {
                 name: len(ids) for name, ids in sorted(institutions.items())
             },
-            "members_per_model": _members_per_model(resolved),
+            "members_per_model": _members_per_model(usable),
         },
         # 6b fills this; the key exists so its absence is a stated zero rather
         # than a missing concept.

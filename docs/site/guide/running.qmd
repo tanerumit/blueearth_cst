@@ -133,6 +133,10 @@ opening settings, describes subbasin outlets with their upstream-area threshold
 in km², and distinguishes disabled workflows from pending ones. Long settings
 and command paths wrap within the terminal width; redirected output uses 100 columns.
 
+On color-capable terminals, warning rows use orange without a `WARNING` column.
+Plain output and saved logs retain that column. Coordinate adjustments share one
+heading, followed by each location's original and resolved coordinates.
+
 The final summary totals the toolbox warning rows counted during this invocation
 and lists the contributing workflows. WF3's total includes its source and generation
 phases. The `commands` row points to a `.commands.txt` receipt beside the invocation

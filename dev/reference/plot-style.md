@@ -54,6 +54,8 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
   Reduce panel widths as needed while retaining the intended overall canvas width.
 - Place slope annotations far enough from their trend lines to avoid overlap. Position point labels to
   avoid overlaps with other labels and underlying map features; use the standard label background.
+- Climate and spatial maps prefer each location's `station_name`; missing or blank labels fall back
+  to `wflow_id`. Preserve IDs in data products and model output columns.
 - Use contrasting point colors over map layers. For scatter plots, use partly transparent fills and
   darker outlines so points remain visible. The reviewed enlarged scatter points use area 36 pt²,
   alpha 0.7 and an approximately 0.7 pt dark edge; adapt where the plot density requires it.
@@ -71,10 +73,9 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
 - Use rectangular colorbar extension ends and consistent title spacing (current title pad: 10 pt).
 - Monthly precipitation departure calendars use continuous `BrBG` (brown dry, teal wet), centred on
   zero with symmetric limits spanning all finite pooled anomalies. Label the colourbar
-  `Precipitation anomaly (mm)` and omit cell borders to reduce visual clutter. Calendar-month
-  percentile companions use the same continuous palette over 0–100, neutral at 50, with a
-  `Precipitation percentile (%)` colourbar. Missing values remain gray. This supersedes the
-  discrete monthly-anomaly classes; SPI retains its separate conventions below.
+  `Precipitation anomaly (mm)` and omit cell borders to reduce visual clutter.
+  Omit the retired monthly-percentile companion. Missing values remain gray.
+  This supersedes the discrete monthly-anomaly classes; SPI retains its separate conventions below.
 - Remove missing/unavailable legend rows from anomaly plots and explain missing-value handling in captions.
 - The reviewed SPI heatmaps use boundaries `-3, -2, -1, 1, 2, 3`, without a zero tick, and a colorbar
   height of 80% of the plotting area. Their final figure height is 56% of the original height.

@@ -485,27 +485,16 @@ def _stack(v: View):
 
 def anomaly(v: View) -> Figure:
     """Absolute monthly departures on a continuous, zero-centred shared scale."""
-    return _monthly_departures(v, percentile=False)
-
-
-def percentile(v: View) -> Figure:
-    """Calendar-month empirical percentiles, neutral at the reference median."""
-    return _monthly_departures(v, percentile=True)
-
-
-def _monthly_departures(v: View, *, percentile: bool) -> Figure:
-    """Draw comparable monthly calendars with continuous dry-to-wet colours."""
     bounds = v.anom_bounds or [-1.0, 1.0]
     limit = max(abs(bounds[0]), abs(bounds[-1]))
-    norm = Normalize(0, 100) if percentile else Normalize(-limit, limit)
-    key = "percentile" if percentile else "anomaly"
+    norm = Normalize(-limit, limit)
     cmap = plt.get_cmap("BrBG").with_extremes(bad=MISSING)
     fig, axs, stack = _stack(v)
     mesh = None
     for i, (ax, s) in enumerate(zip(axs[:, 0], v.sources)):
         ax.set_facecolor(MISSING)
         heatmap_frame(ax)
-        grid = v.results[s][key].reindex(columns=v.years)
+        grid = v.results[s]["anomaly"].reindex(columns=v.years)
         mesh = ax.pcolormesh(
             v.years,
             np.arange(1, 13),
@@ -520,15 +509,9 @@ def _monthly_departures(v: View, *, percentile: bool) -> Figure:
             ax.set_title(f"{chr(97 + i)}) {v.labels[s]}")
     axs[-1, 0].set_xlim(v.years[0] - 0.5, v.years[-1] + 0.5)
     five_year_ticks(axs[-1, 0], v.years)
-    ticks = (
-        [0, 25, 50, 75, 100]
-        if percentile
-        else MaxNLocator(nbins=4).tick_values(-limit, limit)
-    )
+    ticks = MaxNLocator(nbins=4).tick_values(-limit, limit)
     ticks = [tick for tick in ticks if norm.vmin <= tick <= norm.vmax]
-    label = (
-        "Precipitation\npercentile (%)" if percentile else "Precipitation\nanomaly (mm)"
-    )
+    label = "Precipitation\nanomaly (mm)"
     colourbar(fig, mesh, axs[:, 0].tolist(), label, ticks, stack)
     fig.get_layout_engine().set(rect=(0, 0, 0.94, 1))
     return fig
@@ -1178,7 +1161,6 @@ CHARTS: dict[str, Callable[[View], Figure | str]] = {
     "temperature": temperature,
     "timing": timing,
     "anomaly": anomaly,
-    "percentile": percentile,
     "spi": spi,
     "drought-events": drought_events,
     **{f"extreme-{m}": extremes(m) for m in EXTREME_LABELS},

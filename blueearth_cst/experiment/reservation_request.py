@@ -149,7 +149,10 @@ def capture_request(
 ):
     """Return approved Request and exact (role, path, bytes) captures before producers."""
     from blueearth_cst.experiment.content_identity import confined_path
-    from blueearth_cst.shared.snake_utils import DEFAULT_WFLOW_OUTVARS
+    from blueearth_cst.shared.snake_utils import (
+        DEFAULT_WFLOW_OUTVARS,
+        resolve_simulation_window,
+    )
     from blueearth_cst.shared.wf3_science import window_year_pair
     from blueearth_cst.shared.workflow_config_snapshot import file_reference
 
@@ -222,7 +225,8 @@ def capture_request(
             documents[key] = yaml.safe_load(data)
             captures.append((role, original, data))
         start, end = window_year_pair(
-            model_settings["simulation_window"], "build_model.simulation_window"
+            resolve_simulation_window(config["climate"], model_settings),
+            "build_model.simulation_window",
         )
         model_request = {
             "basin": dict(basin),

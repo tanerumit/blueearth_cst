@@ -123,7 +123,8 @@ def test_canonical_inventory_and_one_source_refusal():
         "dataset_comparison_csv": str(Path("comparison/dataset_comparison.csv")),
         "dataset_comparison_md": str(Path("comparison/dataset_comparison.md")),
     }
-    assert [len(x["figures"]) for x in (era5, chirps, comparison)] == [22, 18, 18]
+    assert [len(x["figures"]) for x in (era5, chirps, comparison)] == [21, 17, 17]
+    assert all("percentile" not in x["figures"] for x in (era5, chirps, comparison))
     assert all(
         p.endswith(".png")
         for x in (era5, chirps, comparison)
@@ -160,7 +161,8 @@ def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind):
     if kind in {"missing", "no_overlap"}:
         paths["figures"].pop("map-precip")
         records = render(paths, settings, 1, ["chirps"], [paths["root"]])
-        assert len(records) == 17
+        assert len(records) == 16
+        assert not any("monthly_percentile" in path for path in records)
         assert all((Path(paths["root"]) / p).is_file() for p in records)
         series = next(r for p, r in records.items() if "annual_trend_ts" in p)
         assert series["availability"].startswith("Unavailable")

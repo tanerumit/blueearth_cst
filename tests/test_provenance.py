@@ -151,6 +151,20 @@ def test_flagged_months_exists_as_a_stated_zero():
     assert _doc()["flagged_months"] == []
 
 
+def test_unavailable_windows_are_preserved_and_partial_points_remain_usable():
+    exclusions = [{"model": "INM/INM-CM4-8", "horizon": "far", "reason": "no overlap"}]
+    rows = [{**COMPOSITION[0], "status": "partial"}, COMPOSITION[1]]
+    doc = _doc(composition_rows=rows, unavailable_windows=exclusions)
+    assert doc["unavailable_windows"] == exclusions
+    assert doc["composition"]["resolved"] == 0
+    assert doc["composition"]["usable"] == 1
+    assert doc["composition"]["models"] == 1
+    assert doc["composition"]["unresolved_by_status"] == {
+        "partial": 1,
+        "scenario_not_published": 1,
+    }
+
+
 # --- serialisation -------------------------------------------------------------
 
 

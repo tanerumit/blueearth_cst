@@ -4,7 +4,11 @@ import sys
 import types
 from pathlib import Path
 
+import geopandas as gpd
 import numpy as np
+import pyogrio
+import pytest
+from shapely.geometry import Point
 
 # NO `sys.modules.setdefault` STUBS HERE, and none may be re-added. This module
 # used to install fake `geopandas`, `rasterio`, `rasterio.windows` and `xarray`
@@ -145,6 +149,60 @@ def test_vector_read_kwargs_include_optional_columns() -> None:
         "bbox": (1, 2, 3, 4),
         "columns": ["geometry", "id"],
     }
+
+
+@pytest.mark.parametrize("suffix,driver", [(".gpkg", "GPKG"), (".fgb", "FlatGeobuf")])
+def test_vector_staging_preserves_format_and_values(tmp_path, suffix, driver):
+    source = tmp_path / f"source{suffix}"
+    target = tmp_path / "local" / source.name
+    frame = gpd.GeoDataFrame(
+        {"id": [1, 2]}, geometry=[Point(0, 0), Point(5, 5)], crs=4326
+    )
+    frame.to_file(source, driver=driver)
+
+    assert (
+        stage_data.subset_vector(source, target, (-1, -1, 1, 1))[0]
+        == stage_data.WRITTEN
+    )
+    assert pyogrio.read_info(target)["driver"] == driver
+    result = gpd.read_file(target)
+    assert result["id"].tolist() == [1]
+    assert result.geometry.iloc[0].equals(Point(0, 0))
+    assert result.crs == frame.crs
+
+
+@pytest.mark.parametrize("suffix,driver", [(".gpkg", "GPKG"), (".fgb", "FlatGeobuf")])
+def test_vector_staging_can_retain_an_empty_source(tmp_path, suffix, driver):
+    source = tmp_path / f"source{suffix}"
+    target = tmp_path / "local" / source.name
+    gpd.GeoDataFrame({"id": [1]}, geometry=[Point(5, 5)], crs=4326).to_file(
+        source, driver=driver
+    )
+    bbox = (-1, -1, 1, 1)
+    assert stage_data.subset_vector(source, target, bbox)[0] == stage_data.SKIPPED
+    assert not target.exists()
+    assert stage_data.subset_vector(source, target, bbox, allow_empty=True) == (
+        stage_data.WRITTEN,
+        "0 features",
+    )
+    result = gpd.read_file(target)
+    assert result.empty
+    assert "id" in result.columns
+    assert result.crs.to_epsg() == 4326
+    assert pyogrio.read_info(target)["driver"] == driver
+    assert (
+        stage_data.subset_vector(source, target, bbox, allow_empty=True)[0]
+        == stage_data.EXISTS
+    )
+    # An older fake-FGB manifest must not certify the new writer's output.
+    if suffix == ".fgb":
+        manifest = stage_data._read_manifest(target)
+        manifest.pop("vector_format")
+        stage_data._write_manifest(target, manifest)
+        assert (
+            stage_data.subset_vector(source, target, bbox, allow_empty=True)[0]
+            == stage_data.WRITTEN
+        )
 
 
 def test_raster_glob_workers_are_bounded_and_configurable() -> None:

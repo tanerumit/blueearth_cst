@@ -6,26 +6,9 @@ and the design's ruling (R1) is to **clip, never splice**: 2015+ exists only und
 the per-scenario ScenarioMIP entries, and stitching them onto the historical tail
 would silently mix two experiments inside one reference (N8).
 
-The interesting part is not the clip — it is *which conditions warn where*. D1
-separates three, on the principle that **a signal that fires on every run is a
-signal nobody reads**:
-
-===================  ==================  =========================================
-condition            stderr at DAG build  durable record
-===================  ==================  =========================================
-clip                 yes                  requested + effective + ``clipped``
-alignment differs    **no** by default    both windows + ``reference_alignment``
-short window         yes                  effective length in years
-===================  ==================  =========================================
-
-Alignment is silent by default for a concrete reason: the shipped seed config has
-``historical_year_range: [1990, 2010]`` against ``shared.historical_window``
-2000–2020, so the two differ on **100 %** of runs. Warning there would train the
-reader to filter the channel. It is promoted to stderr only when the windows
-*would have been equal but for the clip* — the case where the user plausibly
-intended alignment and did not get it.
-
-Falsifiers: ``dev/records/milestones/r08/2026-07-30_wf2-5e-falsifier.md`` K3–K6.
+Clipping and short reference windows warn at DAG build. Years are inclusive
+calendar years; effective complete water years are measured from each series.
+The observed climate window is independent and is never compared here.
 """
 
 from __future__ import annotations
@@ -97,9 +80,9 @@ def clip_reference_window(requested) -> ReferenceWindow:
         requested=(start, end),
         effective=effective,
         clipped=effective != (start, end),
-        # Matches `hydrological_year_bounds`: complete hydrological years between
-        # the two starts, i.e. last - first.
-        n_years=effective[1] - effective[0],
+        # Inclusive calendar years; actual complete water years are measured
+        # from each sliced GCM series by hydrological_year_bounds.
+        n_years=effective[1] - effective[0] + 1,
     )
 
 
@@ -108,6 +91,7 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
 
     Returns the lines to print at DAG build. An empty list is the normal case for
     a well-configured run, which is what makes a non-empty one worth reading.
+    The legacy ``shared_window`` argument is accepted but ignored.
     """
     lines: list[str] = []
 
@@ -125,15 +109,6 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
             f"{SHORT_WINDOW_YEARS}"
         )
 
-    # Alignment: silent unless the clip is what broke it. See the module docstring.
-    if shared_window is not None:
-        shared = _years(shared_window)
-        if window.effective != shared and window.requested == shared:
-            lines.append(
-                f"Reference window no longer aligns with shared.historical_window "
-                f"{shared[0]}-{shared[1]}; the clip to {window.effective_label} "
-                f"broke it"
-            )
     return lines
 
 
@@ -164,10 +139,8 @@ def dropped_months(
 def alignment_record(window: ReferenceWindow, shared_window=None) -> dict:
     """The durable facts, for the composition record (and `provenance.json` at 6a).
 
-    Separate from :func:`window_warnings` because silence and absence are
-    different: a difference that does not warrant a stderr line must still be
-    recoverable afterwards, which is the whole of D1's "the disclaimer is what
-    surfaces that".
+    The legacy name and ``shared_window`` argument remain compatible with older
+    callers; observed-climate alignment fields are no longer emitted.
     """
     record = {
         "reference_window_requested": window.requested_label,
@@ -175,22 +148,14 @@ def alignment_record(window: ReferenceWindow, shared_window=None) -> dict:
         "reference_window_clipped": window.clipped,
         "reference_window_years": window.n_years,
     }
-    if shared_window is not None:
-        shared = _years(shared_window)
-        record["shared_historical_window"] = f"{shared[0]}-{shared[1]}"
-        record["reference_alignment"] = (
-            "matches" if window.effective == shared else "differs"
-        )
     return record
 
 
 def console_rows(record) -> list[str]:
     """The reference-window record as console rows, one finding per row.
 
-    The period first, with its length and any clip; then how it relates to the
-    observed historical window, when there is one to compare against. The
-    ``key=value`` spelling stays in ``provenance.json``, which is the structured
-    copy -- these rows are for the person watching the run.
+    Show the GCM period, its inclusive length and any clip. Ignore legacy
+    observed-window fields in older records.
     """
     effective = record["reference_window_effective"]
     years = record["reference_window_years"]
@@ -201,12 +166,4 @@ def console_rows(record) -> list[str]:
             f" where the CMIP6 historical experiment ends ({HISTORICAL_END_YEAR})"
         )
     rows = [period]
-    shared = record.get("shared_historical_window")
-    if shared is not None:
-        verb = (
-            "matches"
-            if record.get("reference_alignment") == "matches"
-            else ("differs from")
-        )
-        rows.append(f"Reference period {verb} the observed historical window {shared}")
     return rows

@@ -8,3 +8,5 @@ engine:
 # consumers guard on file EXISTENCE, not on the value. Made honest here
 # rather than left as an accidental pass.
 observations:
+
+simulation_window: {start: 2000, end: 2020}

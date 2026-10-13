@@ -5,3 +5,5 @@ engine:
   waterbodies_config: config/defaults/wflow_update_waterbodies.yml
 
 observations:
+
+simulation_window: {start: 2000, end: 2020}

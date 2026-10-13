@@ -57,6 +57,24 @@ def _rows(ds, **kw):
     return tidy_rows(ds, variable_spec=SPEC, **kw)
 
 
+@pytest.mark.parametrize("month", [None, 1])
+def test_unavailable_horizons_do_not_create_padding_rows(wide, month):
+    ds = xr.concat(
+        [wide, wide.assign_coords(horizon=["near"])], dim="horizon", data_vars="all"
+    )
+    available = {
+        ("INM/INM-CM4-8", "ssp245", "r1i1p1f1", "near"),
+        ("NOAA-GFDL/GFDL-ESM4", "ssp585", "r1i1p1f1", "far"),
+    }
+    rows = _rows(ds, month=month, available_horizons=available)
+    assert len(rows) == 12
+    assert {(row["model"], row["scenario"], row["horizon"]) for row in rows} == {
+        ("INM-CM4-8", "ssp245", "near"),
+        ("GFDL-ESM4", "ssp585", "far"),
+    }
+    assert _rows(xr.Dataset(), month=month, available_horizons=set()) == []
+
+
 # --- M1: long format, one row per full key ------------------------------------
 
 

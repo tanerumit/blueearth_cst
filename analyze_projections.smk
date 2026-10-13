@@ -129,7 +129,6 @@ model_region = get_config(basin_cfg, "region", optional=False)
 _basin_sources = get_config(basin_cfg, "sources", {}) or {}
 basin_hydrography = get_config(_basin_sources, "hydrography", DEFAULT_HYDROGRAPHY)
 basin_index = get_config(_basin_sources, "basin_index", DEFAULT_BASIN_INDEX)
-historical_window = get_config(climate_cfg, "window", optional=False)
 # `shared.clim_historical` is deliberately NOT read here. WF2 has no climate
 # store and no rule that consumes the observed source: it read the key
 # `optional=False` and never used the value, so a config omitting it failed WF2
@@ -257,27 +256,15 @@ future_horizons = _named_windows(_future_windows)
 # per-scenario ScenarioMIP entries and stitching them on would silently mix two
 # experiments inside one reference (N8).
 #
-# Warnings are emitted PER CONDITION, at DAG build, on the principle that a signal
-# firing on every run is a signal nobody reads. The alignment difference is
-# deliberately silent by default -- the seed config's [1990, 2010] differs from
-# shared.historical_window 2000-2020 on 100% of runs -- and is promoted only when
-# the clip is what broke an alignment the config had asked for.
+# The GCM reference is independent of the observed historical climate window.
 from blueearth_cst.projections import reference_window as _rw
 
 REFERENCE_WINDOW = _rw.clip_reference_window(time_horizon_hist)
-# `climate.window` is `{start, end}` INCLUSIVE YEARS since R14 (`C-70`); this
-# line still read its v1 `starttime`/`endtime` sub-keys, so WF2 died here on
-# any v2 config. A P1 hole rather than a P1b row -- P1 retyped the key and this
-# reader is in WF2, which P1's scope stopped short of.
-_SHARED_WINDOW = window_year_pair(historical_window, "climate.window")
-for _line in _rw.window_warnings(REFERENCE_WINDOW, shared_window=_SHARED_WINDOW):
+for _line in _rw.window_warnings(REFERENCE_WINDOW):
     warn_row(_line, module="reference_window")
 
-# The durable record. D1 names provenance.json and report.md as its homes; neither
-# exists yet (6a and 7 respectively), so stage B logs it and 6a moves it. Recorded
-# rather than dropped because silence and absence are different: an alignment
-# difference that does not warrant stderr must still be recoverable afterwards.
-REFERENCE_RECORD = _rw.alignment_record(REFERENCE_WINDOW, shared_window=_SHARED_WINDOW)
+# Record the GCM reference alone in provenance and the report.
+REFERENCE_RECORD = _rw.alignment_record(REFERENCE_WINDOW)
 
 # Everything downstream slices with the EFFECTIVE window. On the seed this is the
 # requested window unchanged, which is why 5e is output-neutral here.

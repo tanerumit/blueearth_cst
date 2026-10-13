@@ -311,8 +311,18 @@ def test_era5_path_requests_full_seven_variable_stack(tmp_path, fake_era5_catalo
     )
 
 
-def test_era5_request_beyond_catalog_coverage_fails_before_read(tmp_path):
-    """A Zarr request past its advertised end must not return a partial record."""
+@pytest.mark.parametrize(
+    "requested,expected",
+    [
+        (("1950-01-01", "2020-12-31"), ("1950-01-02", "2020-12-31")),
+        (("2000-01-01", "2023-12-31"), ("2000-01-01", "2023-02-01")),
+        (("1940-01-01", "2024-12-31"), ("1950-01-02", "2023-02-01")),
+    ],
+)
+def test_era5_request_uses_catalog_overlap_and_warns(
+    tmp_path, capsys, requested, expected
+):
+    """Late first days and early ends narrow the read, never extend the request."""
     _RecordingDataCatalog._CATALOG = {
         "era5": {
             "data_type": "RasterDataset",
@@ -331,23 +341,67 @@ def test_era5_request_beyond_catalog_coverage_fails_before_read(tmp_path):
     region = tmp_path / "region.geojson"
     region.write_text("{}")
 
-    with pytest.raises(
-        ValueError,
-        match=(
-            r"era5.*requested 2000-01-01\.\.2023-12-31.*"
-            r"catalog advertises 1950-01-02\.\.2023-02-01"
-        ),
-    ):
-        ehc.prep_historical_climate(
-            region_fn=region,
-            fn_out=tmp_path / "out.nc",
-            data_libs="dummy.yml",
-            clim_source="era5",
-            starttime="2000-01-01T00:00:00",
-            endtime="2023-12-31T00:00:00",
-        )
+    ehc.prep_historical_climate(
+        region_fn=region,
+        fn_out=tmp_path / "out.nc",
+        data_libs="dummy.yml",
+        clim_source="era5",
+        starttime=requested[0],
+        endtime=requested[1],
+    )
+    assert _last_catalog().get_rasterdataset_calls[0]["time_range"] == expected
+    output = capsys.readouterr().out
+    assert "WARNING" in output
+    assert f"requested {requested[0]}..{requested[1]}" in output
+    assert f"extracting {expected[0]}..{expected[1]}" in output
 
-    assert _last_catalog().get_rasterdataset_calls == []
+
+def test_catalog_window_with_no_overlap_fails_before_read(fake_era5_catalog):
+    _RecordingDataCatalog._CATALOG["era5"]["metadata"] = {
+        "extent": {"time_range": {"start": "1980-01-01", "end": "2020-12-31"}}
+    }
+    catalog = _RecordingDataCatalog()
+    with pytest.raises(ValueError, match="era5.*no overlap.*1950-01-01..1970-12-31"):
+        ehc._read_source(
+            catalog,
+            "era5",
+            requested=("1950-01-01", "1970-12-31"),
+            time_range=("1950-01-01", "1970-12-31"),
+        )
+    assert catalog.get_rasterdataset_calls == []
+
+
+@pytest.mark.parametrize(
+    "bounds",
+    [
+        {"start": "invalid", "end": "2020-12-31"},
+        {"start": "NaT", "end": "2020-12-31"},
+        {"start": "2020-12-31", "end": "1980-01-01"},
+    ],
+)
+def test_invalid_catalog_window_is_not_treated_as_missing_coverage(
+    fake_era5_catalog, bounds
+):
+    _RecordingDataCatalog._CATALOG["era5"]["metadata"] = {
+        "extent": {"time_range": bounds}
+    }
+    catalog = _RecordingDataCatalog()
+    with pytest.raises(ValueError, match="invalid catalog metadata.extent.time_range"):
+        ehc._read_source(catalog, "era5", requested=("2000-01-01", "2020-12-31"))
+    assert catalog.get_rasterdataset_calls == []
+
+
+def test_catalog_covering_the_window_preserves_the_read_and_stays_quiet(
+    fake_era5_catalog, capsys
+):
+    _RecordingDataCatalog._CATALOG["era5"]["metadata"] = {
+        "extent": {"time_range": {"start": "1980-01-01", "end": "2020-12-31"}}
+    }
+    catalog = _RecordingDataCatalog()
+    requested = ("2000-01-01T00:00:00", "2016-12-31T00:00:00")
+    ehc._read_source(catalog, "era5", requested=requested, time_range=requested)
+    assert catalog.get_rasterdataset_calls[0]["time_range"] == requested
+    assert "WARNING" not in capsys.readouterr().out
 
 
 def test_era5_path_aligns_driver_options_chunks_to_the_store(

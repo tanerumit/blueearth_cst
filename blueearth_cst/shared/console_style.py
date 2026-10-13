@@ -1107,7 +1107,8 @@ def _console_wildcards(wildcards):
     exactly the inconsistency the console work has been removing. That includes
     the brackets :func:`rule_banner` puts around its context. Derived from the
     job's wildcards rather than parsed back out of the banner, so no prose is
-    ever parsed.
+    ever parsed. CMIP6 ``series_key`` is shown as its identifier alone on DONE
+    rows, without the redundant ``series`` label.
 
     A trailing ``_num`` is DROPPED from the key, and that is what makes the
     claim above true rather than merely intended. The wildcard is ``rlz_num``
@@ -1126,7 +1127,12 @@ def _console_wildcards(wildcards):
         return ""
     if not items:
         return ""
-    fields = " | ".join(f"{_console_wildcard_key(key)} {value}" for key, value in items)
+    # CMIP6 series identifiers already describe the source, experiment and
+    # member; the extra "series" label adds no information to a DONE row.
+    fields = " | ".join(
+        str(value) if key == "series_key" else f"{_console_wildcard_key(key)} {value}"
+        for key, value in items
+    )
     return f"[{fields}]"
 
 

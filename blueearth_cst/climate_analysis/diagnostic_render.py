@@ -170,9 +170,7 @@ def load_result(root, source):
     reference = tuple(
         metadata["settings"]["reference_period"][k] for k in ("start", "end")
     )
-    monthly["percentile"], reference_support = monthly_reference_diagnostics(
-        monthly, reference
-    )
+    _, reference_support = monthly_reference_diagnostics(monthly, reference)
     trend_records = trends.to_dict(orient="index")
     # These plots also show trends for metrics absent from the retained trend table.
     for metric in ("Rx5day", "sdii"):
@@ -187,9 +185,6 @@ def load_result(root, source):
         .pivot(index="reporting_year", columns="fraction", values="day")
         .reindex(columns=[0.25, 0.5, 0.75]),
         "anomaly": anomaly,
-        "percentile": monthly.pivot(
-            index="calendar_month", columns="reporting_year", values="percentile"
-        ),
         "anomaly_reference_support": reference_support,
         "spi": {k: spi[spi.scale == k].set_index("date").value for k in (3, 6, 12)},
         "spi_dist": metadata["settings"]["spi_distribution"],
@@ -291,7 +286,7 @@ def render(
         inclusive="left",
     )
     for result in results.values():
-        for key in ("coverage", "anomaly", "percentile"):
+        for key in ("coverage", "anomaly"):
             result[key] = result[key].reindex(
                 index=months, columns=range(period[0], period[1] + 1)
             )
@@ -371,7 +366,7 @@ def render(
                 elif map_info["scale_status"] == "unavailable":
                     availability = "unscaled: historical reference unavailable"
             else:
-                available = form in {"coverage", "anomaly", "percentile"} or any(
+                available = form in {"coverage", "anomaly"} or any(
                     result["annual"].total.notna().any() for result in results.values()
                 )
                 if form in {"spi", "drought-events"}:
@@ -497,7 +492,7 @@ def render(
             }
             if form.startswith("map-"):
                 records[relative]["map_reference"] = map_info
-            if form in {"anomaly", "percentile"}:
+            if form == "anomaly":
                 records[relative]["reference_support"] = {
                     s: results[s]["anomaly_reference_support"] for s in sources
                 }

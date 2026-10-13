@@ -72,19 +72,6 @@ def disclaimer_block(provenance, thresholds=None, max_flagged_months=None) -> li
         f"  Effective window `{effective}`, {n_years} complete hydrological years."
     )
 
-    alignment = reference.get("reference_alignment", "?")
-    shared = reference.get("shared_historical_window", "?")
-    if alignment == "matches":
-        lines.append(
-            f"- **Alignment** — matches `shared.historical_window` ({shared})."
-        )
-    else:
-        lines.append(
-            f"- **Alignment** — **differs** from `shared.historical_window` "
-            f"({shared}). The reference used here is the projections window, not "
-            "the wflow forcing window."
-        )
-
     try:
         short = int(n_years) < 20
     except (TypeError, ValueError):
@@ -140,6 +127,13 @@ def disclaimer_block(provenance, thresholds=None, max_flagged_months=None) -> li
             f"- **Composition** — all {composition.get('requested', '?')} requested "
             "combinations resolved; none skipped."
         )
+    unavailable = provenance.get("unavailable_windows", [])
+    if unavailable:
+        lines.append(
+            f"- **Unavailable windows** — {len(unavailable)} model/scenario/member/horizon "
+            "combinations excluded from aligned change factors. Reasons and actual "
+            "coverage are listed below and retained in `summary/provenance.json`."
+        )
     lines.append("")
     return lines
 
@@ -150,7 +144,7 @@ def build(provenance, *, thresholds=None, max_flagged_months=None) -> str:
     lines = [
         f"# Climate projections — {provenance.get('clim_project', '?')}",
         "",
-        f"{composition.get('resolved', '?')} data points from "
+        f"{composition.get('usable', composition.get('resolved', '?'))} usable data points from "
         f"{composition.get('models', '?')} model(s). Each "
         "`(model, scenario, member)` is one data point. The aligned change-factor "
         "CSVs are not averaged across models, members or scenarios; the analysis "
@@ -158,6 +152,32 @@ def build(provenance, *, thresholds=None, max_flagged_months=None) -> str:
         "",
     ]
     lines += disclaimer_block(provenance, thresholds, max_flagged_months)
+
+    unavailable = provenance.get("unavailable_windows", [])
+    if unavailable:
+        lines += ["## Unavailable windows", ""]
+        if composition.get("usable", composition.get("resolved")) == 0:
+            lines += [
+                "No aligned change factors could be derived for the requested windows.",
+                "",
+            ]
+        for row in unavailable:
+            identity = " / ".join(
+                [
+                    str(row.get("dataset", row.get("model", "?"))),
+                    *(
+                        str(row.get(key, "?"))
+                        for key in ("scenario", "member", "horizon")
+                    ),
+                ]
+            )
+            lines.append(
+                f"- **{identity}** — {row.get('window_kind', 'window')} requested "
+                f"{row.get('requested_window', '?')}; available "
+                f"{row.get('available_start', '?')} to {row.get('available_end', '?')}. "
+                f"{row.get('reason', 'No usable coverage.')}"
+            )
+        lines.append("")
 
     lines += ["## Figures", ""]
     lines.append(

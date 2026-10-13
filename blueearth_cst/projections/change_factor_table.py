@@ -103,6 +103,7 @@ def tidy_rows(
     row_facts=None,
     variable_spec=None,
     combinations=None,
+    available_horizons=None,
 ):
     """Long-format rows from the wide change-factor dataset stage B produces.
 
@@ -136,9 +137,13 @@ def tidy_rows(
     `r11i1p1f1` beside AWI `r1i1p1f1`) span a grid holding cells no series
     produced. Those cells are padding, not data: given the set, only its members
     become rows. ``None`` keeps every cell, for a dataset with no padding.
+
+    ``available_horizons`` optionally restricts full `(model, scenario, member,
+    horizon)` identities, excluding padding from unavailable point-horizons.
     """
     columns = TABLE_COLUMNS_ANNUAL if month is None else TABLE_COLUMNS_MONTHLY
     keep = None if combinations is None else set(combinations)
+    keep_horizons = None if available_horizons is None else set(available_horizons)
     facts = dict(window_facts or {})
     per_row = dict(row_facts or {})
     spec = dict(variable_spec or {})
@@ -193,6 +198,11 @@ def tidy_rows(
             member = str(coords.get("member", ""))
             horizon = str(coords.get("horizon", ""))
             if keep is not None and (dataset, scenario, member) not in keep:
+                continue
+            if (
+                keep_horizons is not None
+                and (dataset, scenario, member, horizon) not in keep_horizons
+            ):
                 continue
 
             row = dict.fromkeys(columns, "")

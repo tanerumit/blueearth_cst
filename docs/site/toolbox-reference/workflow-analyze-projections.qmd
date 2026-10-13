@@ -63,8 +63,13 @@ Inputs are the basin polygon, cataloged CMIP6 data, and the selected model/scena
 
 The GCM `reference_window` is independent of the ERA5 or other observed `climate.window`; the periods
 need not match and WF2 does not compare them. Calendar years are inclusive: 1985–2004 is 20 years.
-An empty reference or horizon slice raises an error naming the GCM series, requested window and available
-dates; it never substitutes the observed climate record or silently drops a requested combination.
+If a reference or horizon has no overlap or no complete water year, WF2 warns and continues with usable
+combinations. It never substitutes the observed climate record or changes the requested horizon.
+`summary/provenance.json` and `report.md` list unavailable model/scenario/member/horizon combinations,
+requested windows, available dates, and reasons. `summary/composition.csv` distinguishes fully derived,
+partially derived, and unavailable combinations. If none are usable, change-factor CSVs contain headers
+only and the report states that no factors could be derived. Corrupt inputs and identity or calendar
+mismatches remain errors. The independent analysis tables also retain explicit unavailable rows.
 
 ## Outputs
 

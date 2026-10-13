@@ -101,6 +101,42 @@ def test_shared_windows_compute_once_with_identity_checks(tmp_path):
         producer.prepare_tables([point], windows, region_fp="different-region")
 
 
+@pytest.mark.parametrize("reference_available", [True, False])
+def test_missing_gcm_window_coverage_is_recorded_without_stopping_analysis(
+    tmp_path, reference_available
+):
+    region = "coverage-fixture"
+    hist, fut = tmp_path / "hist.nc", tmp_path / "fut.nc"
+    historical_identity, future_identity = {"series": "hist"}, {"series": "fut"}
+    _series(
+        hist,
+        "1950-01-01" if reference_available else "1900-01-01",
+        65 * 12 if reference_available else 20 * 12,
+        "historical",
+        historical_identity,
+        region,
+    )
+    _series(fut, "2020-01-01", 5 * 12, "ssp245", future_identity, region)
+    point = {
+        "model": "TEST/M1",
+        "scenario": "ssp245",
+        "member": "r1",
+        "series_path_hist": str(hist),
+        "series_path": str(fut),
+        "digest_components_hist": historical_identity,
+        "digest_components_fut": future_identity,
+        "reference_series_key": "hist",
+        "series_key": "fut",
+    }
+    windows = analysis_windows({"near": (2040, 2060)}, reference_window=(1985, 2004))
+    tables, record = producer.prepare_tables([point], windows, region_fp=region)
+    assert set(tables["changes"].status) == {"unavailable"}
+    assert tables["changes"].reason.str.len().gt(0).all()
+    assert record["unavailable_members"]
+    expected = 20 if reference_available else 0
+    assert tables["coverage"].n_reference_years.tolist() == [expected]
+
+
 def test_undeclared_series_refused_before_output_mutation():
     sm = SimpleNamespace(
         params=SimpleNamespace(

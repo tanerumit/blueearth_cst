@@ -137,6 +137,36 @@ def test_report_ignores_legacy_observed_window_alignment():
     assert "Alignment" not in _lines(doc)
 
 
+def test_report_lists_each_unavailable_horizon_and_all_unavailable_outcome():
+    doc = dict(CLEAN_RUN)
+    doc["composition"] = {
+        "requested": 1,
+        "resolved": 0,
+        "usable": 0,
+        "models": 0,
+        "unresolved_by_status": {"unavailable": 1},
+    }
+    doc["unavailable_windows"] = [
+        {
+            "model": "E3SM-Project/E3SM-1-1",
+            "scenario": "ssp245",
+            "member": "r1i1p1f1",
+            "horizon": "near",
+            "window_kind": "horizon",
+            "requested_window": "2040 / 2060",
+            "available_start": "2020-01-01",
+            "available_end": "2024-12-01",
+            "reason": "no overlap",
+        }
+    ]
+    text = build(doc)
+    assert "0 usable data points" in text
+    assert "1 model/scenario/member/horizon" in text
+    assert "E3SM-Project/E3SM-1-1 / ssp245 / r1i1p1f1 / near" in text
+    assert "2040 / 2060" in text and "2024-12-01" in text
+    assert "No aligned change factors could be derived" in text
+
+
 # --- whole report --------------------------------------------------------------
 
 

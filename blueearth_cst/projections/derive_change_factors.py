@@ -48,6 +48,7 @@ from blueearth_cst.projections.change_factor_table import (
 )
 from blueearth_cst.projections.dry_month import FLAGGED_STATUS, combination_is_flagged
 from blueearth_cst.projections.get_change_climate_proj import (
+    NoCompleteHydrologicalYear,
     _to_str_tuple,
     get_change_annual_clim_proj,
     get_change_monthly_clim_proj,
@@ -104,7 +105,23 @@ def _flagged_months(monthly_rows, composition, max_flagged_months):
 # avoid, so the private name is the lesser evil.
 
 
-def _slice_analysis_window(dataset, window, label, path):
+class WindowUnavailable(ValueError):
+    """Valid scalar data cannot supply a requested change-factor window."""
+
+    def __init__(self, message, *, window, dataset, path, window_kind):
+        super().__init__(message)
+        dates = dataset["time"].values
+        self.record = {
+            "window_kind": window_kind,
+            "requested_window": " / ".join(map(str, window)),
+            "available_start": str(dates[0])[:10],
+            "available_end": str(dates[-1])[:10],
+            "reason": message,
+            "series_path": str(path),
+        }
+
+
+def _slice_analysis_window(dataset, window, label, path, window_kind="horizon"):
     """Slice a GCM period, naming its source and coverage when no dates remain."""
     requested = "..".join(str(bound) for bound in window)
     if dataset.sizes.get("time", 0) == 0:
@@ -115,12 +132,26 @@ def _slice_analysis_window(dataset, window, label, path):
     if selected.sizes["time"] == 0:
         dates = dataset["time"].values
         available = f"{str(dates[0])[:10]}..{str(dates[-1])[:10]}"
-        raise ValueError(
+        raise WindowUnavailable(
             f"{label}: requested {requested} has no overlap with available "
             f"{available} in {path}. Check the configured GCM window and this "
-            "scenario's reduced series; the observed climate window is independent."
+            "scenario's reduced series; the observed climate window is independent.",
+            window=window,
+            dataset=dataset,
+            path=path,
+            window_kind=window_kind,
         )
     return selected
+
+
+def _window_bounds(selected, dataset, window, path, kind, water_year_start):
+    """Translate only the kernel's explicit absence-of-complete-years error."""
+    try:
+        return hydrological_year_bounds(selected, water_year_start)
+    except NoCompleteHydrologicalYear as exc:
+        raise WindowUnavailable(
+            str(exc), window=window, dataset=dataset, path=path, window_kind=kind
+        ) from exc
 
 
 def derive_point_datasets(
@@ -169,6 +200,23 @@ def derive_point_datasets(
         expected.append(digest)
     ds_hist_time, ds_clim_time = datasets
 
+    # Validate defects before deciding coverage, including horizons with no overlap.
+    for dataset in datasets:
+        index = dataset.indexes["time"]
+        if not len(index) or not index.is_unique or not index.is_monotonic_increasing:
+            raise ValueError("scalar series requires nonempty, ordered, unique time")
+    calendar = assert_calendar_agreement(
+        ds_hist_time, ds_clim_time, f"{name_model} {name_scenario}"
+    )
+    if set(ds_hist_time.data_vars) != set(ds_clim_time.data_vars):
+        raise ValueError("asymmetric hist/clim variables")
+    missing = set(variable_spec or {}) - set(ds_hist_time.data_vars)
+    if missing:
+        raise ValueError(f"missing configured variables: {sorted(missing)}")
+    if "member" in ds_hist_time.coords and "member" in ds_clim_time.coords:
+        if set(ds_hist_time.member.values) != set(ds_clim_time.member.values):
+            raise ValueError("asymmetric hist/clim members")
+
     # Step 4c: the `if len(ds_clim_time) > 0` guard and its dummy-netCDF
     # else-branch are gone. Since 4a an unresolved combination never becomes a
     # job, so an empty series here means a real defect.
@@ -179,11 +227,13 @@ def derive_point_datasets(
             "unpublished source -- delete the series and re-run to re-derive."
         )
 
+    full_hist, full_future = ds_hist_time, ds_clim_time
     ds_hist_time = _slice_analysis_window(
         ds_hist_time,
         time_tuple_hist,
         f"{name_model} historical reference",
         series_path_hist,
+        "reference",
     )
     ds_clim_time = _slice_analysis_window(
         ds_clim_time,
@@ -203,8 +253,13 @@ def derive_point_datasets(
     # gate") is this commit. `shared.water_year_start` now reaches the
     # arithmetic, and the legacy key is refused at parse time rather than
     # silently starting to work.
-    ref_start, ref_end, ref_n_years = hydrological_year_bounds(
-        ds_hist_time, water_year_start
+    ref_start, ref_end, ref_n_years = _window_bounds(
+        ds_hist_time,
+        full_hist,
+        time_tuple_hist,
+        series_path_hist,
+        "reference",
+        water_year_start,
     )
     # The SAME call on the scenario slice. `get_change_annual_clim_proj` already
     # makes it internally (it needs the bounds to aggregate) and then discards the
@@ -214,7 +269,14 @@ def derive_point_datasets(
     # Same water year as the reference above and as the arithmetic: reporting a
     # window under a start month the arithmetic did not use would be a worse
     # defect than the one this replaced.
-    hor_start, hor_end, _ = hydrological_year_bounds(ds_clim_time, water_year_start)
+    hor_start, hor_end, _ = _window_bounds(
+        ds_clim_time,
+        full_future,
+        time_tuple_fut,
+        series_path,
+        "horizon",
+        water_year_start,
+    )
     # Step 5b: weight each month by its length in the MODEL's calendar. Read off
     # the series (propagated there from the raw slice, which got it from the store
     # -- the axis itself cannot say, having been converted to datetime64 upstream).
@@ -270,6 +332,31 @@ def derive_point_datasets(
     ).expand_dims(["horizon"])
     facts = (ref_start, ref_end, ref_n_years, hor_start, hor_end)
     return stats_annual_change, monthly_change, facts
+
+
+def derive_available_point(*, point, unavailable_windows, **kwargs):
+    """Collect a narrowly classified exclusion; every input defect still raises."""
+    try:
+        return derive_point_datasets(**kwargs)
+    except WindowUnavailable as exc:
+        record = dict(exc.record)
+        record.update(
+            dataset=point["model"],
+            model=point["model"].split("/")[-1],
+            scenario=point["scenario"],
+            member=point["member"],
+            horizon=kwargs["name_horizon"],
+        )
+        unavailable_windows.append(record)
+        log_row(
+            f"Unavailable {point['model']} {point['scenario']} {point['member']} "
+            f"{kwargs['name_horizon']}: {record['window_kind']} "
+            f"{record['requested_window']}; available {record['available_start']}.."
+            f"{record['available_end']}; see summary/provenance.json",
+            module="change",
+            level="WARNING",
+        )
+        return None
 
 
 def derive_one_point(
@@ -367,7 +454,14 @@ COMPOSITION_CSV_COLUMNS = [
 ]
 
 
-def composition_rows(combinations, resolved, *, catalog_crawled_on, window_nominal):
+def composition_rows(
+    combinations,
+    resolved,
+    *,
+    catalog_crawled_on,
+    window_nominal,
+    unavailable_windows=None,
+):
     """Build the composition record from the resolution ladder plus run facts.
 
     ``combinations`` is every REQUESTED triple with its ladder status, as decided
@@ -397,6 +491,19 @@ def composition_rows(combinations, resolved, *, catalog_crawled_on, window_nomin
         if extra is not None:
             row.update(extra)
             row["reference_window_nominal"] = window_nominal
+        exclusions = [
+            entry
+            for entry in (unavailable_windows or [])
+            if entry["dataset"] == f"{row['institution']}/{row['source_id']}"
+            and entry["scenario"] == row["scenario"]
+            and entry["member"] == row["member"]
+        ]
+        if exclusions:
+            row["status"] = "partial" if extra is not None else "unavailable"
+            row["reason"] = "Unavailable windows: " + "; ".join(
+                f"{entry['horizon']} ({entry['window_kind']}): {entry['reason']}"
+                for entry in exclusions
+            )
         rows.append(row)
     return rows
 
@@ -484,9 +591,12 @@ if "snakemake" in globals():
         reference_cache = {}
         annual_changes = []
         monthly_changes = []
+        unavailable_windows = []
         for point in points:
             for horizon_name, horizon_window in horizons.items():
-                annual, monthly, facts = derive_point_datasets(
+                result = derive_available_point(
+                    point=point,
+                    unavailable_windows=unavailable_windows,
                     series_path_hist=point["series_path_hist"],
                     series_path=point["series_path"],
                     time_tuple_hist=_to_str_tuple(sm.params.time_horizon_hist),
@@ -505,6 +615,9 @@ if "snakemake" in globals():
                     series_cache=series_cache,
                     reference_cache=reference_cache,
                 )
+                if result is None:
+                    continue
+                annual, monthly, facts = result
                 ref_start, ref_end, ref_n_years, hor_start, hor_end = facts
                 annual_changes.append(annual)
                 monthly_changes.append(monthly)
@@ -524,14 +637,23 @@ if "snakemake" in globals():
                     f"{hor_start:%Y-%m-%d} / {hor_end:%Y-%m-%d}"
                 )
 
-        merged = combine_changes(annual_changes)
-        monthly_merged = xr.combine_by_coords(
-            monthly_changes,
-            coords="minimal",
-            data_vars="all",
-            compat="no_conflicts",
-            join="outer",
-            combine_attrs="override",
+        log_row(
+            f"Availability: {len(annual_changes)} usable point-horizons, "
+            f"{len(unavailable_windows)} unavailable point-horizons",
+            module="change",
+        )
+        merged = combine_changes(annual_changes) if annual_changes else xr.Dataset()
+        monthly_merged = (
+            xr.combine_by_coords(
+                monthly_changes,
+                coords="minimal",
+                data_vars="all",
+                compat="no_conflicts",
+                join="outer",
+                combine_attrs="override",
+            )
+            if monthly_changes
+            else xr.Dataset(coords={"month": []})
         )
         # The outer join spans model x scenario x member, so models with differing
         # member labels leave cells no series produced. Every consumer of the
@@ -540,6 +662,12 @@ if "snakemake" in globals():
             (p["model"], p["scenario"], p["member"])
             for p in points
             if p["point_key"] in resolved_facts
+        }
+        available_horizons = {
+            (p["model"], p["scenario"], p["member"], horizon)
+            for p in points
+            for horizon in horizons
+            if (p["point_key"], horizon) in horizon_facts
         }
 
         # --- step 6a-i: the tidy annual change-factor table (design §5.9) ----
@@ -588,6 +716,7 @@ if "snakemake" in globals():
             row_facts=row_facts,
             variable_spec=VARIABLE_SPEC,
             combinations=derived,
+            available_horizons=available_horizons,
         )
         write_table(
             str(sm.output.change_factors_annual), rows, columns=TABLE_COLUMNS_ANNUAL
@@ -603,6 +732,7 @@ if "snakemake" in globals():
                     row_facts=row_facts,
                     variable_spec=VARIABLE_SPEC,
                     combinations=derived,
+                    available_horizons=available_horizons,
                 )
             )
         write_table(
@@ -629,6 +759,7 @@ if "snakemake" in globals():
             resolved_facts,
             catalog_crawled_on=sm.params.catalog_crawled_on,
             window_nominal=" / ".join(_to_str_tuple(sm.params.time_horizon_hist)),
+            unavailable_windows=unavailable_windows,
         )
         write_composition(str(sm.output.composition_csv), rows)
 
@@ -652,6 +783,7 @@ if "snakemake" in globals():
                         )
                     )
         document = _prov.build(
+            unavailable_windows=unavailable_windows,
             clim_project=os.path.basename(clim_project_dir),
             reference_record=sm.params.reference_record,
             variable_spec=sm.params.variable_spec,

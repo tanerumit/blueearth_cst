@@ -14,7 +14,10 @@ import pandas as pd
 from blueearth_cst.projections import projection_analysis as analysis
 from blueearth_cst.projections import projection_trajectories as trajectories
 from blueearth_cst.projections import series_identity
-from blueearth_cst.projections.get_change_climate_proj import hydrological_year_bounds
+from blueearth_cst.projections.get_change_climate_proj import (
+    NoCompleteHydrologicalYear,
+    hydrological_year_bounds,
+)
 from blueearth_cst.projections.projection_coverage import coverage_table
 from blueearth_cst.projections.series_checks import (
     assert_calendar_agreement,
@@ -163,9 +166,14 @@ def prepare_tables(
         configured_hist = historical.sel(
             time=slice(*(str(year) for year in configured_reference))
         )
-        _, _, reference_count = hydrological_year_bounds(
-            configured_hist, water_year_start
-        )
+        try:
+            _, _, reference_count = hydrological_year_bounds(
+                configured_hist, water_year_start
+            )
+        except NoCompleteHydrologicalYear:
+            # Analysis rows retain the missing-reference reason; coverage
+            # metadata must not stop usable combinations from being prepared.
+            reference_count = 0
         coverage_points.append({**point, "n_reference_years": reference_count})
         for window in windows:
             change_rows.append(

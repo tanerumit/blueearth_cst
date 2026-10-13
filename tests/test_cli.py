@@ -457,6 +457,22 @@ def test_snakefile_cli_analyze_projections(config_with_staged_region):
     assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
 
 
+@pytest.mark.workflow_contract
+def test_wf2_dag_accepts_shared_newest_store_pins(config_with_staged_region, tmp_path):
+    """Older tas revisions do not block the fetcher's shared newest store."""
+    cfg = load_composed_config(config_with_staged_region)
+    wf2 = cfg["workflows"]["analyze_projections"]
+    wf2["models"] = ["CAS/FGOALS-g3", "CCCR-IITM/IITM-ESM"]
+    wf2["scenarios"] = ["ssp126"]
+    wf2["members"] = {"preference": ["r1i1p1f1"]}
+    config_path = write_config(tmp_path / "shared_newest", cfg)
+    result = _dry_run("analyze_projections.smk", cfg=config_path)
+    assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
+    counts = _job_counts(result)
+    assert counts["fetch_cmip6_projections"] == 4
+    assert counts["reduce_to_basin_averages"] == 4
+
+
 def test_analyze_projections_owns_its_region():
     """Pin WF2's region contract to what it actually is.
 

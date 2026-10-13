@@ -4,7 +4,7 @@ type: todo-item
 status: active
 effort: 2
 area: wf4
-queue: 3
+queue: 4
 doc: dev/tasks/t2610032349/task-brief.md
 created: 2026-10-03
 updated: 2026-10-10

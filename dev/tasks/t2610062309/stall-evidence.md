@@ -29,3 +29,20 @@ Snakemake had no child processes and accrued no CPU.
 22:41:18 - DONE Rule 2.03: fetch_cmip6_projections  [series cmip6_MPI-M_MPI-ESM1-2-LR_ssp126_r3i1p1f1]  0:01:37  [job 121/140]
 22:41:18 - RUN  Rule 2.04: reduce_to_basin_averages  [MPI-ESM1-2-LR ssp126 r3i1p1f1]
 ```
+
+## Stall 4 (2026-10-13, remote Horizon VM, 287 jobs, `-c 9` on 4 logical CPUs / 32 GB)
+
+Project `C:/Users/taner/workspace/cst-cases/runs/wrt-egypt-v2`; WF2 Snakemake (PID 6088) launched by
+`run_workflows.py` at 00:22 with `--keep-going`, in Windows PowerShell 5.1. Last scheduler row:
+
+```text
+00:37:34 - DONE Rule 2.04: reduce_to_basin_averages  [series cmip6_IPSL_IPSL-CM6A-LR_ssp460_r1i1p1f1]  0:00:08  [job 164/287]
+00:37:34 - RUN  Rule 2.03: fetch_cmip6_projections  [CMCC-CM2-SR5 ssp585 r1i1p1f1]
+```
+
+- The file log `.snakemake/log/2026-10-13T002312.372703.snakemake.log` was last written at 00:37:34.
+- Ten in-flight fetches still logged `Store calendar` to the console and wrote their raw `.nc` and per-job
+  logs between 00:37:49 and 00:38:36 (no `.tmp-*` leftovers). So job stdout was not blocked; a paused
+  console is excluded (Windows Terminal, no QuickEdit).
+- About 5.5 h later: no child processes; CPU 246.078 -> 246.094 s over 30 s. Killed without a stack capture.
+- Concurrency above physical CPUs is a new factor, but stalls 1-2 ran at three cores, so it is not sufficient.

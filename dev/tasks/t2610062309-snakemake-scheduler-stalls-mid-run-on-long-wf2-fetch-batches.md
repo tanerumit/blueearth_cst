@@ -5,10 +5,10 @@ status: active
 effort: 1
 area: wf2
 origin: t2610022259 P0 (2026-10-06)
-queue: 2
+queue: 3
 doc: dev/tasks/t2610062309/diagnosis.md
 created: 2026-10-06
-updated: 2026-10-10
+updated: 2026-10-13
 ---
 
 > [!note] Overview
@@ -33,5 +33,7 @@ No production workaround or concurrency default was changed; serial recovery is 
   `C:/data/cmip6/gabon-ntoum-dev-ensemble`. Scheduler tails: [stall evidence](t2610062309/stall-evidence.md).
 - The three jobs in flight had each written their outputs and per-job logs; Snakemake (python.exe under
   snakemake.exe) had no children and accrued no CPU over 10 s.
+- Fourth stall 2026-10-13 at job 164/287 (`wrt-egypt-v2`, `-c 9` on a 4-CPU VM): same signature,
+  with ten fetch outputs written after the scheduler's last log row. Details in the stall evidence.
 - Recovery that worked: stop the process tree, `run_workflow.py ... -- --unlock`, relaunch with
   `-- --rerun-incomplete`.

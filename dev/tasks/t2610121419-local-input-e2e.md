@@ -1,10 +1,10 @@
 ---
 title: Add local-input E2E tests for all five workflows
 type: todo-item
-status: backlog
+status: active
 effort: 2
 area: validation
-queue: 9
+queue: 1
 created: 2026-10-12
 updated: 2026-10-12
 ---
@@ -38,6 +38,26 @@ Existing gates apply until that policy changes.
 
 Speedup is inferred, not measured; Julia startup and simulation costs remain. Reuse sample-bundle
 staging where appropriate.
+
+## Current evidence
+
+Staging prerequisite committed as `a52e398c`: preserve FlatGeobuf outputs and optionally retain empty
+vector layers. Checks: 63 staging/incremental/CMIP tests passed; the remaining worker-pool test passed
+with named-pipe access. `pixi run lint` and `pixi run format-check` passed. No local E2E mode exists yet.
+
+The pinned catalog requires five FGB sources; the existing local mirror uses older GPKG paths.
+Stage exact pinned sources with unchanged adapters, full 2000–2016 history and seven native ERA5
+variables. Confirm reservoir overlap against the pinned FGB before claiming no remote JRC access.
+
+All four existing CMIP raw slices match current catalog/index components and the fresh P-drive
+delineation's polygon fingerprint (`be6ed1c802ba…`). They fail the standing rapid polygon fingerprint;
+its symmetric-difference area is about 3.15e-15 degree². Preserve pinned source formats; do not restamp
+caches or reuse generated regions. Recipe and coverage probes remain in task-owned scratch in session-1.
+
+The fresh acquisition-inclusive profile started at `c438df08` and failed in WF0's CHIRPS extraction
+with `RuntimeError: NetCDF: HDF error`; WF1–WF4 did not run. Region delineation took 18m29s; WF0 stopped
+after 31m. This is partial timing evidence, not a successful E2E gate or measured speedup.
+Next: diagnose the CHIRPS source read and stage the pinned local bundle, then repeat matched runs.
 
 ## Refs
 

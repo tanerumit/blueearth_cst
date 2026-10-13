@@ -33,9 +33,10 @@ def preprocess_coords(ds: xr.Dataset) -> xr.Dataset:
 
 
 def combine_changes(datasets):
-    """Combine basin-scalar results without serializing intermediate NetCDFs."""
+    """Combine basin-scalar results, preserving xarray's concatenate-all policy."""
     return xr.combine_by_coords(
         [preprocess_coords(ds) for ds in datasets],
+        data_vars="all",
         coords="minimal",
         compat="no_conflicts",
         join="outer",

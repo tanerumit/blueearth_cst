@@ -241,11 +241,11 @@ def test_stage_b_writes_auditable_products_with_unavailable_horizons(
         encoding="utf-8",
     )
     fingerprint = si.region_fingerprint(region_path)
-    models = [("E3SM-Project/E3SM-1-1", 2024)]
+    models = [("E3SM-Project/E3SM-1-1", 2024, 2.0)]
     if include_usable:
-        models.append(("TEST/Usable", 2060))
+        models.extend([("TEST/Usable", 2060, 2.0), ("LONG/UsableHigher", 2060, 10.0)])
     points, combinations, declared = [], [], []
-    for model, future_end in models:
+    for model, future_end, height in models:
         combo = _combo(model, "ssp245", "r1i1p1f1", "resolved")
         combinations.append(combo)
         point = dict(combo, model=model, tier="certified")
@@ -257,7 +257,7 @@ def test_stage_b_writes_auditable_products_with_unavailable_horizons(
             dates = pd.date_range(f"{start}-01-01", f"{end}-12-01", freq="MS")
             dataset = xr.Dataset(
                 {"precip": ("time", np.full(len(dates), value))},
-                coords={"time": dates},
+                coords={"time": dates, "height": height},
             ).expand_dims(
                 scenario=[scenario],
                 model=[model],
@@ -339,9 +339,9 @@ def test_stage_b_writes_auditable_products_with_unavailable_horizons(
             reader = csv.DictReader(fh)
             rows = list(reader)
             assert reader.fieldnames
-        assert len(rows) == (expected if include_usable else 0)
+        assert len(rows) == (2 * expected if include_usable else 0)
         assert {row["model"] for row in rows} == (
-            {"Usable"} if include_usable else set()
+            {"Usable", "UsableHigher"} if include_usable else set()
         )
         for row in rows:
             assert float(row["relative_value"]) == pytest.approx(20.0)
@@ -350,8 +350,9 @@ def test_stage_b_writes_auditable_products_with_unavailable_horizons(
     assert composition["E3SM-1-1"]["status"] == "unavailable"
     if include_usable:
         assert composition["Usable"]["status"] == "resolved"
+        assert composition["UsableHigher"]["status"] == "resolved"
     document = json.loads(Path(output.provenance_json).read_text(encoding="utf-8"))
-    assert document["composition"]["usable"] == int(include_usable)
+    assert document["composition"]["usable"] == 2 * int(include_usable)
     assert len(document["unavailable_windows"]) == 1
     assert document["unavailable_windows"][0]["available_end"] == "2024-12-01"
     report = Path(output.report_md).read_text(encoding="utf-8")

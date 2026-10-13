@@ -49,14 +49,17 @@ the result change first, retaining the evidence needed to interpret it.
    empty Unreleased section for subsequent work. Follow the existing branch
    validation and landing gates in `AGENTS.md` and
    [the validation ladder](validation-ladder.md). Landing requires approval.
-3. Verify the candidate main commit. Run `pixi run test-fast`; for a batch
-   touching `shared/` or a Snakemake `script:` signature, run
-   `pixi run test-full`. For numerical changes, run
-   `pixi run python dev/scripts/check_baseline.py check` against the baseline
-   configuration, with WF1 produced using `--notemp`. Add
-   `semantic_tree_diff.py` when the output tree shape changed. Render changed
-   figures for visual inspection. Capture gate output in files and retain
-   relevant evidence. Reuse checks of an identical committed tree.
+3. Verify coverage of the candidate main commit and the release delta using
+   the validation ladder. Reuse applicable landing, CI and execution evidence;
+   releasing or tagging the same content does not require another test run.
+   CI supplies full software coverage on both platforms. Run all-five E2E for
+   changes to several workflow handoffs or shared runtime behavior, or explicit
+   whole-toolbox qualification, unless applicable evidence already covers it.
+   Validate numerical changes with an independent oracle and affected consumers;
+   use the baseline configuration for whole-tree reproducibility claims, with
+   WF1 produced using `--notemp`. Add `semantic_tree_diff.py` when claiming tree
+   compatibility after shape changes. Render changed figures for inspection.
+   Retain the commands, results and candidate/input identities with the evidence.
 4. With explicit tagging authorization, create an annotated `vX.Y.Z` tag on
    the verified main commit. Confirm the tag is new and points to that exact
    commit. Never tag a task branch as a toolbox release.

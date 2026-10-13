@@ -110,15 +110,15 @@ on failure preserve the lane and branch for recovery.
 | When | Required coverage |
 |---|---|
 | Iterating | Tests covering the change |
-| Pre-commit | CLI tests for rule/input/script-signature edits; scoped Ruff for touched Python |
+| Pre-commit | Regression/consumer checks; affected CLI/DAG checks for rule/input/script changes; scoped Ruff |
 | Final Python batch | `pixi run lint` and `pixi run format-check` once |
-| Merge | `pixi run test-fast`, unless covered by `test-full` or exempt-only diff |
-| Console wording only; confined internal or script-contract change | Fast plus affected contract tests |
-| Broad runtime/config/orchestration/dependency change; release or milestone | Full plus all-five E2E |
-| Confined workflow behavior | Execute affected workflow and output consumers with rapid inputs |
+| Land a batch | One `test-fast` on the integrated candidate, or reuse evidence; exempt-only diffs skip it |
+| Additional software coverage | Affected contracts; local full for needed extra coverage, replacing fast |
+| Several workflow handoffs or shared runtime behavior | All-five E2E, or reuse execution evidence |
+| Confined workflow behavior | Affected integration path/consumers; execution when outputs can change |
 | Numeric output | Independent numerical check and affected consumers; baseline for whole-tree claims |
-| Milestone seal | Baseline check; semantic tree diff if shape changed |
-| Push | Classify unpushed delta and read last CI; rules below |
+| Release or milestone | Verify candidate and delta coverage; labels alone add no tests |
+| Push | Reuse landing evidence; check uncovered changes, run cheap hooks, and inspect CI |
 | After push | Read the latest CI run, including both platforms |
 
 Apply the reference's evidence-reuse contract: full covers fast on the same candidate/environment;
@@ -126,19 +126,28 @@ equivalent merges need tree-equality and ancestry proof. Missing or skipped requ
 Classify behavior and consumers, not directory names. A small follow-up invalidates only affected
 claims; use reviewed delta evidence rather than repeating a preceding broad gate. Unknown or broad
 impact escalates. Console changes affecting control flow, exit status or parsed output are behavioral.
+Optimize verification for safety with the fewest sufficient tests and procedures. Add a test, gate,
+receipt or review step only for a concrete risk not covered by existing evidence or a simpler check;
+prefer extending or replacing an existing check. Do not turn a one-off diagnostic into a standing gate.
+Focused checks suffice for task commits; do not pull landing gates forward into each task. Full covers
+fast; E2E covers its affected workflow executions. Stop once required coverage is sound; repeat only
+for invalidated evidence or a concrete diagnostic need. Keep rationale in existing task notes or the
+completion report; this rule requires no new checklist, document or approval step.
+Use policy-tooling tests only when changing that tooling or its contracts, not merely using its verifier.
 
 Push exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root
 `AGENTS.md` and root `README.md`. Renames/deletions are never exempt. `dev/scripts/`, `dev/records/`,
 `dev/reference/`, `config/templates/` and `docs/notebooks/` have test readers and remain gated.
 Classify actual diff paths, not commit labels or earlier pushed batches; grep tests before adding
-an exemption. For push, inspect `origin/main..main`: red/unread last CI requires `test-fast`.
-With green last CI, reuse a passed fast/full candidate if intervening edits are exempt-only;
-an exempt-only unpushed delta needs only the Ruff pre-push hook. Otherwise run fast, not full;
-CI runs full on both platforms. Capture gate output in a file, never pipe it through `tail`.
+an exemption. For push, inspect `origin/main..main` and reuse valid landing evidence. Changed content
+needs affected checks or a missing batch gate, not an automatic repeat. Read red/unread CI and diagnose
+its failures; CI status alone does not invalidate matching local evidence. An exempt-only unpushed delta
+needs only the Ruff pre-push hook. CI owns full software coverage on both platforms. Capture gate output
+in a file, never pipe it through `tail`.
 
 CI runs for `main` pushes and PRs, not backup branch pushes. Normal approved publishing goes to
-`main`; use a PR for pre-landing two-platform assurance on reviewed numerical contracts, `shared/`,
-script signatures or milestone seals. `gh` defaults to Deltares upstream here: explicitly select
+`main`; use a PR when the change needs two-platform assurance before landing.
+`gh` defaults to Deltares upstream here: explicitly select
 `tanerumit/blueearth_cst`. Install local hooks with `core.hooksPath .githooks`.
 
 Use rapid config for execution/DAG checks/renders; baseline config only when numbers are the point.

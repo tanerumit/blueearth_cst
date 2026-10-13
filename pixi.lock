@@ -181,6 +181,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libstdcxx-ng-15.2.0-hdf11a46_18.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libthrift-0.22.0-h7d032f7_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libtiff-4.7.1-h9d88235_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libunwind-1.8.3-h65a8314_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libutf8proc-2.11.3-hfe17d71_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libuuid-2.42.2-h5347b49_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libuv-1.51.0-hb03c661_1.conda
@@ -229,6 +230,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/protobuf-6.33.5-py312ha7b3241_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py312h5253ce2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pthread-stubs-0.4-hb9d3cd8_1002.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/py-spy-0.4.2-hbe0e3b8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyarrow-24.0.0-py312h7900ff3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pyarrow-core-24.0.0-py312h2054cf2_0_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pydantic-core-2.46.4-py312h868fb18_0.conda
@@ -1304,6 +1306,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/protobuf-6.33.5-py312hcb3287e_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/psutil-7.2.2-py312he5662c2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pthread-stubs-0.4-h0e40799_1002.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/py-spy-0.4.2-h18a1a76_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyarrow-24.0.0-py312h2e8e312_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pyarrow-core-24.0.0-py312h12c7521_0_cpu.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/pydantic-core-2.46.4-py312hdabe01f_0.conda
@@ -4019,6 +4022,21 @@ packages:
   purls: []
   size: 435273
   timestamp: 1762022005702
+- conda: https://conda.anaconda.org/conda-forge/linux-64/libunwind-1.8.3-h65a8314_0.conda
+  sha256: 71c8b9d5c72473752a0bb6e91b01dd209a03916cb71f36cc6a564e3a2a132d7a
+  md5: e179a69edd30d75c0144d7a380b88f28
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - libstdcxx >=14
+  license: MIT
+  license_family: MIT
+  purls: []
+  run_exports:
+    weak:
+    - libunwind >=1.8.3,<1.9.0a0
+  size: 75995
+  timestamp: 1757032240102
 - conda: https://conda.anaconda.org/conda-forge/linux-64/libutf8proc-2.11.3-hfe17d71_0.conda
   sha256: ecbf4b7520296ed580498dc66a72508b8a79da5126e1d6dc650a7087171288f9
   md5: 1247168fe4a0b8912e3336bccdbf98a5
@@ -4823,6 +4841,22 @@ packages:
   purls: []
   size: 8252
   timestamp: 1726802366959
+- conda: https://conda.anaconda.org/conda-forge/linux-64/py-spy-0.4.2-hbe0e3b8_1.conda
+  sha256: cb23242015d1b3fb9d009e98edf673900811b73a1e16a5e3d74104c96eb172dc
+  md5: a9b890615f46d689cbadb145415d333a
+  depends:
+  - libgcc >=15
+  - __glibc >=2.17,<3.0.a0
+  - libunwind >=1.8.3,<1.9.0a0
+  - liblzma >=5.8.3,<6.0a0
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  purls: []
+  run_exports: {}
+  size: 1909369
+  timestamp: 1787924738130
 - conda: https://conda.anaconda.org/conda-forge/linux-64/pyarrow-24.0.0-py312h7900ff3_0.conda
   sha256: ce11f466f0dcfc41bd0ef3719adb396fbffa6b866aac75c9242938fa58e546d5
   md5: f9ced0be11f0d3120336e4171a121c2a
@@ -15361,6 +15395,19 @@ packages:
   purls: []
   size: 9389
   timestamp: 1726802555076
+- conda: https://conda.anaconda.org/conda-forge/win-64/py-spy-0.4.2-h18a1a76_1.conda
+  sha256: c4215034365119aa5e0ecab613479532d5c1f6964c69bdc82bde6ce0300932c3
+  md5: d583f0e7b428ed3991a84d0289b502f5
+  depends:
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  license: MIT
+  license_family: MIT
+  purls: []
+  run_exports: {}
+  size: 1587075
+  timestamp: 1787924746243
 - conda: https://conda.anaconda.org/conda-forge/win-64/pyarrow-24.0.0-py312h2e8e312_0.conda
   sha256: 7c1ea8732d3c7e33c087354457955695063b051bce145253eb74aadea5b8b7b1
   md5: 4106966f2b6e3ea2c946e83193b37bea

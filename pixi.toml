@@ -24,6 +24,7 @@ matplotlib = "*"
 netcdf4 = "*"       # direct import in extract_historical_climate (chunk cache) + check_baseline/inspect scripts
 numpy = "*"
 pandas = ">=2.0.0"
+py-spy = ">=0.4.2,<0.5" # optional diagnostics for running Python processes
 pytest = "*"        # tests/ — was missing from environment.yml
 pytest-xdist = "*" # parallel test workers; `test-fast` is subprocess-light
                    # and finely divisible, so -n auto is most of its cost

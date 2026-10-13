@@ -54,6 +54,10 @@ def _color(scenario):
 
 
 def _label(scenario):
+    if scenario == "ssp534-over":
+        return "SSP5-3.4-OS"
+    if scenario == "ssp370-lowNTCF":
+        return "SSP3-7.0-LowNTCF"
     return (
         f"SSP{scenario[3]}-{int(scenario[4:]) / 10:.1f}"
         if scenario in SCENARIO_COLORS

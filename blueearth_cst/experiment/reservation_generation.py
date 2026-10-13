@@ -22,8 +22,14 @@ from blueearth_cst.shared.workflow_config_snapshot import file_reference
 
 
 def bind_ready_collection_owned(
-    root, name, marker_path, *, resolution_mode="project-generation"
+    root,
+    name,
+    marker_path,
+    *,
+    resolution_mode="project-generation",
+    generation_plan=None,
 ):
+    """Atomically bind a ready collection and any previously unbound plan seed."""
     from blueearth_cst.experiment.reservation import bind_reservation_owned
 
     root = Path(root).resolve()
@@ -38,8 +44,32 @@ def bind_ready_collection_owned(
         "collection_revision": marker["collection_revision"],
         "run_ids": [entry["run_id"] for entry in marker["series"]],
     }
-    bind_reservation_owned(root, name, resolution=resolution)
+    seed = None
+    if generation_plan is not None:
+        plan_path = confined_path(root, generation_plan["path"])
+        plan = read_pinned_plan(plan_path, generation_plan["sha256"], root)
+        if plan["collection_id"] != marker["collection_id"] or (
+            plan["collection_revision"] is not None
+            and plan["collection_revision"] != marker["collection_revision"]
+        ):
+            raise ValueError("ready collection differs from selected generation plan")
+        seed = _plan_seed_binding(plan, generation_plan)
+    bind_reservation_owned(root, name, seed=seed, resolution=resolution)
     return marker
+
+
+def _plan_seed_binding(plan, reference):
+    config_document = plan["candidate_intent"]["documents"]["generation_config"]
+    return {
+        "state": "bound",
+        "requested": config_document["seed"]["requested"],
+        "resolved": config_document["seed"]["resolved"],
+        "seed_resolution": config_document["seed_resolution"],
+        "plan": reference,
+        "source_identity_sha256": plan["candidate_identity_digests"][
+            "source_inventory"
+        ],
+    }
 
 
 def select_reserved_plan_owned(config, repository, root, name):
@@ -127,17 +157,7 @@ def select_reserved_plan_owned(config, repository, root, name):
     except FileExistsError:
         if plan_path.read_bytes() != plan_bytes:
             raise ValueError("generation plan digest collision") from None
-    config_document = plan["candidate_intent"]["documents"]["generation_config"]
-    seed = {
-        "state": "bound",
-        "requested": config_document["seed"]["requested"],
-        "resolved": config_document["seed"]["resolved"],
-        "seed_resolution": config_document["seed_resolution"],
-        "plan": file_reference(plan_path, "project_root", root),
-        "source_identity_sha256": plan["candidate_identity_digests"][
-            "source_inventory"
-        ],
-    }
+    seed = _plan_seed_binding(plan, file_reference(plan_path, "project_root", root))
     bind_reservation_owned(root, name, seed=seed)
     publish_plan_pointer(settings, plan)
     return settings, plan, plan_path, sha256, False

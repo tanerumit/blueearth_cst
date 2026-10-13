@@ -17,6 +17,14 @@ They fall in two groups:
   conda-forge-only, locked stack, so those pins no longer apply — do **not**
   carry them forward.
 
+## Inspecting running Python processes
+
+The Pixi environment includes `py-spy` for profiling slow Python code and inspecting hung processes.
+Run `pixi run py-spy top --pid <process-id>` for live profiling or
+`pixi run py-spy dump --pid <process-id>` for current thread stacks. Replace `<process-id>` with
+the Python process ID shown in Task Manager. These commands inspect a live process; capture a
+Python exception traceback when diagnosing a process that has already exited.
+
 ## Live workarounds (automated via pixi activation)
 
 ### Graphviz `dot` — missing `ffi.dll` / `cairo.dll` aliases (Windows)

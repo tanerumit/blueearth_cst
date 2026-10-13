@@ -15,6 +15,7 @@ from blueearth_cst.experiment.reservation import (
 from blueearth_cst.experiment.reservation_generation import bind_ready_collection_owned
 from blueearth_cst.experiment.reservation_request import capture_request
 from blueearth_cst.experiment.simulation_runner import (
+    resolve_collection_with_plan,
     resolve_selected_collection,
     simulation_settings,
 )
@@ -116,7 +117,9 @@ class ReservationContext:
         if self.reservation_id is None or self.request is None:
             return
         self.recheck()
-        selection, _ = resolve_selected_collection(self.config_path, self.repository)
+        selection, _, plan_reference = resolve_collection_with_plan(
+            self.config_path, self.repository
+        )
         reservation = read_reservation(self.root, self.name)
         mode = (reservation["resolution"] or {}).get(
             "resolution_mode", selection["resolution_mode"]
@@ -126,6 +129,9 @@ class ReservationContext:
             self.name,
             selection["manifest_path"],
             resolution_mode=mode,
+            generation_plan=plan_reference
+            if reservation["seed"]["state"] == "awaiting_sources"
+            else None,
         )
 
     def environment(self) -> dict[str, str]:

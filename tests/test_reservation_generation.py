@@ -146,3 +146,34 @@ def test_ready_bound_create_bypasses_generation_and_keeps_original_plan(
     assert result[1] is plan and result[4] is True
     assert plan["decision"] == "create"
     assert events == ["validated", "bound", "pointer"]
+
+
+@pytest.mark.parametrize("field", ["collection_id", "collection_revision"])
+def test_ready_binding_rejects_plan_for_another_collection(bound, monkeypatch, field):
+    root, plan, _, _, events = bound
+    marker_path = root / "records/collection/collection.json"
+    marker_path.parent.mkdir(parents=True)
+    marker_path.write_bytes(b"{}\n")
+    marker = {
+        "collection_id": "collection",
+        "collection_revision": "revision",
+        "series": [{"run_id": "run_1"}],
+    }
+    plan[field] = "different"
+    monkeypatch.setattr(reservation_generation, "read_collection_v2", lambda _: marker)
+    monkeypatch.setattr(reservation_generation, "file_reference", lambda *args: {})
+    monkeypatch.setattr(
+        reservation,
+        "bind_reservation_owned",
+        lambda *args, **kwargs: events.append("bound"),
+    )
+    with pytest.raises(
+        ValueError, match="ready collection differs from selected generation plan"
+    ):
+        reservation_generation.bind_ready_collection_owned(
+            root,
+            "stress_test_01",
+            marker_path,
+            generation_plan={"path": "plans/original.json", "sha256": "digest"},
+        )
+    assert events == []

@@ -3,14 +3,36 @@
 from os.path import dirname, join, realpath
 
 import numpy as np
+import pytest
 import xarray as xr
 
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
 from blueearth_cst.projections.get_change_climate_proj_summary import (  # noqa: E402
+    combine_changes,
     preprocess_coords,
 )
+
+
+@pytest.mark.parametrize("new_defaults", [False, True])
+@pytest.mark.filterwarnings("error:.*default value for data_vars.*:FutureWarning")
+def test_combine_changes_preserves_all_variables_without_warning(new_defaults):
+    """Combining models preserves values under either xarray default policy."""
+    datasets = [
+        xr.Dataset(
+            {"precip": ("model", [precip]), "temp": temp},
+            coords={"model": [model]},
+        )
+        for model, precip, temp in [("A", 20.0, 2.0), ("B", -5.0, 3.0)]
+    ]
+    expected = xr.Dataset(
+        {"precip": ("model", [20.0, -5.0]), "temp": ("model", [2.0, 3.0])},
+        coords={"model": np.array(["A", "B"], dtype=object)},
+    )
+    with xr.set_options(use_new_combine_kwarg_defaults=new_defaults):
+        actual = combine_changes(datasets)
+    xr.testing.assert_identical(actual, expected)
 
 
 # --------------------------------------------------------------------------- #

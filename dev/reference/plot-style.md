@@ -16,6 +16,29 @@ its owning data product. Generated filenames and directories use lowercase snake
 `full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
 with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the rename mapping.
 
+## SSP scenario colors
+
+WF2 uses the IPCC AR6 scenario palette, including all eight ScenarioMIP SSPs and the LowNTCF variant.
+Use CMIP6 experiment IDs as keys; SSP family colors and RCP colors are different palettes.
+The final TSU hex values are published in
+[pyam's IPCC palette](https://pyam-iamc.readthedocs.io/en/stable/tutorials/ipcc_colors.html),
+derived from the [IPCC WG1 color maps](https://github.com/IPCC-WG1/colormaps).
+
+| Experiment ID | Display label | Color |
+|---|---|---|
+| `ssp119` | SSP1-1.9 | `#00a9cf` |
+| `ssp126` | SSP1-2.6 | `#003466` |
+| `ssp434` | SSP4-3.4 | `#2274ae` |
+| `ssp245` | SSP2-4.5 | `#f69320` |
+| `ssp534-over` | SSP5-3.4-OS | `#92397a` |
+| `ssp460` | SSP4-6.0 | `#b0724e` |
+| `ssp370` | SSP3-7.0 | `#df0000` |
+| `ssp370-lowNTCF` | SSP3-7.0-LowNTCF | `#e61d25` |
+| `ssp585` | SSP5-8.5 | `#980002` |
+
+Keep the mapping in `projections/projection_figures.py`; all WF2 suite artists use it.
+Unknown experiments retain their literal labels and muted fallback color.
+
 ## Typography, axes and layout
 
 - Design WF2 figures for 4–5 scenarios and 10–20+ models, potentially with multiple members per model.

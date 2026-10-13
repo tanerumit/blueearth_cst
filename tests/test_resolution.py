@@ -264,7 +264,8 @@ def test_matching_crawl_passes_and_missing_index_is_tolerated():
     res.assert_index_matches_catalog(FULL, {})
 
 
-def test_ambiguous_pin_is_reported():
+@pytest.mark.parametrize("paths", [["gn/v1", "gn/v2"], ["gn/v1", "gr/v2"]])
+def test_ambiguous_pin_is_reported(paths):
     """D8/D12: ~6% of pinned stores really do match more than one grid/version."""
     combos = res.resolve(
         FULL,
@@ -277,7 +278,7 @@ def test_ambiguous_pin_is_reported():
         "crawled_on": "2026-07-29",
         "sources": {
             res.entry_key(CP, "AAA/M1", "ssp245"): {
-                "r1i1p1f1": {"pr": ["gn/v1", "gn/v2"], "tas": ["gn/v1"]}
+                "r1i1p1f1": {"pr": paths, "tas": ["gn/v1"]}
             }
         },
     }
@@ -302,6 +303,32 @@ def test_unambiguous_pins_report_nothing():
                 "r1i1p1f1": {"pr": ["gn/v1"], "tas": ["gn/v1"]}
             }
         },
+    }
+    assert res.ambiguous_pins(index, combos, CP) == []
+
+
+@pytest.mark.parametrize("experiment", ["historical", "ssp245"])
+@pytest.mark.parametrize(
+    "older,newest", [("v20190818", "v20200927"), ("v20200915", "v20201112")]
+)
+def test_shared_newest_pin_allows_older_temperature_revision(experiment, older, newest):
+    """DAG preflight accepts the single store selected by the fetcher."""
+    combos = res.resolve(
+        FULL,
+        clim_project=CP,
+        models=["AAA/M1"],
+        scenarios=["ssp245"],
+        members=["r1i1p1f1"],
+    )
+    index = {
+        "sources": {
+            res.entry_key(CP, "AAA/M1", experiment): {
+                "r1i1p1f1": {
+                    "pr": [f"gn/{newest}"],
+                    "tas": [f"gn/{older}", f"gn/{newest}"],
+                }
+            }
+        }
     }
     assert res.ambiguous_pins(index, combos, CP) == []
 

@@ -178,6 +178,11 @@ an exception type:
 `pinned_uri` takes the newest version per variable and requires every variable to
 land on the same location:
 
+WF2's DAG preflight uses this same selection policy: older published revisions do not block a
+combination whose variables share one newest grid/version. Multiple matches remain an error when
+the selector cannot identify that shared location, including competing grid labels or different
+newest versions across variables.
+
 | member combinations | before | after |
 |---|---|---|
 | pin cleanly | 2205 | **2387** |

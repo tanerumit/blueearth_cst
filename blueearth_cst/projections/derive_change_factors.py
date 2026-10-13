@@ -643,15 +643,10 @@ if "snakemake" in globals():
             module="change",
         )
         merged = combine_changes(annual_changes) if annual_changes else xr.Dataset()
+        # Both products need source-coordinate cleanup (including scalar height)
+        # before combining results from different models.
         monthly_merged = (
-            xr.combine_by_coords(
-                monthly_changes,
-                coords="minimal",
-                data_vars="all",
-                compat="no_conflicts",
-                join="outer",
-                combine_attrs="override",
-            )
+            combine_changes(monthly_changes)
             if monthly_changes
             else xr.Dataset(coords={"month": []})
         )

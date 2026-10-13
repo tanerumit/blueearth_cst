@@ -104,6 +104,25 @@ def _flagged_months(monthly_rows, composition, max_flagged_months):
 # avoid, so the private name is the lesser evil.
 
 
+def _slice_analysis_window(dataset, window, label, path):
+    """Slice a GCM period, naming its source and coverage when no dates remain."""
+    requested = "..".join(str(bound) for bound in window)
+    if dataset.sizes.get("time", 0) == 0:
+        raise ValueError(
+            f"{label}: {path} has an empty time axis; requested {requested}"
+        )
+    selected = dataset.sel(time=slice(*window))
+    if selected.sizes["time"] == 0:
+        dates = dataset["time"].values
+        available = f"{str(dates[0])[:10]}..{str(dates[-1])[:10]}"
+        raise ValueError(
+            f"{label}: requested {requested} has no overlap with available "
+            f"{available} in {path}. Check the configured GCM window and this "
+            "scenario's reduced series; the observed climate window is independent."
+        )
+    return selected
+
+
 def derive_point_datasets(
     *,
     series_path_hist,
@@ -160,8 +179,18 @@ def derive_point_datasets(
             "unpublished source -- delete the series and re-run to re-derive."
         )
 
-    ds_hist_time = ds_hist_time.sel(time=slice(*time_tuple_hist))
-    ds_clim_time = ds_clim_time.sel(time=slice(*time_tuple_fut))
+    ds_hist_time = _slice_analysis_window(
+        ds_hist_time,
+        time_tuple_hist,
+        f"{name_model} historical reference",
+        series_path_hist,
+    )
+    ds_clim_time = _slice_analysis_window(
+        ds_clim_time,
+        time_tuple_fut,
+        f"{name_model} {name_scenario} horizon {name_horizon!r}",
+        series_path,
+    )
     # Read the effective reference window off the SAME helper the change
     # arithmetic uses, after the same slice. Not a recomputation: one function,
     # called twice on one dataset.
@@ -435,8 +464,7 @@ if "snakemake" in globals():
             f"{plural(len(horizons), 'horizon')}",
             module="change",
         )
-        # Step 5e / D1: the reference-window record, one finding per row: the
-        # period (and any clip), then its relation to the observed window.
+        # The independent GCM reference period and any historical coverage clip.
         # provenance.json keeps the structured `key=value` copy.
         for _row in reference_window.console_rows(dict(sm.params.reference_record)):
             log_row(_row, module="change")

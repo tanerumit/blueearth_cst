@@ -61,6 +61,11 @@ future_windows:
 
 Inputs are the basin polygon, cataloged CMIP6 data, and the selected model/scenario/member/variable combinations. The reference and future windows define the compared periods. WF2 does not read a scenario collection or model responses.
 
+The GCM `reference_window` is independent of the ERA5 or other observed `climate.window`; the periods
+need not match and WF2 does not compare them. Calendar years are inclusive: 1985–2004 is 20 years.
+An empty reference or horizon slice raises an error naming the GCM series, requested window and available
+dates; it never substitutes the observed climate record or silently drops a requested combination.
+
 ## Outputs
 
 WF2 retains the acquired slices and basin monthly series, a change-factor product by model, scenario, and horizon, projection figures, and merged logs and benchmarks. Interpret these as plausibility context alongside the response surface, not as forcing for its simulations.

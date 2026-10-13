@@ -55,14 +55,17 @@ def hydrological_year_bounds(ds_time, start_month_hyd_year="Jan"):
     window and must report the window the change factors actually used — a second
     implementation would eventually disagree with the numbers it annotates.
 
-    The count is exact by construction rather than by date arithmetic: ``end`` is
-    the start month of the final year minus one month, so the span is precisely
-    ``last_year - first_year`` complete hydrological years.
+    Bounds include every complete water year contained in the monthly record;
+    leading and trailing partial years are dropped.
 
     Returns ``(start, end, n_hydrological_years)``.
     """
     import pandas as pd
 
+    if len(ds_time["time"].values) == 0:
+        raise ValueError(
+            "Cannot determine complete hydrological years from an empty time axis"
+        )
     data_start = pd.Timestamp(ds_time["time"].values[0])
     data_end = pd.Timestamp(ds_time["time"].values[-1])
 

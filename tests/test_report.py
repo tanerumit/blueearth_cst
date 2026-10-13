@@ -42,7 +42,6 @@ def _lines(doc, **kw):
     [
         "Reference window",
         "Effective window",
-        "Alignment",
         "Window length",
         "Spatial weighting",
         "Approximation",
@@ -129,12 +128,13 @@ def test_unresolved_combinations_are_broken_down_by_status():
     assert "62 of 92" in text and "30 scenario_not_published" in text
 
 
-def test_matching_alignment_says_matches():
+def test_report_ignores_legacy_observed_window_alignment():
     doc = dict(CLEAN_RUN)
     doc["reference_window"] = dict(
         CLEAN_RUN["reference_window"], reference_alignment="matches"
     )
-    assert "matches `shared.historical_window`" in _lines(doc)
+    assert "shared.historical_window" not in _lines(doc)
+    assert "Alignment" not in _lines(doc)
 
 
 # --- whole report --------------------------------------------------------------

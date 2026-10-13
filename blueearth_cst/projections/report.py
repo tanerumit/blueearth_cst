@@ -72,19 +72,6 @@ def disclaimer_block(provenance, thresholds=None, max_flagged_months=None) -> li
         f"  Effective window `{effective}`, {n_years} complete hydrological years."
     )
 
-    alignment = reference.get("reference_alignment", "?")
-    shared = reference.get("shared_historical_window", "?")
-    if alignment == "matches":
-        lines.append(
-            f"- **Alignment** — matches `shared.historical_window` ({shared})."
-        )
-    else:
-        lines.append(
-            f"- **Alignment** — **differs** from `shared.historical_window` "
-            f"({shared}). The reference used here is the projections window, not "
-            "the wflow forcing window."
-        )
-
     try:
         short = int(n_years) < 20
     except (TypeError, ValueError):

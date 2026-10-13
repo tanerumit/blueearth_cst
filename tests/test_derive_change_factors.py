@@ -26,6 +26,7 @@ from blueearth_cst.projections.derive_change_factors import (
 )
 from blueearth_cst.projections.get_change_climate_proj import (
     get_change_monthly_clim_proj,
+    hydrological_year_bounds,
 )
 
 
@@ -89,6 +90,62 @@ def test_monthly_factors_use_the_reported_complete_water_years(
                 .expand_dims("horizon")
             )
             assert monthly.to_netcdf(engine="scipy") == legacy.to_netcdf(engine="scipy")
+
+
+@pytest.mark.parametrize("future_end", [2039, 2060])
+def test_independent_gcm_windows_and_missing_horizon_diagnostic(tmp_path, future_end):
+    paths, components = [], []
+    for scenario, start, end, value in [
+        ("historical", 1985, 2004, 10.0),
+        ("ssp245", 2015, future_end, 12.0),
+    ]:
+        dates = pd.date_range(f"{start}-01-01", f"{end}-12-01", freq="MS")
+        ds = xr.Dataset(
+            {"precip": ("time", np.full(len(dates), value))}, coords={"time": dates}
+        ).expand_dims(
+            scenario=[scenario], member=["r1"], model=["model"], clim_project=["cmip6"]
+        )
+        identity = {"scenario": scenario}
+        ds.attrs.update(
+            cst_calendar="noleap",
+            cst_schema_version=si.SCHEMA_VERSION,
+            cst_series_digest=si.series_digest(identity, "region"),
+        )
+        path = tmp_path / f"{scenario}.nc"
+        ds.to_netcdf(path)
+        paths.append(path)
+        components.append(identity)
+    kwargs = dict(
+        series_path_hist=paths[0],
+        series_path=paths[1],
+        time_tuple_hist=("1985", "2004"),
+        time_tuple_fut=("2040", "2060"),
+        name_horizon="near",
+        name_model="model",
+        name_scenario="ssp245",
+        region_fp="region",
+        digest_components_hist=components[0],
+        digest_components_fut=components[1],
+        stats=["mean"],
+    )
+    if future_end == 2039:
+        with pytest.raises(ValueError) as caught:
+            derive_point_datasets(**kwargs)
+        message = str(caught.value)
+        assert "model ssp245 horizon 'near'" in message
+        assert "2040..2060" in message and "2015-01-01..2039-12-01" in message
+        assert str(paths[1]) in message
+    else:
+        annual, monthly, facts = derive_point_datasets(**kwargs)
+        assert facts[2] == 20
+        np.testing.assert_allclose(annual.precip.sel(stats="mean"), 20.0)
+        np.testing.assert_allclose(monthly.precip.sel(stats="mean"), 20.0)
+
+
+def test_empty_hydrological_time_axis_has_a_clear_error():
+    dataset = xr.Dataset(coords={"time": pd.DatetimeIndex([])})
+    with pytest.raises(ValueError, match="empty time axis"):
+        hydrological_year_bounds(dataset)
 
 
 def test_flagged_months_uses_tidy_model_identity_and_counts_distinct_months():

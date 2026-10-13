@@ -1,8 +1,8 @@
 """Reference-window clip and warning tests for step 5e (design §5.4 D1).
 
 The seed config exercises **none** of the warning paths — `[1990, 2010]` needs no
-clip, is exactly 20 years, and differs from `shared.historical_window` in the way
-that must stay off stderr. So every condition D1 names lives here, not in the tree
+clip and includes 21 calendar years. Observed climate windows are independent.
+The warning conditions live here, not in the tree
 diff. Falsifiers K3–K6 of `dev/records/milestones/r08/2026-07-30_wf2-5e-falsifier.md`.
 """
 
@@ -57,7 +57,7 @@ def test_K4_window_entirely_after_the_historical_end_raises():
 
 def test_K4_a_window_ending_exactly_at_the_boundary_is_not_an_error():
     w = clip_reference_window([2000, HISTORICAL_END_YEAR])
-    assert w.clipped is False and w.n_years == HISTORICAL_END_YEAR - 2000
+    assert w.clipped is False and w.n_years == HISTORICAL_END_YEAR - 2000 + 1
 
 
 # --- K5: alignment is silent by default, promoted only when the clip broke it --
@@ -69,40 +69,50 @@ def test_K5_alignment_difference_alone_does_NOT_warn():
     assert window_warnings(w, shared_window=SEED_SHARED) == []
 
 
-def test_K5_but_the_difference_IS_recorded_durably():
-    """Silence and absence are different failures."""
+def test_observed_window_is_not_recorded_as_a_gcm_reference_constraint():
+    """Legacy callers cannot reintroduce the observed-window comparison."""
     record = alignment_record(clip_reference_window(SEED_REQUESTED), SEED_SHARED)
-    assert record["reference_alignment"] == "differs"
-    assert record["shared_historical_window"] == "2000-2020"
+    assert "reference_alignment" not in record
+    assert "shared_historical_window" not in record
     assert record["reference_window_effective"] == "1990-2010"
 
 
-def test_K5_alignment_IS_promoted_when_the_clip_is_what_broke_it():
-    """The user plausibly intended alignment and did not get it."""
+def test_clipping_never_warns_about_observed_window_alignment():
+    """Clipping is a GCM coverage issue, independent of observed climate."""
     shared = [2000, 2030]
     lines = window_warnings(clip_reference_window([2000, 2030]), shared_window=shared)
-    assert any("no longer aligns" in line for line in lines)
+    assert not any("align" in line for line in lines)
 
 
 def test_K5_matching_windows_record_as_matching():
     record = alignment_record(clip_reference_window([2000, 2010]), [2000, 2010])
-    assert record["reference_alignment"] == "matches"
+    assert "reference_alignment" not in record
 
 
 # --- K6: the short-window boundary the seed sits exactly on -------------------
 
 
-def test_K6_the_seed_window_of_exactly_20_years_does_NOT_warn():
+def test_K6_the_seed_window_includes_both_calendar_endpoints():
     """An off-by-one here is invisible on the fixture and wrong everywhere else."""
     w = clip_reference_window(SEED_REQUESTED)
-    assert w.n_years == 20
+    assert w.n_years == 21
     assert not any("Short reference window" in line for line in window_warnings(w))
 
 
 def test_K6_nineteen_years_does_warn():
-    w = clip_reference_window([1991, 2010])
+    w = clip_reference_window([1992, 2010])
     assert w.n_years == 19
     assert any("Short reference window" in line for line in window_warnings(w))
+
+
+def test_user_reference_window_has_twenty_inclusive_years():
+    from blueearth_cst.projections.reference_window import console_rows
+
+    window = clip_reference_window([1985, 2004])
+    assert window.n_years == 20
+    record = alignment_record(window, [1951, 2020])
+    assert console_rows(record) == ["Reference period 1985-2004 (20 years)"]
+    assert window_warnings(window, shared_window=[1951, 2020]) == []
 
 
 def test_K6_a_clipped_window_can_trigger_BOTH_warnings():
@@ -138,7 +148,6 @@ def test_console_rows_state_the_period_then_its_alignment():
     }
     assert console_rows(record) == [
         "Reference period 1985-2014 (29 years)",
-        "Reference period differs from the observed historical window 2000-2016",
     ]
 
 

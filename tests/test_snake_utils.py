@@ -2802,13 +2802,8 @@ def test_console_finish_line_drops_the_num_suffix_the_banner_drops():
     assert "[rlz 1 | st 2]" in out and "rlz_num" not in out
 
 
-def test_console_finish_line_drops_the_key_suffix_the_banner_drops():
-    """`series_key` is the WILDCARD's name; `series` is the console's, on both lines.
-
-    WF2's banners write `series {wildcards.series_key}`, so a finish line
-    rendering the raw key put `[series_key cmip6_x]` directly under
-    `[series cmip6_x]` -- the `_num` defect one suffix along.
-    """
+def test_console_finish_line_shows_series_identifier_without_label():
+    """CMIP6 identifiers remain visible without a redundant series label."""
     handler = _console_handler()
     out = _emit(
         handler,
@@ -2816,7 +2811,8 @@ def test_console_finish_line_drops_the_key_suffix_the_banner_drops():
         _console_record(event="job_finished", job_id=1),
         _console_record(event="progress", done=1, total=1),
     )
-    assert "[series cmip6_x]" in out and "series_key" not in out
+    assert "[cmip6_x]" in out
+    assert "[series " not in out and "series_key" not in out
 
 
 def test_console_finish_line_drops_the_id_suffix_the_banner_drops():

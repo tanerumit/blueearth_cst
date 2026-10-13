@@ -2,7 +2,9 @@
 # Schema: ~/workspace/brain/artifacts/skills/testing-policy/references/configuration.md
 #
 # rapid — focused checks per task; fast plus affected contracts at ordinary merges.
-# Full and all-five execution cover broad behavior changes, releases and milestones.
+# CI owns full software coverage; local full adds only needed extra coverage.
+# All-five execution covers changes to several workflow handoffs or shared runtime.
+# Release/milestone labels alone add no tests; reuse applicable candidate evidence.
 # Classify the delta since applicable verification, not the preceding batch or folder.
 # The per-gate commands: AGENTS.md, validation ladder.
 scope: rapid

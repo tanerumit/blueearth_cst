@@ -125,6 +125,111 @@ Or run the small test model directly:
 pixi run python scripts/run_workflow.py build_model --config test_case/project_config_baseline.yml --project-dir test_case/test_local --cores 1
 ```
 
+## Session runtimes
+
+Session creation preserves separate Git worktrees, fixture copies and approval-based landing, but
+does not provision a runtime automatically. Existing `.pixi` environments are left in place. Start a
+task through the configured Git workflow launcher; use `--no-reseed` only when deliberately retaining
+the session's existing fixture snapshot. Session allocation and runtime selection are separate choices.
+
+For a clean, detached slot allocated by the user, run from the primary checkout (replace the skill
+directory and task name with the resolved local values), then enter the worktree reported by the tool:
+
+```powershell
+$gitWorkflow = '<resolved git-workflow skill directory>'
+& .pixi/envs/default/python.exe "$gitWorkflow/scripts/worktree-session.py" task-start --task example --session session-2 --base main --no-launch
+Set-Location 'C:/Users/taner/workspace/.worktrees/blueearth_cst/session-2'
+```
+
+Do not claim an occupied slot. All three kinds of work below start this way; select the runtime only
+after entering the session. Artifact work needing no tools stops before installation or borrowing.
+
+| Work | Runtime |
+|---|---|
+| Text, task records, or artifacts needing no executable checks | No installation |
+| Source checks/artifacts; unchanged dependencies | Borrow a stable runtime, or use the existing local one |
+| Dependency changes, install tests, incompatible contracts, workflow qualification | Isolated environment |
+
+### Borrow a stable runtime for development checks
+
+The owner of the lending checkout owns all installation state: Pixi packages, the out-of-lock R
+`weathergenr` installation, Graphviz aliases and Julia package/artifact installation. Before lending,
+the owner finishes `pixi install --locked`, `pixi run install`, activation and
+`pixi run python dev/scripts/check_env.py`. Keep that checkout's dependency files and installation
+unchanged until all borrowers finish. Coordinate that interval with its owner; never lend a checkout
+whose owner is changing dependencies. A verified primary checkout can be the lender between upgrades.
+
+From the **borrowing session's root**, using PowerShell:
+
+```powershell
+$runtime = 'C:/Users/taner/workspace/blueearth_cst'
+& "$runtime/.pixi/envs/default/python.exe" -B dev/scripts/session_runtime.py --runtime-root $runtime -- python -m pytest tests/test_cli.py
+& "$runtime/.pixi/envs/default/python.exe" -B dev/scripts/session_runtime.py --runtime-root $runtime -- ruff check .
+```
+
+Use the corresponding `<runtime>/.pixi/envs/default/bin/python` bootstrap on Linux. The bootstrap runs
+only standard-library coordination code; the child receives Pixi activation. The helper compares
+TOML values in `pixi.toml` and both Julia project files, and newline-normalized text in `pixi.lock`,
+the R installer and Windows activation script. Any difference fails before Pixi is invoked. This conservative
+check also rejects task-only manifest changes. It checks contract equality, not the health of an
+arbitrarily modified installation; the owner's provisioning and verification remain prerequisites.
+
+TOML comments and formatting do not affect compatibility.
+The helper runs an **executable**, so spell checks out as `python -m pytest ...`, `ruff ...`, or
+`Rscript --vanilla ...`; Pixi task names such as `test-fast` are not expanded. It uses
+`pixi run --as-is --executable --manifest-path <runtime>/pixi.toml`, preserving the session's working
+directory and preventing lock updates and installations. It prints the actual imported Python source
+path and rejects imports outside the session. `blueearth_cst` is not an editable installation.
+Do not use a lending checkout's named Pixi task directly: named tasks normally execute at that
+checkout's manifest root. Pixi documents these flags in its
+[run reference](https://pixi.sh/latest/reference/cli/pixi/run/).
+
+`PYTHONPATH` points at the session, user Python packages and bytecode writes are disabled, and the
+intended Julia project is the session's `Project.toml`. Use `--project=.` for Julia commands, as the
+workflow already does. Julia writes caches into a session-local first depot and reads installed
+packages/artifacts from the existing depots. R uses the lending Pixi library; invoke it with
+`--vanilla` to avoid personal startup files. The helper clears ambient `R_LIBS`/`R_LIBS_SITE` and disables the
+personal R library. Matplotlib, XDG/Cartopy, Numba, PROJ and Ruff caches live in
+`.tmp/session-runtime/`; pytest retains
+its existing unique, session-local `.tmp/pytest/run-*` directories. Give application outputs explicit
+session-local paths. External data mirrors remain external resources and must not be modified by
+checks. Existing fixture copies remain independent; do not execute workflows into another session's
+`test_local` tree.
+
+Borrowing is cooperative development tooling, not a filesystem sandbox. The helper blocks common
+installer commands, but arbitrary Python/R/Julia code can still write to installed packages. Do not
+run installers, package-manager APIs, or dependency-mutating checks through it. Do not use borrowed
+checks as evidence that a session installs successfully. Full workflow qualification continues to
+use an isolated session environment and the validation ladder's required execution coverage.
+
+### Use or return to isolated execution
+
+No `.pixi` link, environment relocation, or persistent shell change is made by borrowing. From the
+session root, use the ordinary commands to switch back:
+
+```powershell
+pixi install --locked
+pixi run install
+pixi run python dev/scripts/check_env.py
+pixi run pytest tests/test_cli.py
+```
+
+For an intentional dependency change, edit the session's manifest, run `pixi install` to solve its
+lock, and retain both in the same change. R install changes stay in that session's Pixi library.
+Julia's default depot is machine-wide even with an isolated Pixi prefix: when testing Julia
+installation itself, set `JULIA_DEPOT_PATH` to a fresh ignored session-local directory **before**
+`pixi run install-julia`, and retain it while checking that installation. Never edit shared Julia
+packages in place. After dependency work is accepted, only the runtime owner upgrades the lending
+environment, with no active borrowers; reverify before lending again.
+
+Keep the configured session capacity; unprovisioned slots are cheap compared with installed runtimes.
+A separate lightweight dependency set would add another lock/qualification burden. Pixi's detached
+environment setting relocates prefixes; it does not by itself make workspaces share one environment.
+Conda hard links can already share package bytes with the machine cache, so logical prefix sizes
+overstate marginal disk cost, while every prefix still adds directory entries and private files.
+Do not copy or junction `.pixi` directories. See the retained worktree-runtime task evidence for the
+measured sizes and limitations; no existing environment, fixture, output or worktree is removed.
+
 ## Troubleshooting
 
 - **`Python was not found`** when running a workflow command → prefix it with

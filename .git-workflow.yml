@@ -63,12 +63,11 @@ worktree_link:
   - .codex
   - .agents
 
-# Build the environment inside each new worktree.
-# Provisioning failures are reported but do not remove the worktree.
-# Skip once with `--no-provision`.
-worktree_provision:
-  - pixi install
-  - pixi run install
+# Source/artifact sessions do not automatically need a full runtime.
+# Opt into isolated provisioning for dependency/installation work, or borrow a
+# compatible stable runtime with dev/scripts/session_runtime.py. See
+# docs/site/setup/install.md, "Session runtimes". Never link/copy .pixi prefixes.
+worktree_provision: []
 
 # Verify a newly provisioned environment with:
 # pixi run python dev/scripts/check_env.py --all

@@ -510,7 +510,7 @@ def test_a_stall_under_an_open_bar_redraws_it_instead_of_beeping(tmp_path, monke
     rc = run_and_tee([sys.executable, "-c", snippet], tmp_path / "stall.log")
     assert rc == 0
 
-    assert "no output for" not in err.getvalue()
+    assert "elapsed" not in err.getvalue()
     assert "done in" not in err.getvalue()
     # The bar was redrawn in place: more 0.0% frames than the child ever sent,
     # and still one console line for all of them.
@@ -531,7 +531,7 @@ def test_a_stall_with_no_bar_open_still_says_so(tmp_path, monkeypatch):
     rc = run_and_tee([sys.executable, "-c", snippet], tmp_path / "quiet.log")
 
     assert rc == 0
-    assert "no output for" in err.getvalue()
+    assert "elapsed" in err.getvalue()
 
 
 def test_off_a_terminal_a_finished_wflow_bar_is_still_a_console_row(

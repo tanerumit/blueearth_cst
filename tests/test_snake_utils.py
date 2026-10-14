@@ -1502,23 +1502,24 @@ def _wait_for_notice(capsys, seconds=2.0):
     """Collect stderr until a watchdog notice appears (or ``seconds`` pass)."""
     err = ""
     deadline = time.monotonic() + seconds
-    while "no output for" not in err and time.monotonic() < deadline:
+    while "elapsed" not in err and time.monotonic() < deadline:
         time.sleep(0.02)
         err += capsys.readouterr().err
     return err
 
 
-def test_noninteractive_heartbeat_reports_sparse_silence_without_summary():
+def test_noninteractive_heartbeat_reports_elapsed_without_summary():
     stream = io.StringIO()
     hb = _driven("2.05_merge", stream)
-    _tick_through(hb, *range(1, 7))  # cross the 2x and 5x sparse-notice thresholds
+    _tick_through(hb, *range(1, 7))
     lines = stream.getvalue().splitlines()
     assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge "
-        r"\d:\d\d:\d\d elapsed · no output for \d:\d\d:\d\d",
+        r"\d\d:\d\d:\d\d - execution - Rule 2\.05: merge "
+        r"\d:\d\d:\d\d elapsed",
         lines[0],
     ), lines[0]
-    assert len(lines) == 2
+    assert len(lines) == 6
+    assert "no output for" not in stream.getvalue()
     assert "done in" not in stream.getvalue()
     assert "2.05_merge" not in stream.getvalue()
 
@@ -1529,43 +1530,42 @@ def test_heartbeat_suppressed_while_active():
     for t in range(1, 7):  # output lands just before every tick
         hb._last = t - 0.1
         hb._tick(float(t))
-    assert "no output for" not in stream.getvalue()
+    assert "elapsed" not in stream.getvalue()
 
 
 def _still_running(stream):
-    return [line for line in stream.getvalue().splitlines() if "no output for" in line]
+    return [line for line in stream.getvalue().splitlines() if "elapsed" in line]
 
 
-def test_heartbeat_notices_back_off():
-    """A long silence is ONE situation, not one situation per minute.
-
-    Measured 2026-09-06: a machine that hibernated mid-run woke to 535 notices
-    per job over an 8h55m gap, every one the same sentence with a different
-    number. Eighteen intervals of silence on a redirected stream report at 2,
-    5 and 10 intervals -- three notices where a fixed interval would print 17.
-    """
+def test_heartbeat_notices_keep_a_fixed_interval():
+    """Redirected streams receive an elapsed row on every quiet interval."""
     stream = io.StringIO()
     hb = _driven("2.04_fetch_cmip6_projections", stream)
     _tick_through(hb, *range(1, 19))
-    assert len(_still_running(stream)) == 3, stream.getvalue()
+    assert len(_still_running(stream)) == 18, stream.getvalue()
 
 
-def test_heartbeat_sparse_schedule_is_what_thins_the_notices(monkeypatch):
-    """Non-vacuity: replacing the sparse schedule restores line-per-tick noise."""
-    monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_MULTIPLIERS", (1.0,))
-    monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_STEP", 1.0)
+def test_heartbeat_defaults_to_fifteen_second_updates(monkeypatch):
+    monkeypatch.delenv("CST_HEARTBEAT_SECS", raising=False)
+    stream = io.StringIO()
+    hb = _Heartbeat("2.05b_prepare_projection_analysis", stream)
+    hb._start = hb._last = hb._seen = 0.0
+    _tick_through(hb, 14, 15, 29, 30, 44, 45)
+    lines = _still_running(stream)
+    assert len(lines) == 3
+    assert [line.rsplit(" ", 2)[-2] for line in lines] == [
+        "0:00:15",
+        "0:00:30",
+        "0:00:45",
+    ]
+
+
+def test_heartbeat_first_notice_lands_at_one_interval():
     stream = io.StringIO()
     hb = _driven("2.04_fetch_cmip6_projections", stream)
-    _tick_through(hb, *range(1, 19))
-    assert len(_still_running(stream)) == 18
-
-
-def test_heartbeat_first_notice_lands_at_two_intervals():
-    stream = io.StringIO()
-    hb = _driven("2.04_fetch_cmip6_projections", stream)
-    hb._tick(1.0)
+    hb._tick(0.9)
     assert not _still_running(stream)
-    hb._tick(2.0)
+    hb._tick(1.0)
     assert len(_still_running(stream)) == 1
 
 
@@ -1585,20 +1585,17 @@ def test_heartbeat_thread_reports_a_real_silence():
     assert len(_still_running(stream)) == 1
 
 
-def test_heartbeat_backoff_resets_when_output_resumes():
-    """A new silence is a new question, answered at the base interval again.
-
-    Without the reset, a job that went quiet, spoke, then hung would wait out
-    the previous silence's inflated threshold before saying so -- which is the
-    watchdog failing at exactly the moment it exists for.
-    """
+def test_heartbeat_interval_resets_when_output_resumes():
+    """Output resuming resets the next notice to one quiet interval later."""
     stream = io.StringIO()
     hb = _driven("2.04_fetch_cmip6_projections", stream)
-    _tick_through(hb, *range(1, 11))  # notices at 2, 5, 10; next would be 20
-    assert len(_still_running(stream)) == 3
-    hb._last = 10.5  # output resumed: the gap closes and the backoff resets
-    _tick_through(hb, 11, 12, 13)  # the NEW silence reaches two intervals at 12.5
-    assert len(_still_running(stream)) == 4
+    _tick_through(hb, *range(1, 11))
+    assert len(_still_running(stream)) == 10
+    hb._last = 10.5
+    hb._tick(11.0)
+    assert len(_still_running(stream)) == 10
+    hb._tick(11.5)
+    assert len(_still_running(stream)) == 11
 
 
 def test_heartbeat_hands_a_stall_to_the_bar_when_one_is_open():
@@ -1622,7 +1619,7 @@ def test_heartbeat_still_beeps_when_the_hook_declines():
     hb = _driven("3.06_weathergen", stream, on_stall=lambda: False)
     _tick_through(hb, 1, 2)
 
-    assert "no output for" in stream.getvalue()
+    assert "elapsed" in stream.getvalue()
 
 
 def test_heartbeat_records_the_quiet_period_even_when_the_bar_answered_it():
@@ -1658,7 +1655,7 @@ def test_heartbeat_reports_no_failure_for_systemexit_zero(tmp_path, capsys):
             err = _wait_for_notice(capsys)
             raise SystemExit(0)
     err += capsys.readouterr().err
-    assert "no output for" in err and "failed after" not in err
+    assert "elapsed" in err and "failed after" not in err
     assert "done in" not in err
 
 
@@ -1974,8 +1971,8 @@ def test_tee_to_log_heartbeat_goes_to_console_not_log(tmp_path, capsys):
         err = _wait_for_notice(capsys)  # silence triggers a console heartbeat
     err += capsys.readouterr().err
     logged = log.read_text(encoding="utf-8")
-    assert "no output for" in err and "done in" not in err
-    assert "no output for" not in logged and "done in" not in logged
+    assert "elapsed" in err and "done in" not in err
+    assert "elapsed" not in logged and "done in" not in logged
 
 
 # ---------------------------------------------------------------------------
@@ -4140,7 +4137,7 @@ def test_heartbeat_redraws_a_routine_status_frame_without_an_all_clear():
         hb._tick(t)
     hb._clear_status()  # what stop() does on a clean finish
     out = _unreset(stream.getvalue())
-    assert out.count("no output for") >= 2
+    assert out.count("elapsed") >= 2
     assert "done in" not in out
     assert f"\033[{su._ANSI_FAIL}m" not in out
     assert "\r" in stream.getvalue()

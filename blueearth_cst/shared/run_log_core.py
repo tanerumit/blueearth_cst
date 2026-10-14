@@ -472,19 +472,13 @@ def _heartbeat_identity(label):
     return f"{identity}  [{part}]"
 
 
-_HEARTBEAT_SPARSE_MULTIPLIERS = (2.0, 5.0, 10.0)
-_HEARTBEAT_SPARSE_STEP = 10.0
-
-
 class _Heartbeat:
     """Silence watchdog that keeps a long-running rule visibly alive.
 
     Snakemake prints only a start and a finish timestamp, so a hung job looks
     identical to a slow one until it (never) finishes. On a terminal this daemon
     maintains one replaceable status frame. On a redirected stream it emits
-    sparse durable rows after 2, 5 and 10 intervals, then every 10 intervals.
-    Both forms report the observable fact — time since output — rather than
-    guessing whether the process is healthy.
+    durable rows every interval. Both forms report elapsed execution time.
 
     Silence-triggered, not periodic: callers stamp ``touch()`` on every real
     write, so a rule that is actively logging or drawing a progress bar keeps
@@ -497,7 +491,7 @@ class _Heartbeat:
     interval without touching a Snakefile.
     """
 
-    def __init__(self, label, stream, interval=60.0, on_stall=None):
+    def __init__(self, label, stream, interval=15.0, on_stall=None):
         self._label = label
         self._stream = stream
         #: Called INSTEAD of printing the notice; a truthy return means the
@@ -524,7 +518,6 @@ class _Heartbeat:
         self._noticed = False
         # The notice schedule, advanced by `_tick`; `_run` resets it on start.
         self._quiet_since = None
-        self._sparse_index = 0
         self._next_notice = self._first_notice()
         self._seen = self._last
         self._stop = threading.Event()
@@ -581,7 +574,7 @@ class _Heartbeat:
         # three. The identity is the job's console spelling (`_heartbeat_identity`).
         row = _log_row_text(
             f"{datetime.now():%H:%M:%S}",
-            "heartbeat",
+            "execution",
             "INFO",
             f"{_heartbeat_identity(self._label)} {text}",
         )
@@ -611,9 +604,7 @@ class _Heartbeat:
 
     def _first_notice(self):
         """Silence length at which a fresh silence is first reported."""
-        if self._interactive:
-            return self._interval
-        return self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[0]
+        return self._interval
 
     def _run(self):
         """Wake every interval and hand the current time to :meth:`_tick`."""
@@ -622,20 +613,15 @@ class _Heartbeat:
         # ticks so one contiguous silence yields ONE recorded period no
         # matter how many notices it prints.
         self._quiet_since = None
-        self._sparse_index = 0
         self._next_notice = self._first_notice()
         # The last `touch()` this loop has already accounted for. Resumption is
         # detected by this value CHANGING, not by catching a tick while
         # `now - last < interval`: the thread wakes every `interval` and the
         # gap it is measuring is also `interval`, so whether any tick lands
         # inside a short burst of output is down to alignment. It was a coin
-        # flip before 2026-09-06, which mattered little when the only cost was
-        # a quiet period recorded late, and matters now that the sparse schedule
-        # resets with it -- a missed reset delays the next silence report.
+        # flip before 2026-09-06. A missed reset delays the next silence report.
         self._seen = self._last
-        # The THREAD still wakes every interval. Backing the wake off too would
-        # blind the watchdog to output resuming, and `_next_notice` could then
-        # be half an hour stale when the next silence began.
+        # Wake every interval so output resuming resets the notice schedule.
         while not self._stop.wait(self._interval):
             self._tick(time.monotonic())
         if self._quiet_since is not None:
@@ -658,7 +644,6 @@ class _Heartbeat:
             if self._quiet_since is not None:
                 self._quiet.append((self._quiet_since, last))
                 self._quiet_since = None
-            self._sparse_index = 0
             self._next_notice = self._first_notice()
             self._seen = last
         silence = now - last
@@ -682,19 +667,10 @@ class _Heartbeat:
                 return
             self._noticed = True
             self._emit(
-                f"{format_elapsed(now - self._start)} elapsed · "
-                f"no output for {format_elapsed(silence)}",
+                f"{format_elapsed(now - self._start)} elapsed",
                 redraw=self._interactive,
             )
-            if self._interactive:
-                self._next_notice += self._interval
-            elif self._sparse_index + 1 < len(_HEARTBEAT_SPARSE_MULTIPLIERS):
-                self._sparse_index += 1
-                self._next_notice = (
-                    self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[self._sparse_index]
-                )
-            else:
-                self._next_notice += self._interval * _HEARTBEAT_SPARSE_STEP
+            self._next_notice += self._interval
 
     def start(self):
         if self._enabled:
@@ -1238,7 +1214,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
     ``shared/wflow_progress.jl``) are re-rendered here as the house progress bar;
     see :class:`~blueearth_cst.shared.progress.WflowFrameRelay`. While such a bar
     is open the silence watchdog redraws it instead of printing its own
-    ``no output for`` status (``_bar_tick``), and every console write is padded
+    elapsed-time status (``_bar_tick``), and every console write is padded
     over whatever frame is standing on the line (``_pad_line_over``).
 
     A *pure* trailing run of benign interpreter-shutdown excepthook noise (see
@@ -1388,7 +1364,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
         def _bar_tick():
             """Answer a stall by redrawing the open bar; False if there is none.
 
-            The watchdog's `1m00s elapsed · no output for 1m00s` and a live bar carry
+            The watchdog's elapsed-time status and a live bar carry
             the same fact, and printing the first onto the second's line is what
             leaves a row with a frame's tail hanging off it. So while a bar is
             open the stall is answered IN the bar, and the notice is kept for
@@ -1652,7 +1628,7 @@ def _is_clean_exit(exc) -> bool:
 
 
 @contextlib.contextmanager
-def tee_to_log(log_path, heartbeat_interval=60.0):
+def tee_to_log(log_path, heartbeat_interval=15.0):
     """Tee ``sys.stdout``/``sys.stderr`` to ``log_path`` for a ``script:`` rule.
 
     Snakemake does not auto-redirect ``script:`` output to the rule's ``log:``
@@ -1690,7 +1666,7 @@ def tee_to_log(log_path, heartbeat_interval=60.0):
         Destination log file. Callers pass the rule's unique
         ``snakemake.log[0]`` so concurrent jobs never share a path.
     heartbeat_interval : float
-        Seconds of silence before the console heartbeat fires (default 60).
+        Seconds of silence before the console timer updates (default 15).
     """
     log_path = os.fspath(log_path)
     parent = os.path.dirname(log_path)

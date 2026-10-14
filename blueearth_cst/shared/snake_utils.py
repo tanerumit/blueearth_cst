@@ -65,8 +65,6 @@ from blueearth_cst.shared.run_log_core import (
     _FIGURE_BUNDLES,
     _FORCING_EXISTS_RE,
     _HEARTBEAT_LABEL_RE,
-    _HEARTBEAT_SPARSE_MULTIPLIERS,
-    _HEARTBEAT_SPARSE_STEP,
     _HYDROMT_LOG_RE,
     _JULIA_RECORD_HEAD,
     _JULIA_RECORD_MID,

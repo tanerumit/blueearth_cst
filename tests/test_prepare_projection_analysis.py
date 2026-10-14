@@ -14,6 +14,39 @@ from blueearth_cst.projections import series_identity
 from blueearth_cst.projections.get_change_climate_proj import analysis_windows
 
 
+def test_skipped_product_messages_explain_and_group_windows():
+    availability = pd.DataFrame(
+        [
+            {
+                "filename": "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png",
+                "window_id": window,
+                "available": False,
+                "reason": "no model with two eligible member ratios",
+            }
+            for window in ("2041-2060", "2081-2100")
+        ]
+        + [
+            {
+                "filename": "cmip6_ensemble_coverage_basin_avg.png",
+                "window_id": "",
+                "available": False,
+                "reason": "no resolved members",
+            },
+            {
+                "filename": "cmip6_temp_annual_overview_basin_avg.png",
+                "window_id": "",
+                "available": True,
+                "reason": "",
+            },
+        ]
+    )
+    assert list(producer.skipped_product_messages(availability)) == [
+        "Annual variability member-ratio boxplots skipped (2041-2060, 2081-2100): "
+        "no model has at least two eligible ensemble members",
+        "Availability skipped: no resolved members",
+    ]
+
+
 def _series(path, start, count, scenario, components, region):
     years = np.arange(count) // 12
     dataset = xr.Dataset(

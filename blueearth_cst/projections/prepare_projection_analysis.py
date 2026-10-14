@@ -19,6 +19,7 @@ from blueearth_cst.projections.get_change_climate_proj import (
     hydrological_year_bounds,
 )
 from blueearth_cst.projections.projection_coverage import coverage_table
+from blueearth_cst.projections.projection_figures import figure_key
 from blueearth_cst.projections.series_checks import (
     assert_calendar_agreement,
     load_checked_series,
@@ -315,6 +316,23 @@ def prepare_tables(
     return tables, record
 
 
+def skipped_product_messages(availability):
+    """Explain skipped products once per product/reason, with affected windows."""
+    missing = availability.loc[~availability.available]
+    for (filename, reason), group in missing.groupby(
+        ["filename", "reason"], sort=False
+    ):
+        key = figure_key(filename)
+        label = key.removesuffix(".png").replace("-", " ")
+        if key == "variability-member-ratios.png":
+            label = "Annual variability member-ratio boxplots"
+            if reason == "no model with two eligible member ratios":
+                reason = "no model has at least two eligible ensemble members"
+        windows = list(dict.fromkeys(w for w in group.window_id if w))
+        scope = f" ({listed(windows)})" if windows else ""
+        yield f"{label[0].upper() + label[1:]} skipped{scope}: {reason}"
+
+
 def run(sm):
     """Assert declared inputs, write every table, and log bounded summaries."""
     points = [dict(point) for point in sm.params.points]
@@ -370,11 +388,8 @@ def run(sm):
         f"Available {plural(available, 'product')}; not produced {len(missing)}",
         module="analysis",
     )
-    if not missing.empty:
-        log_row(
-            f"Not produced: {listed(missing.filename.tolist())}; see analysis_record.json",
-            module="analysis",
-        )
+    for message in skipped_product_messages(tables["availability"]):
+        log_row(message, module="analysis")
     if record["unavailable_members"]:
         log_row(
             f"Unavailable {plural(len(record['unavailable_members']), 'member window')}; see analysis_record.json",

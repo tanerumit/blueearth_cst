@@ -770,6 +770,12 @@ def fetch_raw_slice(
         os.utime(raw_nc_out, None)
         return
 
+    if os.environ.get("BLUEEARTH_CST_LOCAL_INPUTS") == "1":
+        raise RuntimeError(
+            "local-input E2E has no compatible CMIP6 raw slice; "
+            "refresh the bundle instead of fetching remotely"
+        )
+
     # The digest is deliberately NOT echoed here (nor on the cache-hit row
     # above): it is stamped on the slice as `cst_raw_digest`, so the durable
     # copy is the file's own, and a 12-char hex prefix identifies nothing a

@@ -53,6 +53,6 @@ members:
 # carries the post-rename names, so `pr` here would not match the pipeline.
 variables:
   precip:
-    units: kg m-2 s-1
+    units: mm/day
   temp:
-    units: K
+    units: degC

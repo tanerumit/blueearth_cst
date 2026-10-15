@@ -4,9 +4,9 @@ type: todo-item
 status: active
 effort: 2
 area: plotting
-queue: 2
+queue: 1
 created: 2026-10-08
-updated: 2026-10-10
+updated: 2026-10-15
 doc: dev/tasks/t2610082103/landscape-and-plan.md
 ---
 

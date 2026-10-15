@@ -4,11 +4,11 @@ The tracked [HTML template](figure-comparison.html) provides side-by-side and dr
 linked zoom and pan, captions inside the canvas, optional canvas boundaries, consistent physical font
 scaling, and the selected source directory. It contains no production paths or session figure data.
 
-Copy it into a disposable review folder from the worktree root:
+Copy it into the owning task's temporary folder from the worktree root (replace `<id>`):
 
 ```powershell
-New-Item -ItemType Directory -Force .tmp/scratchpad/figure-review
-Copy-Item dev/reference/figure-comparison.html .tmp/scratchpad/figure-review/comparison.html
+New-Item -ItemType Directory -Force 'dev/tasks/<id>/.tmp/figure-review'
+Copy-Item dev/reference/figure-comparison.html 'dev/tasks/<id>/.tmp/figure-review/comparison.html'
 ```
 
 Edit the copy's `<title>` and `<h1>` for the active plot group. Replace `const items=[]` with a JSON array

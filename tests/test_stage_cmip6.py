@@ -46,7 +46,7 @@ REGION = FIXTURE / "data" / "spatial" / "geoms" / "region.geojson"
 #: adapter calls them and what the digest therefore carries. `pr`/`tas` are the
 #: raw CMIP6 names and would not match; that mistake is the reason this constant
 #: is spelled out here rather than inlined.
-SEED_VARIABLES = {"precip": {"units": "kg m-2 s-1"}, "temp": {"units": "K"}}
+SEED_VARIABLES = {"precip": {"units": "mm/day"}, "temp": {"units": "degC"}}
 
 
 def _cfg():

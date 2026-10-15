@@ -46,6 +46,8 @@ CAPTURE_RECORD = require_capture("analyze_projections", config_path)
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
 CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_projections")
+# Presentation-only plotting settings are tracked by renderer params below,
+# independently of scientific configuration identity.
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -59,6 +61,10 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="analyze_projections", declared_sections=CONFIG_PROJECTION,
 )
+from blueearth_cst.shared.plot_config import resolve_annotation
+from blueearth_cst.shared.plot_setup import setup_digest
+plot_annotation = resolve_annotation(config)
+plot_setup_digest = setup_digest()
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -70,9 +76,6 @@ project_cfg = config["project"]
 # is where the v1 `shared_cfg` indirection was buying nothing.
 climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["analyze_projections"]
-captioned_figures = get_config(my_cfg, "captioned_figures", False, optional=True)
-if not isinstance(captioned_figures, bool):
-    raise WorkflowError("workflows.analyze_projections.captioned_figures must be bool")
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
@@ -212,7 +215,7 @@ VARIABLE_SPEC = _vs.parse(get_config(my_cfg, "variables", optional=False))
 # reaches the digest components.
 variables = _vs.source_names(VARIABLE_SPEC)
 
-# Water-year start, from the SHARED key so WF2, WF3 and the climate figures
+# Water-year start, from the project climate key so WF2, WF3 and the figures
 # cannot disagree about what an annual value is.
 #
 # The old `workflows.analyze_projections.start_month_hyd_year` is REFUSED, not
@@ -227,9 +230,9 @@ _legacy_hyd = my_cfg.get("start_month_hyd_year")
 if _legacy_hyd is not None:
     raise ValueError(
         "workflows.analyze_projections.start_month_hyd_year has moved to "
-        f"shared.water_year_start (it is now honoured by WF2, WF3 and the "
+        "climate.water_year_start (it is now honoured by WF2, WF3 and the "
         f"climate figures alike). Remove it and set:\n\n"
-        f"    shared:\n      water_year_start: {_legacy_hyd}\n\n"
+        f"    climate:\n      water_year_start: {_legacy_hyd}\n\n"
         "It never reached the change-factor arithmetic before, which always "
         "used Jan, so a non-Jan value will move every change factor once."
     )
@@ -624,10 +627,10 @@ if _best_effort:
     # only the name changes, so the names are what the row lists. Through
     # `defer_warning` for the reason given on the skip report above.
     defer_warning(
-        f"Best-effort, not catalog-certified: {listed(sorted(_best_effort))}. "
-        "The crawl proved only pr/tas present, so a listed member may not "
+        f"Variable availability is unverified for {listed(sorted(_best_effort))}. "
+        "The catalog checks only pr/tas. A listed member may not "
         "publish them -- that fails at read time rather than skipping at "
-        "resolution (design 5.5, ruling A3).", module="resolution"
+        "catalog selection.", module="resolution"
     )
 
 # The series set is DERIVED from resolution, not from the config cross-product.
@@ -828,15 +831,15 @@ declare_path_tokens(
 declare_project_root(project_dir)
 RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
 LOG_RULES = RULES.log_rules
-DELINEATE_REGION = RULES.logged("2.01", "delineate_region")
-DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("2.02", "delineate_subbasins_and_rivers")
-FETCH_CMIP6_PROJECTIONS = RULES.logged("2.03", "fetch_cmip6_projections", summary="download one CMIP6 slice")
-REDUCE_TO_BASIN_AVERAGES = RULES.logged("2.04", "reduce_to_basin_averages", summary="reduce the slice to a basin-average series")
-DERIVE_CHANGE_FACTORS = RULES.logged("2.05", "derive_change_factors", summary="compare each horizon against the reference period")
-PREPARE_PROJECTION_ANALYSIS = RULES.logged("2.05b", "prepare_projection_analysis", summary="prepare analysis-window diagnostics")
-PLOT_CLIMATE_PROJECTIONS = RULES.logged("2.06", "plot_climate_projections")
-GATHER_BENCHMARKS = RULES.banner_only("2.07", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("2.08", "gather_logs")
+DELINEATE_REGION = RULES.logged("2.01", "delineate_region", summary="delineate the basin boundary")
+DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("2.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
+FETCH_CMIP6_PROJECTIONS = RULES.logged("2.03", "fetch_cmip6_projections", summary="acquire one basin slice")
+REDUCE_TO_BASIN_AVERAGES = RULES.logged("2.04", "reduce_to_basin_averages", summary="compute basin-average climate series")
+DERIVE_CHANGE_FACTORS = RULES.logged("2.05", "derive_change_factors", summary="compare each future window with the reference period")
+PREPARE_PROJECTION_ANALYSIS = RULES.logged("2.05b", "prepare_projection_analysis", summary="compute projection diagnostics and figure eligibility")
+PLOT_CLIMATE_PROJECTIONS = RULES.logged("2.06", "plot_climate_projections", summary="render eligible projection figures")
+GATHER_BENCHMARKS = RULES.banner_only("2.07", "gather_benchmarks", summary="merge rule timing and resource-use records")
+GATHER_LOGS = RULES.banner_only("2.08", "gather_logs", summary="merge rule logs")
 
 # all — target aggregator: change-factor summaries + projection plots
 #
@@ -874,9 +877,10 @@ WF2_TARGETS = {
     "composition": (clim_project_dir + "/summary/composition.csv"),
     # Runtime availability decides which PNGs exist within these owned folders.
     **{f"figure_folder_{folder}": path for folder, path in WF2_SUITE_PATHS.items()},
+    "figure_titles": f"{clim_project_dir}/plots/figure_titles.md",
+    "figure_title_manifest": f"{clim_project_dir}/_engine/figure_titles.json",
     "figure_captions": FIGURE_CAPTIONS_MD,
     "figure_manifest": FIGURE_CAPTIONS_JSON,
-    **({"captioned_figures": f"{clim_project_dir}/plots/captioned"} if captioned_figures else {}),
     # ADR 0003 §8. The vector rule has NO WF2 consumer yet (§10), so a target
     # entry is what makes it reachable at all — an undeclared leaf is simply
     # never scheduled. One representative schedules the whole multi-output rule,
@@ -1275,12 +1279,14 @@ rule plot_climate_projections:
         record = ANALYSIS_OUTPUTS["analysis_record"],
     params:
         scenarios = scenarios,
-        captioned_figures = captioned_figures,
+        annotation = plot_annotation,
+        plot_setup_digest = plot_setup_digest,
     output:
         folders = [directory(path) for path in WF2_SUITE_PATHS.values()],
+        titles_md = f"{clim_project_dir}/plots/figure_titles.md",
+        titles_json = f"{clim_project_dir}/_engine/figure_titles.json",
         captions_md = FIGURE_CAPTIONS_MD,
         captions_json = FIGURE_CAPTIONS_JSON,
-        captioned = [directory(f"{clim_project_dir}/plots/captioned")] if captioned_figures else [],
     threads: 1
     resources:
         mem_mb = 1024,

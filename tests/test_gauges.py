@@ -90,7 +90,7 @@ def test_the_configured_layer_wins_when_several_exist():
 def test_a_configured_but_missing_layer_warns_loudly():
     """The lesson was the silence, not the name. A skip here is what cost a
     whole run's evaluation outputs."""
-    with pytest.warns(UserWarning, match="could not be resolved"):
+    with pytest.warns(UserWarning, match="Configured gauge .* not found"):
         assert gauges_layer_name({"basins", "outlets"}, CONFIGURED) is None
 
 
@@ -105,7 +105,7 @@ def test_the_warning_names_what_it_looked_for_and_what_exists():
 
 
 def test_an_ambiguous_set_warns_rather_than_guessing():
-    with pytest.warns(UserWarning, match="could not be resolved"):
+    with pytest.warns(UserWarning, match="Configured gauge .* not found"):
         assert (
             gauges_layer_name(
                 {"gauges_one-network", "gauges_other-network"}, "a/b/absent.csv"

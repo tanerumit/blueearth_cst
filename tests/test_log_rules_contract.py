@@ -80,7 +80,7 @@ def _declared_log_rules(workflow, snakefile: str) -> list[str]:
     """``LOG_RULES`` as the parsed workflow actually holds it.
 
     Read from ``workflow.globals`` because the executed registry depends on
-    configuration. WF0 registers ``0.05_compare_climate_diagnostics`` only for
+    configuration. WF0 registers ``0.05_plot_climate_comparison`` only for
     multiple sources. A source-text parser cannot reliably reconstruct that
     conditional registration; parsed globals cover source and comparison jobs.
 
@@ -220,6 +220,8 @@ def _case(snakefile: str, config_path: Path) -> tuple[tuple[str, ...], frozenset
 def test_every_declared_label_has_a_producing_rule(snakefile, variant, config_paths):
     """No label may outlive the rule that wrote it (the [R10-8] defect)."""
     declared, produced = _case(snakefile, config_paths[variant])
+    if snakefile == "analyze_climate.smk" and variant == "two_source":
+        assert "0.05_plot_climate_comparison" in declared
     orphaned = sorted(set(declared) - produced)
     assert not orphaned, (
         f"{snakefile}: LOG_RULES names labels no rule writes: {orphaned}. "

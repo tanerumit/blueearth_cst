@@ -329,8 +329,8 @@ def test_stage_b_writes_auditable_products_with_unavailable_horizons(
     )
     runpy.run_path(derive_module.__file__, init_globals={"snakemake": sm})
     console = capsys.readouterr().out
-    assert "- change - WARNING - Unavailable E3SM-Project/E3SM-1-1" in console
-    assert "2020-01-01..2024-12-01" in console
+    assert "- change - WARNING - Skipped E3SM-Project/E3SM-1-1" in console
+    assert "2020-01-01–2024-12-01" in console
     for name, expected in [
         ("change_factors_annual", 1),
         ("change_factors_monthly", 12),

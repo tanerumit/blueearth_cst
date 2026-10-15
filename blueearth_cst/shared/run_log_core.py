@@ -35,6 +35,80 @@ _DATA_SOURCE_READ_RE = re.compile(
 _DATA_SOURCE_FROM_RE = re.compile(r"^Reading (\S+) from (\S+)$")
 
 
+_GENERATION_MESSAGES = (
+    (
+        r"Reading weather netcdf: (.+)",
+        r"Reading historical climate for weather generation → \1",
+    ),
+    (
+        r"Resampling on (\d+) basin cell\(s\) of (\d+) in the store",
+        lambda m: (
+            f"Weather resampling uses {plural(int(m[1]), 'basin-intersecting cell')} from the {m[2]}-cell extracted grid"
+        ),
+    ),
+    (
+        r"Generating (\d+) weather realization\(s\)",
+        lambda m: f"Generating {plural(int(m[1]), 'stochastic weather realization')}",
+    ),
+    (
+        r"Moving (\d+) figure\(s\) to (.+)",
+        lambda m: (
+            f"Moving {plural(int(m[1]), 'weather-generator diagnostic figure')} → {m[2]}"
+        ),
+    ),
+    (r"Saving realization (\d+) of (\d+)", r"Writing stochastic realization \1 of \2"),
+    (r"(\S+) reading realization (.+)", r"\1: reading source realization \2"),
+    (
+        r"(\S+) applying perturbations \((.*)\)",
+        r"\1: applying climate perturbations (\2)",
+    ),
+)
+
+
+def _presentation_message(module: str, message: str) -> str:
+    """Present retained-producer messages without editing their scientific sources."""
+    if module == "weathergen":
+        for pattern, replacement in _GENERATION_MESSAGES:
+            if re.fullmatch(pattern, message):
+                return re.sub(pattern, replacement, message)
+    if module == "experiment":
+        if message == "Model reference matches the live model":
+            return "Live model matches the recorded experiment identity"
+        reference = re.fullmatch(
+            r"Model reference: (.+) digest (\w+)\.\.\. over (\d+) inputs?", message
+        )
+        if reference:
+            path, digest, count = reference.groups()
+            return f"Model identity recorded: {path}; {plural(int(count), 'input')}; digest {digest}…"
+        match = re.fullmatch(r"Wrote (.+) \((\d+) rows, (\d+) members?\)", message)
+        if match:
+            path, rows, points = match.groups()
+            return f"Perturbation lookup written → {path} ({rows} monthly rows; {plural(int(points), 'perturbation point')})"
+    if module == "metrics":
+        match = re.fullmatch(
+            r"(\S+): (\d+) declarations? over (\d+) result keys?", message
+        )
+        if match:
+            identity, declarations, keys = match.groups()
+            return f"Metric set {identity} planned: {plural(int(declarations), 'metric declaration')}; {plural(int(keys), 'expected result key')}"
+    if module == "responses" and message.startswith(
+        "Duplicate series on one model point, kept once: "
+    ):
+        return message.replace(
+            "Duplicate series on one model point, kept once: ",
+            "Duplicate series at the same model location will be used once: ",
+            1,
+        )
+    if module == "wflow":
+        match = re.fullmatch(
+            r"FAILED \[(\d+/\d+)\] Run (\S+) batch=(\S+)  (.*)", message
+        )
+        if match:
+            position, run_id, batch, reason = match.groups()
+            return f"FAILED run {run_id} in batch {batch} [{position}]: {reason}"
+    return message
+
+
 def _log_row_text(hms, module, level, message):
     """Assemble one log row: ``HH:MM:SS - <module> - <message>``.
 
@@ -58,6 +132,7 @@ def _log_row_text(hms, module, level, message):
     three emitters with three spellings of one grammar is how the grammar stops
     being one.
     """
+    message = _presentation_message(module, message)
     if str(level).strip().upper() == "INFO":
         return f"{hms} - {module} - {message}"
     return f"{hms} - {module} - {level} - {message}"
@@ -92,6 +167,15 @@ def _compact_log_line(text):
     core = text[:-1] if had_newline else text
     match = _HYDROMT_LOG_RE.match(core)
     if not match:
+        own = re.fullmatch(
+            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment|metrics|responses|wflow) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
+            core,
+        )
+        if own:
+            hms, module, level, message = own.groups()
+            return _log_row_text(hms, module, level or "INFO", message) + (
+                "\n" if had_newline else ""
+            )
         return text
     hms, module, level, message = match.groups()
     prefixed = _COMPONENT_PREFIX_RE.match(message)
@@ -472,19 +556,13 @@ def _heartbeat_identity(label):
     return f"{identity}  [{part}]"
 
 
-_HEARTBEAT_SPARSE_MULTIPLIERS = (2.0, 5.0, 10.0)
-_HEARTBEAT_SPARSE_STEP = 10.0
-
-
 class _Heartbeat:
     """Silence watchdog that keeps a long-running rule visibly alive.
 
     Snakemake prints only a start and a finish timestamp, so a hung job looks
     identical to a slow one until it (never) finishes. On a terminal this daemon
     maintains one replaceable status frame. On a redirected stream it emits
-    sparse durable rows after 2, 5 and 10 intervals, then every 10 intervals.
-    Both forms report the observable fact — time since output — rather than
-    guessing whether the process is healthy.
+    durable rows every interval. Both forms report elapsed execution time.
 
     Silence-triggered, not periodic: callers stamp ``touch()`` on every real
     write, so a rule that is actively logging or drawing a progress bar keeps
@@ -497,7 +575,7 @@ class _Heartbeat:
     interval without touching a Snakefile.
     """
 
-    def __init__(self, label, stream, interval=60.0, on_stall=None):
+    def __init__(self, label, stream, interval=15.0, on_stall=None):
         self._label = label
         self._stream = stream
         #: Called INSTEAD of printing the notice; a truthy return means the
@@ -524,7 +602,6 @@ class _Heartbeat:
         self._noticed = False
         # The notice schedule, advanced by `_tick`; `_run` resets it on start.
         self._quiet_since = None
-        self._sparse_index = 0
         self._next_notice = self._first_notice()
         self._seen = self._last
         self._stop = threading.Event()
@@ -581,7 +658,7 @@ class _Heartbeat:
         # three. The identity is the job's console spelling (`_heartbeat_identity`).
         row = _log_row_text(
             f"{datetime.now():%H:%M:%S}",
-            "heartbeat",
+            "execution",
             "INFO",
             f"{_heartbeat_identity(self._label)} {text}",
         )
@@ -611,9 +688,7 @@ class _Heartbeat:
 
     def _first_notice(self):
         """Silence length at which a fresh silence is first reported."""
-        if self._interactive:
-            return self._interval
-        return self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[0]
+        return self._interval
 
     def _run(self):
         """Wake every interval and hand the current time to :meth:`_tick`."""
@@ -622,20 +697,15 @@ class _Heartbeat:
         # ticks so one contiguous silence yields ONE recorded period no
         # matter how many notices it prints.
         self._quiet_since = None
-        self._sparse_index = 0
         self._next_notice = self._first_notice()
         # The last `touch()` this loop has already accounted for. Resumption is
         # detected by this value CHANGING, not by catching a tick while
         # `now - last < interval`: the thread wakes every `interval` and the
         # gap it is measuring is also `interval`, so whether any tick lands
         # inside a short burst of output is down to alignment. It was a coin
-        # flip before 2026-09-06, which mattered little when the only cost was
-        # a quiet period recorded late, and matters now that the sparse schedule
-        # resets with it -- a missed reset delays the next silence report.
+        # flip before 2026-09-06. A missed reset delays the next silence report.
         self._seen = self._last
-        # The THREAD still wakes every interval. Backing the wake off too would
-        # blind the watchdog to output resuming, and `_next_notice` could then
-        # be half an hour stale when the next silence began.
+        # Wake every interval so output resuming resets the notice schedule.
         while not self._stop.wait(self._interval):
             self._tick(time.monotonic())
         if self._quiet_since is not None:
@@ -658,7 +728,6 @@ class _Heartbeat:
             if self._quiet_since is not None:
                 self._quiet.append((self._quiet_since, last))
                 self._quiet_since = None
-            self._sparse_index = 0
             self._next_notice = self._first_notice()
             self._seen = last
         silence = now - last
@@ -682,19 +751,10 @@ class _Heartbeat:
                 return
             self._noticed = True
             self._emit(
-                f"{format_elapsed(now - self._start)} elapsed · "
-                f"no output for {format_elapsed(silence)}",
+                f"{format_elapsed(now - self._start)} elapsed",
                 redraw=self._interactive,
             )
-            if self._interactive:
-                self._next_notice += self._interval
-            elif self._sparse_index + 1 < len(_HEARTBEAT_SPARSE_MULTIPLIERS):
-                self._sparse_index += 1
-                self._next_notice = (
-                    self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[self._sparse_index]
-                )
-            else:
-                self._next_notice += self._interval * _HEARTBEAT_SPARSE_STEP
+            self._next_notice += self._interval
 
     def start(self):
         if self._enabled:
@@ -1009,6 +1069,16 @@ def _muted_on_console(text):
     )
 
 
+def _write_console(stream, text):
+    """Keep console glyphs safe on legacy code pages; leave UTF-8 log text intact."""
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        encoding = getattr(stream, "encoding", None) or "utf-8"
+        folded = text.translate(_ASCII_GLYPH_FALLBACK)
+        stream.write(folded.encode(encoding, "replace").decode(encoding))
+
+
 class _Tee:
     """Text stream mirroring in-process output to a live console and a log file.
 
@@ -1112,7 +1182,7 @@ class _Tee:
             # part-way through its own row: a library writing one line in two
             # calls would lose the first half.
             reset = "" if (self._mid_row or _redraw) else _line_reset(self._live)
-            self._live.write(reset + _paint_body(shown, self._colour))
+            _write_console(self._live, reset + _paint_body(shown, self._colour))
             # A redraw frame leaves the cursor on the bar, which the next row is
             # expected to clear -- so it does not count as a row in progress.
             self._mid_row = not _redraw and not shown.endswith("\n")
@@ -1160,7 +1230,9 @@ class _Tee:
         if self._held_frame:
             # The bar's closing newline: release the summary, then let `write`
             # terminate the log's own pending line as usual.
-            self._live.write(_paint_body(self._held_frame, self._colour) + "\n")
+            _write_console(
+                self._live, _paint_body(self._held_frame, self._colour) + "\n"
+            )
             self._held_frame = ""
         return self.write(text)
 
@@ -1238,7 +1310,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
     ``shared/wflow_progress.jl``) are re-rendered here as the house progress bar;
     see :class:`~blueearth_cst.shared.progress.WflowFrameRelay`. While such a bar
     is open the silence watchdog redraws it instead of printing its own
-    ``no output for`` status (``_bar_tick``), and every console write is padded
+    elapsed-time status (``_bar_tick``), and every console write is padded
     over whatever frame is standing on the line (``_pad_line_over``).
 
     A *pure* trailing run of benign interpreter-shutdown excepthook noise (see
@@ -1388,7 +1460,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
         def _bar_tick():
             """Answer a stall by redrawing the open bar; False if there is none.
 
-            The watchdog's `1m00s elapsed · no output for 1m00s` and a live bar carry
+            The watchdog's elapsed-time status and a live bar carry
             the same fact, and printing the first onto the second's line is what
             leaves a row with a frame's tail hanging off it. So while a bar is
             open the stall is answered IN the bar, and the notice is kept for
@@ -1652,7 +1724,7 @@ def _is_clean_exit(exc) -> bool:
 
 
 @contextlib.contextmanager
-def tee_to_log(log_path, heartbeat_interval=60.0):
+def tee_to_log(log_path, heartbeat_interval=15.0):
     """Tee ``sys.stdout``/``sys.stderr`` to ``log_path`` for a ``script:`` rule.
 
     Snakemake does not auto-redirect ``script:`` output to the rule's ``log:``
@@ -1690,7 +1762,7 @@ def tee_to_log(log_path, heartbeat_interval=60.0):
         Destination log file. Callers pass the rule's unique
         ``snakemake.log[0]`` so concurrent jobs never share a path.
     heartbeat_interval : float
-        Seconds of silence before the console heartbeat fires (default 60).
+        Seconds of silence before the console timer updates (default 15).
     """
     log_path = os.fspath(log_path)
     parent = os.path.dirname(log_path)
@@ -1989,8 +2061,9 @@ def log_row(message, module="cst", level="INFO"):
     message = _relativize_paths(
         str(message), os.environ.get(_PROJECT_ROOT_ENV, ""), _path_tokens()
     )
-    sys.stdout.write(
-        _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n"
+    _write_console(
+        sys.stdout,
+        _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n",
     )
     # Flushed, because off a terminal Python block-buffers stdout: under a
     # redirect or in CI a rule's rows then all arrived AFTER its DONE line,
@@ -2031,9 +2104,12 @@ def flush_figure_bundles():
                 # A rule that writes ONE figure names the file, exactly as
                 # before: "1 figure -> <dir>" would be a longer way of saying
                 # less, and several rules here write a single map.
-                log_row(os.path.join(directory, names[0]), module=module)
+                log_row(
+                    f"Figure written → {os.path.join(directory, names[0])}",
+                    module=module,
+                )
             else:
-                log_row(f"{len(names)} figures -> {directory}", module=module)
+                log_row(f"Wrote {len(names)} figures → {directory}", module=module)
     finally:
         _FIGURE_BUNDLE_FLUSHING = False
 

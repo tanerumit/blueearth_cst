@@ -12,5 +12,4 @@ subbasin_figures: false
 #   max_missing_days_year: 15
 #   wet_day_threshold_mm: 1.0
 #   spi_distribution: gamma
-#   captioned_figures: false
 #   pt_temperature_source: era5

@@ -349,10 +349,10 @@ def derive_available_point(*, point, unavailable_windows, **kwargs):
         )
         unavailable_windows.append(record)
         log_row(
-            f"Unavailable {point['model']} {point['scenario']} {point['member']} "
-            f"{kwargs['name_horizon']}: {record['window_kind']} "
-            f"{record['requested_window']}; available {record['available_start']}.."
-            f"{record['available_end']}; see summary/provenance.json",
+            f"Skipped {point['model']} · {point['scenario']} · {point['member']} · "
+            f"{kwargs['name_horizon']}: {record['window_kind']} window "
+            f"{record['requested_window']}; {' '.join(str(record.get('reason', 'requested window is not usable')).splitlines())}; "
+            f"available data {record['available_start']}–{record['available_end']}; details → summary/provenance.json",
             module="change",
             level="WARNING",
         )
@@ -567,8 +567,8 @@ if "snakemake" in globals():
             )
 
         log_row(
-            f"Deriving change factors for {plural(len(points), 'point')} x "
-            f"{plural(len(horizons), 'horizon')}",
+            f"Deriving change factors for {plural(len(points), 'model–scenario–member combination')} across "
+            f"{plural(len(horizons), 'future window')}",
             module="change",
         )
         # The independent GCM reference period and any historical coverage clip.
@@ -638,8 +638,8 @@ if "snakemake" in globals():
                 )
 
         log_row(
-            f"Availability: {len(annual_changes)} usable point-horizons, "
-            f"{len(unavailable_windows)} unavailable point-horizons",
+            f"Change factors available for {len(annual_changes)} of {len(annual_changes) + len(unavailable_windows)} combination–window pairs; "
+            f"{len(unavailable_windows)} skipped",
             module="change",
         )
         merged = combine_changes(annual_changes) if annual_changes else xr.Dataset()
@@ -736,12 +736,12 @@ if "snakemake" in globals():
             columns=TABLE_COLUMNS_MONTHLY,
         )
         log_row(
-            f"Tidy monthly change-factor table: {len(monthly_rows)} rows "
+            f"Monthly change factors: wrote {len(monthly_rows):,} rows "
             f"-> {os.path.basename(str(sm.output.change_factors_monthly))}",
             module="change",
         )
         log_row(
-            f"Tidy annual change-factor table: {len(rows)} rows "
+            f"Annual change factors: wrote {len(rows):,} rows "
             f"-> {os.path.basename(str(sm.output.change_factors_annual))}",
             module="change",
         )
@@ -832,17 +832,18 @@ if "snakemake" in globals():
             ),
         )
         log_row(
-            f"Report -> {os.path.basename(str(sm.output.report_md))}", module="change"
+            f"Projection analysis report written → {os.path.basename(str(sm.output.report_md))}",
+            module="change",
         )
         log_row(
-            f"Provenance: {len(document['sources'])} sources, "
-            f"{document['composition']['resolved']}/{document['composition']['requested']} resolved "
+            f"Provenance: {len(document['sources'])} source-series records; "
+            f"{document['composition']['resolved']} of {document['composition']['requested']} requested combinations fully resolved "
             f"-> {os.path.basename(str(sm.output.provenance_json))}",
             module="change",
         )
         n_resolved = sum(1 for r in rows if r["status"] == "resolved")
         log_row(
-            f"Composition record: {len(rows)} requested, {n_resolved} resolved "
+            f"Ensemble composition: {len(rows)} requested combinations; {n_resolved} fully resolved; remaining statuses recorded in the table "
             f"-> {os.path.basename(str(sm.output.composition_csv))}",
             module="change",
         )

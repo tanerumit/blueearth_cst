@@ -8,10 +8,12 @@ import numpy as np
 import pandas as pd
 
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
-from blueearth_cst.climate_analysis.diagnostic_captions import caption
+from blueearth_cst.climate_analysis.diagnostic_captions import caption, title
 from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_json
 from blueearth_cst.climate_analysis.figure_naming import figure_filename
-from blueearth_cst.plotting.fundamentals import STYLE, add_caption
+from blueearth_cst.plotting.export import export_figure
+from blueearth_cst.plotting.figure_titles import write_figure_titles
+from blueearth_cst.plotting.fundamentals import STYLE
 
 
 def render_subbasins(sm, settings, sources):
@@ -42,8 +44,6 @@ def render_subbasins(sm, settings, sources):
         id_: "Not all sources have intersecting cells"
         for id_ in declared_ids - set(ids)
     }
-    if settings["captioned_figures"]:
-        Path(sm.output.captioned_subbasins).mkdir(parents=True, exist_ok=True)
     m0 = int(sm.params.m0)
     table_root = Path(sm.output.subbasin_tables) if comparison else Path(folders[0])
     if comparison:
@@ -121,20 +121,38 @@ def render_subbasins(sm, settings, sources):
             with plt.rc_context(STYLE):
                 fig = artists.CHARTS[form](view)
                 name = figure_filename(dataset, variable, context, f"{id_}_avg")
-                fig.savefig(target / name, dpi=600)
                 text = (
                     caption(form, view)
                     + " Method implementation was exercised on Ntoum real data; this run is not scientifically qualified. Grid resolution can make neighboring subbasin series identical."
                 )
-                captioned = None
-                if settings["captioned_figures"]:
-                    folder = Path(sm.output.captioned_subbasins)
-                    folder.mkdir(parents=True, exist_ok=True)
-                    add_caption(fig, text)
-                    fig.savefig(folder / name, dpi=600)
-                    captioned = f"plots/captioned/subbasins/{name}"
+                figure_title = title(
+                    form,
+                    [
+                        view.labels[s]
+                        for s in (carriers if variable == "temp" else sources)
+                    ],
+                    period,
+                    view.support,
+                )
+                export_figure(
+                    fig,
+                    target / name,
+                    dpi=600,
+                    annotation=getattr(sm.params, "annotation", "none"),
+                    title=figure_title,
+                    caption=text,
+                )
                 plt.close(fig)
             inventory["figures"][f"plots/subbasins/{name}"] = {
+                "title": title(
+                    form,
+                    [
+                        view.labels[s]
+                        for s in (carriers if variable == "temp" else sources)
+                    ],
+                    period,
+                    view.support,
+                ),
                 "caption": text,
                 "sources": carriers if variable == "temp" else sources,
                 "period": period,
@@ -143,22 +161,28 @@ def render_subbasins(sm, settings, sources):
                 "availability": "available"
                 if any(results[s]["annual"].total.notna().any() for s in sources)
                 else "unavailable: no valid annual data",
-                "captioned_path": captioned,
+                "captioned_path": None,
                 "caveats": [
                     "Not scientifically qualified",
                     "Source grid may not resolve subbasins",
                 ],
             }
-    inventory["produced_paths"] = (
-        list(inventory["figures"])
-        + [
-            record["captioned_path"]
-            for record in inventory["figures"].values()
-            if record["captioned_path"]
-        ]
-        + ["plots/_engine/figure_captions.json", "plots/figure_captions.md"]
-    )
+    inventory["produced_paths"] = list(inventory["figures"]) + [
+        "plots/_engine/figure_titles.json",
+        "plots/figure_titles.md",
+        "plots/_engine/figure_captions.json",
+        "plots/figure_captions.md",
+    ]
     write_json(captions_path, inventory)
+    write_figure_titles(root / "plots", inventory["figures"])
+    if comparison and inventory["unavailable_subbasins"]:
+        from blueearth_cst.shared.snake_utils import log_row, plural
+
+        log_row(
+            f"Subbasin comparison omitted for {plural(len(inventory['unavailable_subbasins']), 'subbasin')}: "
+            "not all sources have intersecting cells; details → plots/_engine/figure_captions.json",
+            module="compare",
+        )
     (root / "plots" / "figure_captions.md").write_text(
         "# Figure captions\n\n"
         + "\n\n".join(

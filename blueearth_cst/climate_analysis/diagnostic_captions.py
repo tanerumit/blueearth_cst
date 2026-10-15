@@ -83,6 +83,36 @@ DESCRIPTIONS = {
 }
 
 
+TITLES = {
+    "coverage": "Monthly climate data coverage",
+    "seasonal": "Monthly precipitation climatology",
+    "temperature": "Monthly temperature climatology",
+    "timing": "Seasonal timing of precipitation accumulation",
+    "anomaly": "Monthly precipitation anomalies",
+    "spi": "Standardized Precipitation Index",
+    "drought-events": "Drought-event duration and accumulated deficit",
+    "extreme-Rx1day": "Annual maximum one-day precipitation",
+    "extreme-Rx5day": "Annual maximum five-day precipitation",
+    "extreme-SDII": "Annual wet-day precipitation intensity",
+    "extreme-Wet days": "Annual wet-day count",
+    "spell": "Dry-spell length exceedance",
+    "acf": "Monthly precipitation anomaly autocorrelation",
+    "slopes": "Annual precipitation and extreme-index trends",
+    "series": "Annual precipitation totals and trends",
+    "pt": "Seasonal precipitation and temperature anomalies",
+    "spi-checks": "Reference-period SPI normality checks",
+    "sensitivity": "Sensitivity of climate trends to the fitting period",
+    "map-precip": "Native-grid annual precipitation climatology",
+    "map-temp": "Native-grid annual temperature climatology",
+    "map-pet": "Native-grid annual potential evapotranspiration climatology",
+}
+
+
+def title(name: str, sources: list[str], period, support: str) -> str:
+    """Use the WF0 plot — dataset (years) format; support stays in captions."""
+    return f"{TITLES[name]} — {', '.join(sources)} ({period[0]}–{period[-1]})"
+
+
 def caption(name: str, view: View) -> str:
     """Return a brief journal-style caption without a figure-number prefix."""
     plotted = (

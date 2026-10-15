@@ -219,7 +219,7 @@ def admit_context_owned(
     context.action = selected.action
     if announce:
         print(
-            f"Experiment: {context.name} ({context.action}); project: {context.root}",
+            f"Selected experiment: {context.name}; action: {context.action}; project: {context.root}",
             flush=True,
         )
     context.recheck()

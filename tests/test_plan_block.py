@@ -209,7 +209,7 @@ def test_pre_dag_steps_are_listed_in_number_order(rules, monkeypatch):
     head, rows = cs._plan_lines({"generate": 1, "perturb": 12})
 
     assert head == (
-        "2 of 3 rules to run  |  1 up to date  |  2 done in planning  |  13 jobs"
+        "2 of 3 rules to run  |  1 up to date  |  2 completed before DAG execution  |  13 jobs"
     )
     assert rows == [
         ("   3.03  cached", False),

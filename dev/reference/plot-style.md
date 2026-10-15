@@ -5,9 +5,23 @@ revisions. Apply relevant defaults across plot types; preserve the explicit exce
 decisions belong here, alongside changes to the plotting code. A style decision does not authorize changing
 the underlying calculation or statistical interpretation.
 
+Descriptions of figures without displayed titles or footers below describe the default `none` mode.
+Selecting `caption` or `title` adds the requested text outside the existing plotting canvas.
+
 ## Output paths
 
-Use `plots/` for generated graphics throughout the toolbox. Keep readable captions in
+Use `plots/` for generated graphics throughout the toolbox. WF0–WF2 also write readable titles to
+`plots/figure_titles.md` and a `figure_titles.json` inventory beside the corresponding caption JSON.
+Title keys match the caption inventory's ordinary figure keys.
+Each title identifies the figure's subject and relevant source, period or spatial support.
+WF0 titles use `[specific plot title] — [dataset] ([start year]–[end year])`, for example
+`Monthly climate data coverage — ERA5 (1971–2020)`. Comparisons list the contributing dataset names;
+spatial support and methods remain in captions and structured metadata.
+Project-level `plotting.annotation` selects `none` (default), `caption` or `title` at the ordinary PNG paths.
+Retain title and caption inventories independently of this setting. R/weathergenr figures are excluded.
+Spatial maps and legacy climate figure adapters that have no caption inventory still write title files.
+
+Keep readable captions in
 `plots/figure_captions.md`. Machine plot manifests and internal analysis records belong in the cohesive
 output unit's single root `_engine/`, following [the output naming rule](naming.md#generated-outputs-under-project_dir).
 WF2 uses the ensemble root's `_engine/`, with manifest figure paths relative to `plots/`.
@@ -15,6 +29,41 @@ Existing WF0 `plots/_engine/` paths await explicit migration. JSON containing us
 its owning data product. Generated filenames and directories use lowercase snake_case, including
 `full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
 with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the rename mapping.
+
+## Shared colour defaults
+
+`config/plotting/colors.yml` owns the default categorical cycle, dataset and evaluation colours,
+SSP colours, climate-map colormaps and precipitation-anomaly colormap. Read it through
+`blueearth_cst.shared.plot_colors`; do not duplicate these values in renderers. The loader resolves the
+file relative to the toolbox, validates its structure and hex colours, and reads it once per process.
+Restart an interactive Python session after editing it. Matplotlib resolves colormap names when drawing.
+
+`config/plotting/style.yml` owns page/export defaults, typography, shared chart dimensions, lines,
+markers, bands, label backgrounds and evaluation-sheet appearance. `shared.plot_setup` loads these
+preferences; `shared.plot_style` and `plotting.fundamentals` retain the existing drawing interfaces.
+Figure-specific geometry stays with its renderer. Keep shared appearance preferences in this setup
+directory instead of adding new literals to individual plots.
+
+The default cycle is Option A, Expanded original, selected on 2026-10-15. Its order is Original blue
+`#0D38E0`, Terracotta `#CC593D`, Original green `#00B389`, Amber `#D99A19`, Violet `#8054B3`, Rose
+`#BE5084`, Cyan `#169CC4`, Slate `#66768A`. Blue and Terracotta are the first comparison pair.
+ERA5 and observed series use blue; CHIRPS and simulated series use Terracotta. Dataset and evaluation
+entries refer to named cycle colours so an edit stays consistent across those families. Unknown datasets
+take the remaining cycle colours in configuration order, skipping colours used by named datasets present
+in the comparison. Marker shapes change when those colours repeat. This palette has not been certified
+for colour-vision deficiencies; preserve line styles, markers and labels as additional distinctions.
+
+Both shared Matplotlib style contexts apply the cycle. Explicit semantic presets take precedence:
+the IPCC scenario colours and existing climate-map and anomaly colormaps retain their values.
+`historical_maps` preserves the custom ramps used by the current WF0/WF1 display reference; `climate_maps`
+preserves named colormaps used by the legacy map adapter. Colour defaults do not change classification,
+normalization, data, or scientific configuration identity.
+WF0–WF2 plotting rules track a digest of both YAML files in renderer params, so an edit schedules
+plotting jobs.
+WF1 evaluation also refreshes metrics written by its combined evaluation/plotting job. R/weathergenr
+figures retain their own settings.
+The historical map-reference producer also tracks the YAML as a display dependency so cached map colours
+refresh consistently across WF0 and WF1. This does not change the extracted climate data or simulation identity.
 
 ## SSP scenario colors
 
@@ -36,7 +85,8 @@ derived from the [IPCC WG1 color maps](https://github.com/IPCC-WG1/colormaps).
 | `ssp370-lowNTCF` | SSP3-7.0-LowNTCF | `#e61d25` |
 | `ssp585` | SSP5-8.5 | `#980002` |
 
-Keep the mapping in `projections/projection_figures.py`; all WF2 suite artists use it.
+Keep the mapping in `config/plotting/colors.yml`; `projections/projection_figures.py` re-exports it
+for existing callers, and all WF2 suite artists use it.
 Unknown experiments retain their literal labels and muted fallback color.
 
 ## Typography, axes and layout
@@ -63,8 +113,8 @@ Unknown experiments retain their literal labels and muted fallback color.
   and plot labels; retain version metadata in source records where relevant.
 - Keep grid lines subtle and partly transparent. Avoid competing with the data or annotations.
 - Always label multiple plotting panels `a)`, `b)`, etc.; explain panel contents in the caption.
-- Do not display figure titles inside or above the plotting area. Identify the variable, spatial
-  support and plot type in the caption and review-page heading. Preserve explicitly agreed panel labels.
+- Default to no displayed figure title. With `plotting.annotation: title`, add the title above the figure
+  without resizing its plotting area. Preserve explicitly agreed panel labels in every annotation mode.
 
 ## Legends, labels and points
 
@@ -82,7 +132,7 @@ Unknown experiments retain their literal labels and muted fallback color.
 - Use contrasting point colors over map layers. For scatter plots, use partly transparent fills and
   darker outlines so points remain visible. The reviewed enlarged scatter points use area 36 pt²,
   alpha 0.7 and an approximately 0.7 pt dark edge; adapt where the plot density requires it.
-- Keep dataset colors consistent: CHIRPS orange `#bf6a3c`, ERA5 blue `#236b8e`.
+- Keep dataset colors consistent using the shared defaults: CHIRPS Terracotta `#CC593D`, ERA5 blue `#0D38E0`.
 
 ## Color scales and colorbars
 
@@ -135,7 +185,7 @@ These summaries describe forcing QA; they do not modify the forcing or simulatio
 WF1 station hydrographs retain the five-panel layout: daily discharge, annual means, seasonal cycle,
 and linear/log flow-duration curves. Apply the common typography, frames, soft horizontal grids,
 short panel titles and inside legend. Observations remain blue and dashed; simulation remains
-vermillion and solid. Use discharge units alone on vertical axes, three-letter months and percentage
+Terracotta and solid. Use discharge units alone on vertical axes, three-letter months and percentage
 exceedance labels. Annual labels start at the preceding five-year grid mark (ten years for records
 longer than 35 years), retaining annual minor ticks so the left edge has a nearby calendar label.
 Station identity, dates, support and methods
@@ -310,7 +360,7 @@ in this visual review.
 - Start from the tracked `dev/reference/figure-comparison.html` template. See
   `dev/reference/figure-comparison.md` for setup and figure-record fields. Keep session data in scratch;
   update the tracked template when improvements to the review interface are approved.
-- Keep the disposable HTML review under the worktree's `.tmp/scratchpad/`; it is not durable storage.
+- Keep the disposable HTML review in `dev/tasks/<id>/.tmp/`; follow `repo-layout.md` for closure cleanup.
 - Show only the plot group currently under review, with existing and revised versions side by side.
   Preserve a baseline before revising the group.
 - Keep the original page header. Put the selected figure name in each comparison heading, for example
@@ -327,7 +377,7 @@ in this visual review.
   hints and collapsible control help may follow the path.
 - Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
   applicable plots, and render all affected callers when a shared figure helper changes.
-- Keep figure-specific tests and plotting-only probes temporary under `.tmp/scratchpad/`, outside the
+- Keep figure-specific tests and plotting-only probes temporary under `dev/tasks/<id>/.tmp/`, outside the
   persistent test suite. Verify figure changes by rendering and visual inspection. Retain tests for
   exported numerical metrics and workflow contracts separately from figure review checks.
 - During an explicitly deferred-check visual session, do not run tests or gates at each revision. Run

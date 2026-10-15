@@ -58,6 +58,12 @@ from shapely.geometry import box as shapely_box
 
 from blueearth_cst.plotting.location_labels import location_label
 from blueearth_cst.shared import plot_style
+from blueearth_cst.shared.plot_colors import (
+    CLIMATE_COLORMAPS,
+    ELEVATION_COLORS,
+    MAP_FEATURE_COLORS,
+)
+from blueearth_cst.shared.plot_colors import WATERBODY_COLORS as WATERBODY_COLORS
 
 # The toolbox-wide page/typography settings. Bound HERE, in this module's
 # globals, so the drawing code below reads them by bare name and
@@ -383,36 +389,31 @@ LABEL_GAUGE = "Points of interest"
 #: One place for every hue on the figure. The blue is used for BOTH the rivers
 #: and the user's gauges, which is deliberate: it ties a gauge to the network it
 #: sits on and separates it from the model's own outlets, which stay black.
-COLOR_RIVER = "#2c6fad"
+COLOR_RIVER = MAP_FEATURE_COLORS["river"]
 #: Points of interest: purple, so they never read as part of the blue river
 #: network (taken from the Egypt QGIS map's location style).
-COLOR_GAUGE = "#2c6fad"
-COLOR_OUTLET = "k"
-COLOR_BASIN_OUTLINE = "k"
+COLOR_GAUGE = MAP_FEATURE_COLORS["gauge"]
+COLOR_OUTLET = MAP_FEATURE_COLORS["outlet"]
+COLOR_BASIN_OUTLINE = MAP_FEATURE_COLORS["basin_outline"]
 #: Subcatchment divides. Darkened from "0.45": a light grey hairline is legible
 #: over white and disappears over the mid-browns of the elevation ramp, which is
 #: most of the map. Contrast alone was not enough — the divides also carry a
 #: halo (``HALO_WIDTH_SUBCATCHMENT``), which is what makes a 0.6 pt line hold
 #: against ANY terrain colour underneath it rather than only against pale ones.
-COLOR_SUBCATCHMENT = "0.15"
-COLOR_GRATICULE = "0.4"
-COLOR_MARKER_EDGE = "white"
+COLOR_SUBCATCHMENT = MAP_FEATURE_COLORS["subcatchment"]
+COLOR_GRATICULE = MAP_FEATURE_COLORS["graticule"]
+COLOR_MARKER_EDGE = MAP_FEATURE_COLORS["marker_edge"]
 #: Halo drawn behind furniture text so it stays legible over any terrain.
-COLOR_HALO = "white"
+COLOR_HALO = MAP_FEATURE_COLORS["halo"]
 
 #: Fill and wording for cells of a CATEGORICAL raster whose code the style's
 #: table does not declare. They are drawn, in one neutral grey, and warned
 #: about — dropping them would take real ground off the map and leave a hole a
 #: reader parses as nodata. See ``RasterStyle.categories``.
-COLOR_UNCLASSIFIED = "#bdbdbd"
+COLOR_UNCLASSIFIED = MAP_FEATURE_COLORS["unclassified"]
 LABEL_UNCLASSIFIED = "Unclassified"
 
 #: Waterbody fills, as (facecolor, edgecolor). Keyed by the staticgeoms layer.
-WATERBODY_COLORS = {
-    "lakes": ("#a8d0e6", "#3d5a6c"),
-    "reservoirs": ("#2c6fad", "#173d5e"),
-    "glaciers": ("#d9d9d9", "#8c8c8c"),
-}
 
 #: A monotonic-lightness elevation ramp, hand-built rather than imported: the
 #: perceptually-uniform terrain colormaps (cmcrameri, cmocean) are not in the
@@ -420,7 +421,7 @@ WATERBODY_COLORS = {
 #: falls monotonically from low to high ground, so the ramp survives greyscale
 #: printing AND every dichromacy — the two failure modes `terrain` had. Replace
 #: it only with another ramp whose lightness is monotonic; a test enforces that.
-_DEM_ANCHORS = ("#f6f2ea", "#e3d5ba", "#c9aa7d", "#a07f52", "#6f5533", "#46351f")
+_DEM_ANCHORS = ELEVATION_COLORS
 
 # --- line weights (points) -------------------------------------------------
 
@@ -662,19 +663,19 @@ _LOCATOR_PANEL_MAX_HEIGHT = 0.315
 #: ``_LOCATOR_PLACEMENT = "panel"``, stated rather than discovered by clipping.
 _COLORBAR_HEIGHT_PANEL = 0.272
 
-COLOR_LOCATOR_OCEAN = "#eef2f5"  #: sea; the palest thing on the figure
-COLOR_LOCATOR_LAND = "#dcdcd8"  #: land, a shade darker so the coast reads
-COLOR_LOCATOR_COAST = "0.55"  #: the land polygons' own edge IS the coastline
-COLOR_LOCATOR_BORDER = "0.7"  #: country lines, lighter still
-COLOR_LOCATOR_CITY = "0.35"
+COLOR_LOCATOR_OCEAN = MAP_FEATURE_COLORS["locator_ocean"]
+COLOR_LOCATOR_LAND = MAP_FEATURE_COLORS["locator_land"]
+COLOR_LOCATOR_COAST = MAP_FEATURE_COLORS["locator_coast"]
+COLOR_LOCATOR_BORDER = MAP_FEATURE_COLORS["locator_border"]
+COLOR_LOCATOR_CITY = MAP_FEATURE_COLORS["locator_city"]
 #: The "you are here" shape — the basin's own outline, filled. The one warm
 #: accent on the figure, and the only place red appears: it has to win against
 #: grey without competing with the elevation ramp, which owns every brown.
-COLOR_LOCATOR_BASIN = "#c0392b"
+COLOR_LOCATOR_BASIN = MAP_FEATURE_COLORS["locator_basin"]
 #: Its edge, a darker shade of the same red. Darker rather than white, because
 #: at this size a light edge eats into a shape only a few points across and
 #: leaves less of it than it outlines.
-COLOR_LOCATOR_BASIN_EDGE = "#7d2318"
+COLOR_LOCATOR_BASIN_EDGE = MAP_FEATURE_COLORS["locator_basin_edge"]
 
 WIDTH_LOCATOR_COAST = 0.35
 WIDTH_LOCATOR_BORDER = 0.3
@@ -789,7 +790,7 @@ _EXTENT_BUFFER_DEG = None
 #: is the only thing that licenses a diverging ramp. Named constants rather than
 #: literals in the style below, because ``climate_figures`` and the tests both
 #: assert against them.
-TEMPERATURE_DIVERGING_PALETTE = "RdBu_r"
+TEMPERATURE_DIVERGING_PALETTE = CLIMATE_COLORMAPS["temp_crossing_freezing"]
 TEMPERATURE_DIVERGING_CENTER = 0.0
 
 
@@ -820,7 +821,7 @@ RASTER_STYLES = {
     #: use. dL* 12.0 greyscale, 11.3 under CVD.
     "precip": RasterStyle(
         label="Precipitation (mm y$^{-1}$)",
-        palette="Blues",
+        palette=CLIMATE_COLORMAPS["precip"],
         zero_baseline=True,
         # White means DRY on a rainfall map. A basin whose driest class is
         # 2725 mm/y has no dry ground on it, so the ramp starts at a pale blue
@@ -833,7 +834,7 @@ RASTER_STYLES = {
     #: midpoint becomes real. dL* 10.9 greyscale, 9.0 under CVD.
     "temp": RasterStyle(
         label="Air temperature ($\\degree$C)",
-        palette="YlOrRd",
+        palette=CLIMATE_COLORMAPS["temp"],
         zero_baseline=False,
         # 0.25 / 0.5 / 1 degC and their decades — the steps a reader expects of
         # a temperature bar. The general ladder would also offer 0.15 and 0.2,
@@ -851,7 +852,7 @@ RASTER_STYLES = {
     #: under CVD — the best of the warm-earth ramps available here.
     "pet": RasterStyle(
         label="Potential evaporation (mm y$^{-1}$)",
-        palette="Oranges",
+        palette=CLIMATE_COLORMAPS["pet"],
         zero_baseline=True,
     ),
 }

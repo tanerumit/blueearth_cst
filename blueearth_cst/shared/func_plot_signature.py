@@ -25,6 +25,7 @@ import scipy.stats as stats
 import xarray as xr
 from hydromt.stats import skills
 
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared import plot_style
 from blueearth_cst.shared.snake_utils import save_figure
 
@@ -250,6 +251,7 @@ def plot_basavg(
     cell_counts=None,
     subbasin_plots=False,
     warmup_excluded=False,
+    annotation="none",
 ):
     """Draw weighted basin annual/seasonal summaries and optional individual plots.
 
@@ -377,25 +379,32 @@ def plot_basavg(
                             transform=ax.transAxes,
                         )
                     name = f"wflow_{BASAVG_FIGURE_STEMS[code]}_{kind}_{support}.png"
-                    save_figure(str(folder / name), fig=fig, dpi=plot_style.RASTER_DPI)
+                    record = _basavg_caption(
+                        folder,
+                        name,
+                        meta,
+                        kind,
+                        label,
+                        info,
+                        weights
+                        if support == "basin_avg"
+                        else {
+                            int(support.split("_")[-1]): weights[
+                                int(support.split("_")[-1])
+                            ]
+                        },
+                        warmup_excluded,
+                        trend,
+                    )
+                    save_figure(
+                        str(folder / name),
+                        fig=fig,
+                        annotation=annotation,
+                        title=record["title"],
+                        caption=record["caption"],
+                        dpi=plot_style.RASTER_DPI,
+                    )
                     plt.close(fig)
-                _basavg_caption(
-                    folder,
-                    name,
-                    meta,
-                    kind,
-                    label,
-                    info,
-                    weights
-                    if support == "basin_avg"
-                    else {
-                        int(support.split("_")[-1]): weights[
-                            int(support.split("_")[-1])
-                        ]
-                    },
-                    warmup_excluded,
-                    trend,
-                )
 
 
 def _basavg_caption(
@@ -440,6 +449,7 @@ def _basavg_caption(
     if warmup_excluded:
         caption += " The first simulation year is excluded."
     inventory["figures"][name] = {
+        "title": f"Simulated {quantity}: {'annual series' if kind == 'annual_ts' else 'seasonal cycle'} — {label}; {period}",
         "caption": caption,
         "sources": ["simulated"],
         "period": info["period"],
@@ -467,13 +477,17 @@ def _basavg_caption(
         },
     }
     _basavg_write_inventory(folder, inventory)
+    return inventory["figures"][name]
 
 
 def _basavg_write_inventory(folder, inventory):
     import json
 
+    write_figure_titles(folder, inventory["figures"])
     path = folder / "_engine/figure_captions.json"
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]

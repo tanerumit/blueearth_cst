@@ -12,57 +12,65 @@ from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.transforms import Affine2D, Bbox
 
-W_COL1, W_PANEL, W_MID, W_FULL = 88.0, 120.0, 140.0, 180.0
+from blueearth_cst.shared import plot_style
+from blueearth_cst.shared.plot_colors import NEUTRAL_COLORS
+from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
+
+_CHARTS = STYLE_SETTINGS["charts"]
+W_COL1, W_PANEL, W_MID, W_FULL = (
+    _CHARTS["widths"][key] for key in ("col1", "panel", "mid", "full")
+)
 
 
 MM = 1 / 25.4
 
 
-H_SINGLE, H_STACK2, H_SIDE2, H_ROW3, H_GRID4 = 80.0, 110.0, 86.0, 80.0, 142.0
-
-
-OUTER_PAD_X_MM, OUTER_PAD_Y_MM = 4.0, 3.0
-
-
-FS_LABEL, FS_TICK, FS_NOTE = 7, 6, 6
-
-
-INK = "#17303c"
-
-
-MUTED = "#536875"
-
-
-AXIS = "#82939b"
-
-
-GRID = "#e6edef"
-
-
-BOUNDARY = "#c6d2d8"
-
-
-LW_LINE, LW_MEAN, LW_REF, LW_EDGE, LW_RANGE, LW_IQR, LW_STEM = (
-    1.2,
-    1.5,
-    0.8,
-    0.6,
-    0.8,
-    3.0,
-    1.6,
+H_SINGLE, H_STACK2, H_SIDE2, H_ROW3, H_GRID4 = (
+    _CHARTS["heights"][key] for key in ("single", "stack2", "side2", "row3", "grid4")
 )
 
 
-LW_BOUNDARY = 0.9
+OUTER_PAD_X_MM, OUTER_PAD_Y_MM = (_CHARTS["padding"][key] for key in ("x", "y"))
 
 
-MS_LINE, MS_POINT, S_SCATTER = 3.0, 4.5, 16
+FS_LABEL, FS_TICK, FS_NOTE = (
+    _CHARTS["fonts"][key] for key in ("label", "tick", "note")
+)
 
 
-BAND_ALPHA = 0.18
+INK = NEUTRAL_COLORS["ink"]
 
 
-LABEL_BOX = {"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2}
+MUTED = NEUTRAL_COLORS["muted"]
+
+
+AXIS = NEUTRAL_COLORS["axis"]
+
+
+GRID = NEUTRAL_COLORS["grid"]
+
+
+BOUNDARY = NEUTRAL_COLORS["boundary"]
+
+
+LW_LINE, LW_MEAN, LW_REF, LW_EDGE, LW_RANGE, LW_IQR, LW_STEM = (
+    _CHARTS["lines"][key]
+    for key in ("line", "mean", "ref", "edge", "range", "iqr", "stem")
+)
+
+
+LW_BOUNDARY = _CHARTS["lines"]["boundary"]
+
+
+MS_LINE, MS_POINT, S_SCATTER = (
+    _CHARTS["markers"][key] for key in ("line", "point", "scatter")
+)
+
+
+BAND_ALPHA = _CHARTS["band_alpha"]
+
+
+LABEL_BOX = dict(_CHARTS["label_box"])
 
 
 MONTH_ABBR = (
@@ -82,40 +90,29 @@ MONTH_ABBR = (
 
 
 STYLE = {
-    "font.family": "DejaVu Sans",
-    "mathtext.fontset": "dejavusans",
+    **_CHARTS["rcparams"],
+    "axes.prop_cycle": plot_style.rcparams()["axes.prop_cycle"],
     "font.size": FS_LABEL,
     "axes.titlesize": FS_LABEL,
-    "axes.titleweight": "normal",
-    "axes.titlelocation": "left",
     "axes.titlecolor": INK,
     "axes.labelsize": FS_LABEL,
     "axes.labelcolor": INK,
     "axes.edgecolor": BOUNDARY,
     "axes.linewidth": LW_BOUNDARY,
-    "axes.spines.top": True,
-    "axes.spines.right": True,
-    "axes.axisbelow": True,
     "xtick.color": AXIS,
     "ytick.color": AXIS,
     "xtick.labelcolor": MUTED,
     "ytick.labelcolor": MUTED,
     "xtick.labelsize": FS_TICK,
     "ytick.labelsize": FS_TICK,
-    "xtick.major.size": 2.5,
-    "ytick.major.size": 2.5,
     "xtick.major.width": LW_EDGE,
     "ytick.major.width": LW_EDGE,
     "grid.color": GRID,
     "grid.linewidth": LW_EDGE,
-    "legend.frameon": False,
     "legend.fontsize": FS_TICK,
     "legend.title_fontsize": FS_TICK,
     "legend.labelcolor": INK,
-    "legend.handlelength": 2.0,
-    "figure.facecolor": "white",
-    "savefig.facecolor": "white",
-    "savefig.dpi": 600,
+    "savefig.dpi": plot_style.RASTER_DPI,
 }
 
 
@@ -227,14 +224,24 @@ def colourbar(
     )
 
 
-def add_caption(fig: Figure, text: str) -> None:
-    """Add a caption below finalized artists without changing their physical size.
+def add_caption(
+    fig: Figure,
+    text: str,
+    *,
+    above: bool = False,
+    crop: bool = False,
+    pad_inches: float = 0,
+) -> None:
+    """Add a caption below, or title above, without changing artists' physical size.
 
     Call after drawing the ordinary product and before its final captioned export.
     Layout and axes locators are frozen at the configured save DPI: the caption
     extends the canvas rather than asking constrained layout to resize the panels.
     Export at that same DPI; further figure resizing or artist edits need a new
     ordinary figure rather than rerunning layout on this finalized copy.
+    ``above=True`` uses the label font and a band above the original canvas.
+    ``crop=True`` freezes the tight artist bounds plus ``pad_inches`` before
+    adding the band; export that finalized canvas without another tight crop.
     """
     original_dpi = fig.dpi
     try:
@@ -243,7 +250,13 @@ def add_caption(fig: Figure, text: str) -> None:
             fig.set_dpi(export_dpi)
         fig.canvas.draw()
         renderer = fig.canvas.get_renderer()
-        width, height = fig.get_size_inches()
+        old_width, old_height = fig.get_size_inches()
+        bounds = (
+            fig.get_tightbbox(renderer).padded(pad_inches)
+            if crop
+            else Bbox.from_bounds(0, 0, old_width, old_height)
+        )
+        width, height = bounds.width, bounds.height
         axes = [(ax, ax.get_position().frozen()) for ax in fig.axes]
         legends = [*fig.legends]
         legends.extend(ax.get_legend() for ax in fig.axes if ax.get_legend())
@@ -256,16 +269,20 @@ def add_caption(fig: Figure, text: str) -> None:
             )
             for legend in legends
         ]
-        left = min((box.x0 for _, box in axes), default=0.04)
-        right = max((box.x1 for _, box in axes), default=0.96)
+        left = (
+            min((box.x0 for _, box in axes), default=0.04) * old_width - bounds.x0
+        ) / width
+        right = (
+            max((box.x1 for _, box in axes), default=0.96) * old_width - bounds.x0
+        ) / width
         caption = fig.text(
             left,
             0,
             "",
             ha="left",
             va="bottom",
-            fontsize=FS_NOTE,
-            color=MUTED,
+            fontsize=FS_LABEL if above else FS_NOTE,
+            color=INK if above else MUTED,
             linespacing=1.3,
         )
         available = (right - left) * width * fig.dpi
@@ -295,15 +312,23 @@ def add_caption(fig: Figure, text: str) -> None:
         fig.set_size_inches(width, height + extra)
         mapping = (
             Affine2D()
-            .scale(1, height / (height + extra))
-            .translate(0, extra / (height + extra))
+            .scale(old_width / width, old_height / (height + extra))
+            .translate(
+                -bounds.x0 / width,
+                (-bounds.y0 + (0 if above else extra)) / (height + extra),
+            )
         )
         for ax, box in axes:
             ax.set_axes_locator(None)
             ax.set_position(mapping.transform_bbox(box))
         for legend, box in anchors:
             legend.set_bbox_to_anchor(
-                Bbox.from_bounds(box.x0, box.y0 + extra, box.width, box.height),
+                Bbox.from_bounds(
+                    box.x0 - bounds.x0,
+                    box.y0 - bounds.y0 + (0 if above else extra),
+                    box.width,
+                    box.height,
+                ),
                 fig.dpi_scale_trans,
             )
         for artist in fig.get_children():
@@ -319,7 +344,9 @@ def add_caption(fig: Figure, text: str) -> None:
                 artist.set_transform(
                     transform - fig.transFigure + mapping + fig.transFigure
                 )
-        caption.set_position((left, 3 * MM / (height + extra)))
+        caption.set_position(
+            (left, (height + 3 * MM if above else 3 * MM) / (height + extra))
+        )
     finally:
         fig.set_dpi(original_dpi)
 

@@ -119,11 +119,12 @@ test run, not by rerunning a passed command solely to produce a receipt. By defa
 be clean and committed. Before commit, stage the intended changes and use `record --staged`; it refuses
 unstaged changes and nonignored untracked files, and checks identity again after execution. Commit the
 same staged content, then `verify` proves the clean committed tree matches without executing the gate.
-Evidence and logs belong in project scratch; retain needed evidence before scratch cleanup.
+Evidence and logs belong in `dev/tasks/<id>/.tmp/`; substitute the owning task ID in the examples.
+Follow `repo-layout.md` § Task temporary material for retention and closure cleanup.
 
 ```powershell
-pixi run python dev/scripts/verify_landing.py record --evidence .tmp/scratchpad/gates.json --gate test-fast --log .tmp/scratchpad/fast.log -- pixi run test-fast
-pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/scratchpad/gates.json --require-gate test-fast
+pixi run python dev/scripts/verify_landing.py record --evidence dev/tasks/<id>/.tmp/gates.json --gate test-fast --log dev/tasks/<id>/.tmp/fast.log -- pixi run test-fast
+pixi run python dev/scripts/verify_landing.py verify --evidence dev/tasks/<id>/.tmp/gates.json --require-gate test-fast
 ```
 
 For a focused pre-commit check, use `record --staged` with an appropriate gate name and test command.
@@ -182,7 +183,7 @@ in `require_gates` must pass in the new evidence. For example, record `console` 
 console test command, then verify:
 
 ```powershell
-pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/scratchpad/landing/base.json --delta-evidence .tmp/scratchpad/landing/followup.json --delta-review .tmp/scratchpad/landing/review.json --require-gate test-full --require-gate test-e2e --require-gate console
+pixi run python dev/scripts/verify_landing.py verify --evidence dev/tasks/<id>/.tmp/landing/base.json --delta-evidence dev/tasks/<id>/.tmp/landing/followup.json --delta-review dev/tasks/<id>/.tmp/landing/review.json --require-gate test-full --require-gate test-e2e --require-gate console
 ```
 
 The verifier checks exact path coverage, base ancestry, candidate tree, matching environment and input
@@ -228,7 +229,46 @@ render and inspect affected figures. Changes to calculations still require numer
 Escalate a confined change when focused verification exposes wider breakage. Preserve independent
 numerical and visual acceptance whenever the change affects those claims.
 
-## The end-to-end run (`test-e2e`)
+## The end-to-end runs (`test-e2e-local`, `test-e2e`)
+
+`pixi run test-e2e-local` runs the same five-workflow rapid case and deliverable
+assertions as the live gate, but reads a sealed, source-only local bundle. Set
+`BLUEEARTH_CST_E2E_BUNDLE` to its absolute directory before running. The test
+copies only the four CMIP6 raw basin slices into a fresh project root and
+points copies of the pinned HydroMT catalogs at the local source mirror.
+Historical extracts, model, change factors, scenarios and simulations are all
+regenerated. A missing or stale bundle fails the gate; a CMIP6 cache miss fails
+before network access. The copied catalogs contain no P-drive fallback roots.
+
+Build or refresh the bundle outside Git:
+
+```powershell
+pixi run python dev/scripts/stage_data.py --config dev/scripts/local_e2e_data.yml --dst <bundle>/hydromt
+# Copy the four rapid-case raw CMIP6 slices produced by dev/scripts/stage_cmip6.py
+# into <bundle>/cmip6/raw, retaining their original bytes and attributes.
+pixi run python dev/scripts/local_e2e_bundle.py seal <bundle>
+pixi run python dev/scripts/local_e2e_bundle.py verify <bundle>
+$env:BLUEEARTH_CST_E2E_BUNDLE = '<bundle>'
+pixi run test-e2e-local
+```
+
+The seal checks the 1999-12-31 CHIRPS boundary day, full 2000–2016 CHIRPS and ERA5 coverage,
+exact pinned spatial source families, all four CMIP6 slices and their shared region identity. Its
+inventory records every file's SHA-256 and the rapid config/catalog hashes;
+any changed byte or added file requires refreshing the seal. The raw slices
+must retain their acquisition digests, units and calendars. The first local
+run still has to prove its freshly delineated polygon matches their digest;
+it cannot silently substitute an old generated region.
+
+For routine downstream changes, a passing sealed local gate supplies the
+all-five execution claim. Add focused fetching tests when acquisition code
+changes. Use the live `test-e2e` when the claim includes catalog availability,
+remote addressing, acquisition windows, clipping or cache behavior, and when
+qualifying a new bundle against live acquisition. A release or milestone can
+reuse matching local execution evidence for downstream behavior; its label
+alone does not trigger a fresh live read. Unit tests cannot establish remote
+availability or detect every upstream format change. Record the bundle seal,
+candidate, output root and live/local comparison when making a parity claim.
 
 `pixi run test-e2e` is the automated all-five execution check:
 through `scripts/run_workflows.py`, on the rapid config, in a fresh temporary

@@ -80,8 +80,12 @@ def hns_switch_row(value):
     Reported rather than enforced -- see the `setdefault` note at the top.
     """
     return (
-        f"gcsfs extended-filesystem switch = {value!r}"
-        + ("" if value == "false" else "  <-- expect ~14x slower remote opens"),
+        f"Remote-read setting: GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT={value!r}"
+        + (
+            ""
+            if value == "false"
+            else "; remote reads may be slower; the supported setting for this reader is false"
+        ),
         "INFO" if value == "false" else "WARNING",
     )
 
@@ -737,7 +741,7 @@ def fetch_raw_slice(
         # slice on disk whose recipe has moved is not skipped -- it re-fetches
         # and reports through the `Fetching` row below.
         log_row(
-            f"Already staged, skipping {os.path.basename(raw_nc_out)}",
+            f"Reusing cached basin slice → {os.path.basename(raw_nc_out)}",
             module="fetch",
         )
         # S8-08(a): a slice cached BEFORE the units fix still claims the
@@ -760,11 +764,17 @@ def fetch_raw_slice(
             series_identity.write_netcdf_atomic(repaired, raw_nc_out)
             repaired.close()
             log_row(
-                f"Repaired stale units on the cached slice: {sorted(stale)}",
+                f"Corrected cached unit labels for {sorted(stale)}",
                 module="fetch",
             )
         os.utime(raw_nc_out, None)
         return
+
+    if os.environ.get("BLUEEARTH_CST_LOCAL_INPUTS") == "1":
+        raise RuntimeError(
+            "local-input E2E has no compatible CMIP6 raw slice; "
+            "refresh the bundle instead of fetching remotely"
+        )
 
     # The digest is deliberately NOT echoed here (nor on the cache-hit row
     # above): it is stamped on the slice as `cst_raw_digest`, so the durable
@@ -783,7 +793,10 @@ def fetch_raw_slice(
     # `test_series_identity.py::test_acquisition_window_is_fixed_per_experiment_class`
     # for the two values, `test_fetch_gcm_raw.py` for the stamped attribute --
     # so a change making the window per-model turns those red, next to this.
-    log_row(f"Fetching {resolve_entry_name(catalog_entry, member)}", module="fetch")
+    log_row(
+        f"Reading CMIP6 basin slice from {resolve_entry_name(catalog_entry, member)}",
+        module="fetch",
+    )
 
     os.makedirs(os.path.dirname(raw_nc_out) or ".", exist_ok=True)
 
@@ -857,7 +870,7 @@ def fetch_raw_slice(
         # named, while a glob is precisely the case where WHICH URI was used
         # is not derivable -- it is the pattern whose match set could change.
         log_row(
-            f"No single pin; keeping the URI glob: {entry_spec.get('uri', '')}",
+            f"No unique store path recorded; resolving catalog pattern {entry_spec.get('uri', '')}",
             module="fetch",
         )
         if ambiguous:
@@ -866,7 +879,7 @@ def fetch_raw_slice(
             # merge cleanly this is the only notice that the source was chosen
             # for the operator rather than by them.
             log_row(
-                f"More than one version on the store "
+                f"Store selection is ambiguous "
                 f"({ambiguous_versions_phrase(ambiguous)}): {entry}",
                 module="fetch",
                 level="WARNING",
@@ -886,8 +899,8 @@ def fetch_raw_slice(
         # the row above names the entry. See `pin_tail` for where the full URI
         # still lives.
         log_row(
-            f"Pinned {pin_tail(str(entry_spec.get('uri', '')), pin_uri)}, "
-            "no bucket listing",
+            f"Using catalog-pinned store {pin_tail(str(entry_spec.get('uri', '')), pin_uri)}, "
+            "bucket listing not needed",
             module="fetch",
         )
     # --- the read, with the irregular-grid branch behind it ----------------
@@ -938,7 +951,7 @@ def fetch_raw_slice(
             # 175 characters of explanation on every one of ~27 affected models is
             # not.
             log_row(
-                f"Irregular grid, applying the bbox directly: {entry}",
+                f"Irregular source grid; applying the basin bounding box directly: {entry}",
                 module="fetch",
                 level="WARNING",
             )
@@ -1019,7 +1032,7 @@ def fetch_raw_slice(
         else series_identity.CALENDAR_UNKNOWN
     )
     log_row(
-        f"Store calendar={store_calendar} ({calendar_var or 'no pin'})",
+        f"Source calendar: {store_calendar}; calendar check: {calendar_var or 'no pin'}",
         module="fetch",
     )
 
@@ -1050,8 +1063,8 @@ def fetch_raw_slice(
 
     series_identity.write_netcdf_atomic(data, raw_nc_out)
     log_row(
-        f"Wrote raw {os.path.basename(raw_nc_out)} "
-        f"({os.path.getsize(raw_nc_out) / 1e6:.2f} MB, {len(index) if index is not None else 0} steps)",
+        f"Basin slice written → {os.path.basename(raw_nc_out)} "
+        f"({os.path.getsize(raw_nc_out) / 1e6:.2f} MB, {len(index) if index is not None else 0} time steps)",
         module="fetch",
     )
     data.close()

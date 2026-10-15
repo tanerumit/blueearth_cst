@@ -19,6 +19,7 @@ from blueearth_cst.projections.get_change_climate_proj import (
     hydrological_year_bounds,
 )
 from blueearth_cst.projections.projection_coverage import coverage_table
+from blueearth_cst.projections.projection_figures import figure_key
 from blueearth_cst.projections.series_checks import (
     assert_calendar_agreement,
     load_checked_series,
@@ -315,6 +316,42 @@ def prepare_tables(
     return tables, record
 
 
+def skipped_product_messages(availability):
+    """Explain skipped products once per product/reason, with affected windows."""
+    missing = availability.loc[~availability.available]
+    for (filename, reason), group in missing.groupby(
+        ["filename", "reason"], sort=False
+    ):
+        key = figure_key(filename)
+        label = {
+            "availability.png": "Ensemble coverage",
+            "trajectory-temperature.png": "Temperature anomaly trajectories",
+            "trajectory-precipitation.png": "Precipitation anomaly trajectories",
+            "annual-temperature.png": "Annual temperature overview",
+            "annual-precipitation.png": "Annual precipitation overview",
+            "change-temperature.png": "Temperature changes",
+            "change-precipitation-pct.png": "Percentage precipitation changes",
+            "change-precipitation-abs.png": "Absolute precipitation changes",
+            "seasonal-cycle-temperature.png": "Temperature seasonal cycle",
+            "seasonal-cycle-precipitation.png": "Precipitation seasonal cycle",
+            "monthly-change-temperature.png": "Monthly temperature changes",
+            "monthly-change-precipitation.png": "Monthly precipitation changes",
+            "variability-ratio-temperature-sd.png": "Temperature variability ratios",
+            "variability-ratio-precipitation-sd.png": "Precipitation standard-deviation ratios",
+            "variability-ratio-precipitation-cv.png": "Precipitation coefficient-of-variation ratios",
+            "change-factor-cloud.png": "Annual temperature–precipitation change cloud",
+            "sign-agreement.png": "Model sign agreement",
+            "change-factor-cloud-combined.png": "Combined-window temperature–precipitation change cloud",
+        }.get(key, key.removesuffix(".png").replace("-", " "))
+        if key == "variability-member-ratios.png":
+            label = "Annual variability member-ratio boxplots"
+            if reason == "no model with two eligible member ratios":
+                reason = "no model has at least two eligible ensemble members"
+        windows = list(dict.fromkeys(w for w in group.window_id if w))
+        scope = f" ({listed(windows)})" if windows else ""
+        yield f"{label[0].upper() + label[1:]} skipped{scope}: {reason}"
+
+
 def run(sm):
     """Assert declared inputs, write every table, and log bounded summaries."""
     points = [dict(point) for point in sm.params.points]
@@ -349,7 +386,7 @@ def run(sm):
         json.dumps(record, indent=2, allow_nan=False) + "\n", encoding="utf-8"
     )
     log_row(
-        f"Used {plural(len(record['windows']), 'window')}: {listed([w['window_id'] for w in record['windows']])}",
+        f"Analysis windows: {listed([w['window_id'] for w in record['windows']])}",
         module="analysis",
     )
     available = int(tables["availability"].available.sum())
@@ -367,17 +404,14 @@ def run(sm):
         )
     missing = tables["availability"].loc[~tables["availability"].available]
     log_row(
-        f"Available {plural(available, 'product')}; not produced {len(missing)}",
+        f"Figure eligibility: {available} available, {len(missing)} skipped",
         module="analysis",
     )
-    if not missing.empty:
-        log_row(
-            f"Not produced: {listed(missing.filename.tolist())}; see analysis_record.json",
-            module="analysis",
-        )
+    for message in skipped_product_messages(tables["availability"]):
+        log_row(message, module="analysis")
     if record["unavailable_members"]:
         log_row(
-            f"Unavailable {plural(len(record['unavailable_members']), 'member window')}; see analysis_record.json",
+            f"Skipped {plural(len(record['unavailable_members']), 'member–window combination')} in projection diagnostics; reasons → analysis_record.json",
             module="analysis",
         )
 

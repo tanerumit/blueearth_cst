@@ -71,6 +71,8 @@ annotations are native — and ``tests/test_model_reference.py`` enforces it.
 import os
 from pathlib import Path
 
+from blueearth_cst.plotting.figure_captions import write_figure_captions
+
 # NOTHING HEAVY AT MODULE SCOPE, deliberately. `build_model.smk` imports this
 # module at PARSE time, for `figure_paths` alone -- a pure string function --
 # and every dry-run of WF1 then paid for whatever this block pulled in. It used
@@ -84,6 +86,7 @@ from pathlib import Path
 #     `RasterStyle` constants below cost nothing to declare;
 #   * `plot_style` is the page/typography contract, stdlib-only, and owns
 #     `RASTER_DPI` directly (`cartographic_map` merely re-exports it).
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared.plot_style import RASTER_DPI
 from blueearth_cst.shared.raster_style import RasterStyle
 from blueearth_cst.shared.snake_utils import save_figure
@@ -231,7 +234,7 @@ def land_cover_classes(layer):
         if source.startswith(prefix):
             return table
     warnings.warn(
-        f"no land-cover class table for source {source!r}; drawn unclassified",
+        f"Land-cover map drawn without class labels: no classification table is registered for {source!r}",
         RuntimeWarning,
         stacklevel=2,
     )
@@ -243,6 +246,18 @@ def land_cover_classes(layer):
 
 #: Legend titles for the nominal figures, by figure stem.
 LEGEND_TITLES = {"land_cover_basin": "Land cover", "subbasins": "Subbasins"}
+FIGURE_TITLES = {
+    "subbasins": "Basin and subbasin delineation",
+    "land_cover_basin": "Basin land cover",
+    "lai_clim_basin": "Basin leaf area index climatology",
+    "soil_clay_basin": "Basin topsoil clay content",
+    "soil_silt_basin": "Basin topsoil silt content",
+    "soil_sand_basin": "Basin topsoil sand content",
+    "soil_organic_carbon_basin": "Basin topsoil organic carbon",
+    "soil_ph_basin": "Basin topsoil pH",
+    "soil_bulk_density_basin": "Basin topsoil bulk density",
+    "soil_depth_to_bedrock_basin": "Basin depth to bedrock",
+}
 
 #: Subbasin fills: ColorBrewer Set3 without its grey, a light qualitative set
 #: that keeps rivers and divides readable over it, drawn at ``SUBBASIN_ALPHA``.
@@ -296,8 +311,8 @@ def subbasin_classes(raster):
     labelled = len(codes) <= _MAX_LEGEND_SUBBASINS
     if not labelled:
         print(
-            f"note: {len(codes)} subbasins is more than a legend can carry; "
-            "drawing the delineation without a class key"
+            f"Subbasin boundaries drawn for all {len(codes)} subbasins; "
+            "class legend omitted because it would be too large"
         )
     colour_of = _neighbour_aware_colours(values, codes, SUBBASIN_COLORS)
     return tuple(
@@ -723,7 +738,13 @@ def source_caveat(layer):
 
 
 def plot_spatial_maps(
-    spatial_dir, plot_dir=None, variables=None, dpi=None, formats=("png",)
+    spatial_dir,
+    plot_dir=None,
+    variables=None,
+    dpi=None,
+    formats=("png",),
+    *,
+    annotation="none",
 ):
     """Render the family into ``<spatial_dir>/plots``, returning what it wrote.
 
@@ -774,14 +795,16 @@ def plot_spatial_maps(
             # failure: it means the registry and ``prepare_land_and_soil_maps``
             # disagree about what the foundation contains.
             print(
-                f"skip {figure.stem}: {SPATIAL_MAPS_FILENAME} has no {figure.variable!r}"
+                f"Spatial figure not written: {figure.stem} requires {figure.variable!r}, which is missing from {SPATIAL_MAPS_FILENAME}"
             )
             continue
         layer = prepare_layer(maps, figure, basin_mask)
         degenerate, reason = _is_degenerate(layer)
         if degenerate:
             # Noted, then drawn anyway. See ``_is_degenerate``.
-            print(f"note {figure.stem}: {figure.variable} is {reason} over this basin")
+            print(
+                f"{figure.stem}: {figure.variable} within the basin: {reason}; rendering the map"
+            )
 
         style = figure.style
         if figure.classes is not None:
@@ -823,6 +846,19 @@ def plot_spatial_maps(
             show_key=figure.stem != "subbasins",
             locator=figure.stem == "subbasins",
         )
+        record = {
+            "title": FIGURE_TITLES[figure.stem],
+            "caption": f"{FIGURE_TITLES[figure.stem]}. "
+            "Colors show the mapped values or classes; basin boundaries and supplied rivers and observation locations provide spatial context. "
+            + (source_caveat(layer) or ""),
+        }
+        from blueearth_cst.plotting.fundamentals import add_caption
+
+        if annotation != "none":
+            if annotation not in ("caption", "title"):
+                raise ValueError("annotation must be none, caption, or title")
+            with plt.rc_context({"savefig.dpi": dpi or RASTER_DPI}):
+                add_caption(fig, record[annotation], above=annotation == "title")
         for extension in formats:
             path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")
             # PDF takes no dpi and needs its timestamp scrubbed; PNG takes dpi
@@ -835,9 +871,16 @@ def plot_spatial_maps(
             )
             save_figure(path, fig=fig, **scrub)
             written.append(Path(path))
+            write_figure_captions(plot_dir, {f"{figure.stem}.{extension}": record})
         plt.close(fig)
 
     maps.close()
+    titles = {path.name: {"title": FIGURE_TITLES[path.stem]} for path in written}
+    if (Path(plot_dir) / "elevation_basin.png").is_file():
+        titles["elevation_basin.png"] = {
+            "title": "Basin elevation and drainage network"
+        }
+    write_figure_titles(plot_dir, titles)
     return written
 
 
@@ -860,7 +903,9 @@ def plot_spatial_figure_set(spatial_dir, plot_dir=None, **kwargs):
     """
     from blueearth_cst.shared.plot_map import plot_basin_map_from_spatial
 
-    plot_basin_map_from_spatial(spatial_dir, plot_dir=plot_dir)
+    plot_basin_map_from_spatial(
+        spatial_dir, plot_dir=plot_dir, annotation=kwargs.get("annotation", "none")
+    )
     return plot_spatial_maps(spatial_dir, plot_dir=plot_dir, **kwargs)
 
 
@@ -870,4 +915,7 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
-            plot_spatial_figure_set(spatial_dir=sm.params.spatial_dir)
+            plot_spatial_figure_set(
+                spatial_dir=sm.params.spatial_dir,
+                annotation=getattr(sm.params, "annotation", "none"),
+            )

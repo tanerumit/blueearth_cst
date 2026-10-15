@@ -15,6 +15,7 @@ from blueearth_cst.experiment.batch_sizing import count_active_cells, disk_headr
 from blueearth_cst.shared.indicator_tables import indicator_tables
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, resolve_water_year_start, validate_experiment_name
 from blueearth_cst.shared.console_style import RuleRegistry, defer_rows, defer_warning, target_banner
+from blueearth_cst.shared.run_log_core import log_row, plural
 
 project, my_cfg = simulation_settings(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
@@ -51,14 +52,14 @@ WORKFLOW_LOG_NAME = f"wf4_simulate_system_{experiment}.log"
 BENCHMARKS_NAME = f"wf4_benchmarks_{experiment}.md"
 RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
-WRITE_MODEL_FINGERPRINT = RULES.logged("4.01", "write_model_fingerprint")
-CHECK_MODEL_UNCHANGED = RULES.logged("4.02", "check_model_unchanged")
-SNAPSHOT_SIMULATION_INPUTS = RULES.banner_only("4.03", "snapshot_simulation_inputs", summary="pin the simulation's inputs so the experiment cannot drift")
-DOWNSCALE_SCENARIO_SERIES = RULES.logged("4.04", "downscale_scenario_series", summary="downscale the perturbed climate onto the model grid")
-RUN_WFLOW_SIMULATIONS = RULES.logged("4.05", "run_wflow_simulations", summary="run Wflow for one batch")
-PUBLISH_WFLOW_OUTPUTS = RULES.banner_only("4.06", "publish_wflow_outputs", summary="inventory the retained native runs")
-GATHER_LOGS = RULES.banner_only("4.09", "gather_logs", after_checkpoint=True)
-GATHER_BENCHMARKS = RULES.banner_only("4.10", "gather_benchmarks", after_checkpoint=True)
+WRITE_MODEL_FINGERPRINT = RULES.logged("4.01", "write_model_fingerprint", summary="record the model inputs for this experiment")
+CHECK_MODEL_UNCHANGED = RULES.logged("4.02", "check_model_unchanged", summary="compare the live model with the experiment reference")
+SNAPSHOT_SIMULATION_INPUTS = RULES.banner_only("4.03", "snapshot_simulation_inputs", summary="freeze the selected runs, model, and simulation settings")
+DOWNSCALE_SCENARIO_SERIES = RULES.logged("4.04", "downscale_scenario_series", summary="prepare model-grid forcing for the selected scenario run")
+RUN_WFLOW_SIMULATIONS = RULES.logged("4.05", "run_wflow_simulations", summary="run Wflow for selected scenario runs")
+PUBLISH_WFLOW_OUTPUTS = RULES.banner_only("4.06", "publish_wflow_outputs", summary="verify and retain the native simulation responses")
+GATHER_LOGS = RULES.banner_only("4.09", "gather_logs", after_checkpoint=True, summary="merge simulation workflow logs")
+GATHER_BENCHMARKS = RULES.banner_only("4.10", "gather_benchmarks", after_checkpoint=True, summary="merge simulation timing and resource-use records")
 METRIC_TOKENS = list(my_cfg.get("metrics", indicator_tables((project.get("model") or {}).get("outvars", DEFAULT_WFLOW_OUTVARS))))
 METRIC_ANCHOR = f"YS-{resolve_water_year_start((project.get('climate') or {}).get('water_year_start')).upper()}"
 
@@ -232,7 +233,9 @@ if not _simulation_complete:
         ADVANCED_SETTINGS["batching"], compute, psutil.virtual_memory().available)
     _threads = min([_plan.threads, *[int(value) for name, value in
         getattr(workflow.resource_settings, "overwrite_threads", {}).items() if name.startswith("run_wflow_simulations_batch_")]])
-    BATCH_PLAN_SUMMARY = _plan.summary()
+    BATCH_PLAN_SUMMARY = f"Up to {plural(_plan.max_parallel, 'concurrent batch', 'concurrent batches')}; {plural(_plan.threads, 'Julia thread')} per batch; selection: {_plan.regime}"
+    if _plan.active_cells is not None:
+        BATCH_PLAN_SUMMARY += f"; {_plan.active_cells} active model cells"
     sizing = resolve_batch_size(member_count=len(RUN_IDS), cores=_plan.max_parallel,
         batch_size_max=compute.get("batch_size_max"), explicit=compute.get("batch_size"),
         footprint=measure_member_footprint(basin_dir, SIM_WINDOW_START, SIM_WINDOW_END, write_states=False),
@@ -252,7 +255,7 @@ if not _simulation_complete:
             # the post-R12 batch is keyed by opaque run ids, so a span would read
             # as two digests rather than as a range. The count is the part that
             # says how long this line will sit there.
-            message: RUN_WFLOW_SIMULATIONS.banner(part=f"batch_{batch}", context=f"{len(members)} members")
+            message: RUN_WFLOW_SIMULATIONS.banner(part=f"batch_{batch}", context=plural(len(members), "scenario run"))
             input:
                 simulation=_frozen_simulation,
                 forcing=[f"{runs_dir}/forcing/inmaps_{run}.nc" for run in members],
@@ -303,7 +306,8 @@ if not _simulation_complete:
             if any(item["descriptor"]["source_calendar"] != evidence["source_calendar"] for item in COLLECTION["series"]):
                 raise ValueError("response temporal evidence differs from retained source calendar")
             inventory = publish_response_inventory_v2(exp_dir, native, evidence)
-            publish_simulation_v2(exp_dir, inventory)
+            published = publish_simulation_v2(exp_dir, inventory)
+            log_row(f"Simulation ready: {published['simulation_id']}; {plural(len(RUN_IDS), 'native run')} retained → {output.inventory}", module="responses")
 
 # simulations_only -- target (unnumbered): simulate, stop before indicators
 rule simulations_only:

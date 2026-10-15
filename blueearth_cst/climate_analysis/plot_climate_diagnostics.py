@@ -16,6 +16,7 @@ def run(sm):
         {key: sm.input[key] for key in ("basins", "subbasins", "rivers", "locations")},
         map_reference=sm.input.map_reference,
         map_reference_params=dict(sm.params.map_reference_params),
+        annotation=getattr(sm.params, "annotation", "none"),
     )
     if settings["subbasin_figures"]:
         from blueearth_cst.climate_analysis.diagnostic_subbasins import render_subbasins

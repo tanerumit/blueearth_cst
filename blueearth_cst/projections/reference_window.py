@@ -97,16 +97,16 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
 
     if window.clipped:
         lines.append(
-            f"Reference window clipped: {window.requested_label} -> "
+            f"Reference period shortened from {window.requested_label} to "
             f"{window.effective_label} (the historical experiment ends "
             f"{HISTORICAL_END_YEAR})"
         )
 
     if window.n_years < SHORT_WINDOW_YEARS:
         lines.append(
-            f"Short reference window: {window.n_years} years "
-            f"({window.effective_label}); the design length is "
-            f"{SHORT_WINDOW_YEARS}"
+            f"Reference period is short: {window.n_years} years "
+            f"({window.effective_label}); recommended design length: "
+            f"{SHORT_WINDOW_YEARS} years"
         )
 
     return lines
@@ -159,11 +159,11 @@ def console_rows(record) -> list[str]:
     """
     effective = record["reference_window_effective"]
     years = record["reference_window_years"]
-    period = f"Reference period {effective} ({years} years)"
+    period = f"Reference period: {effective} ({years} years)"
     if record.get("reference_window_clipped"):
         period += (
-            f", clipped from the requested {record['reference_window_requested']}"
-            f" where the CMIP6 historical experiment ends ({HISTORICAL_END_YEAR})"
+            f"; shortened from {record['reference_window_requested']}"
+            f" because CMIP6 historical data end in {HISTORICAL_END_YEAR}"
         )
     rows = [period]
     return rows

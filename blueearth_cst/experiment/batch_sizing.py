@@ -271,10 +271,10 @@ def resolve_batch_size(
             # that even one member per core does not fit. The cap cannot shrink
             # below B=1, so this is reported rather than enforced.
             warning = (
-                f"WF3 batch peak disk {_gb(peak)} exceeds the"
-                f" {_gb(headroom)} headroom at B={chosen}"
-                f" ({_gb(per_member)}/member x {min(member_count, cores * chosen)}"
-                f" resident); free disk or lower run_length/cores"
+                f"WF4 estimated peak temporary disk use {_gb(peak)} exceeds the"
+                f" {_gb(headroom)} disk budget at batch size {chosen}"
+                f" ({_gb(per_member)} per run × {min(member_count, cores * chosen)}"
+                f" resident runs); free disk space or reduce concurrent runs"
             )
 
     return BatchSizing(

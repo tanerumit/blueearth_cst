@@ -148,6 +148,15 @@ def update_wflow_waterbodies_glaciers(
 
     if values_used_path is not None:
         write_values_used(values_used_path, results, config_fn)
+    from blueearth_cst.shared.snake_utils import log_row
+
+    for result in results:
+        if result["status"] == "skipped":
+            reason = " ".join(result["reason"].splitlines())
+            details = (
+                f"; setup outcomes → {values_used_path}" if values_used_path else ""
+            )
+            log_row(f"{result['method']} skipped: {reason}{details}", module="model")
 
 
 if __name__ == "__main__":

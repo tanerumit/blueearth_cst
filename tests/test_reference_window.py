@@ -31,7 +31,7 @@ def test_K3_window_overrunning_the_historical_end_is_clipped():
 def test_K3_the_warning_names_requested_AND_effective():
     """ "Clipped" alone does not let a reader judge the damage."""
     lines = window_warnings(clip_reference_window([1990, 2030]))
-    clip_line = next(line for line in lines if "clipped" in line)
+    clip_line = next(line for line in lines if "shortened" in line)
     assert "1990-2030" in clip_line and f"1990-{HISTORICAL_END_YEAR}" in clip_line
 
 
@@ -96,13 +96,13 @@ def test_K6_the_seed_window_includes_both_calendar_endpoints():
     """An off-by-one here is invisible on the fixture and wrong everywhere else."""
     w = clip_reference_window(SEED_REQUESTED)
     assert w.n_years == 21
-    assert not any("Short reference window" in line for line in window_warnings(w))
+    assert not any("Reference period is short" in line for line in window_warnings(w))
 
 
 def test_K6_nineteen_years_does_warn():
     w = clip_reference_window([1992, 2010])
     assert w.n_years == 19
-    assert any("Short reference window" in line for line in window_warnings(w))
+    assert any("Reference period is short" in line for line in window_warnings(w))
 
 
 def test_user_reference_window_has_twenty_inclusive_years():
@@ -111,15 +111,15 @@ def test_user_reference_window_has_twenty_inclusive_years():
     window = clip_reference_window([1985, 2004])
     assert window.n_years == 20
     record = alignment_record(window, [1951, 2020])
-    assert console_rows(record) == ["Reference period 1985-2004 (20 years)"]
+    assert console_rows(record) == ["Reference period: 1985-2004 (20 years)"]
     assert window_warnings(window, shared_window=[1951, 2020]) == []
 
 
 def test_K6_a_clipped_window_can_trigger_BOTH_warnings():
     """Conditions are independent; D1 says per condition, not lumped."""
     lines = window_warnings(clip_reference_window([2000, 2030]))
-    assert any("clipped" in line for line in lines)
-    assert any("Short reference window" in line for line in lines)
+    assert any("shortened" in line for line in lines)
+    assert any("Reference period is short" in line for line in lines)
     assert len(lines) == 2
 
 
@@ -147,7 +147,7 @@ def test_console_rows_state_the_period_then_its_alignment():
         "reference_alignment": "differs",
     }
     assert console_rows(record) == [
-        "Reference period 1985-2014 (29 years)",
+        "Reference period: 1985-2014 (29 years)",
     ]
 
 
@@ -161,6 +161,6 @@ def test_console_rows_name_a_clip_and_omit_a_missing_comparison():
         "reference_window_years": 25,
     }
     assert console_rows(record) == [
-        "Reference period 1990-2014 (25 years), clipped from the requested "
-        "1990-2020 where the CMIP6 historical experiment ends (2014)"
+        "Reference period: 1990-2014 (25 years); shortened from "
+        "1990-2020 because CMIP6 historical data end in 2014"
     ]

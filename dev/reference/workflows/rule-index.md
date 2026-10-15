@@ -8,6 +8,12 @@ per-rule sections.
 **Does** is the rule's job; **Writes** transcribes its `output:` block, so the claim can be
 checked against the Snakefile rather than believed.
 
+WF0–WF2 plotting rules also write `figure_titles.md` in each owning plot directory and
+`figure_titles.json` beside the caption JSON inventory (or in `plots/_engine/` for spatial maps).
+These identify ordinary figures independently of captions; titles are not embedded in rendered images.
+WF0–WF2 Python plotting rules also track `config/plotting/colors.yml` and `style.yml` by content digest in
+renderer params. Palette edits schedule those jobs without entering scientific configuration identity.
+
 Rule numbers are reused, so any `W.NN` written before 2026-09-24 may name a
 different rule — translate through [What changed](#what-changed) before reading one in
 `dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` or a dated migration record.
@@ -210,7 +216,7 @@ The selected forcing remains a project configuration decision.
 | 0.03b | `produce_historical_map_reference` | Shared frame, scales and verified native-field identities. |
 | 0.04 | `compute_climate_diagnostics_<source>` | Numerical diagnostics, per source. |
 | 0.04b | `plot_climate_diagnostics_<source>` | PNGs and captions, per source. |
-| 0.05 | `compare_climate_diagnostics` | Common-period comparison, multiple sources only. |
+| 0.05 | `plot_climate_comparison` | Common-period comparison, multiple sources only. |
 | 0.06 | `gather_benchmarks` | Gather benchmark records. |
 | 0.07 | `gather_logs` | Gather log records. |
 
@@ -253,7 +259,7 @@ in `plots/_engine/figure_captions.json` and readable captions in `plots/figure_c
 Captioned copies and subbasin products are opt-in. Unknown subbasin IDs are covered
 by declared directories; disabled options create no placeholder directories.
 
-#### 0.05 · `compare_climate_diagnostics`
+#### 0.05 · `plot_climate_comparison`
 
 Exists only with more than one configured source. Recomputes common-period diagnostics
 from retained daily basin series, retaining SPI reference fits before display clipping.
@@ -903,8 +909,9 @@ cloud needs at least two distinct windows with paired changes. No scalar inputs 
 
 **Writes.** Owned directories `<proj>/plots/full_period/` and `period_<start>_<end>/`, plus
 `plots/figure_captions.md` and `<proj>/_engine/figure_captions.json`. Ordinary PNG paths and manifest keys
-form a bijection, with manifest paths relative to `<proj>/plots/`. Optional `captioned_figures: true`
-adds owned `captioned/` copies, identified by manifest `captioned_path` metadata.
+form a bijection, with manifest paths relative to `<proj>/plots/`. Project-level
+`plotting.annotation: none | caption | title` selects the annotation at the ordinary PNG paths;
+there are no separately targeted captioned copies.
 Predecessor `overview/` and `windows/` products are retired; existing files
 are retained but untargeted and listed in the captions.
 

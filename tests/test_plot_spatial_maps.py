@@ -292,7 +292,7 @@ def test_globcover_code_40_is_forest_not_cropland():
 
 
 def test_an_unknown_land_cover_source_is_drawn_unclassified_with_a_warning():
-    with pytest.warns(RuntimeWarning, match="no land-cover class table"):
+    with pytest.warns(RuntimeWarning, match="no classification table is registered"):
         table = family.land_cover_classes(_layer("esa_worldcover"))
     assert [code for code, _, _ in table] == [-1]
 

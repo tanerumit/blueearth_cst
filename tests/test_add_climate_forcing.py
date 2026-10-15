@@ -486,7 +486,7 @@ def test_a_store_below_the_floor_is_refused_here_not_inside_weathergenr(tmp_path
     with pytest.raises(ValueError) as excinfo:
         acf.check_store_window(nc, "2006-01-01", "2010-12-31", "chirps")
     message = str(excinfo.value)
-    assert "minimum this toolbox requires" in message
+    assert "forcing requirement" in message
     assert "comparison candidate" in message
     assert "chirps" in message
 

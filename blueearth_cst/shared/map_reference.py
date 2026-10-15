@@ -29,6 +29,7 @@ from blueearth_cst.climate_analysis.source_map_fields import (
 )
 from blueearth_cst.plotting.prepared_maps import MapFrame, MapScale
 from blueearth_cst.shared.output_capture import captured_output
+from blueearth_cst.shared.plot_colors import HISTORICAL_MAP_COLORS
 from blueearth_cst.shared.wf3_science import (
     DEFAULT_BASIN_INDEX,
     DEFAULT_HYDROGRAPHY,
@@ -71,6 +72,9 @@ PREPARATION_FILES = (
     "blueearth_cst/plotting/__init__.py",
 )
 REFERENCE_FILES = (
+    "config/plotting/colors.yml",
+    "blueearth_cst/shared/plot_colors.py",
+    "blueearth_cst/shared/plot_setup.py",
     *PREPARATION_FILES,
     "blueearth_cst/shared/produce_map_reference.py",
 )
@@ -857,6 +861,7 @@ def scale_record(
     if variable not in VARIABLES:
         raise ValueError(f"Unknown map variable: {variable}")
     temperature = variable == "temp"
+    palette = HISTORICAL_MAP_COLORS["temp" if temperature else "precip_pet"]
     result = {
         "units": "degC" if temperature else "mm/year",
         "status": "unavailable" if low is None else "available",
@@ -865,8 +870,8 @@ def scale_record(
         "boundaries": [],
         "ticks": [],
         "colors": [],
-        "under_color": "#fffbe6" if temperature else "#f7fbff",
-        "over_color": "#a50f15" if temperature else "#041f4a",
+        "under_color": palette["under"],
+        "over_color": palette["over"],
         "missing_color": "#a0a0a0",
     }
     if low is None:
@@ -894,19 +899,7 @@ def scale_record(
     step = 100 if not temperature else 0.2 if within(1.6) else 0.5 if within(4) else 1
     first, last = math.floor(low / step), math.ceil(working_high / step)
     boundaries = [round(index * step, 12) for index in range(first, last + 1)]
-    ramp = (
-        ("#ffffcc", "#ffe895", "#fec45f", "#fd953f", "#fa4a29")
-        if temperature
-        else (
-            "#deebf7",
-            "#c6dbef",
-            "#9ecae1",
-            "#6baed6",
-            "#4292c6",
-            "#2171b5",
-            "#08519c",
-        )
-    )
+    ramp = palette["colors"]
     classes = len(boundaries) - 1
     colors = (
         [ramp[-1]]

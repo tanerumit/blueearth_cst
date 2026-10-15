@@ -16,7 +16,7 @@ def run(sm: Any) -> None:
     publish_reference(sm.output.reference, record, **expected)
     from blueearth_cst.shared.snake_utils import log_row
 
-    log_row("Wrote historical map reference", module="maps")
+    log_row("Historical map display reference written", module="maps")
 
 
 if "snakemake" in globals():

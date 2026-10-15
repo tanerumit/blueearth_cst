@@ -97,6 +97,61 @@ def test_falsey_values_returned_as_is(falsey):
 # --- _compact_log_line (hydromt format) --------------------------------------
 
 
+@pytest.mark.parametrize(
+    "module,current,proposed",
+    [
+        (
+            "weathergen",
+            "Reading weather netcdf: source.nc",
+            "Reading historical climate for weather generation → source.nc",
+        ),
+        (
+            "weathergen",
+            "Resampling on 1 basin cell(s) of 9 in the store",
+            "Weather resampling uses 1 basin-intersecting cell from the 9-cell extracted grid",
+        ),
+        (
+            "weathergen",
+            "Generating 1 weather realization(s)",
+            "Generating 1 stochastic weather realization",
+        ),
+        (
+            "weathergen",
+            "Moving 2 figure(s) to plots",
+            "Moving 2 weather-generator diagnostic figures → plots",
+        ),
+        (
+            "weathergen",
+            "Saving realization 1 of 2",
+            "Writing stochastic realization 1 of 2",
+        ),
+        (
+            "weathergen",
+            "run_001 reading realization root.nc",
+            "run_001: reading source realization root.nc",
+        ),
+        (
+            "weathergen",
+            "run_001 applying perturbations (temp=+2)",
+            "run_001: applying climate perturbations (temp=+2)",
+        ),
+        (
+            "experiment",
+            "Wrote lookup.csv (12 rows, 1 member)",
+            "Perturbation lookup written → lookup.csv (12 monthly rows; 1 perturbation point)",
+        ),
+    ],
+)
+def test_provider_console_wording_preserves_identity_and_level(
+    module, current, proposed
+):
+    # Provider source is hashed into the seed. Change presentation, not that source.
+    row = f"12:34:56 - {module} - WARNING - {current}\n"
+    expected = f"12:34:56 - {module} - WARNING - {proposed}\n"
+    assert _compact_log_line(row) == expected
+    assert _compact_log_line(expected) == expected
+
+
 def test_compact_shortens_timestamp_and_drops_dotted_name():
     line = (
         "2026-07-21 18:03:38,474 - hydromt.model.model - model - INFO - "
@@ -313,7 +368,9 @@ def test_save_figure_writes_creates_parent_and_announces(tmp_path, capsys):
     assert out.exists()
     su.flush_figure_bundles()
     printed = capsys.readouterr().out.strip()
-    assert printed.endswith(f"- plot - {_figure_console_path(out)}"), printed
+    assert printed.endswith(f"- plot - Figure written → {_figure_console_path(out)}"), (
+        printed
+    )
 
 
 def test_save_figure_bundles_one_directory_into_one_row(tmp_path, capsys):
@@ -325,7 +382,7 @@ def test_save_figure_bundles_one_directory_into_one_row(tmp_path, capsys):
     assert capsys.readouterr().out == ""  # nothing announced until the flush
     su.flush_figure_bundles()
     rows = [line.split(" - ", 2)[2] for line in capsys.readouterr().out.splitlines()]
-    assert rows == [f"3 figures -> {_figure_console_path(first.parent)}"], rows
+    assert rows == [f"Wrote 3 figures → {_figure_console_path(first.parent)}"], rows
 
 
 def test_save_figure_bundles_alternating_directories_separately(tmp_path, capsys):
@@ -340,8 +397,8 @@ def test_save_figure_bundles_alternating_directories_separately(tmp_path, capsys
     # Two rows, in the order the directories were FIRST written to -- not four,
     # and not one per alternation.
     assert rows == [
-        f"2 figures -> {_figure_console_path(tmp_path / 'plots')}",
-        f"2 figures -> {_figure_console_path(tmp_path / 'maps')}",
+        f"Wrote 2 figures → {_figure_console_path(tmp_path / 'plots')}",
+        f"Wrote 2 figures → {_figure_console_path(tmp_path / 'maps')}",
     ], rows
 
 
@@ -353,7 +410,7 @@ def test_an_ordinary_row_flushes_the_bundle_first(tmp_path, capsys):
     log_row("Wrote 2 canonical climate figures", module="plot")
     rows = [line.split(" - ", 2)[2] for line in capsys.readouterr().out.splitlines()]
     assert rows == [
-        f"2 figures -> {_figure_console_path(tmp_path / 'plots')}",
+        f"Wrote 2 figures → {_figure_console_path(tmp_path / 'plots')}",
         "Wrote 2 canonical climate figures",
     ], rows
 
@@ -461,7 +518,7 @@ def test_target_banner_puts_one_target_per_line(monkeypatch):
     monkeypatch.setattr(sys, "stderr", io.StringIO())  # isatty() -> False
     monkeypatch.delenv("NO_COLOR", raising=False)
     out = target_banner("all", ["a/x.csv", "b/y.png"])
-    assert out == "Target: all\n    a/x.csv\n    b/y.png"
+    assert out == "Target: all - confirm requested outputs\n    a/x.csv\n    b/y.png"
     assert ", " not in out
 
 
@@ -473,7 +530,7 @@ def test_target_banner_accepts_a_dict_values_view(monkeypatch):
     monkeypatch.delenv("NO_COLOR", raising=False)
     targets = {"a": "one.csv", "b": "two.csv"}
     assert target_banner("all", targets.values()) == (
-        "Target: all\n    one.csv\n    two.csv"
+        "Target: all - confirm requested outputs\n    one.csv\n    two.csv"
     )
 
 
@@ -483,7 +540,7 @@ def test_target_banner_with_no_targets_is_just_the_banner(monkeypatch):
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
-    assert target_banner("all", []) == "Target: all"
+    assert target_banner("all", []) == "Target: all - confirm requested outputs"
 
 
 def test_target_banner_relativizes_against_project_dir(monkeypatch):
@@ -507,7 +564,7 @@ def test_target_banner_relativizes_against_project_dir(monkeypatch):
         root,
     )
     assert out == (
-        f"Target: all  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
+        f"Target: all - confirm requested outputs  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
     )
 
 
@@ -546,7 +603,7 @@ def test_target_banner_without_project_dir_keeps_paths_verbatim(monkeypatch):
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
     out = target_banner("all", ["C:/p/q.csv"])
-    assert out == "Target: all\n    C:/p/q.csv"
+    assert out == "Target: all - confirm requested outputs\n    C:/p/q.csv"
     assert "[" not in out
 
 
@@ -1502,23 +1559,24 @@ def _wait_for_notice(capsys, seconds=2.0):
     """Collect stderr until a watchdog notice appears (or ``seconds`` pass)."""
     err = ""
     deadline = time.monotonic() + seconds
-    while "no output for" not in err and time.monotonic() < deadline:
+    while "elapsed" not in err and time.monotonic() < deadline:
         time.sleep(0.02)
         err += capsys.readouterr().err
     return err
 
 
-def test_noninteractive_heartbeat_reports_sparse_silence_without_summary():
+def test_noninteractive_heartbeat_reports_elapsed_without_summary():
     stream = io.StringIO()
     hb = _driven("2.05_merge", stream)
-    _tick_through(hb, *range(1, 7))  # cross the 2x and 5x sparse-notice thresholds
+    _tick_through(hb, *range(1, 7))
     lines = stream.getvalue().splitlines()
     assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge "
-        r"\d:\d\d:\d\d elapsed · no output for \d:\d\d:\d\d",
+        r"\d\d:\d\d:\d\d - execution - Rule 2\.05: merge "
+        r"\d:\d\d:\d\d elapsed",
         lines[0],
     ), lines[0]
-    assert len(lines) == 2
+    assert len(lines) == 6
+    assert "no output for" not in stream.getvalue()
     assert "done in" not in stream.getvalue()
     assert "2.05_merge" not in stream.getvalue()
 
@@ -1529,43 +1587,42 @@ def test_heartbeat_suppressed_while_active():
     for t in range(1, 7):  # output lands just before every tick
         hb._last = t - 0.1
         hb._tick(float(t))
-    assert "no output for" not in stream.getvalue()
+    assert "elapsed" not in stream.getvalue()
 
 
 def _still_running(stream):
-    return [line for line in stream.getvalue().splitlines() if "no output for" in line]
+    return [line for line in stream.getvalue().splitlines() if "elapsed" in line]
 
 
-def test_heartbeat_notices_back_off():
-    """A long silence is ONE situation, not one situation per minute.
-
-    Measured 2026-09-06: a machine that hibernated mid-run woke to 535 notices
-    per job over an 8h55m gap, every one the same sentence with a different
-    number. Eighteen intervals of silence on a redirected stream report at 2,
-    5 and 10 intervals -- three notices where a fixed interval would print 17.
-    """
+def test_heartbeat_notices_keep_a_fixed_interval():
+    """Redirected streams receive an elapsed row on every quiet interval."""
     stream = io.StringIO()
     hb = _driven("2.04_fetch_cmip6_projections", stream)
     _tick_through(hb, *range(1, 19))
-    assert len(_still_running(stream)) == 3, stream.getvalue()
+    assert len(_still_running(stream)) == 18, stream.getvalue()
 
 
-def test_heartbeat_sparse_schedule_is_what_thins_the_notices(monkeypatch):
-    """Non-vacuity: replacing the sparse schedule restores line-per-tick noise."""
-    monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_MULTIPLIERS", (1.0,))
-    monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_STEP", 1.0)
+def test_heartbeat_defaults_to_fifteen_second_updates(monkeypatch):
+    monkeypatch.delenv("CST_HEARTBEAT_SECS", raising=False)
+    stream = io.StringIO()
+    hb = _Heartbeat("2.05b_prepare_projection_analysis", stream)
+    hb._start = hb._last = hb._seen = 0.0
+    _tick_through(hb, 14, 15, 29, 30, 44, 45)
+    lines = _still_running(stream)
+    assert len(lines) == 3
+    assert [line.rsplit(" ", 2)[-2] for line in lines] == [
+        "0:00:15",
+        "0:00:30",
+        "0:00:45",
+    ]
+
+
+def test_heartbeat_first_notice_lands_at_one_interval():
     stream = io.StringIO()
     hb = _driven("2.04_fetch_cmip6_projections", stream)
-    _tick_through(hb, *range(1, 19))
-    assert len(_still_running(stream)) == 18
-
-
-def test_heartbeat_first_notice_lands_at_two_intervals():
-    stream = io.StringIO()
-    hb = _driven("2.04_fetch_cmip6_projections", stream)
-    hb._tick(1.0)
+    hb._tick(0.9)
     assert not _still_running(stream)
-    hb._tick(2.0)
+    hb._tick(1.0)
     assert len(_still_running(stream)) == 1
 
 
@@ -1585,20 +1642,17 @@ def test_heartbeat_thread_reports_a_real_silence():
     assert len(_still_running(stream)) == 1
 
 
-def test_heartbeat_backoff_resets_when_output_resumes():
-    """A new silence is a new question, answered at the base interval again.
-
-    Without the reset, a job that went quiet, spoke, then hung would wait out
-    the previous silence's inflated threshold before saying so -- which is the
-    watchdog failing at exactly the moment it exists for.
-    """
+def test_heartbeat_interval_resets_when_output_resumes():
+    """Output resuming resets the next notice to one quiet interval later."""
     stream = io.StringIO()
     hb = _driven("2.04_fetch_cmip6_projections", stream)
-    _tick_through(hb, *range(1, 11))  # notices at 2, 5, 10; next would be 20
-    assert len(_still_running(stream)) == 3
-    hb._last = 10.5  # output resumed: the gap closes and the backoff resets
-    _tick_through(hb, 11, 12, 13)  # the NEW silence reaches two intervals at 12.5
-    assert len(_still_running(stream)) == 4
+    _tick_through(hb, *range(1, 11))
+    assert len(_still_running(stream)) == 10
+    hb._last = 10.5
+    hb._tick(11.0)
+    assert len(_still_running(stream)) == 10
+    hb._tick(11.5)
+    assert len(_still_running(stream)) == 11
 
 
 def test_heartbeat_hands_a_stall_to_the_bar_when_one_is_open():
@@ -1622,7 +1676,7 @@ def test_heartbeat_still_beeps_when_the_hook_declines():
     hb = _driven("3.06_weathergen", stream, on_stall=lambda: False)
     _tick_through(hb, 1, 2)
 
-    assert "no output for" in stream.getvalue()
+    assert "elapsed" in stream.getvalue()
 
 
 def test_heartbeat_records_the_quiet_period_even_when_the_bar_answered_it():
@@ -1658,7 +1712,7 @@ def test_heartbeat_reports_no_failure_for_systemexit_zero(tmp_path, capsys):
             err = _wait_for_notice(capsys)
             raise SystemExit(0)
     err += capsys.readouterr().err
-    assert "no output for" in err and "failed after" not in err
+    assert "elapsed" in err and "failed after" not in err
     assert "done in" not in err
 
 
@@ -1891,7 +1945,7 @@ def test_tee_keeps_the_gcsfs_switch_row_that_explains_a_slow_run(tmp_path, capsy
     with tee_to_log(log, heartbeat_interval=0):
         log_row(message, module="fetch", level=level)
     out = capsys.readouterr().out
-    assert "WARNING" in out and "14x slower" in out
+    assert "WARNING" in out and "remote reads may be slower" in out
 
 
 def test_log_row_emits_one_write_so_the_console_mute_can_see_it(monkeypatch):
@@ -1974,8 +2028,8 @@ def test_tee_to_log_heartbeat_goes_to_console_not_log(tmp_path, capsys):
         err = _wait_for_notice(capsys)  # silence triggers a console heartbeat
     err += capsys.readouterr().err
     logged = log.read_text(encoding="utf-8")
-    assert "no output for" in err and "done in" not in err
-    assert "no output for" not in logged and "done in" not in logged
+    assert "elapsed" in err and "done in" not in err
+    assert "elapsed" not in logged and "done in" not in logged
 
 
 # ---------------------------------------------------------------------------
@@ -2846,10 +2900,16 @@ def test_console_start_line_leaves_a_multiline_banner_intact():
     out = _emit(
         handler,
         _console_record(event="progress", done=19, total=20),
-        _job_info(1, "all", "Target: all  [proj]\n    a/x.csv\n    logs/wf1.log"),
+        _job_info(
+            1,
+            "all",
+            "Target: all - confirm requested outputs  [proj]\n    a/x.csv\n    logs/wf1.log",
+        ),
     )
     lines = out.splitlines()
-    assert lines[0].endswith("Target: all  [proj]"), lines[0]
+    assert lines[0].endswith("Target: all - confirm requested outputs  [proj]"), lines[
+        0
+    ]
     assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
 
 
@@ -3964,7 +4024,7 @@ def test_run_summary_closes_a_success_in_one_line():
         "wf3_benchmarks.md",
         elapsed_seconds=176,
     )
-    assert out.splitlines() == ["wf3 run_stress_test done in 0:02:56"]
+    assert out.splitlines() == ["wf3 run_stress_test completed in 0:02:56"]
 
 
 def test_warning_tally_counts_across_processes(tmp_path, monkeypatch):
@@ -4055,7 +4115,7 @@ def test_run_summary_verdict_carries_the_warning_count(tmp_path, monkeypatch):
     out = cs.run_summary(
         "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
     )
-    assert out.splitlines()[0] == "wf1 done in 0:07:16  |  1 warning"
+    assert out.splitlines()[0] == "wf1 completed in 0:07:16  |  1 warning"
     su.note_warning("plot")
     out = cs.run_summary(
         "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
@@ -4072,7 +4132,7 @@ def test_run_summary_says_nothing_when_a_run_printed_no_warning(tmp_path, monkey
     out = cs.run_summary(
         "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
     )
-    assert out.splitlines() == ["wf1 done in 0:07:16"]
+    assert out.splitlines() == ["wf1 completed in 0:07:16"]
 
 
 def test_run_summary_ignores_a_tally_it_was_not_handed(tmp_path, monkeypatch):
@@ -4086,7 +4146,7 @@ def test_run_summary_ignores_a_tally_it_was_not_handed(tmp_path, monkeypatch):
     monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "t"))
     su.note_warning("someone else's run")
     out = cs.run_summary("wf1", "p", "l.log", "b.md", elapsed_seconds=436)
-    assert out.splitlines() == ["wf1 done in 0:07:16"]
+    assert out.splitlines() == ["wf1 completed in 0:07:16"]
 
 
 def test_run_summary_failure_verdict_carries_it_too(tmp_path, monkeypatch):
@@ -4121,7 +4181,7 @@ def test_run_summary_paints_only_the_failed_verdict(monkeypatch):
     assert failed.splitlines()[0] == su._ansi("wf3 FAILED", su._ANSI_FAIL)
     assert su._ANSI_FAIL not in ok
     # A success bolds the NAME only, matching the opening title.
-    assert ok.splitlines()[0] == su._ansi("wf3", cs._ANSI_TITLE) + " done"
+    assert ok.splitlines()[0] == su._ansi("wf3", cs._ANSI_TITLE) + " completed"
 
 
 def test_run_summary_verdict_is_plain_when_stderr_is_not_a_console(monkeypatch):
@@ -4140,7 +4200,7 @@ def test_heartbeat_redraws_a_routine_status_frame_without_an_all_clear():
         hb._tick(t)
     hb._clear_status()  # what stop() does on a clean finish
     out = _unreset(stream.getvalue())
-    assert out.count("no output for") >= 2
+    assert out.count("elapsed") >= 2
     assert "done in" not in out
     assert f"\033[{su._ANSI_FAIL}m" not in out
     assert "\r" in stream.getvalue()
@@ -4526,7 +4586,7 @@ def test_console_target_jobs_are_not_counted_as_work(monkeypatch):
         _job_info(3, "work", "Rule 1.01: work"),
         _console_record(event="job_finished", job_id=3),
         _console_record(event="progress", done=3, total=4),
-        _job_info(4, "all", "Target: all"),
+        _job_info(4, "all", "Target: all - confirm requested outputs"),
         _console_record(event="job_finished", job_id=4),
         _console_record(event="progress", done=4, total=4),
     )

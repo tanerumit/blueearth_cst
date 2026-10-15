@@ -44,6 +44,7 @@ from blueearth_cst.projections.fetch_gcm_raw import (
     check_time_axis,
     clip_to_bbox,
     explaining_ambiguous_versions,
+    fetch_raw_slice,
     harmonise_dims_wide_time,
     hns_switch_row,
     is_irregular_grid_error,
@@ -55,6 +56,27 @@ from blueearth_cst.projections.fetch_gcm_raw import (
     stale_units,
     with_read_overrides,
 )
+
+
+def test_local_input_mode_refuses_a_cmip_cache_miss(tmp_path, monkeypatch):
+    monkeypatch.setenv("BLUEEARTH_CST_LOCAL_INPUTS", "1")
+    monkeypatch.setattr(series_identity, "region_fingerprint", lambda _path: "region")
+    monkeypatch.setattr(series_identity, "raw_digest", lambda *_args: "digest")
+    monkeypatch.setattr(series_identity, "cache_hit", lambda *_args, **_kw: False)
+    with pytest.raises(RuntimeError, match="instead of fetching remotely"):
+        fetch_raw_slice(
+            region_path=tmp_path / "region.geojson",
+            raw_nc_out=str(tmp_path / "raw.nc"),
+            catalog_path=tmp_path / "catalog.yml",
+            catalog_entry="entry_{member}",
+            member="r1i1p1f1",
+            variables=["precip", "temp"],
+            variable_units={"precip": "mm/day", "temp": "degC"},
+            buffer=1,
+            acquisition_window=("1950", "2100"),
+            components={},
+        )
+
 
 # ---------------------------------------------------------------------------
 # hns_switch_row — a slow run must explain itself
@@ -79,7 +101,7 @@ def test_any_other_value_warns_and_says_what_it_will_cost(value):
     """
     row, level = hns_switch_row(value)
     assert level == "WARNING"
-    assert "~14x slower remote opens" in row
+    assert "remote reads may be slower" in row
     assert repr(value) in row
 
 

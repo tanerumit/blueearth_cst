@@ -206,7 +206,7 @@ def test_region_selection_diagnostics_are_truthful(monkeypatch, selection, expli
     if len(selection) == 4 and not explicit_xy:
         assert len(warnings) == 1
         assert "search area" in warnings[0]
-        assert "original point" in warnings[0]
+        assert "no outlet point was supplied" in warnings[0]
         assert "shift" not in warnings[0]
     else:
         assert warnings == []

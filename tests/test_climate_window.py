@@ -142,7 +142,7 @@ def test_the_description_carries_both_windows_and_the_length():
         ("2000-01-01", "2020-12-31"), ("2005-01-01", "2020-12-31")
     ).describe()
     assert "requested 2000-01-01..2020-12-31" in text
-    assert "delivered 2005-01-01..2020-12-31" in text
+    assert "extracted period 2005-01-01..2020-12-31" in text
     assert "years" in text
 
 
@@ -168,8 +168,8 @@ def test_a_narrowing_is_reported_and_never_raises(capsys):
         where="unused",
     )
     out = capsys.readouterr().out
-    assert "does not cover the full shared.historical_window" in out
-    assert "widest range it holds" in out
+    assert "staged data cover only part of climate.window" in out
+    assert "widest available span" in out
 
 
 def test_below_the_floor_raises_when_the_caller_enforces_it():
@@ -180,7 +180,7 @@ def test_below_the_floor_raises_when_the_caller_enforces_it():
             where="DO THIS INSTEAD",
         )
     message = str(excinfo.value)
-    assert f"{MIN_HISTORICAL_YEARS}-year minimum" in message
+    assert f"{MIN_HISTORICAL_YEARS}-year forcing requirement" in message
     assert "weathergenr" in message
     assert message.endswith("DO THIS INSTEAD")
 
@@ -194,7 +194,7 @@ def test_below_the_floor_only_warns_when_the_caller_does_not(capsys):
     )
     out = capsys.readouterr().out
     assert result is coverage
-    assert f"{MIN_HISTORICAL_YEARS}-year minimum" in out
+    assert f"{MIN_HISTORICAL_YEARS}-year forcing requirement" in out
     assert "KNOW THIS INSTEAD" in out
     assert "WARNING" in out
 
@@ -249,7 +249,7 @@ def test_a_short_store_is_refused_at_the_consumer(tmp_path):
             store_time_bounds(nc), "chirps", nc, where="SAYS WHO READS IT"
         )
     message = str(excinfo.value)
-    assert f"{MIN_HISTORICAL_YEARS}-year minimum" in message
+    assert f"{MIN_HISTORICAL_YEARS}-year forcing requirement" in message
     assert "comparison candidate" in message
     assert message.endswith("SAYS WHO READS IT")
 

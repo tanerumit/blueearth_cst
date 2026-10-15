@@ -63,7 +63,7 @@ const FRAME_PREFIX = "[cst-progress]"
 # not the sub-second cadence an in-process bar can afford: Wflow's loop is per
 # TIMESTEP (3287 of them on a rapid member), and an unthrottled emitter would
 # put one line per timestep on the wire. One second keeps the bar smooth while
-# also keeping the tee's 60 s silence heartbeat from ever firing on these rules.
+# also keeping the tee's 15 s silence timer from ever firing on these rules.
 const FRAME_INTERVAL = 1.0
 
 # One frame line. `position` is a batch member's `[k/N]`, carried so the Python

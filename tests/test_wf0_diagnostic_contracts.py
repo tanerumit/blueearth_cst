@@ -1,5 +1,6 @@
 """Canonical WF0 declaration, missing-data and table round-trip contracts."""
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -142,7 +143,7 @@ def test_canonical_inventory_and_one_source_refusal():
 
 
 @pytest.mark.parametrize("kind", ["zero", "constant", "missing", "no_overlap"])
-def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind):
+def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind, capsys):
     idx = pd.date_range("2000-01-01", "2005-12-31")
     p = np.zeros(len(idx)) if kind == "zero" else np.ones(len(idx))
     if kind == "missing":
@@ -162,11 +163,21 @@ def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind):
         paths["figures"].pop("map-precip")
         records = render(paths, settings, 1, ["chirps"], [paths["root"]])
         assert len(records) == 16
+        titles = json.loads(
+            (tmp_path / "plots/_engine/figure_titles.json").read_text(encoding="utf-8")
+        )["figures"]
+        assert set(titles) == set(records)
+        assert all("CHIRPS" in entry["title"] for entry in titles.values())
+        assert (tmp_path / "plots/figure_titles.md").is_file()
         assert not any("monthly_percentile" in path for path in records)
         assert all((Path(paths["root"]) / p).is_file() for p in records)
         series = next(r for p, r in records.items() if "annual_trend_ts" in p)
         assert series["availability"].startswith("Unavailable")
         assert "no usable data or reference fit" in series["caption"]
+        output = capsys.readouterr().out
+        assert "Wrote 16 diagnostic figures for chirps" in output
+        assert "availability details → plots/_engine/figure_captions.json" in output
+        assert "no native temperature data" in output
 
 
 def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
@@ -176,9 +187,7 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
     from blueearth_cst.climate_analysis.diagnostic_subbasins import render_subbasins
     from blueearth_cst.climate_analysis.diagnostic_tables import write_json
 
-    settings = parse_settings(
-        {"captioned_figures": True}, {"start": 2000, "end": 2016}, ["era5", "chirps"]
-    )
+    settings = parse_settings({}, {"start": 2000, "end": 2016}, ["era5", "chirps"])
     settings["subbasin_figures"] = True
     folders = []
     idx = pd.date_range("2000-01-01", "2016-12-31")
@@ -213,11 +222,12 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
         )
         output = SimpleNamespace(
             subbasin_figures=str(root / "plots" / "subbasins"),
-            captioned_subbasins=str(root / "plots" / "captioned" / "subbasins"),
             subbasin_tables=str(root / "tables" / "subbasins"),
         )
         sm = SimpleNamespace(
-            params=SimpleNamespace(subbasin_table_dirs=folders[: len(sources)], m0=1),
+            params=SimpleNamespace(
+                subbasin_table_dirs=folders[: len(sources)], m0=1, annotation="caption"
+            ),
             output=output,
         )
         render_subbasins(sm, settings, sources)
@@ -228,7 +238,7 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
         )["figures"]
         assert len(records) == (3 if len(sources) == 1 else 2)
         assert all(
-            (root / path).is_file() and (root / r["captioned_path"]).is_file()
+            (root / path).is_file() and r["captioned_path"] is None
             for path, r in records.items()
         )
         assert (
@@ -259,7 +269,7 @@ def test_exact_basin_mask_and_unresolved_temperature_units(tmp_path):
     pd.DataFrame({"latitude": [0.0], "longitude": [10.0]}).to_csv(cells, index=False)
     frame, lineage = daily_series(nc, cells, "era5")
     assert frame.precip.eq(1.0).all() and frame.temp.isna().all()
-    assert "unresolved" in lineage["warnings"][0]
+    assert "era5: temperature diagnostics unavailable" in lineage["warnings"][0]
     pd.DataFrame({"latitude": [0.0, 3.0], "longitude": [10.0, 10.0]}).to_csv(
         cells, index=False
     )

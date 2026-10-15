@@ -81,7 +81,7 @@ if __name__ == "__main__":
                 sm.output.outlet_index_path,
             )
             log_row(
-                f"Wrote outlet index: {plural(n_stations, 'station')} -> "
+                f"Outlet identity index written: {plural(n_stations, 'location')} -> "
                 f"{sm.output.outlet_index_path}",
                 module="outlets",
             )

@@ -94,7 +94,7 @@ def run(sm):
     for warning in lineage["warnings"]:
         log_row(warning, module="diagnostics", level="WARNING")
     log_row(
-        f"Wrote retained source tables and map fields for {source}",
+        f"Diagnostic tables and native-grid map fields written for {source}",
         module="diagnostics",
     )
 

@@ -233,6 +233,12 @@ def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
         (tmp_path / "_engine" / "figure_captions.json").read_text(encoding="utf-8")
     )["figures"]
     assert set(captions) == written
+    titles = json.loads(
+        (tmp_path / "_engine/figure_titles.json").read_text(encoding="utf-8")
+    )["figures"]
+    assert set(titles) == written
+    assert all("auto_01" in entry["title"] for entry in titles.values())
+    assert (tmp_path / "figure_titles.md").is_file()
     for kind in ("peaks", "lows"):
         caption = captions[f"signatures_{kind}_1010.png"]["caption"]
         assert "Synthetic observations for demonstration." in caption
@@ -252,7 +258,7 @@ def test_signature_context_retains_full_record_and_highlights_selected_year(
     wet, dry = wettest_and_driest_year(simulated)
     year = wet if kind == "peaks" else dry
 
-    def inspect(fig, plot_dir, stem):
+    def inspect(fig, plot_dir, stem, annotation="none", record=None):
         ax = fig.axes[2]
         for line, expected in zip(ax.lines, (observed, simulated), strict=True):
             np.testing.assert_array_equal(line.get_ydata(), expected.values)
@@ -309,8 +315,8 @@ def test_an_unknown_extremes_kind_is_refused(tmp_path):
 def test_observed_is_blue_and_simulated_is_red():
     """Owner's call 2026-08-10. The hexes are the Okabe-Ito pair, so the two
     stay separable under all three dichromacies and differ in lightness."""
-    assert plot_evaluation.COLOR_OBSERVED == "#0072B2"
-    assert plot_evaluation.COLOR_SIMULATED == "#D55E00"
+    assert plot_evaluation.COLOR_OBSERVED == "#0D38E0"
+    assert plot_evaluation.COLOR_SIMULATED == "#CC593D"
 
 
 def test_every_metric_the_table_can_show_declares_an_ideal_and_a_format():

@@ -47,7 +47,10 @@ import os
 # order to learn the word "stations". The constant stays HERE, beside the code
 # that draws into the bin, for the reason its own comment gives; it is the
 # imports that move.
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared import plot_style
+from blueearth_cst.shared.plot_colors import EVALUATION_COLORS, NEUTRAL_COLORS
+from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
 from blueearth_cst.shared.snake_utils import save_figure
 
 #: The bin every per-station sheet is written into, relative to
@@ -66,29 +69,29 @@ STATION_PLOT_DIRNAME = "stations"
 # TUNABLE CONSTANTS
 # ===========================================================================
 
-#: Observed and simulated, in that order. Okabe-Ito blue and vermillion: the
-#: pair stays separable under all three dichromacies AND differs in lightness,
-#: so the dashed/solid distinction below is a greyscale BACKUP rather than the
-#: only cue carrying the difference. Owner's call 2026-08-10 that observed is
-#: blue and simulated red; the specific hexes are the accessible version of it.
-COLOR_OBSERVED = "#0072B2"
-COLOR_SIMULATED = "#D55E00"
+#: Expanded original blue for observed, Terracotta for simulated. Preserve
+#: dashed/solid distinctions; this palette is not certified for colour vision.
+COLOR_OBSERVED = EVALUATION_COLORS["observed"]
+COLOR_SIMULATED = EVALUATION_COLORS["simulated"]
 #: Marks that belong to neither series — the period mean, a 1:1 line's anchor.
-COLOR_NEUTRAL = "#1a1a1a"
-COLOR_GRID = "#dcdcdc"
+COLOR_NEUTRAL = NEUTRAL_COLORS["evaluation_neutral"]
+COLOR_GRID = NEUTRAL_COLORS["evaluation_grid"]
 #: The 1:1 reference line on every scatter panel.
-COLOR_REFERENCE = "0.55"
+COLOR_REFERENCE = NEUTRAL_COLORS["evaluation_reference"]
 
 #: Observed dashes, simulated solid. Simulated is solid because it is the dense
 #: series — a dashed line over 7000 daily values reads as a smear.
-DASH_OBSERVED = (0, (3, 1.6))
-LINE_WIDTH = 0.7
+DASH_OBSERVED = (
+    STYLE_SETTINGS["evaluation"]["observed_dash"][0],
+    tuple(STYLE_SETTINGS["evaluation"]["observed_dash"][1]),
+)
+LINE_WIDTH = STYLE_SETTINGS["evaluation"]["line_width"]
 
 #: Sheet heights in millimetres. The width is ``plot_style.FIGURE_WIDTH_MM`` for
 #: all four, so they stack in a report at one size.
-HEIGHT_HYDROGRAPH_MM = 148.0
-HEIGHT_EXTREMES_MM = 122.0
-HEIGHT_PERFORMANCE_MM = 118.0
+HEIGHT_HYDROGRAPH_MM = STYLE_SETTINGS["evaluation"]["heights"]["hydrograph"]
+HEIGHT_EXTREMES_MM = STYLE_SETTINGS["evaluation"]["heights"]["extremes"]
+HEIGHT_PERFORMANCE_MM = STYLE_SETTINGS["evaluation"]["heights"]["performance"]
 
 #: Return periods marked on the frequency panels.
 RETURN_PERIODS = (2.0, 5.0, 10.0, 30.0)
@@ -334,7 +337,7 @@ def wettest_and_driest_year(simulated):
     return int(annual.idxmax().values), int(annual.idxmin().values)
 
 
-def _save(fig, plot_dir, stem):
+def _save(fig, plot_dir, stem, annotation="none", record=None):
     """Write one sheet and return its path.
 
     PNG only since 2026-08-10 (owner's call, applied across the deliverable).
@@ -348,7 +351,16 @@ def _save(fig, plot_dir, stem):
     import matplotlib.pyplot as plt
 
     png = os.path.join(str(plot_dir), f"{stem}.png")
-    save_figure(png, fig=fig, dpi=plot_style.RASTER_DPI, metadata={"Software": None})
+    record = record or {}
+    save_figure(
+        png,
+        fig=fig,
+        annotation=annotation,
+        title=record.get("title", ""),
+        caption=record.get("caption", ""),
+        dpi=plot_style.RASTER_DPI,
+        metadata={"Software": None},
+    )
     plt.close(fig)
     return png
 
@@ -358,7 +370,9 @@ def _save(fig, plot_dir, stem):
 # ===========================================================================
 
 
-def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
+def plot_hydrograph(
+    simulated, station, plot_dir, observed=None, caveat=None, *, annotation="none"
+):
     """What the model produces: daily, annual, seasonal, and both FDCs.
 
     The one sheet drawn for EVERY station on every run — every panel is
@@ -449,8 +463,10 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
         artists.inside_legend(fig, ax_daily, handles, lines=ax_daily.lines)
         # Finalize layout after the adaptive legend chooses its corner.
         fig.canvas.draw()
-        filename = _save(fig, plot_dir, f"hydrograph_{station.wflow_id}")
-    _hydrograph_caption(prepared, station, plot_dir, caveat)
+        record = _hydrograph_caption(prepared, station, plot_dir, caveat)
+        filename = _save(
+            fig, plot_dir, f"hydrograph_{station.wflow_id}", annotation, record
+        )
     return filename
 
 
@@ -753,7 +769,7 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
         caption += " No overlapping comparison span."
     caption += " " + " ".join(details)
     engine = root / "_engine"
-    engine.mkdir(exist_ok=True)
+    engine.mkdir(parents=True, exist_ok=True)
     path = engine / "figure_captions.json"
     inventory = (
         json.loads(path.read_text(encoding="utf-8"))
@@ -761,6 +777,7 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
         else {"schema_version": 1, "figures": {}}
     )
     inventory["figures"][name] = {
+        "title": f"Discharge hydrograph, seasonal cycle and flow duration — {station.caption}; {start}–{end}",
         "caption": caption,
         "sources": ["simulated", "observed"] if observed is not None else ["simulated"],
         "period": [start, end],
@@ -784,7 +801,10 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
             if prepared[key] is not None
         },
     }
+    write_figure_titles(root, inventory["figures"])
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]
@@ -801,8 +821,12 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
         encoding="utf-8",
     )
 
+    return inventory["figures"][name]
 
-def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
+
+def plot_extremes(
+    simulated, observed, station, plot_dir, kind, caveat=None, *, annotation="none"
+):
     """One end of the distribution: frequency, year-by-year, and one year.
 
     ``kind`` is ``"peaks"`` or ``"lows"``. The two sheets are deliberately
@@ -952,8 +976,8 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
             # Leave room for c) only when the less occupied corner is on the left.
             legend.set_bbox_to_anchor((0, 0, 1, 0.88))
         stem = f"signatures_{'peaks' if peaks else 'lows'}_{station.wflow_id}"
-        _extremes_caption(simulated, station, plot_dir, kind, year, caveat)
-        return _save(fig, plot_dir, stem)
+        record = _extremes_caption(simulated, station, plot_dir, kind, year, caveat)
+        return _save(fig, plot_dir, stem, annotation, record)
 
 
 def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
@@ -990,6 +1014,7 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         else {"schema_version": 1, "figures": {}}
     )
     inventory["figures"][f"signatures_{kind}_{station.wflow_id}.png"] = {
+        "title": f"{'High' if peaks else 'Low'}-flow diagnostics — {station.caption}; {'–'.join(period)}",
         "caption": caption,
         "sources": ["simulated", "observed"],
         "period": period,
@@ -999,7 +1024,10 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         "captioned_path": None,
         "highlighted_year": int(year),
     }
+    write_figure_titles(root, inventory["figures"])
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]
@@ -1015,6 +1043,8 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         + "\n",
         encoding="utf-8",
     )
+
+    return inventory["figures"][f"signatures_{kind}_{station.wflow_id}.png"]
 
 
 #: Row positions of the metrics table, in axes fractions: the group band, the
@@ -1216,7 +1246,9 @@ def _performance_r_squared(pairs):
     return float(np.corrcoef(valid["observed"], valid["simulated"])[0, 1] ** 2)
 
 
-def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=None):
+def plot_performance(
+    simulated, observed, station, plot_dir, metrics, caveat=None, *, annotation="none"
+):
     """Paired-day scatter and cumulative volume, with the supplied CSV metrics."""
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
@@ -1353,8 +1385,10 @@ def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=Non
             )
         score = _performance_r_squared(pairs)
         support["squared_pearson_r"] = float(score) if np.isfinite(score) else None
-        _performance_caption(support, station, plot_dir, caveat)
-        return _save(fig, plot_dir, f"performance_{station.wflow_id}")
+        record = _performance_caption(support, station, plot_dir, caveat)
+        return _save(
+            fig, plot_dir, f"performance_{station.wflow_id}", annotation, record
+        )
 
 
 def _performance_caption(support, station, plot_dir, caveat):
@@ -1374,7 +1408,7 @@ def _performance_caption(support, station, plot_dir, caveat):
         + (f"{caveat}" if caveat else "")
     )
     engine = root / "_engine"
-    engine.mkdir(exist_ok=True)
+    engine.mkdir(parents=True, exist_ok=True)
     path = engine / "figure_captions.json"
     inventory = (
         json.loads(path.read_text(encoding="utf-8"))
@@ -1382,6 +1416,7 @@ def _performance_caption(support, station, plot_dir, caveat):
         else {"schema_version": 1, "figures": {}}
     )
     inventory["figures"][f"performance_{station.wflow_id}.png"] = {
+        "title": f"Discharge performance — {station.caption}; {span}",
         "caption": caption.strip(),
         "sources": ["simulated", "observed"],
         "period": period,
@@ -1403,7 +1438,10 @@ def _performance_caption(support, station, plot_dir, caveat):
             "caveat": caveat,
         },
     }
+    write_figure_titles(root, inventory["figures"])
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]
@@ -1419,6 +1457,8 @@ def _performance_caption(support, station, plot_dir, caveat):
         + "\n",
         encoding="utf-8",
     )
+
+    return inventory["figures"][f"performance_{station.wflow_id}.png"]
 
 
 def r_squared(observed, simulated):
@@ -1449,6 +1489,7 @@ def plot_station_evaluation(
     signatures=False,
     caveat=None,
     log=print,
+    annotation="none",
 ):
     """Every sheet this station's data supports, in reading order.
 
@@ -1460,23 +1501,45 @@ def plot_station_evaluation(
     A sheet that cannot be drawn is REPORTED, never silently absent: "there are
     no observations" and "the figure failed" look identical in an empty folder.
     """
-    written = [plot_hydrograph(simulated, station, plot_dir, observed, caveat)]
+    written = [
+        plot_hydrograph(
+            simulated, station, plot_dir, observed, caveat, annotation=annotation
+        )
+    ]
     if observed is None:
-        log(f"wflow_id {station.wflow_id}: no observations; drew the hydrograph only.")
+        log(
+            f"wflow_id {station.wflow_id}: simulation hydrograph written; observation-based evaluation omitted because no observations are available"
+        )
         return written
     if metrics is not None:
         written.append(
-            plot_performance(simulated, observed, station, plot_dir, metrics, caveat)
+            plot_performance(
+                simulated,
+                observed,
+                station,
+                plot_dir,
+                metrics,
+                caveat,
+                annotation=annotation,
+            )
         )
     if signatures:
         for kind in ("peaks", "lows"):
             written.append(
-                plot_extremes(simulated, observed, station, plot_dir, kind, caveat)
+                plot_extremes(
+                    simulated,
+                    observed,
+                    station,
+                    plot_dir,
+                    kind,
+                    caveat,
+                    annotation=annotation,
+                )
             )
     else:
         log(
-            f"wflow_id {station.wflow_id}: record too short for annual statistics; "
-            "no peaks/lows sheets."
+            f"wflow_id {station.wflow_id}: annual peak/low-flow figures omitted because the evaluation record is too short; "
+            "other discharge figures are retained."
         )
     return written
 

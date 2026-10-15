@@ -171,18 +171,12 @@ def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
         plt.close(fig)
 
 
-@pytest.mark.parametrize(
-    "extra_path, message",
-    [
-        ("full_period/stale.png", "owned PNGs differ"),
-        ("captioned/full_period/stale.png", "captioned PNGs differ"),
-    ],
-)
-def test_manifest_bijection_unavailable_and_captioned_copy(
-    suite, tmp_path, extra_path, message
+@pytest.mark.parametrize("annotation", ["none", "caption", "title"])
+def test_manifest_bijection_unavailable_and_annotation_mode(
+    suite, tmp_path, annotation, capsys
 ):
     tables, record = suite
-    # Keep one real available product to exercise 600dpi and caption copies.
+    # Keep one real available product to exercise selected-mode export.
     tables["availability"].loc[
         tables["availability"].filename
         != "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
@@ -192,26 +186,34 @@ def test_manifest_bijection_unavailable_and_captioned_copy(
         "synthetic unavailable product"
     )
     plots = tmp_path / "plots"
-    manifest, skipped = render_suite(tables, record, plots, captioned_figures=True)
+    manifest, skipped = render_suite(tables, record, plots, annotation=annotation)
     assert len(manifest) == 1 and len(skipped) == 18
+    console = capsys.readouterr().out
+    assert "projection_plots - Rendering windows:" in console
+    assert "; reference: " in console
+    assert "Wrote 1 figure; skipped 18" in console
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }
-    assert (plots / "captioned" / next(iter(manifest))).is_file()
-    assert (
-        manifest[next(iter(manifest))]["captioned_path"]
-        == "captioned/period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
-    )
+    assert (plots / next(iter(manifest))).is_file()
+    assert not (plots / "captioned").exists()
     assert (
         json.loads((tmp_path / "_engine/figure_captions.json").read_text()) == manifest
     )
+    titles = json.loads(
+        (tmp_path / "_engine/figure_titles.json").read_text(encoding="utf-8")
+    )["figures"]
+    assert set(titles) == set(manifest)
+    assert all(item["title"] for item in titles.values())
+    assert "2036–2065 relative to" in next(iter(titles.values()))["title"]
+    assert (plots / "figure_titles.md").is_file()
     assert not (plots / "_engine").exists()
     assert "Not produced" in (plots / "figure_captions.md").read_text()
-    stale = plots / extra_path
+    stale = plots / "full_period/stale.png"
     stale.parent.mkdir(parents=True, exist_ok=True)
     stale.write_bytes(b"stale")
-    with pytest.raises(RuntimeError, match=message):
-        render_suite(tables, record, plots, captioned_figures=True)
+    with pytest.raises(RuntimeError, match="owned PNGs differ"):
+        render_suite(tables, record, plots, annotation=annotation)
 
 
 def test_captions_and_distinct_folder_contract(suite):
@@ -289,10 +291,11 @@ def test_driver_csv_roundtrip_normalizes_full_period_window(
                 captions_json=str(tmp_path / "_engine/figure_captions.json"),
                 folders=[str(plots / "full_period"), str(plots / "period_2036_2065")],
             ),
-            params=SimpleNamespace(captioned_figures=False),
+            params=SimpleNamespace(annotation="title"),
         )
     )
     available = captured["tables"]["availability"]
+    assert captured["kwargs"]["annotation"] == "title"
     assert captured["kwargs"]["captions_json"] == str(
         tmp_path / "_engine/figure_captions.json"
     )

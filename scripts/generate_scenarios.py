@@ -147,6 +147,16 @@ def run_owned(
                 project_root,
                 reservation_context.name,
             )
+        from blueearth_cst.shared.run_log_core import log_row, plural
+
+        realization_count = len({row["rlz"] for row in plan["rows"]})
+        point_count = len({row["st_id"] for row in plan["rows"] if row["st_id"]})
+        log_row(
+            f"Scenario request: {plural(realization_count, 'stochastic realization')} across "
+            f"{plural(point_count, 'perturbation point')}, plus unperturbed baselines; "
+            f"planned collection: {plural(len(plan['rows']), 'run')}",
+            module="generation",
+        )
         if ready:
             export_scenario_collection(
                 project_root,
@@ -163,7 +173,7 @@ def run_owned(
                 history["configuration"]["archive_state"] = "retained_creator"
                 invocation_history.update(history_path, history)
             print(
-                f"WF3: retained ready collection {plan['collection_id']}; no generation needed",
+                f"WF3: reusing ready scenario collection {plan['collection_id']}; no weather generation needed",
                 flush=True,
             )
             return 0

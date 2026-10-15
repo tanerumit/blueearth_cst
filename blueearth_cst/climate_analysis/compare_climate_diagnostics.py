@@ -15,6 +15,7 @@ from blueearth_cst.climate_analysis.diagnostic_source_summary import (
     write_comparison_table,
 )
 from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_tables
+from blueearth_cst.shared.snake_utils import log_row, plural
 
 
 def run(sm):
@@ -27,6 +28,11 @@ def run(sm):
     )
     m0 = int(sm.params.m0)
     period = tuple(settings["comparison_period"][k] for k in ("start", "end"))
+    log_row(
+        f"Comparing {plural(len(sources), 'source')} over reporting years "
+        f"{period[0]}–{period[1]}; reporting year starts in month {m0}",
+        module="compare",
+    )
     daily = {
         s: pd.read_csv(path, index_col="date", parse_dates=["date"])
         for s, path in zip(sources, sm.input.daily)
@@ -111,6 +117,20 @@ def run(sm):
         .reset_index()
     )
     agreement["n_common_valid_years"] = len(common)
+    log_row(
+        (
+            f"Source agreement uses {plural(len(common), 'common valid reporting year')}; "
+            "period and counts → tables/agreement.md"
+            if len(common)
+            else "Numerical source agreement unavailable: no common valid reporting years; "
+            "details → tables/agreement.md"
+        ),
+        module="compare",
+    )
+    log_row(
+        "Source agreement measures consistency between datasets; it does not establish accuracy",
+        module="compare",
+    )
     Path(paths["compute"]["agreement"]).parent.mkdir(parents=True, exist_ok=True)
     agreement.to_csv(paths["compute"]["agreement"], index=False)
     lines = [
@@ -126,7 +146,14 @@ def run(sm):
         "\n".join(lines) + "\n", encoding="utf-8"
     )
     write_tables(paths, tables, settings, m0, period, lineage)
-    render(paths, settings, m0, sources, list(sm.params.pooled_roots))
+    render(
+        paths,
+        settings,
+        m0,
+        sources,
+        list(sm.params.pooled_roots),
+        annotation=getattr(sm.params, "annotation", "none"),
+    )
     if settings["subbasin_figures"]:
         from blueearth_cst.climate_analysis.diagnostic_subbasins import render_subbasins
 

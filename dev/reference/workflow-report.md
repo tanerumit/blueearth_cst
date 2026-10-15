@@ -12,7 +12,7 @@ behavior needs visual verification before using an exported PDF as a deliverable
 
 ## Populate a report
 
-Copy the template to a task-owned folder under `.tmp/scratchpad/` while developing. Replace the JSON
+Copy the template into `dev/tasks/<id>/.tmp/` while developing. Replace the JSON
 inside `<script type="application/json" id="report-data">` with report data. Leave the renderer unchanged.
 Serialize JSON and escape every `<` as `\u003c` so a caption cannot close the script element.
 Report text is inserted with `textContent`, not interpreted as HTML.

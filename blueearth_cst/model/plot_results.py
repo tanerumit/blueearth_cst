@@ -94,8 +94,8 @@ def resolve_stations(qsim, location_registry, log=_log):
             row = by_subbasin.get(index)
         if row is None:
             log(
-                f"series {index} is in neither the location registry's wflow_id "
-                f"nor its subbasin_id column; naming its figures after {index}."
+                f"Series {index} has no matching location-registry identity; "
+                "using its original ID for figure names"
             )
             stations[index] = Station(index, station_name=str(name))
             continue
@@ -108,8 +108,8 @@ def resolve_stations(qsim, location_registry, log=_log):
         )
         if station.wflow_id in seen:
             log(
-                f"series {index} and {seen[station.wflow_id]} are the same model "
-                f"cell (wflow_id {station.wflow_id}); plotting it once."
+                f"Series {index} and {seen[station.wflow_id]} resolve to the same model "
+                f"cell (wflow_id {station.wflow_id}); rendering one figure set"
             )
             continue
         seen[station.wflow_id] = index
@@ -169,10 +169,8 @@ def merge_outlet_and_gauge_series(qsim, qsim_gauges, log=_log):
             # Led by the FACT rather than by the count, which also dodges the
             # verb agreement `Gauge(s) ... sit` quietly got wrong whenever the
             # count was 1 -- the case this row is most often printed for.
-            f"On a model outlet, already in Q_outlets: "
-            f"{plural(len(dropped), 'gauge')} "
-            f"{[int(i) for i in dropped]} ({', '.join(gauge_names)}); "
-            f"plotted under {outlet_names}"
+            f"Gauge series {[int(i) for i in dropped]} ({', '.join(gauge_names)}) "
+            f"duplicate model outlets; using outlet series {outlet_names} for plots"
         )
     if not keep:
         return qsim
@@ -204,6 +202,7 @@ def analyse_wflow_historical(
     gauges_locs: Union[Path, str] = None,
     location_registry: Union[Path, str] = None,
     subbasin_plots: bool = False,
+    annotation: str = "none",
 ):
     """
     Analyse and plot wflow model performance for historical run.
@@ -370,27 +369,34 @@ def analyse_wflow_historical(
     # Apply one common warm-up boundary before any hydrological summary.
     warmup_excluded = len(qsim.time) > 365
     if warmup_excluded:
-        _log("Skipping the first year of the wflow run (warm-up period)")
+        _log(
+            "Excluding the first simulation year as warm-up from hydrological summaries and evaluation"
+        )
         start = pd.Timestamp(qsim.time.values[0]) + pd.DateOffset(years=1)
         qsim = qsim.sel(time=slice(start, None))
         if ds_basin.data_vars:
             ds_basin = ds_basin.sel(time=slice(start, None))
     else:
-        _log("Simulation is less than a year so model warm-up period will be plotted.")
+        _log(
+            "Short simulation: retaining the warm-up period in plots and hydrological summaries"
+        )
 
     ### 5. Plot other basin average outputs ###
     if ds_basin.data_vars:
-        _log("Plotting basin-average wflow outputs")
+        _log("Rendering basin-average Wflow simulation outputs")
         plot_basavg(
             ds_basin,
             Folder_plots,
             cell_counts=subcatchment_cell_counts(mod.staticmaps.data),
             subbasin_plots=subbasin_plots,
+            annotation=annotation,
             warmup_excluded=warmup_excluded,
         )
         plt.close()
     else:
-        _log("No basin-average outputs configured; skipping plot_basavg.")
+        _log(
+            "Basin-average figures omitted: no basin-average output variables are configured"
+        )
 
     ### 6. Plot hydrographs and compute performance metrics ###
     # Initialise the output performance table
@@ -421,7 +427,7 @@ def analyse_wflow_historical(
         if stations.get(int(sid)) is not None
     ]
     _log(
-        f"Evaluation figures for {plural(len(plotted_ids), 'station')}: "
+        f"Rendering discharge figures for {plural(len(plotted_ids), 'model location')} (wflow_id): "
         + ", ".join(str(wflow_id) for wflow_id in plotted_ids)
     )
 
@@ -464,11 +470,20 @@ def analyse_wflow_historical(
             metrics=metrics,
             signatures=do_signatures and qobs_i is not None,
             log=_log,
+            annotation=annotation,
         )
         plt.close("all")
 
     # Save performance metrics to csv (evaluation/, not evaluation/plots/ — P1)
     df_perf_all.to_csv(os.path.join(Folder_eval, "performance_metrics.csv"))
+    _log(
+        (
+            f"Performance metric table written for {plural(len(df_perf_all.columns), 'evaluated location')}"
+            if len(df_perf_all.columns)
+            else "No observation-based performance metrics computed"
+        )
+        + " → performance_metrics.csv"
+    )
 
     ### End of the function ###
 
@@ -486,6 +501,7 @@ if __name__ == "__main__":
                 gauges_locs=getattr(sm.input, "output_locations", None),
                 location_registry=sm.input.location_registry,
                 subbasin_plots=sm.params.subbasin_plots,
+                annotation=getattr(sm.params, "annotation", "none"),
                 # declared only on the chirps/chirps_global branch (ext2-1)
             )
     else:

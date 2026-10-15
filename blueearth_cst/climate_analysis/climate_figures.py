@@ -38,6 +38,7 @@ from blueearth_cst.climate_analysis.figure_naming import (
     figure_filename,
     map_spatial_scope,
 )
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared.plot_style import RASTER_DPI, align_caveat_to_plot_area
 from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
@@ -923,6 +924,15 @@ def plot_climate_figures(
                 )
                 out_path = plot_dir / name
                 save_figure(out_path, dpi=RASTER_DPI)
+                write_figure_titles(
+                    plot_dir,
+                    {
+                        name: {
+                            "title": f"{spec['label']} annual climatology map — {clim_source or title}; basin extent"
+                        }
+                    },
+                    merge=True,
+                )
                 plt.close(fig)
                 written.append(out_path)
                 continue
@@ -956,6 +966,15 @@ def plot_climate_figures(
                 align_caveat_to_plot_area(fig, fig.axes[0] if fig.axes else None)
                 out_path = destination / name
                 save_figure(out_path, dpi=RASTER_DPI)
+                write_figure_titles(
+                    destination,
+                    {
+                        name: {
+                            "title": f"{spec['label']} {'annual series' if kind == 'annual' else 'monthly distribution'} — {clim_source or title}; {scope.replace('_', ' ')}"
+                        }
+                    },
+                    merge=True,
+                )
                 plt.close(fig)
                 written.append(out_path)
     # No summary row. It restated three facts the rows around it already

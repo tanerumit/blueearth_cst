@@ -104,7 +104,7 @@ def main(argv=None):
             environment.update(context.environment())
             environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
             invocation_history.update(record_path, record)
-            print("simulate_system: " + " ".join(args.target), flush=True)
+            print("WF4 targets: " + " ".join(args.target), flush=True)
             result = run_project_child(
                 command,
                 env=environment,
@@ -124,6 +124,12 @@ def main(argv=None):
                 # Refresh here, still under project execution ownership, for all reuse.
                 export_selected_metrics(
                     root / "experiments" / context.name, project, settings
+                )
+                from blueearth_cst.shared.run_log_core import log_row
+
+                log_row(
+                    f"Selected metric tables exported → {root / 'experiments' / context.name / 'results/metric_sets'}",
+                    module="metrics",
                 )
         invocation_history.finish(record_path, record, exit_code=result)
         return result

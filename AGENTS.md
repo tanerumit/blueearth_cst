@@ -46,7 +46,8 @@ Read the 2025 technical note in References before changing what a workflow compu
 - `dev/`: plans, retained findings, conventions and helpers; not shipped. The board belongs to `main`:
   edit notes there and render with `python dev/scripts/todoboard.py render`; commit board-only changes
   separately. Never hand-edit generated `dev/TODO.md`. New task documents go in `dev/tasks/<id>/`,
-  never `dev/working/`; disposable probes go in `.tmp/scratchpad/<task-id-or-purpose>/`.
+  never `dev/working/`. Temporary notes, sketches, probes and logs belong in the relevant
+  `dev/tasks/<id>/.tmp/`, never `.tmp/scratchpad/`; see `dev/reference/repo-layout.md` for cleanup.
 - `docs/site/`: published documentation; `docs/notebooks/`: source notebooks; `docs/references/`:
   upstream guides. Historical migration guides live in `dev/records/milestones/`.
   Do not mirror configs into docs. Full layout: `dev/reference/repo-layout.md`.
@@ -114,7 +115,7 @@ on failure preserve the lane and branch for recovery.
 | Final Python batch | `pixi run lint` and `pixi run format-check` once |
 | Land a batch | One `test-fast` on the integrated candidate, or reuse evidence; exempt-only diffs skip it |
 | Additional software coverage | Affected contracts; local full for needed extra coverage, replacing fast |
-| Several workflow handoffs or shared runtime behavior | All-five E2E, or reuse execution evidence |
+| Several workflow handoffs or shared runtime behavior | All-five local or live E2E, or reuse evidence |
 | Confined workflow behavior | Affected integration path/consumers; execution when outputs can change |
 | Numeric output | Independent numerical check and affected consumers; baseline for whole-tree claims |
 | Release or milestone | Verify candidate and delta coverage; labels alone add no tests |
@@ -133,6 +134,10 @@ Focused checks suffice for task commits; do not pull landing gates forward into 
 fast; E2E covers its affected workflow executions. Stop once required coverage is sound; repeat only
 for invalidated evidence or a concrete diagnostic need. Keep rationale in existing task notes or the
 completion report; this rule requires no new checklist, document or approval step.
+The local E2E gate regenerates every downstream product from staged source inputs. Use focused fetching
+tests for acquisition changes; opt into live E2E when verifying catalog availability, addressing,
+windows, clipping or cache behavior. A release or milestone label alone does not require live fetching.
+See `dev/reference/validation-ladder.md` for bundle qualification and refresh.
 Use policy-tooling tests only when changing that tooling or its contracts, not merely using its verifier.
 
 Push exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root

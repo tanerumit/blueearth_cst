@@ -83,7 +83,10 @@ def delineate_region(
 
     data_catalog = hydromt.DataCatalog(data_libs=data_libs)
     try:
-        log_row(f"Delineating region {model_region} on {hydrography}", module="spatial")
+        log_row(
+            f"Delineating basin from {model_region} using {hydrography}",
+            module="spatial",
+        )
         try:
             gdf = parse_region_basin(
                 model_region,
@@ -99,7 +102,7 @@ def delineate_region(
                 )
             ):
                 message = (
-                    "HydroMT selected a raster extent too small for delineation "
+                    "Basin delineation failed: the selected raster extent is too small "
                     f"from basin.region={model_region!r}. Check the outlet lies on "
                     "the intended drainage channel and the hydrography/index pairing; "
                     "consider a bounded subbasin outlet search area."
@@ -119,8 +122,8 @@ def delineate_region(
             and all(isinstance(value, Real) for value in selection)
         ):
             log_row(
-                f"Outlet search area used: {selection}; inspect selected basin geometry "
-                "and output locations (no original point supplied)",
+                f"Outlet selected within search area {selection}; inspect the basin boundary "
+                "and output locations because no outlet point was supplied",
                 module="spatial",
                 level="WARNING",
             )
@@ -129,7 +132,7 @@ def delineate_region(
             if parent:
                 os.makedirs(parent, exist_ok=True)
             gdf.to_file(region_out, driver="GeoJSON")
-            log_row(f"Wrote region: {region_out}", module="spatial")
+            log_row(f"Basin boundary written → {region_out}", module="spatial")
         return gdf
     finally:
         # Drop the catalog and collect while the interpreter is still HEALTHY.

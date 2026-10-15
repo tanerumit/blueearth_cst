@@ -125,6 +125,39 @@ MINIMAL_T1_SECTIONS: dict = {
 }
 
 
+def test_plotting_is_project_owned_and_preserved(tmp_path):
+    sections = {**MINIMAL_T1_SECTIONS, "plotting": {"annotation": "title"}}
+    path = write_split(tmp_path, sections=sections, bodies={"build_model": {}})
+    config = cc.load_composed_config(path)
+    assert config["plotting"] == {"annotation": "title"}
+
+
+@pytest.mark.parametrize("key", ["plotting", "annotation"])
+def test_plotting_cannot_be_declared_in_workflow_file(tmp_path, key):
+    path = write_split(tmp_path, bodies={"build_model": {key: "title"}})
+    with pytest.raises(ValueError, match=key):
+        cc.load_composed_config(path)
+
+
+def test_invalid_annotation_is_refused_during_composition(tmp_path):
+    path = write_split(tmp_path, sections={"plotting": {"annotation": "clean"}})
+    with pytest.raises(ValueError, match="plotting.annotation"):
+        cc.load_composed_config(path)
+
+
+@pytest.mark.parametrize(
+    "owner,body",
+    [
+        ("analyze_climate", {"diagnostics": {"captioned_figures": True}}),
+        ("analyze_projections", {"captioned_figures": False}),
+    ],
+)
+def test_old_caption_switch_names_project_replacement(tmp_path, owner, body):
+    path = write_split(tmp_path, bodies={owner: body})
+    with pytest.raises(ValueError, match="plotting.annotation: caption"):
+        cc.load_composed_config(path)
+
+
 def write_split(
     directory: Path,
     stem: str = "project_config_test",
@@ -335,20 +368,14 @@ def test_no_section_is_hoisted_out_of_its_workflow(tmp_path):
 
 
 def test_the_hoist_registry_is_retired_not_emptied(tmp_path):
-    """The falsifier for R14 D-10.1, and the reason it is a `hasattr` check.
-
-    An empty registry that can be refilled cannot enforce shrink-only: adding a
-    section plus a matching entry keeps every other test green. Same mechanism,
-    and the same reason, as the ``CROSS_WORKFLOW_READS`` assertion below —
-    which is also why this asserts on the BINDING rather than on the absence of
-    the string. The module names both retired constants in prose, deliberately,
-    so that a reader meets the argument for their absence; a grep-for-the-name
-    test would forbid the record of the decision along with the decision.
-    """
+    """Keep retired registries absent so they cannot grow again."""
     assert not hasattr(cc, "HOISTED_SECTIONS"), (
         "the hoist registry is retired (R14 D-10.1, amending R13 D-10.4); a "
         "reinstated one -- even empty -- would let a section be carried out of "
         "run identity by adding an entry beside it"
+    )
+    assert not hasattr(cc, "CROSS_WORKFLOW_READS"), (
+        "cross-workflow values belong in the project file, not an allowlist"
     )
 
 
@@ -549,7 +576,7 @@ def test_missing_t2_file_names_the_path_the_anchor_and_the_doc(tmp_path):
     message = str(excinfo.value)
     assert "project_config_test_build_model.yml" in message
     assert str(directory) in message
-    assert cc.MIGRATION_DOC in message
+    assert cc.CONFIG_DOC in message
 
 
 def test_t2_file_that_is_not_a_mapping_is_refused(tmp_path):
@@ -679,10 +706,7 @@ def test_a_third_stanza_key_is_refused_and_names_the_key(tmp_path):
         compose(t1_path)
     message = str(excinfo.value)
     assert "model_build_config" in message
-    # Asserted through the constant, not as a literal: `MIGRATION_COMMAND` is a
-    # cross-phase pin (R14 Gate A) and a second spelling of it here would be a
-    # second place to forget when P3 ships the script.
-    assert cc.MIGRATION_COMMAND in message
+    assert cc.CONFIG_DOC in message
 
 
 def test_stanza_closure_is_checked_outside_this_entry_points_scope(tmp_path):
@@ -1187,32 +1211,6 @@ def test_the_hoisted_key_reaches_both_readers_from_shared(tmp_path):
     for entry in ("build_model", "generate_scenarios"):
         composed = compose(t1_path, entry)
         assert composed["model"]["outvars"] == ["river discharge"]
-
-
-def test_the_relocation_map_is_one_declared_row(tmp_path):
-    """`RELOCATED_KEYS` records a move; it sanctions no read.
-
-    It is deliberately not a successor to the retired registry. A reader who
-    treated it as one would reintroduce exactly the expandable allowlist D-9.7
-    removed, so this pins both its content and its shape.
-    """
-    assert cc.RELOCATED_KEYS == {
-        ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars")
-    }
-    assert not hasattr(cc, "CROSS_WORKFLOW_READS"), (
-        "the cross-workflow read registry is retired; a reinstated one would let "
-        "a new read be sanctioned by adding a tuple beside it"
-    )
-    # R14 note: the destination it records is the V1 one (`shared.wflow_outvars`),
-    # and `shared:` no longer exists -- `C-19` moved the key on to `model.outvars`.
-    # The map is deliberately KEPT in that state as the loader's record of the
-    # move, so what is pinned here is its CONTENT and SHAPE, not a claim that its
-    # destination is a live placement.
-    for _, dest in cc.RELOCATED_KEYS.items():
-        assert isinstance(dest, tuple) and len(dest) == 2, (
-            "a relocated key is recorded as a path tuple; a bare name would lose "
-            "which section it landed in"
-        )
 
 
 # ---------------------------------------------------------------------------

@@ -162,7 +162,7 @@ def write_basin_cell_mask(climate_nc, region_gdf, out_csv):
     Path(out_csv).parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(out_csv, index=False)
     log_row(
-        f"Basin touches {len(frame)} of {len(lats) * len(lons)} store cells "
+        f"Basin intersects {len(frame)} of {len(lats) * len(lons)} extracted grid cells "
         f"-> {os.path.basename(str(out_csv))}",
         module="extract",
     )
@@ -173,15 +173,13 @@ def write_basin_cell_mask(climate_nc, region_gdf, out_csv):
 #: reporting caller gets ``_FLOOR_ADVISORY`` instead: for a candidate that only
 #: feeds a comparison figure there is nothing to fix, only a consequence to know.
 _FLOOR_REMEDY = (
-    "The staged source does not cover the configured historical_window. Either "
-    "stage data for that period, or move shared.historical_window onto the "
-    "years the source actually holds"
+    "Stage a sufficiently long record and set climate.window within its coverage."
 )
 
 _FLOOR_ADVISORY = (
     "This source is a comparison candidate only, so the extraction proceeds -- "
-    "but it cannot be promoted to shared.clim_historical over this window: "
-    "weathergenr would reject the record and WF3 would fail at rule 3.11"
+    "but it cannot be selected as climate.selected over this window: "
+    "the weather generator requires a longer record"
 )
 
 
@@ -263,9 +261,9 @@ def _resolve_source_window(data_catalog, source, starttime, endtime):
         )
     if overlap != requested:
         log_row(
-            f"{source}: catalog does not cover requested {requested[0]}..{requested[1]}; available "
-            f"{available[0]}..{available[1]}; extracting "
-            f"{overlap[0]}..{overlap[1]} (widest overlap)",
+            f"{source}: extracting {overlap[0]}–{overlap[1]}; "
+            f"requested {requested[0]}–{requested[1]}, but catalog coverage is "
+            f"{available[0]}–{available[1]}",
             module="extract",
             level="WARNING",
         )
@@ -624,15 +622,15 @@ def prep_historical_climate(
         sources.append("era5")
     data_catalog = _align_chunks_to_store(data_catalog, sources)
     # Extract climate data
-    log_row("Extracting historical climate grid", module="extract")
+    log_row(f"Extracting historical climate grid for {clim_source}", module="extract")
     if is_precip_only:
         log_row(
             (
-                f"{clim_source} only contains precipitation data. "
+                f"{clim_source} provides precipitation only; "
                 + (
-                    "Combining with climate data from era5"
+                    "adding ERA5 companion climate fields for selected-source forcing"
                     if forcing_required
-                    else "Keeping native precipitation for source comparison"
+                    else "retaining native precipitation for source comparison"
                 )
             ),
             module="extract",
@@ -706,7 +704,7 @@ def prep_historical_climate(
             # Prepare orography from the configured hydrography DEM for
             # downscaling -- the same entry delineation and model build read.
             log_row(
-                f"Orography for {clim_source} from {hydrography} (downscaling)",
+                f"Using {hydrography} orography to downscale ERA5 companion fields for {clim_source}",
                 module="extract",
             )
             dem = data_catalog.get_rasterdataset(
@@ -719,7 +717,7 @@ def prep_historical_climate(
             dem = dem.raster.reproject_like(ds, method="average")
             # Resample the remaining variables onto the precipitation grid.
             log_row(
-                f"Downscaling era5 variables to the resolution of {clim_source}",
+                f"Downscaling ERA5 companion fields to the {clim_source} grid",
                 module="extract",
             )
             for var in ["press_msl", "kin", "kout"]:
@@ -816,7 +814,9 @@ def prep_historical_climate(
     dvars = ds.raster.vars
     encoding = {k: {"zlib": True} for k in dvars}
 
-    log_row(f"{clim_source}: saving to netCDF", module="extract")
+    log_row(
+        f"{clim_source}: writing extracted climate grid to netCDF", module="extract"
+    )
     delayed_obj = ds.to_netcdf(fn_out, encoding=encoding, mode="w", compute=False)
     # Labelled with the SOURCE, because a multi-source project runs this rule
     # once per source and the console would otherwise show identical bars.

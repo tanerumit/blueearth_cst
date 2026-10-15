@@ -14,9 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from blueearth_cst.plotting.fundamentals import STYLE, add_caption
+from blueearth_cst.plotting.figure_titles import write_figure_titles
+from blueearth_cst.plotting.fundamentals import STYLE
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
-from blueearth_cst.projections.projection_captions import caption
+from blueearth_cst.projections.projection_captions import caption, title
 from blueearth_cst.projections.projection_figures import (
     SUITE_PRODUCTS,
     figure_key,
@@ -154,29 +155,27 @@ def render_suite(
     record,
     plots_root,
     *,
-    captioned_figures=False,
+    annotation="none",
     scenarios=None,
     captions_json=None,
 ):
-    """Assert ordinary keys and optional captioned_path metadata bijections.
-
-    Manifest keys identify ordinary figures. Optional copies are identified by
-    each entry's captioned_path, relative to plots_root, rather than extra keys.
-    The manifest defaults to the output unit's root _engine directory; the
-    workflow supplies its declared captions_json output explicitly.
-    """
-    if not isinstance(captioned_figures, bool):
-        raise TypeError("captioned_figures must be bool")
+    """Render selected annotations and preserve independent figure metadata."""
     root = Path(plots_root)
-    log_row(
-        "Windows used: "
-        + listed(
+    references = {tuple(w["reference"]) for w in record["windows"]}
+    if len(references) == 1:
+        reference = next(iter(references))
+        window_description = listed([w["window_id"] for w in record["windows"]])
+        window_description += f"; reference: {reference[0]}–{reference[1]}"
+    else:
+        window_description = listed(
             [
                 f"{w['window_id']} (reference {w['reference'][0]}–{w['reference'][1]})"
                 for w in record["windows"]
             ]
-        ),
-        module="plot_proj_timeseries",
+        )
+    log_row(
+        "Rendering windows: " + window_description,
+        module="projection_plots",
     )
     folders = [
         "full_period",
@@ -184,8 +183,6 @@ def render_suite(
     ]
     for folder in folders:
         (root / folder).mkdir(parents=True, exist_ok=True)
-    if captioned_figures:
-        (root / "captioned").mkdir(parents=True, exist_ok=True)
     available = tables["availability"]
     expected = {
         (folder, filename)
@@ -221,23 +218,18 @@ def render_suite(
             try:
                 save_figure(
                     root / relative,
-                    module="plot_proj_timeseries",
+                    module="projection_plots",
                     fig=fig,
+                    annotation=annotation,
+                    title=title(row["filename"], record, window_id),
+                    caption=text,
                     dpi=600,
                     facecolor="white",
                 )
-                if captioned_figures:
-                    add_caption(fig, text)
-                    save_figure(
-                        root / "captioned" / relative,
-                        module="plot_proj_timeseries",
-                        fig=fig,
-                        dpi=600,
-                        facecolor="white",
-                    )
             finally:
                 plt.close(fig)
         manifest[relative] = {
+            "title": title(row["filename"], record, window_id),
             "caption": text,
             "window_id": window_id,
             "counts": counts,
@@ -248,8 +240,6 @@ def render_suite(
                 for h in w.get("horizons", [])
             ],
         }
-        if captioned_figures:
-            manifest[relative]["captioned_path"] = f"captioned/{relative}"
     pngs = {
         str(path.relative_to(root)).replace("\\", "/")
         for folder in folders
@@ -259,16 +249,6 @@ def render_suite(
         raise RuntimeError(
             f"owned PNGs differ from caption manifest: extra={pngs - set(manifest)}, missing={set(manifest) - pngs}"
         )
-    if captioned_figures:
-        copies = {
-            str(path.relative_to(root)).replace("\\", "/")
-            for path in (root / "captioned").rglob("*.png")
-        }
-        declared_copies = {entry["captioned_path"] for entry in manifest.values()}
-        if copies != declared_copies:
-            raise RuntimeError(
-                f"captioned PNGs differ from caption metadata: extra={copies - declared_copies}, missing={declared_copies - copies}"
-            )
     manifest_path = (
         Path(captions_json)
         if captions_json is not None
@@ -276,10 +256,13 @@ def render_suite(
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    write_figure_titles(
+        root, manifest, manifest_path=manifest_path.with_name("figure_titles.json")
+    )
     markdown = [
         "# Projection figure captions",
         "",
-        "Manifest keys identify ordinary figures; captioned_path metadata identifies optional captioned copies.",
+        "Manifest keys identify the rendered figures.",
         "",
     ]
     for relative, item in manifest.items():
@@ -298,8 +281,8 @@ def render_suite(
     )
     (root / "figure_captions.md").write_text("\n".join(markdown), encoding="utf-8")
     log_row(
-        f"{plural(len(manifest), 'figure')} written; {plural(len(skipped), 'product')} unavailable",
-        module="plot_proj_timeseries",
+        f"Wrote {plural(len(manifest), 'figure')}; skipped {len(skipped)} (eligibility reasons → figure_captions.md)",
+        module="projection_plots",
     )
     return manifest, skipped
 
@@ -319,7 +302,7 @@ def run(sm):
         tables,
         record,
         root,
-        captioned_figures=sm.params.captioned_figures,
+        annotation=getattr(sm.params, "annotation", "none"),
         scenarios=getattr(sm.params, "scenarios", None),
         captions_json=sm.output.captions_json,
     )

@@ -69,21 +69,21 @@ declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
 RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
-DELINEATE_REGION = RULES.logged("3.01", "delineate_region")
-EXTRACT_CLIMATE_DATASETS = RULES.logged("3.02", "extract_climate_datasets")
-PREPARE_PERTURBATION_GRID = RULES.logged("3.03", "prepare_perturbation_grid")
+DELINEATE_REGION = RULES.logged("3.01", "delineate_region", summary="delineate the basin boundary")
+EXTRACT_CLIMATE_DATASETS = RULES.logged("3.02", "extract_climate_datasets", summary="extract a basin climate grid")
+PREPARE_PERTURBATION_GRID = RULES.logged("3.03", "prepare_perturbation_grid", summary="prepare monthly climate perturbation settings")
 if V2_MODE:
     GENERATE_WEATHER_REALIZATIONS = RULES.logged(
         "3.07", "generate_weather_realizations",
-        summary="generate stochastic weather realizations",
+        summary="generate unperturbed stochastic weather realizations",
     )
     PERTURB_CLIMATE_REALIZATIONS = RULES.logged(
         "3.08", "perturb_climate_realizations",
-        summary="perturb each realization over the perturbation grid",
+        summary="produce one scenario series from its stochastic realization",
     )
-PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.09", "publish_scenario_collection", summary="validate and publish the scenario collection")
-GATHER_BENCHMARKS = RULES.banner_only("3.10", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("3.11", "gather_logs")
+PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.09", "publish_scenario_collection", summary="validate the scenario artifacts and mark the collection ready")
+GATHER_BENCHMARKS = RULES.banner_only("3.10", "gather_benchmarks", summary="merge generation timing and resource-use records")
+GATHER_LOGS = RULES.banner_only("3.11", "gather_logs", summary="merge generation logs")
 INVOCATION_ID = os.environ.setdefault("CST_GENERATION_INVOCATION_ID", uuid.uuid4().hex)
 RLZ_NUM = GENERATION["n_realizations"]
 ST_NUM = GENERATION["n_design_points"]
@@ -322,6 +322,9 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 output_path=Path(output[0]),
                 log_path=Path(log[0]),
             )
+            if not row.derived_from:
+                from blueearth_cst.shared.run_log_core import log_row
+                log_row(f"{row.run_id}: produced the unperturbed baseline through the same climate-transformation path as perturbed runs", module="generation")
 
     rule publish_scenario_collection:
         message: PUBLISH_SCENARIO_COLLECTION.banner()
@@ -341,6 +344,8 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 os.environ["CST_GENERATION_PLAN_SHA256"],
                 INVOCATION_ID,
             )
+            from blueearth_cst.shared.run_log_core import log_row, plural
+            log_row(f"Scenario collection ready: {V2_PLAN['collection_id']}; {plural(len(V2_PLAN['rows']), 'retained run')} → {output[0]}", module="generation")
 
 
 # 3.10 / 3.11 -- merge the run's benchmark and log parts, generation phase only:

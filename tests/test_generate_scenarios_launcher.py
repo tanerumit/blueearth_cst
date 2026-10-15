@@ -14,7 +14,7 @@ from scripts import generate_scenarios
 
 @pytest.mark.parametrize("ready,exit_code", [(False, 0), (False, 9), (True, 0)])
 def test_success_and_ready_reuse_export_the_selected_collection(
-    tmp_path, monkeypatch, ready, exit_code
+    tmp_path, monkeypatch, ready, exit_code, capsys
 ):
     from blueearth_cst.experiment import reservation_generation
 
@@ -23,6 +23,10 @@ def test_success_and_ready_reuse_export_the_selected_collection(
     plan = {
         "outputs": {"record_root": "scenarios/_engine/collections/selected"},
         "collection_id": "selected",
+        "rows": [
+            {"run_id": "run_001", "rlz": "1", "st_id": ""},
+            {"run_id": "run_002", "rlz": "1", "st_id": "1"},
+        ],
     }
     monkeypatch.setattr(
         generate_scenarios, "_run_source_phase_quietly", lambda *a, **kw: 0
@@ -74,6 +78,11 @@ def test_success_and_ready_reuse_export_the_selected_collection(
         == exit_code
     )
     assert len(children) == (0 if ready else 1)
+    console = capsys.readouterr().out
+    assert "1 stochastic realization across 1 perturbation point" in console
+    assert "planned collection: 2 runs" in console
+    if ready:
+        assert "reusing ready scenario collection selected" in console
     assert exports == (
         [(tmp_path, tmp_path / plan["outputs"]["record_root"] / "collection.json")]
         if exit_code == 0

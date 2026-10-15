@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WF3 console wording review</title>
+<style>
+:root{color-scheme:light;--ink:#172b36;--muted:#576c78;--line:#d7e0e4;--accent:#066d69;--paper:#f4f7f7}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,sans-serif}
+main{max-width:1440px;margin:auto;padding:42px 30px 80px}h1{font-size:36px;line-height:1.15;margin:8px 0 18px}
+h2{font-size:22px;margin:36px 0 14px}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.12em;font-size:12px}
+p{max-width:1000px}.lede{font-size:18px;color:var(--muted)}.note{padding:15px 20px;border-left:4px solid var(--accent);background:#e6f1ef}
+.toolbar{position:sticky;top:0;z-index:2;background:#f4f7f7f5;backdrop-filter:blur(12px);padding:16px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+button,input,select{font:inherit;border:1px solid #aebfc6;border-radius:7px;padding:9px 13px;background:white;color:var(--ink)}
+button{cursor:pointer}button[aria-pressed=true]{background:var(--accent);color:white;border-color:var(--accent)}
+.modes{display:flex;gap:5px}input[type=search]{flex:1;min-width:220px}input[type=checkbox]{accent-color:var(--accent)}
+.count{font-size:13px;color:var(--muted)}.row{background:white;border:1px solid var(--line);border-radius:10px;margin:12px 0;overflow:hidden}
+.meta{padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.badge{font-weight:700;color:var(--accent)}.badge.check{color:#8a5200}.panels{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+.panel{background:#13232e;color:#e3edf1;padding:14px 16px;min-width:0}.panel.proposed{background:#102d2e}
+.caption{font:700 10px system-ui,sans-serif;letter-spacing:.12em;opacity:.65;margin-bottom:8px}
+pre{font:13px/1.65 Consolas,ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.why{padding:12px 16px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}a{color:var(--accent)}
+.source{margin-left:auto}.single .panels{grid-template-columns:1fr}.empty{padding:40px;text-align:center}
+details{margin-top:22px}summary{cursor:pointer;font-weight:600}li{margin:7px 0}.coverage{columns:2;column-gap:35px}
+@media(max-width:800px){main{padding:24px 14px}h1{font-size:29px}.panels{grid-template-columns:1fr}.coverage{columns:1}.toolbar{position:static}}
+@media print{.toolbar{position:static}button,input,select{display:none}.row{break-inside:avoid}.panel{background:#f3f3f3!important;color:black}main{padding:0}}
+</style>
+<main>
+<div class="eyebrow">BLUEEARTH · WF3 GENERATE_SCENARIOS · EDITORIAL REVIEW</div>
+<h1>Console messages that explain what happened</h1>
+<p class="lede">Switch between current and proposed wording, or compare both. This review covers WF3-owned
+message families and the shared console messages WF3 uses, including creation, reuse, conditional branches, and completion messages.</p>
+<p class="note"><strong>Emitter-based review, not a captured execution.</strong> Values in braces are
+placeholders. Alternative branches are shown together for review; they do not form one runnable transcript.
+Current means source templates at <code>5c7a1814</code>. “New detail” marks proposed messages where
+no dedicated console row exists today; these require additional runtime reporting. Suggestions have not
+changed runtime wording. Source brackets and progress frames are schematic.</p>
+<div class="toolbar">
+ <div class="modes" role="group" aria-label="Wording view">
+  <button data-mode="current" aria-pressed="false">Current</button>
+  <button data-mode="proposed" aria-pressed="false">Proposed</button>
+  <button data-mode="compare" aria-pressed="true">Compare</button>
+ </div>
+ <input id="search" type="search" aria-label="Search messages" placeholder="Search messages, reasons, or sources…">
+ <select id="stage" aria-label="Filter stage"><option value="">All stages</option></select>
+ <label><input id="changed" type="checkbox"> Changes only</label>
+ <span id="count" class="count" aria-live="polite"></span>
+</div>
+<div id="results"></div>
+<h2>Decisions behind the wording</h2>
+<ul>
+ <li><strong>Separate grid points, realizations, and scenario runs.</strong> Twelve lookup rows describe
+ one perturbation point. Stochastic draws are separate, and published collection rows also include baselines.
+ Count actual manifest rows rather than inferring the run total from one displayed grid dimension.</li>
+ <li><strong>Keep the experiment scenario-neutral.</strong> WF3 generation is model-independent and is
+ not selected or driven by CMIP6 projections. WF2 is a separate plausibility overlay. No Wflow simulation
+ or hydrological performance assessment occurs here.</li>
+ <li><strong>Distinguish readiness from reservation.</strong> Snapshot and claim steps precede the
+ generation DAG for a new collection. A claim is not publication. A ready-collection reuse branch can
+ return without launching generation; do not present both branches as one executed transcript.</li>
+ <li><strong>Preserve the transformation path.</strong> Unperturbed baselines still use the provider
+ transformation path. Basin cells determine resampling, while retained grids can include surrounding cells
+ needed for downstream preparation. Neither point implies unchanged historical daily series.</li>
+ <li><strong>Keep write timing honest.</strong> “Writing” and “moving” describe work about to start;
+ “written” or “ready” belongs only after success. Generator diagnostic figures are not evidence of local
+ hydrological calibration or system-model validation.</li>
+</ul>
+<details open><summary>Coverage and limits</summary>
+ <p>This review follows the current owned WF3 source and generation phases. It includes the entry-point
+ ready-collection reuse row, region and climate producers, grid lookup, declared/pre-DAG lifecycle entries,
+ R weather generation and perturbation, publication, shared progress, and log/benchmark gathering.</p>
+ <p>Lifecycle entries in cards are schematic; they are not literal RUN lines observed in a captured log.
+ The appendix includes their source declarations. Extra comparison-only extraction branches are not part
+ of WF3’s selected-source producer and are omitted. The old project-consistency helper is separated in
+ stage 8 because it is not scheduled by the current graph.</p>
+ <p>“New detail” marks suggested reporting additions. Upstream weathergenr progress/evaluation chatter,
+ HydroMT records, Python/R exceptions, and Snakemake diagnostics are outside the editable wording inventory
+ and should remain available. No generation was executed for this review.</p>
+</details><details><summary>Emitter source appendix</summary>
+<p>Source templates with file and line locations; code excerpts are not runtime messages. Conditional and
+legacy paths are identified in the cards.</p><div id="inventory"></div></details>
+<p class="count">Prepared 2026-10-15 · Self-contained local HTML · No remote assets or telemetry.</p></main><script>
+'use strict';
+const rows=[];
+const source={workflow:'generate_scenarios.smk',entry:'scripts/generate_scenarios.py',
+ spatial:'blueearth_cst/spatial/delineate_region.py',extract:'blueearth_cst/climate_analysis/extract_historical_climate.py',
+ window:'blueearth_cst/shared/climate_window.py',grid:'blueearth_cst/experiment/prepare_cst_parameters.py',
+ plan:'blueearth_cst/experiment/generation_plan.py',weather:'blueearth_cst/weathergen/generate_weather.R',
+ perturb:'blueearth_cst/weathergen/impose_climate_change.R',publication:'blueearth_cst/experiment/generation_publication.py',
+ console:'blueearth_cst/shared/console_style.py',log:'blueearth_cst/shared/run_log_core.py'};
+function add(stage,title,current,proposed,why,src,status='Suggested'){
+ rows.push({stage,title,current,proposed,why,src:source[src]||src,status});
+}
+add('1 · Generation setup','Workflow identity','wf3 generate_scenarios','wf3 generate_scenarios',
+ 'Keep the stable workflow identity. WF3 is model-independent and does not run Wflow.','console','Keep');
+add('1 · Generation setup','Ready collection reused',
+ 'WF3: retained ready collection {collection_id}; no generation needed',
+ 'WF3: reusing ready scenario collection {collection_id}; no weather generation needed',
+ 'This owned-entry-point branch returns before launching a new generation DAG. Do not show new generation or publication rows as though they ran on this branch.','entry');
+add('1 · Generation setup','Request context',
+ '(No dedicated console row summarizing request counts.)',
+ 'Scenario request: {realizations} stochastic realizations × {design_points} perturbation points, plus unperturbed baselines; planned collection: {runs} runs',
+ 'Optional new detail from the pinned plan. Derive the final run count from actual rows; do not infer it solely from a displayed grid size. Baselines take the provider transformation path too.','plan','New detail');
+add('2 · Spatial inputs','Delineation start',
+ 'RUN  Rule 3.01: delineate_region',
+ 'RUN  Rule 3.01: delineate_region - delineate the basin boundary',
+ 'Add a short action summary without changing the rule ID. Shared spatial wording should remain consistent with WF2.','workflow');
+add('2 · Spatial inputs','Delineation input',
+ 'Delineating region {region_spec} on {hydrography}',
+ 'Delineating basin from {region_spec} using {hydrography}',
+ 'Keep both input specification and source identifiable.','spatial');
+add('2 · Spatial inputs','Boundary output',
+ 'Wrote region: {region_path}',
+ 'Basin boundary written → {region_path}',
+ 'Name the output the user will inspect.','spatial');
+add('2 · Spatial inputs','Outlet search extent',
+ 'Outlet search area used: {bounds}; inspect selected basin geometry and output locations (no original point supplied)',
+ 'Outlet selected within search area {bounds}; inspect the basin boundary and output locations because no outlet point was supplied',
+ 'Keep the inspection action and its reason.','spatial');
+add('2 · Spatial inputs','Delineation failure',
+ 'HydroMT selected a raster extent too small for delineation from basin.region={spec}. Check the outlet lies on the intended drainage channel and the hydrography/index pairing; consider a bounded subbasin outlet search area.',
+ 'Basin delineation failed: the selected raster extent is too small. Check basin.region={spec}, the outlet channel, and the hydrography/index pairing; consider a bounded outlet search area.',
+ 'Lead with the consequence; preserve technical remediation and the following exception.','spatial');
+add('3 · Extraction','Extraction start',
+ 'RUN  Rule 3.02: extract_climate_datasets',
+ 'RUN  Rule 3.02: extract_climate_datasets - extract a basin climate grid [{source}]',
+ 'Extraction retains a buffered grid; it is not yet a basin-average time series. Source brackets illustrate the banner context.','workflow');
+add('3 · Extraction','Extraction operation',
+ 'Extracting historical climate grid',
+ 'Extracting historical climate grid for {source}',
+ 'The source is already known in this function and makes interleaved extraction rows easier to follow.','extract');
+add('3 · Extraction','Selected precipitation source',
+ '{source} only contains precipitation data. Combining with climate data from era5',
+ '{source} provides precipitation only; adding ERA5 companion climate fields for selected-source forcing',
+ 'This branch is forcing_required=true, not every CHIRPS candidate. Companion fields do not turn CHIRPS into an independent temperature source.','extract');
+add('3 · Extraction','Catalog period narrowed',
+ '{source}: catalog does not cover requested {requested_start}..{requested_end}; available {available_start}..{available_end}; extracting {overlap_start}..{overlap_end} (widest overlap)',
+ '{source}: extracting {overlap_start}–{overlap_end}; requested {requested_start}–{requested_end}, but catalog coverage is {available_start}–{available_end}',
+ 'Lead with the effective extraction span while retaining all three periods. This is advertised catalog coverage, not a missing-day audit.','extract');
+add('3 · Extraction','Companion-source overlap',
+ '{source} covers {source_start}..{source_end}, era5 covers {era5_start}..{era5_end}; the store takes their overlap {shared_start}..{shared_end}',
+ '{source} and ERA5 companion data overlap over {shared_start}–{shared_end}; using that span (source: {source_start}–{source_end}; ERA5: {era5_start}–{era5_end})',
+ 'Name the common extraction period first. Retain both source spans and warning severity.','extract');
+add('3 · Extraction','Orography',
+ 'Orography for {source} from {hydrography} (downscaling)',
+ 'Using {hydrography} orography to downscale ERA5 companion fields for {source}',
+ 'This is inside the selected precipitation-only forcing branch; do not suggest native precipitation is being downscaled.','extract');
+add('3 · Extraction','Companion downscaling',
+ 'Downscaling era5 variables to the resolution of {source}',
+ 'Downscaling ERA5 companion fields to the {source} grid',
+ 'Use the source name consistently and identify the target grid.','extract');
+add('3 · Extraction','Grid cells touching basin',
+ 'Basin touches {count} of {grid_count} store cells -> {csv_file}',
+ 'Basin intersects {count} of {grid_count} extracted grid cells → {csv_file}',
+ 'The denominator is the extracted grid, not the global source. Keep the intersection policy; do not imply area weighting.','extract');
+add('3 · Extraction','Full delivered span',
+ '{source}: {delivered_start}..{delivered_end} (~{years} years)',
+ '{source}: extracted period {delivered_start}–{delivered_end} (~{years} years)',
+ 'Label what the dates mean. A time-axis span does not establish complete valid daily observations.','window');
+add('3 · Extraction','Delivered span differs from request',
+ '{source}: requested {requested_start}..{requested_end}, delivered {delivered_start}..{delivered_end} (~{years} years)',
+ '{source}: extracted period {delivered_start}–{delivered_end} (~{years} years); requested {requested_start}–{requested_end}',
+ 'Show the actual span first. Even small endpoint differences can be reported without triggering the narrowing warning.','window');
+add('3 · Extraction','Staged data narrows coverage',
+ '{source}: the staged source does not cover the full shared.historical_window; extracted the widest range it holds inside it',
+ '{source}: staged data cover only part of climate.window; using the widest available span within the requested period',
+ 'Replace the stale configuration key with climate.window. Keep this distinct from the catalog-advertised coverage warning.','window');
+add('3 · Extraction','Short selected source',
+ 'Extracted {source} record covers {delivered_start}..{delivered_end} (~{years} years) for the requested {requested_start}..{requested_end}, below the {minimum}-year minimum this toolbox requires (...). The staged source does not cover the configured historical_window. Either stage data for that period, or move shared.historical_window onto the years the source actually holds',
+ '{source}: selected forcing source covers {delivered_start}–{delivered_end} (~{years} years), below the {minimum}-year weather-generator requirement. Stage a sufficiently long record and set climate.window within its coverage.',
+ 'This branch raises an exception. Preserve the minimum and failure behavior; moving the window alone cannot lengthen an intrinsically short record. Current text abbreviates the repeated wavelet explanation.','window','Failure');
+add('3 · Extraction','NetCDF write begins',
+ '{source}: saving to netCDF',
+ '{source}: writing extracted climate grid to netCDF',
+ 'This row precedes serialization. Do not change it to “written” before the write succeeds.','extract');
+add('3 · Extraction','Extraction progress',
+ '{operation}  ========  {percent}%  {elapsed} elapsed',
+ '{operation}  ========  {percent}%  {elapsed} elapsed',
+ 'Keep the shared progress display. It reports computational progress, not data coverage.','blueearth_cst/shared/progress.py','Keep');
+
+add('4 · Perturbation grid and pinned inputs','Grid preparation start',
+ 'RUN  Rule 3.03: prepare_perturbation_grid',
+ 'RUN  Rule 3.03: prepare_perturbation_grid - prepare monthly climate perturbation settings',
+ 'The grid is an experimental design, independent of selected GCM scenarios.','workflow');
+add('4 · Perturbation grid and pinned inputs','Grid lookup output',
+ 'Wrote {lookup_path} ({rows} rows, {members} members)',
+ 'Perturbation lookup written → {lookup_path} ({rows} monthly rows; {design_points} perturbation points)',
+ 'The code divides row count by 12: this counts grid points, not stochastic realizations or total published runs. Keep 12 monthly entries per point explicit.','grid');
+add('4 · Perturbation grid and pinned inputs','Snapshot pre-DAG step',
+ 'Rule 3.04: snapshot_generation_inputs [pre-DAG step]',
+ 'Rule 3.04: snapshot_generation_inputs - retain the generation inputs [completed before DAG execution]',
+ 'Schematic lifecycle text. The code marks this step with pre_dag_step only when creating; the same declared step is not proof of work on reuse.','workflow');
+add('4 · Perturbation grid and pinned inputs','Collection claim pre-DAG step',
+ 'Rule 3.05: claim_scenario_collection [pre-DAG step]',
+ 'Rule 3.05: claim_scenario_collection - reserve the collection identity [completed before DAG execution]',
+ 'A claim reserves identity; it does not mean the collection is ready or has been published. Keep exact collection IDs in detailed records.','workflow');
+add('4 · Perturbation grid and pinned inputs','Generator settings pre-DAG step',
+ 'Rule 3.06: prepare_weather_generator_settings [pre-DAG step]',
+ 'Rule 3.06: prepare_weather_generator_settings - prepare the pinned weather-generator settings [completed before DAG execution]',
+ 'These three entries are lifecycle summaries, not observed RUN rows. Current spelling is illustrative; the appendix retains the declarations.','workflow');
+add('5 · Weather generation','Weather generation start',
+ 'RUN  Rule 3.07: generate_weather_realizations - generate stochastic weather realizations',
+ 'RUN  Rule 3.07: generate_weather_realizations - generate unperturbed stochastic weather realizations',
+ 'This creates roots. Each scenario run is subsequently produced through the provider transformation path.','workflow');
+add('5 · Weather generation','Historical input',
+ 'Reading weather netcdf: {path}',
+ 'Reading historical climate for weather generation → {path}',
+ 'Name the role of the file and use consistent netCDF terminology when the format needs to be stated.','weather');
+add('5 · Weather generation','Resampling support',
+ 'Resampling on {basin_count} basin cell(s) of {store_count} in the store',
+ 'Weather resampling uses {basin_count} basin-intersecting cells from the {store_count}-cell extracted grid',
+ 'Basin cells drive the resampling decision. Saved realizations retain the surrounding grid needed downstream; do not imply every non-basin cell is discarded.','weather');
+add('5 · Weather generation','Realization count',
+ 'Generating {count} weather realization(s)',
+ 'Generating {count} stochastic weather realizations',
+ 'Use realization for independent stochastic draws; reserve scenario run for the published collection rows.','weather');
+add('5 · Weather generation','Generator diagnostics relocated',
+ 'Moving {count} figure(s) to {directory}',
+ 'Moving {count} weather-generator diagnostic figures → {directory}',
+ 'This row precedes file.rename calls. Do not say the move succeeded before results have been checked. Upstream generator evaluation is not hydrological model validation.','weather');
+add('5 · Weather generation','Saving a root realization',
+ 'Saving realization {index} of {count}',
+ 'Writing stochastic realization {index} of {count}',
+ 'This is a write-in-progress message, not publication of a ready collection. Keep per-realization progress.','weather');
+add('6 · Climate perturbations','Perturbation rule start',
+ 'RUN  Rule 3.08: perturb_climate_realizations - perturb each realization over the perturbation grid [run {run_id}]',
+ 'RUN  Rule 3.08: perturb_climate_realizations - produce one scenario series from its stochastic realization [run {run_id}]',
+ 'Each job transforms one explicit run, not the entire grid. Identity/baseline transformations also pass through this rule.','workflow');
+add('6 · Climate perturbations','Transformation input',
+ '{output_stem} reading realization {realization_file}',
+ '{output_stem}: reading source realization {realization_file}',
+ 'Keep both output run and source realization identities for interleaved jobs. Do not reconstruct an old rlz/st ID from filenames.','perturb');
+add('6 · Climate perturbations','Applying the perturbation',
+ '{output_stem} applying perturbations ({perturbation_summary})',
+ '{output_stem}: applying climate perturbations ({perturbation_summary})',
+ 'Keep the existing bounded summary, units, and any monthly variation. Do not flatten varying monthly coefficients into a single invented annual value.','perturb');
+add('6 · Climate perturbations','Baseline transformation context',
+ '(No dedicated baseline explanation row.)',
+ '{run_id}: producing the unperturbed baseline through the same climate-transformation path as perturbed runs',
+ 'Optional new detail for identity rows. Unperturbed means zero imposed climate change, not bypassing quantile mapping or matching every historical daily value.','blueearth_cst/experiment/scenario_provider.py','New detail');
+add('7 · Collection publication','Publication start',
+ 'RUN  Rule 3.09: publish_scenario_collection - validate and publish the scenario collection',
+ 'RUN  Rule 3.09: publish_scenario_collection - validate the scenario artifacts and mark the collection ready',
+ 'Publication is local collection finalization, not an upload or hydrological simulation. Validation here is a data/identity contract, not scientific weather-generator qualification.','workflow');
+add('7 · Collection publication','Ready collection summary',
+ '(No dedicated toolbox-owned publication-success row.)',
+ 'Scenario collection ready: {collection_id}; {run_count} retained runs → {manifest_path}',
+ 'Optional new message only after successful publication. Use validated manifest counts, including baseline runs, and preserve immutable identity.','publication','New detail');
+add('7 · Collection publication','Gather benchmarks',
+ 'RUN  Rule 3.10: gather_benchmarks',
+ 'RUN  Rule 3.10: gather_benchmarks - merge generation timing and resource-use records',
+ 'Keep actual request-specific output paths in the final target list.','workflow');
+add('7 · Collection publication','Gather logs',
+ 'RUN  Rule 3.11: gather_logs',
+ 'RUN  Rule 3.11: gather_logs - merge generation logs',
+ 'Current rule 3.11 gathers logs; do not reuse stale upstream comments assigning weather generation to that number.','workflow');
+add('7 · Collection publication','Elapsed timer',
+ '{time} - execution - Rule 3.07: generate_weather_realizations {elapsed} elapsed',
+ '{time} - execution - Rule 3.07: generate_weather_realizations {elapsed} elapsed',
+ 'Already implemented shared 15-second default and elapsed-only presentation; genuine output suppresses the quiet timer.','log','Already implemented');
+add('7 · Collection publication','Rule completion',
+ 'DONE Rule 3.08: perturb_climate_realizations [run {run_id}]  {elapsed}  [job {done}/{total}]',
+ 'DONE Rule 3.08: perturb_climate_realizations [run {run_id}]  {elapsed}  [job {done}/{total}]',
+ 'Keep the run ID, elapsed duration, and scheduler completion count.','console','Keep');
+add('7 · Collection publication','Final target',
+ 'RUN  Target: all  [{project_dir}]\n{declared target paths}',
+ 'RUN  Target: all - confirm requested generation outputs  [{project_dir}]\n{declared target paths}',
+ 'This aggregates outputs and does not run the hydrological system. Source-only and generation phases have different targets.','console');
+add('7 · Collection publication','Successful workflow',
+ 'wf3 generate_scenarios done in {elapsed}  |  {count} warnings',
+ 'wf3 generate_scenarios completed in {elapsed}  |  {count} warnings',
+ 'Preserve warnings and phase-specific meaning; source preparation completion alone is not publication of a collection.','console');
+add('7 · Collection publication','Failed workflow',
+ 'wf3 generate_scenarios FAILED in {elapsed}\n{log parts and diagnostic paths}',
+ 'wf3 generate_scenarios FAILED in {elapsed}\n{log parts and diagnostic paths}',
+ 'Keep FAILED and recovery paths. A claimed collection must not be reported ready after failed generation.','console','Keep');
+add('7 · Collection publication','Reporting fallback',
+ '(run summary unavailable: {exception})\n(run header unavailable: {exception})',
+ '(Could not display run summary: {exception})\n(Could not display run header: {exception})',
+ 'Separate fallback branches shown together; retain exception detail and fail-open console reporting.','workflow');
+add('8 · Legacy helper outside current route','Old project-consistency check',
+ 'wf2 snapshot absent; workflows.analyze_projections unchecked (passes)\nProject consistency OK.',
+ 'WF2 snapshot unavailable; projection settings were not checked\nChecked project settings are consistent',
+ 'check_project_consistency.py is not scheduled by the current WF3 rule graph. If reused, avoid equating an omitted check with a pass.','blueearth_cst/experiment/check_project_consistency.py','Outside route');
+
+let mode='compare';
+const results=document.querySelector('#results');
+const stage=document.querySelector('#stage');
+const search=document.querySelector('#search');
+const changed=document.querySelector('#changed');
+for(const name of new Set(rows.map(r=>r.stage))){const o=document.createElement('option');o.value=name;o.textContent=name;stage.append(o);}
+function element(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e;}
+function render(){
+ const q=search.value.toLowerCase();
+ const selected=rows.filter(r=>(!stage.value||r.stage===stage.value)&&(!changed.checked||r.current!==r.proposed)&&Object.values(r).join(' ').toLowerCase().includes(q));
+ results.replaceChildren();let previous='';
+ for(const [index,r] of selected.entries()){
+  if(r.stage!==previous){results.append(element('h2','',r.stage));previous=r.stage;}
+  const card=element('article','row'+(mode==='compare'?'':' single'));
+  const meta=element('div','meta');meta.append(element('strong','',r.title));
+  meta.append(element('span','badge'+(['Conditional','Dormant'].includes(r.status)?' check':''),r.status));
+  const link=element('a','source',r.src);link.href='../../../'+r.src;meta.append(link);card.append(meta);
+  const panels=element('div','panels');
+  for(const kind of ['current','proposed'])if(mode==='compare'||mode===kind){
+   const panel=element('div','panel '+kind);panel.append(element('div','caption',kind.toUpperCase()));panel.append(element('pre','',r[kind]));panels.append(panel);
+  }
+  card.append(panels,element('div','why',r.why));results.append(card);
+ }
+ if(!selected.length)results.append(element('p','empty','No messages match these filters.'));
+ document.querySelector('#count').textContent=selected.length+' / '+rows.length+' message families';
+ for(const b of document.querySelectorAll('[data-mode]'))b.setAttribute('aria-pressed',String(b.dataset.mode===mode));
+}
+for(const b of document.querySelectorAll('[data-mode]'))b.addEventListener('click',()=>{mode=b.dataset.mode;render();});
+search.addEventListener('input',render);stage.addEventListener('change',render);changed.addEventListener('change',render);
+render();
+</script>
+<script id=source-data type=application/json>[{"source": "scripts/generate_scenarios.py:165", "code": "print(\n                f\"WF3: retained ready collection {plan['collection_id']}; no generation needed\",\n                flush=True,\n            )"}, {"source": "blueearth_cst/experiment/prepare_cst_parameters.py:300", "code": "log_row(\n        f\"Wrote {lookup_fn} ({len(lookup)} rows, {plural(len(lookup) // 12, 'member')})\",\n        module=\"experiment\",\n    )"}, {"source": "blueearth_cst/experiment/check_project_consistency.py:338", "code": "log_row(\"Project consistency OK.\", module=\"guard\")"}, {"source": "blueearth_cst/experiment/check_project_consistency.py:308", "code": "log_row(\n            \"wf2 snapshot absent; workflows.analyze_projections unchecked (passes)\",\n            module=\"guard\",\n        )"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:164", "code": "log_row(\n        f\"Basin touches {len(frame)} of {len(lats) * len(lons)} store cells \"\n        f\"-> {os.path.basename(str(out_csv))}\",\n        module=\"extract\",\n    )"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:627", "code": "log_row(\"Extracting historical climate grid\", module=\"extract\")"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:819", "code": "log_row(f\"{clim_source}: saving to netCDF\", module=\"extract\")"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:265", "code": "log_row(\n            f\"{source}: catalog does not cover requested {requested[0]}..{requested[1]}; available \"\n            f\"{available[0]}..{available[1]}; extracting \"\n            f\"{overlap[0]}..{overlap[1]} (widest overlap)\",\n            module=\"extract\",\n            level=\"WARNING\",\n        )"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:629", "code": "log_row(\n            (\n                f\"{clim_source} only contains precipitation data. \"\n                + (\n                    \"Combining with climate data from era5\"\n                    if forcing_required\n                    else \"Keeping native precipitation for source comparison\"\n                )\n            ),\n            module=\"extract\",\n        )"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:708", "code": "log_row(\n                f\"Orography for {clim_source} from {hydrography} (downscaling)\",\n                module=\"extract\",\n            )"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:721", "code": "log_row(\n                f\"Downscaling era5 variables to the resolution of {clim_source}\",\n                module=\"extract\",\n            )"}, {"source": "blueearth_cst/climate_analysis/extract_historical_climate.py:695", "code": "log_row(\n                        f\"{clim_source} covers \"\n                        f\"{_chirps_bounds[0].date()}..{_chirps_bounds[1].date()}, era5 \"\n                        f\"covers {_era5_bounds[0].date()}..{_era5_bounds[1].date()}; \"\n                        f\"the store takes their overlap \"\n                        f\"{_shared_bounds[0].date()}..{_shared_bounds[1].date()}\",\n                        module=\"extract\",\n                        level=\"WARNING\",\n                    )"}, {"source": "blueearth_cst/shared/climate_window.py:205", "code": "log_row(coverage.describe(), module=module)"}, {"source": "blueearth_cst/shared/climate_window.py:207", "code": "log_row(\n            f\"{coverage.source}: the staged source does not cover the full \"\n            f\"shared.historical_window; extracted the widest range it holds \"\n            f\"inside it\",\n            module=module,\n            level=\"WARNING\",\n        )"}, {"source": "blueearth_cst/shared/climate_window.py:218", "code": "log_row(message, module=module, level=\"WARNING\")"}, {"source": "blueearth_cst/spatial/delineate_region.py:86", "code": "log_row(f\"Delineating region {model_region} on {hydrography}\", module=\"spatial\")"}, {"source": "blueearth_cst/spatial/delineate_region.py:121", "code": "log_row(\n                f\"Outlet search area used: {selection}; inspect selected basin geometry \"\n                \"and output locations (no original point supplied)\",\n                module=\"spatial\",\n                level=\"WARNING\",\n            )"}, {"source": "blueearth_cst/spatial/delineate_region.py:132", "code": "log_row(f\"Wrote region: {region_out}\", module=\"spatial\")"}, {"source": "blueearth_cst/spatial/delineate_region.py:107", "code": "log_row(message, module=\"spatial\", level=\"WARNING\")"}, {"source": "blueearth_cst/weathergen/generate_weather.R:72", "code": "log_row(\"Reading weather netcdf: \", climate_nc_path)"}, {"source": "blueearth_cst/weathergen/generate_weather.R:82", "code": "log_row(\"Resampling on \", length(basin$keep), \" basin cell(s) of \",\n        length(ncdata$data), \" in the store\")"}, {"source": "blueearth_cst/weathergen/generate_weather.R:88", "code": "log_row(\"Generating \", historical_realizations_num,\n        \" weather realization(s)\")"}, {"source": "blueearth_cst/weathergen/generate_weather.R:146", "code": "log_row(\"Moving \", length(weathergen_figures),\n        \" figure(s) to \", weathergen_plots_path)"}, {"source": "blueearth_cst/weathergen/generate_weather.R:156", "code": "log_row(\"Saving realization \", n, \" of \",\n          historical_realizations_num)"}, {"source": "blueearth_cst/weathergen/impose_climate_change.R:39", "code": "log_row(sub(\"\\\\.nc$\", \"\", basename(output_nc_path)),\n        \" reading realization \", basename(rlz_path))"}, {"source": "blueearth_cst/weathergen/impose_climate_change.R:124", "code": "log_row(output_stem, \" applying perturbations (\", perturbation, \")\")"}, {"source": "generate_scenarios.smk:72", "code": "DELINEATE_REGION = RULES.logged(\"3.01\", \"delineate_region\")"}, {"source": "generate_scenarios.smk:73", "code": "EXTRACT_CLIMATE_DATASETS = RULES.logged(\"3.02\", \"extract_climate_datasets\")"}, {"source": "generate_scenarios.smk:74", "code": "PREPARE_PERTURBATION_GRID = RULES.logged(\"3.03\", \"prepare_perturbation_grid\")"}, {"source": "generate_scenarios.smk:76", "code": "GENERATE_WEATHER_REALIZATIONS = RULES.logged(\n        \"3.07\", \"generate_weather_realizations\",\n        summary=\"generate stochastic weather realizations\",\n    )"}, {"source": "generate_scenarios.smk:80", "code": "PERTURB_CLIMATE_REALIZATIONS = RULES.logged(\n        \"3.08\", \"perturb_climate_realizations\",\n        summary=\"perturb each realization over the perturbation grid\",\n    )"}, {"source": "generate_scenarios.smk:84", "code": "PUBLISH_SCENARIO_COLLECTION = RULES.banner_only(\"3.09\", \"publish_scenario_collection\", summary=\"validate and publish the scenario collection\")"}, {"source": "generate_scenarios.smk:85", "code": "GATHER_BENCHMARKS = RULES.banner_only(\"3.10\", \"gather_benchmarks\")"}, {"source": "generate_scenarios.smk:86", "code": "GATHER_LOGS = RULES.banner_only(\"3.11\", \"gather_logs\")"}, {"source": "generate_scenarios.smk:191", "code": "declared_step(\"3.04\", \"snapshot_generation_inputs\")"}, {"source": "generate_scenarios.smk:192", "code": "declared_step(\"3.05\", \"claim_scenario_collection\")"}, {"source": "generate_scenarios.smk:193", "code": "declared_step(\"3.06\", \"prepare_weather_generator_settings\")"}, {"source": "generate_scenarios.smk:198", "code": "pre_dag_step(\"3.04\", \"snapshot_generation_inputs\")"}, {"source": "generate_scenarios.smk:199", "code": "pre_dag_step(\"3.05\", \"claim_scenario_collection\")"}, {"source": "generate_scenarios.smk:200", "code": "pre_dag_step(\"3.06\", \"prepare_weather_generator_settings\")"}]</script>
+<script>
+for(const item of JSON.parse(document.querySelector('#source-data').textContent)){
+ const block=element('details','');block.append(element('summary','',item.source));
+ const panel=element('div','panel');panel.append(element('pre','',item.code));block.append(panel);
+ document.querySelector('#inventory').append(block);
+}
+</script>
+</html>

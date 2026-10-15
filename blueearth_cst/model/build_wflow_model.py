@@ -559,6 +559,12 @@ def build_wflow_model(
     model.close()
     _validate_written_model(root, maps, registry)
     maps.close()
+    from blueearth_cst.shared.snake_utils import listed, log_row
+
+    log_row(
+        f"Wflow-SBM model written → {root}; parameterization steps: {listed(name for name, _ in steps)}",
+        module="model",
+    )
 
 
 if __name__ == "__main__" and "snakemake" in globals():

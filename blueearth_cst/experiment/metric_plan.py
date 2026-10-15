@@ -149,10 +149,10 @@ def metrics_only_configuration(config_path):
     ]
     if ignored:
         print(
-            "metrics-only: ignored current settings "
-            + ", ".join(ignored)
-            + f"; retained simulation/model inputs come from {(root / '_engine/simulation.json').as_posix()}"
-            + f" and generation inputs from {retained_collection.get('manifest_path', retained_collection.get('manifest', {}).get('path', 'retained collection'))}",
+            f"Metrics-only uses retained simulation and generation inputs -> {(root / '_engine/simulation.json').as_posix()}"
+            + f", {retained_collection.get('manifest_path', retained_collection.get('manifest', {}).get('path', 'retained collection'))}"
+            + "; current settings not used: "
+            + ", ".join(ignored),
             flush=True,
         )
     return root, list(tokens), anchor

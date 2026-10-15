@@ -48,6 +48,8 @@ CAPTURE_RECORD = require_capture("build_model", config_path)
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
 CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.build_model")
+# Presentation-only plotting settings are tracked by renderer params below,
+# independently of scientific configuration identity.
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -61,6 +63,10 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.build_mo
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="build_model", declared_sections=CONFIG_PROJECTION,
 )
+from blueearth_cst.shared.plot_config import resolve_annotation
+from blueearth_cst.shared.plot_setup import setup_digest
+plot_annotation = resolve_annotation(config)
+plot_setup_digest = setup_digest()
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input list below does not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -199,9 +205,9 @@ if _unconsumed_observations:
     # written. Held instead, and printed under the RUN block. See the same fix
     # on WF2's resolution report.
     defer_warning(
-        f"Config declares observations no rule reads: "
+        f"Observation variables not used: "
         f"{listed(_unconsumed_observations)}. Rule 1.15 plots "
-        f"{OBSERVED_DISCHARGE_VAR} only; the rest are accepted and ignored.", module="config"
+        f"{OBSERVED_DISCHARGE_VAR} only; these entries will be ignored.", module="config"
     )
 
 # The two OPTIONAL observation inputs, declared as real `input:` entries when
@@ -478,26 +484,26 @@ declare_path_tokens(
 declare_project_root(project_dir)
 RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
 LOG_RULES = RULES.log_rules
-DELINEATE_REGION = RULES.logged("1.01", "delineate_region")
-DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("1.02", "delineate_subbasins_and_rivers")
-EXTRACT_CLIMATE_DATASETS = RULES.logged("1.03", "extract_climate_datasets", summary="clip the global climate dataset to the basin")
+DELINEATE_REGION = RULES.logged("1.01", "delineate_region", summary="delineate the basin boundary")
+DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("1.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
+EXTRACT_CLIMATE_DATASETS = RULES.logged("1.03", "extract_climate_datasets", summary="extract a basin climate grid")
 if MAP_CANDIDATE_STORES:
-    EXTRACT_MAP_CANDIDATES = RULES.logged("1.03b", "extract_map_candidates")
-PRODUCE_MAP_REFERENCE = RULES.logged("1.03c", "produce_historical_map_reference")
-PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps")
-BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from global data")
-ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="add waterbodies to the model")
-DECLARE_GAUGES_AND_OUTPUTS = RULES.logged("1.08", "declare_gauges_and_outputs")
-ADD_CLIMATE_FORCING = RULES.logged("1.09", "add_climate_forcing", summary="build the forcing netCDF for the run period")
-WRITE_GAUGE_INDEX = RULES.logged("1.10", "write_gauge_index")
-PLOT_BASIN_MAP = RULES.logged("1.11", "plot_basin_map")
-PLOT_MODEL_FORCING = RULES.logged("1.12", "plot_model_forcing")
-RUN_HISTORICAL_SIMULATION = RULES.logged("1.13", "run_historical_simulation", summary="run the model over the simulation window")
-EXPORT_SIMULATION_TABLES = RULES.logged("1.14", "export_simulation_tables")
-PLOT_MODEL_EVALUATION = RULES.logged("1.15", "plot_model_evaluation")
-WRITE_RUN_METADATA = RULES.banner_only("1.16", "write_run_metadata")
-GATHER_BENCHMARKS = RULES.banner_only("1.17", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("1.18", "gather_logs")
+    EXTRACT_MAP_CANDIDATES = RULES.logged("1.03b", "extract_map_candidates", summary="extract native candidate climate for the shared map reference")
+PRODUCE_MAP_REFERENCE = RULES.logged("1.03c", "produce_historical_map_reference", summary="prepare shared historical map display classes")
+PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps", summary="prepare shared terrain, land-cover, and soil layers")
+BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from the spatial foundation and global datasets")
+ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="apply configured reservoir, lake, and glacier setup")
+DECLARE_GAUGES_AND_OUTPUTS = RULES.logged("1.08", "declare_gauges_and_outputs", summary="configure discharge locations and output variables")
+ADD_CLIMATE_FORCING = RULES.logged("1.09", "add_climate_forcing", summary="prepare model forcing for the simulation window")
+WRITE_GAUGE_INDEX = RULES.logged("1.10", "write_gauge_index", summary="write the outlet-to-location identity crosswalk")
+PLOT_BASIN_MAP = RULES.logged("1.11", "plot_basin_map", summary="render basin and spatial-input maps")
+PLOT_MODEL_FORCING = RULES.logged("1.12", "plot_model_forcing", summary="render model-forcing maps and time series")
+RUN_HISTORICAL_SIMULATION = RULES.logged("1.13", "run_historical_simulation", summary="run Wflow-SBM with historical forcing")
+EXPORT_SIMULATION_TABLES = RULES.logged("1.14", "export_simulation_tables", summary="export simulation time-series tables")
+PLOT_MODEL_EVALUATION = RULES.logged("1.15", "plot_model_evaluation", summary="review simulation outputs and compare available discharge observations")
+WRITE_RUN_METADATA = RULES.banner_only("1.16", "write_run_metadata", summary="record configuration and input digests for these outputs")
+GATHER_BENCHMARKS = RULES.banner_only("1.17", "gather_benchmarks", summary="merge rule timing and resource-use records")
+GATHER_LOGS = RULES.banner_only("1.18", "gather_logs", summary="merge rule logs")
 
 # WF1_TERMINALS — the artifacts with no WF1 consumer: every producing rule is
 # upstream of them and none of them feeds another rule. That is exactly the
@@ -596,8 +602,8 @@ rule delineate_subbasins_and_rivers:
 rule prepare_land_and_soil_maps:
     message: PREPARE_LAND_AND_SOIL_MAPS.banner()
     input:
-        config_snake = config_path,
-        config_workflows = WF_CONFIG_PATHS,
+        # Consumed settings are tracked by basin_config/model_config params.
+        # Raw config inputs would rebuild the model after a presentation edit.
         data_catalogs = DATA_SOURCES,
         hydrography = SPATIAL_UNITS.outputs["hydrography"],
         basins = SPATIAL_UNITS.outputs["basins"],
@@ -957,6 +963,8 @@ _basavg_pngs = [
 # Caption records exist only when the configured basin-average family is drawn.
 _basavg_captions = (
     [
+        f"{basin_dir}/evaluation/plots/figure_titles.md",
+        f"{basin_dir}/evaluation/plots/_engine/figure_titles.json",
         f"{basin_dir}/evaluation/plots/figure_captions.md",
         f"{basin_dir}/evaluation/plots/_engine/figure_captions.json",
     ]
@@ -1109,6 +1117,8 @@ rule plot_model_evaluation:
            f"{basin_dir}/evaluation/plots/{STATION_PLOT_DIRNAME}"
        ),
    params:
+       annotation = plot_annotation,
+       plot_setup_digest = plot_setup_digest,
        project_dir = f"{project_dir}",
        # The model root is OWNED BY THE RULE, not rebuilt inside the script.
        # plot_results.py used to derive `{project_dir}/hydrology_model` itself,
@@ -1182,6 +1192,10 @@ rule plot_basin_map:
         # PNG only since 2026-08-10 (owner's call): nothing in the toolbox
         # or the platform read the vector deliverable, and 600 dpi at 180 mm
         # carries the figure everywhere it is used.
+        titles_md = f"{spatial_dir}/plots/figure_titles.md",
+        titles_json = f"{spatial_dir}/plots/_engine/figure_titles.json",
+        captions_md = f"{spatial_dir}/plots/figure_captions.md",
+        captions_json = f"{spatial_dir}/plots/_engine/figure_captions.json",
         basin_png = f"{spatial_dir}/plots/elevation_basin.png",
         # From the registry the plotter iterates, not restated here — the same
         # contract rule 1.12 has with climate_figures.figure_names(). Only the
@@ -1192,6 +1206,8 @@ rule plot_basin_map:
         # See SpatialFigure.guaranteed.
         spatial_figures = figure_paths(f"{spatial_dir}/plots"),
     params:
+        annotation = plot_annotation,
+        plot_setup_digest = plot_setup_digest,
         spatial_dir = f"{spatial_dir}",
     log:
         PLOT_BASIN_MAP.log(),
@@ -1240,9 +1256,13 @@ rule plot_model_forcing:
     # rather than being restated here.
     output:
         _forcing_climate_pngs,
+        titles_md = f"{FORCING_PLOTS_DIR}/figure_titles.md",
+        titles_json = f"{FORCING_PLOTS_DIR}/_engine/figure_titles.json",
         captions_md = f"{FORCING_PLOTS_DIR}/figure_captions.md",
         captions_json = f"{FORCING_PLOTS_DIR}/_engine/figure_captions.json",
     params:
+        annotation = plot_annotation,
+        plot_setup_digest = plot_setup_digest,
         project_dir = f"{project_dir}",
         # Rule-owned model root; see rule 1.15's note.
         model_dir = basin_dir,
@@ -1389,6 +1409,8 @@ def _header():
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
         open_run_header("wf1 build_model", project_dir, config_path)
+        from blueearth_cst.shared.snake_utils import log_row
+        log_row(f"Historical run: {clim_source}; simulation window {SIMULATION_BOUNDS[0].date()}–{SIMULATION_BOUNDS[1].date()}; configured model resolution {model_resolution}", module="model")
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

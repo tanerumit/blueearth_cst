@@ -47,6 +47,8 @@ CAPTURE_RECORD = require_capture("analyze_climate", config_path)
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
 CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_climate")
+# Presentation-only plotting settings are tracked by renderer params below,
+# independently of scientific configuration identity.
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -60,6 +62,10 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="analyze_climate", declared_sections=CONFIG_PROJECTION,
 )
+from blueearth_cst.shared.plot_config import resolve_annotation
+from blueearth_cst.shared.plot_setup import setup_digest
+plot_annotation = resolve_annotation(config)
+plot_setup_digest = setup_digest()
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -292,19 +298,19 @@ declare_path_tokens(
 declare_project_root(project_dir)
 RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
 LOG_RULES = RULES.log_rules
-DELINEATE_REGION = RULES.logged("0.01", "delineate_region")
-DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers")
-EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="clip global climate to the basin")
-PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference")
-COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics")
-PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics")
+DELINEATE_REGION = RULES.logged("0.01", "delineate_region", summary="delineate the basin boundary")
+DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
+EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="extract a basin climate grid")
+PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference", summary="prepare the shared historical map display reference")
+COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics", summary="compute source diagnostics and native-grid map fields")
+PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics", summary="render historical climate diagnostics")
 
 # Rule 0.05 exists only when there is more than one source to compare, so it
 # is registered -- and its label enters LOG_RULES -- only then.
 if len(CANDIDATE_SOURCES) > 1:
-    COMPARE_DIAGNOSTICS = RULES.logged("0.05", "compare_climate_diagnostics", summary="compare the candidate climate datasets")
-GATHER_BENCHMARKS = RULES.banner_only("0.06", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("0.07", "gather_logs")
+    COMPARE_DIAGNOSTICS = RULES.logged("0.05", "plot_climate_comparison", summary="compare sources over the configured common period")
+GATHER_BENCHMARKS = RULES.banner_only("0.06", "gather_benchmarks", summary="merge rule timing and resource-use records")
+GATHER_LOGS = RULES.banner_only("0.07", "gather_logs", summary="merge rule logs")
 
 
 DIAGNOSTIC_SETTINGS = parse_settings(my_cfg.get("diagnostics"), historical_window, CANDIDATE_SOURCES)
@@ -458,8 +464,6 @@ for _source in CANDIDATE_SOURCES:
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
         _render_inputs["subbasin_tables"] = f"{_diag['root']}/tables/subbasins"
         _render_outputs["subbasin_figures"] = directory(f"{_diag['root']}/plots/subbasins")
-        if DIAGNOSTIC_SETTINGS["captioned_figures"]:
-            _render_outputs["captioned_subbasins"] = directory(f"{_diag['root']}/plots/captioned/subbasins")
 
     rule:
         name: PLOT_DIAGNOSTICS.job_name(_source)
@@ -467,6 +471,8 @@ for _source in CANDIDATE_SOURCES:
         input: **_render_inputs,
         output: **_render_outputs,
         params:
+            annotation=plot_annotation,
+            plot_setup_digest=plot_setup_digest,
             settings=DIAGNOSTIC_SETTINGS, source=_source, store_dir=_spec.store_dir,
             m0=DIAGNOSTIC_M0, pooled_roots=POOLED_ROOTS,
             subbasin_table_dirs=[f"{_diag['root']}/tables/subbasins"],
@@ -496,15 +502,15 @@ if COMPARISON_DIAGNOSTICS:
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
         _comparison_outputs["subbasin_figures"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/plots/subbasins")
         _comparison_outputs["subbasin_tables"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/tables/subbasins")
-        if DIAGNOSTIC_SETTINGS["captioned_figures"]:
-            _comparison_outputs["captioned_subbasins"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/plots/captioned/subbasins")
         _comparison_inputs["subbasin_tables"] = [f"{spec['root']}/tables/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
 
-    rule compare_climate_diagnostics:
+    rule plot_climate_comparison:
         message: COMPARE_DIAGNOSTICS.banner()
         input: **_comparison_inputs,
         output: **_comparison_outputs,
         params:
+            annotation=plot_annotation,
+            plot_setup_digest=plot_setup_digest,
             settings=DIAGNOSTIC_SETTINGS, sources=CANDIDATE_SOURCES,
             comparison_dir=COMPARISON_DIR, m0=DIAGNOSTIC_M0,
             pooled_roots=POOLED_ROOTS,
@@ -622,6 +628,10 @@ def _header():
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
         open_run_header("wf0 analyze_climate", project_dir, config_path)
+        from blueearth_cst.shared.snake_utils import listed, log_row
+        log_row(f"Historical climate diagnostics: {len(CANDIDATE_SOURCES)} sources ({listed(CANDIDATE_SOURCES)}); selected forcing source: {clim_source}; requested extraction period: {historical_window['start']}–{historical_window['end']}", module="diagnostics")
+        reference = DIAGNOSTIC_SETTINGS["reference_period"]
+        log_row(f"Diagnostic reference period: {reference['start']}–{reference['end']}; reporting year starts in {WATER_YEAR_START}", module="diagnostics")
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

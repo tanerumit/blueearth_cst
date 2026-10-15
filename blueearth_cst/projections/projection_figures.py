@@ -10,19 +10,8 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-# IPCC AR6 scenario colors (final TSU values, as published by pyam):
-# https://pyam-iamc.readthedocs.io/en/stable/tutorials/ipcc_colors.html
-SCENARIO_COLORS = {
-    "ssp119": "#00a9cf",
-    "ssp126": "#003466",
-    "ssp434": "#2274ae",
-    "ssp245": "#f69320",
-    "ssp534-over": "#92397a",
-    "ssp460": "#b0724e",
-    "ssp370": "#df0000",
-    "ssp370-lowNTCF": "#e61d25",
-    "ssp585": "#980002",
-}
+# Re-export for existing callers; the shared YAML owns the IPCC mapping.
+from blueearth_cst.shared.plot_colors import SCENARIO_COLORS as SCENARIO_COLORS
 
 # Logical product keys remain independent of their public output filenames.
 FIGURE_FILENAMES = {

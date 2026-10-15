@@ -533,5 +533,12 @@ if __name__ == "__main__":
                 validated_collection=sm.params.validated_collection,
                 preparation=record["documents"]["preparation"],
             )
+            from blueearth_cst.shared.run_log_core import log_row
+
+            log_row(
+                f"Model forcing and run settings prepared for {sm.params.run_id} over "
+                f"{sm.params.sim_window_start}–{sm.params.sim_window_end}",
+                module="forcing",
+            )
     else:
         raise ValueError("This script should be run from a snakemake environment")

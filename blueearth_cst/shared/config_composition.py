@@ -1,13 +1,8 @@
-"""Compose a tiered project config (T1 + per-workflow T2) into today's shape.
+"""Compose a project config and its per-workflow files into one mapping.
 
-R12 splits the retired run_stress_test stanza into generate_scenarios and
-simulate_system. Composition never translates the old stanza: the explicit
-migration tool preserves its resolved seed before splitting configuration.
-
-R13 splits the monolithic project config into a **T1** project file carrying
-closed ``{enabled, config_path}`` workflow stanzas plus **T2** files holding one
-workflow's settings each. This module is the loader that puts them back
-together, and the enforcement point for the rules that keep them apart.
+The project file carries closed ``{enabled, config_path}`` workflow stanzas;
+each workflow file holds that workflow's settings. This module validates the
+boundary and composes the files for existing consumers.
 
 Source of record: ``dev/records/milestones/r13/config-tiers-design.md`` (ACCEPTED
 2026-08-21). Section references below are to that document; every ``D-`` tag is
@@ -74,6 +69,8 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 import yaml
 
+from blueearth_cst.shared.plot_config import resolve_annotation
+
 if TYPE_CHECKING:
     from blueearth_cst.shared.workflow_config_snapshot import CapturedSource
 
@@ -88,6 +85,9 @@ MIGRATION_RELEASE = "v0.3.0"
 
 #: The user-facing migration guide, as it exists in `MIGRATION_RELEASE`.
 MIGRATION_DOC = "docs/site/guide/migrating-project-config.qmd"
+
+#: Current guidance for configuring a project and its workflow files.
+CONFIG_DOC = "docs/site/guide/configuration.qmd"
 
 #: The project config shape this loader accepts (R14 D-11.1). A document with no
 #: `schema_version`, or a lower one, is a v1 set and is refused rather than
@@ -129,6 +129,7 @@ T1_SHARED_SECTIONS: dict[str, tuple[str, ...]] = {
     "basin": ("region", "resolution", "output_locations", "delineation", "sources"),
     "climate": ("sources", "selected", "window", "water_year_start", "map_reference"),
     "model": ("outvars",),
+    "plotting": ("annotation",),
 }
 
 #: T1's top level, closed (D-9.5). Closing it is what makes the migration
@@ -194,69 +195,18 @@ SHARED_SEAM_KEYS: frozenset[str] = frozenset(T1_SHARED_SECTIONS) | frozenset(
     leaf for leaves in T1_SHARED_SECTIONS.values() for leaf in leaves
 )
 
-#: RETIRED, deliberately: there is no hoist registry, because there is nothing
-#: left to hoist. `HOISTED_SECTIONS` existed to hold exactly one entry --
-#: `run_stress_test` -> `reporting:` -- carried outside `workflows.run_stress_test`
-#: so that a figure caption sat outside `CONFIG_PROJECTION`, the effective-config
-#: digest and the experiment freeze. R14 `C-77` removes `reporting:` from the
-#: config surface entirely, which empties the map.
+#: There is no hoist registry: T2 sections compose only into their workflow.
+#: The D-9.6 scan permits no cross-workflow value reads. Shared values belong
+#: in T1's basin, climate, or model sections. See the R14 config-shape design.
 #:
-#: **This AMENDS accepted R13 decision D-10.4**, which introduced the mechanism.
-#: The amendment is recorded rather than taken quietly, on R14 `K2`.
-#:
-#: Retired rather than left empty, on the precedent set two constants below: an
-#: empty registry that can be refilled cannot enforce shrink-only, because
-#: adding a section plus a matching entry keeps every test green. With no
-#: registry to pair a section with, a T2 file's top-level section can only ever
-#: merge into that workflow's own namespace -- there is no second option, and no
-#: way to reintroduce one without a design change that reads as one.
-#:
-#: Source: `dev/records/milestones/r14/config-shape-design.md` D-10.1 / D-10.2.
-
-#: RETIRED, deliberately: there is no registry of sanctioned cross-workflow
-#: value reads, because there are none. `CROSS_WORKFLOW_READS` existed to hold
-#: exactly one entry -- WF3 reading `workflows.build_model.wflow_outvars` --
-#: and D-9.7 hoisted that key to `shared:`, which emptied it.
-#:
-#: The D-9.6 scan now asserts a literal ZERO value reads rather than equality
-#: with a set, and that is the point rather than tidiness. An expandable
-#: registry cannot enforce shrink-only: adding a read plus a matching tuple
-#: keeps the test green. With no registry to pair a read with, any new
-#: cross-workflow value read fails the scan outright, permanently. A key that
-#: two workflows need goes in `shared:` -- there is no second option.
-#:
-#: `RELOCATED_KEYS` below is not a successor. It records where ONE key moved,
-#: so the migration tool can emit the new placement and its round trip stay
-#: exact; it sanctions no read.
-
-#: The R13 hoist, as data: source path -> destination path in the composed
-#: mapping. One entry; grows only with a ruled hoist.
-#:
-#: **v1-shaped, and currently without a production consumer.** Its readers were
-#: `scripts/split_project_config.py`'s emission and round-trip normalization,
-#: both retired with that tool (R14 Gate A). The destination it records --
-#: `shared.wflow_outvars` -- is itself a v1 spelling that R14 `C-19` moves to
-#: `model.outvars`. The v1 -> v2 mapping that absorbed it,
-#: `config/migrations/v1_to_v2.yml`, shipped with the rewriter through
-#: `MIGRATION_RELEASE`; this entry stays as the loader's own record of the move.
-RELOCATED_KEYS: dict[tuple[str, ...], tuple[str, ...]] = {
-    ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars"),
-}
-
 #: Every v1 spelling this loader can SEE, and where it went (D-10.4 row 2).
 #: Dotted path -> the sentence a user needs. `T1.` prefixes a project-file path;
 #: `T2.<workflow>.` prefixes one workflow file's own top level; `T2.*.` matches
 #: that name at the top of ANY workflow file.
 #:
-#: **This is a diagnostic, not the migration specification.** The complete,
-#: normative v1 -> v2 mapping was `config/migrations/v1_to_v2.yml` (R14 D-11.2a),
-#: shipped with the rewriter through `MIGRATION_RELEASE`; 85 rows do not belong in a
-#: loader. What lives here is the subset a parse-time check can see cheaply --
-#: T1 paths and T2 top-level names -- and its job is narrow by construction:
-#: `schema_version` is checked FIRST, so a whole v1 set is already refused with
-#: the migration command before any of this runs. Everything below therefore
-#: fires on a HALF-migrated document, where naming the one key that was missed
-#: is worth far more than a generic "run the migration".
+#: This diagnostic table covers only retired paths visible at parse time.
+#: Schema version is checked first; these entries identify individual keys
+#: left in a config that already declares version 2.
 RETIRED_KEYS: dict[str, str] = {
     "T1.project.static_dir": ("deleted (`C-07`) -- nothing read it; remove the key"),
     "T1.project.data_sources": "renamed to `project.catalog` (`C-40`)",
@@ -485,13 +435,13 @@ def _resolve_config_path(raw: object, t1_dir: str, name: str) -> str:
     if not isinstance(raw, (str, os.PathLike)):
         raise ValueError(
             f"workflows.{name}.config_path must be a path string, got "
-            f"{type(raw).__name__}. See {MIGRATION_DOC}."
+            f"{type(raw).__name__}. See {CONFIG_DOC}."
         )
     text = os.path.expanduser(os.fspath(raw))
     if not text.strip():
         raise ValueError(
             f"workflows.{name}.config_path is empty. Omit the key entirely to "
-            f"give the workflow no settings. See {MIGRATION_DOC}."
+            f"give the workflow no settings. See {CONFIG_DOC}."
         )
     if not os.path.isabs(text):
         text = os.path.join(t1_dir, text)
@@ -547,9 +497,7 @@ def _check_schema_version(t1: Mapping[str, Any], t1_path: str | os.PathLike) -> 
         f"reads `schema_version: {SCHEMA_VERSION}`.\n"
         f"  Migrate it with toolbox {MIGRATION_RELEASE}:  "
         f"python {MIGRATION_COMMAND} {t1_path}\n"
-        "That rewrites the project file AND its workflow files together, in one "
-        "transactional pass, keeping your comments and leaving `*.v1.bak` "
-        f"alongside. See {MIGRATION_DOC} in {MIGRATION_RELEASE}."
+        f"See {MIGRATION_DOC} in {MIGRATION_RELEASE}."
     )
 
 
@@ -600,12 +548,9 @@ def _check_retired_keys(
         return
     raise ValueError(
         "This config declares `schema_version: "
-        f"{SCHEMA_VERSION}` but still carries key(s) R14 retired:\n"
+        f"{SCHEMA_VERSION}` but still carries retired key(s):\n"
         + "\n".join(sorted(hits))
-        + f"\nRe-run `python {MIGRATION_COMMAND}` from toolbox {MIGRATION_RELEASE} "
-        "on the project file to finish the migration -- it is idempotent on an "
-        "already-migrated set and refuses a partial one by name. See "
-        f"{MIGRATION_DOC} in {MIGRATION_RELEASE}."
+        + f"\nRemove or move these keys as indicated. See {CONFIG_DOC}."
     )
 
 
@@ -644,7 +589,7 @@ def _check_climate_selection(
             "candidates -- it writes a comparison of them to "
             "`<project_dir>/data/climate/historical/comparison/` and needs no "
             "model, and leaving `climate.selected` unset is legal for exactly "
-            f"that run. See {MIGRATION_DOC}."
+            f"that run. See {CONFIG_DOC}."
         )
 
     if sources and selected not in sources:
@@ -654,7 +599,7 @@ def _check_climate_selection(
             "  Either pick a member of that set, or add "
             f"{selected!r} to `climate.sources` -- the selection names the "
             "dataset the model is built and run on, and the candidate list is "
-            f"what analyze_climate compares. See {MIGRATION_DOC}."
+            f"what analyze_climate compares. See {CONFIG_DOC}."
         )
 
 
@@ -683,7 +628,7 @@ def _check_observations(
             "  Either add the variable to `model.outvars` in the project file, "
             "or drop the observations entry -- an observed series with no "
             f"modelled counterpart has nothing to be compared against. "
-            f"See {MIGRATION_DOC}."
+            f"See {CONFIG_DOC}."
         )
 
 
@@ -721,7 +666,7 @@ def _check_trajectories(bodies: Mapping[str, Mapping[str, Any]]) -> None:
             "run "
             "and `transient` ramps it through, which are different experiments, "
             "and guessing would produce a response surface computed under an "
-            f"assumption nobody made. See {MIGRATION_DOC}."
+            f"assumption nobody made. See {CONFIG_DOC}."
         )
 
 
@@ -745,7 +690,7 @@ def _check_t1_top_level(t1: Mapping[str, Any]) -> None:
             f"T1 project config declares top-level key(s) {sorted(stray)!r}. "
             f"The project file's top level is closed to {list(T1_TOP_LEVEL)!r}: "
             "workflow settings belong in that workflow's own config file. "
-            f"See {MIGRATION_DOC}."
+            f"See {CONFIG_DOC}."
         )
 
 
@@ -768,10 +713,7 @@ def _check_stanza_closed(name: str, stanza: Mapping[str, Any]) -> None:
             f"config's workflow stanza is closed to {sorted(WORKFLOW_STANZA_KEYS)!r}. "
             f"Move those settings into a workflow config file named "
             f"`<project_config_stem>_{name}.yml` beside this file and point "
-            f"`workflows.{name}.config_path` at it. Run "
-            f"`python {MIGRATION_COMMAND} <this file>` from toolbox "
-            f"{MIGRATION_RELEASE} to do it mechanically, and see {MIGRATION_DOC} "
-            "there."
+            f"`workflows.{name}.config_path` at it. See {CONFIG_DOC}."
         )
 
 
@@ -839,7 +781,7 @@ def _check_t2_names(
         f"{path}: the {name!r} workflow config declares {stray!r} at its top "
         "level, but those names are owned outside a single workflow — a key "
         "read by more than one workflow lives in the project file, never in a "
-        "workflow file. " + "; ".join(fixes) + f". See {MIGRATION_DOC}."
+        "workflow file. " + "; ".join(fixes) + f". See {CONFIG_DOC}."
     )
 
 
@@ -915,7 +857,7 @@ def _raise_for_probe(probe: _Probe, t1_dir: str) -> None:
             f"  resolved against: {t1_dir}\n"
             "A relative `config_path` is anchored at the project config file's "
             "own directory, not the working directory. To give this workflow no "
-            f"settings at all, delete the `config_path` key. See {MIGRATION_DOC}."
+            f"settings at all, delete the `config_path` key. See {CONFIG_DOC}."
         )
     if probe.status == "unparseable":
         raise ValueError(
@@ -930,7 +872,7 @@ def _raise_for_probe(probe: _Probe, t1_dir: str) -> None:
             f"{probe.detail}, not a mapping of settings: {probe.resolved}\n"
             f"  resolved against: {t1_dir}\n"
             "A workflow config file's top level is that workflow's own settings "
-            f"at column zero. See {MIGRATION_DOC}."
+            f"at column zero. See {CONFIG_DOC}."
         )
 
 
@@ -1033,6 +975,7 @@ def compose_config(
     # contents went. See `_check_retired_keys`.
     _check_retired_keys(t1, {})
     _check_t1_top_level(t1)
+    resolve_annotation(t1)
 
     t1_dir = os.path.dirname(os.path.abspath(os.fspath(t1_path))) or os.getcwd()
     for section in T1_SHARED_SECTIONS:
@@ -1106,6 +1049,16 @@ def compose_config(
     # of it having moved, and a half-migrated WF3 file would otherwise report a
     # missing `trajectory:` for an axis still spelled `stress_test:`.
     bodies = {probe.name: probe.body for probe in probes if probe.status == "ok"}
+    for owner, body in bodies.items():
+        diagnostics = body.get("diagnostics")
+        if "captioned_figures" in body or (
+            isinstance(diagnostics, Mapping) and "captioned_figures" in diagnostics
+        ):
+            raise ValueError(
+                f"{owner} file: captioned_figures is retired; set "
+                "plotting.annotation: caption in the project file instead "
+                "(or none for unannotated figures)."
+            )
     _check_retired_keys(t1, bodies)  # the T2 half; the T1 half ran above
     _check_climate_selection(t1, workflows, t1_path)
     _check_observations(t1, bodies)

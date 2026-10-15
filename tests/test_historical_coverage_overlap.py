@@ -100,4 +100,4 @@ def test_era5_writes_the_actual_overlap(
         check_store_window(output, requested[0], outside_end, "era5")
     log = capsys.readouterr().out
     assert "WARNING" in log
-    assert f"extracting {expected[0]}..{expected[1]}" in log
+    assert f"extracting {expected[0]}–{expected[1]}" in log

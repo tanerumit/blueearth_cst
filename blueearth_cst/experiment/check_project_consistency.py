@@ -132,10 +132,11 @@ def guarded_section_paths() -> tuple[str, ...]:
     without a project: T1's closed top level, and the two workflows whose
     snapshots the guard reads. It is not a second maintained list --
     ``T1_TOP_LEVEL`` is the loader's own closure and
-    ``GUARD_SNAPSHOT_WORKFLOWS`` is above.
+    ``GUARD_SNAPSHOT_WORKFLOWS`` is above. Presentation-only ``plotting`` is
+    omitted from the snapshots; renderer params track it separately.
     """
     return tuple(
-        [key for key in T1_TOP_LEVEL if key != "workflows"]
+        [key for key in T1_TOP_LEVEL if key not in {"workflows", "plotting"}]
         + [f"workflows.{name}" for name in GUARD_SNAPSHOT_WORKFLOWS]
     )
 

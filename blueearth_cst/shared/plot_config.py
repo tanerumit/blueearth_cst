@@ -6,13 +6,13 @@ from typing import Any
 
 def resolve_annotation(config: Mapping[str, Any]) -> str:
     """Validate plotting settings and return none, caption, or title."""
-    block = config.get("plotting", {})
-    if not isinstance(block, Mapping):
+    plotting_config = config.get("plotting", {})
+    if not isinstance(plotting_config, Mapping):
         raise ValueError("plotting must be a mapping with optional annotation")
-    unknown = set(block) - {"annotation"}
+    unknown = set(plotting_config) - {"annotation"}
     if unknown:
         raise ValueError(f"Unknown plotting settings: {sorted(unknown)}")
-    annotation = block.get("annotation", "none")
+    annotation = plotting_config.get("annotation", "none")
     if not isinstance(annotation, str) or annotation not in {
         "none",
         "caption",

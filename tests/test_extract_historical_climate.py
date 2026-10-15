@@ -353,7 +353,7 @@ def test_era5_request_uses_catalog_overlap_and_warns(
     output = capsys.readouterr().out
     assert "WARNING" in output
     assert f"requested {requested[0]}..{requested[1]}" in output
-    assert f"extracting {expected[0]}..{expected[1]}" in output
+    assert f"extracting {expected[0]}–{expected[1]}" in output
 
 
 def test_catalog_window_with_no_overlap_fails_before_read(fake_era5_catalog):

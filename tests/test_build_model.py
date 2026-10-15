@@ -11,7 +11,7 @@ SNAKEDIR = join(TESTDIR, "..")
 config_fn = join(TESTDIR, "project_config_fixture.yml")
 
 
-def test_copy_config(tmp_path, data_sources, model_build_config):
+def test_copy_config(tmp_path, data_sources, model_build_config, monkeypatch):
     """A referenced file is copied ONLY when the repo cannot give it back.
 
     R07 B9 replaced the single derived ``output_dir`` with explicit per-file
@@ -31,6 +31,12 @@ def test_copy_config(tmp_path, data_sources, model_build_config):
     cfg = tmp_path / "config"
     outside = tmp_path / "site_specific_catalog.yml"
     outside.write_text("meta: {}\n", encoding="utf-8")
+    tracked = {realpath(data_sources), realpath(model_build_config)}
+    monkeypatch.setattr(
+        copy_config_files,
+        "_tracked_blob",
+        lambda path, _toolbox: "b" * 40 if realpath(path) in tracked else None,
+    )
 
     copy_config_files.copy_config_files(
         config=config_fn,

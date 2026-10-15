@@ -119,11 +119,12 @@ test run, not by rerunning a passed command solely to produce a receipt. By defa
 be clean and committed. Before commit, stage the intended changes and use `record --staged`; it refuses
 unstaged changes and nonignored untracked files, and checks identity again after execution. Commit the
 same staged content, then `verify` proves the clean committed tree matches without executing the gate.
-Evidence and logs belong in project scratch; retain needed evidence before scratch cleanup.
+Evidence and logs belong in `dev/tasks/<id>/.tmp/`; substitute the owning task ID in the examples.
+Follow `repo-layout.md` § Task temporary material for retention and closure cleanup.
 
 ```powershell
-pixi run python dev/scripts/verify_landing.py record --evidence .tmp/scratchpad/gates.json --gate test-fast --log .tmp/scratchpad/fast.log -- pixi run test-fast
-pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/scratchpad/gates.json --require-gate test-fast
+pixi run python dev/scripts/verify_landing.py record --evidence dev/tasks/<id>/.tmp/gates.json --gate test-fast --log dev/tasks/<id>/.tmp/fast.log -- pixi run test-fast
+pixi run python dev/scripts/verify_landing.py verify --evidence dev/tasks/<id>/.tmp/gates.json --require-gate test-fast
 ```
 
 For a focused pre-commit check, use `record --staged` with an appropriate gate name and test command.
@@ -182,7 +183,7 @@ in `require_gates` must pass in the new evidence. For example, record `console` 
 console test command, then verify:
 
 ```powershell
-pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/scratchpad/landing/base.json --delta-evidence .tmp/scratchpad/landing/followup.json --delta-review .tmp/scratchpad/landing/review.json --require-gate test-full --require-gate test-e2e --require-gate console
+pixi run python dev/scripts/verify_landing.py verify --evidence dev/tasks/<id>/.tmp/landing/base.json --delta-evidence dev/tasks/<id>/.tmp/landing/followup.json --delta-review dev/tasks/<id>/.tmp/landing/review.json --require-gate test-full --require-gate test-e2e --require-gate console
 ```
 
 The verifier checks exact path coverage, base ancestry, candidate tree, matching environment and input

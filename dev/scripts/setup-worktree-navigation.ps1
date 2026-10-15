@@ -50,7 +50,7 @@ $failures = @()
 foreach ($root in $selected) {
     try {
         $navigationPath = Join-Path $root '.tmp/navigation'
-        foreach ($relative in @('', '.tmp', '.tmp/navigation', '.tmp/scratchpad')) {
+        foreach ($relative in @('', '.tmp', '.tmp/navigation', 'dev', 'dev/tasks')) {
             $parentPath = if ($relative) { Join-Path $root $relative } else { $root }
             $existing = Get-Item -LiteralPath $parentPath -Force -ErrorAction SilentlyContinue
             if (($relative -eq '' -and -not $existing) -or ($existing -and
@@ -68,7 +68,7 @@ foreach ($root in $selected) {
             }
             $targets[$label] = $destinations[$label]
         }
-        $targets['local-scratch'] = Join-Path $root '.tmp/scratchpad'
+        $targets['local-tasks'] = Join-Path $root 'dev/tasks'
         $existingShortcuts = @(Get-ChildItem -LiteralPath $navigationPath -Filter '*.lnk' -Force -ErrorAction SilentlyContinue)
         foreach ($existing in $existingShortcuts) {
             if (($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $existing.PSIsContainer) {

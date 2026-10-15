@@ -46,7 +46,8 @@ Read the 2025 technical note in References before changing what a workflow compu
 - `dev/`: plans, retained findings, conventions and helpers; not shipped. The board belongs to `main`:
   edit notes there and render with `python dev/scripts/todoboard.py render`; commit board-only changes
   separately. Never hand-edit generated `dev/TODO.md`. New task documents go in `dev/tasks/<id>/`,
-  never `dev/working/`; disposable probes go in `.tmp/scratchpad/<task-id-or-purpose>/`.
+  never `dev/working/`. Temporary notes, sketches, probes and logs belong in the relevant
+  `dev/tasks/<id>/.tmp/`, never `.tmp/scratchpad/`; see `dev/reference/repo-layout.md` for cleanup.
 - `docs/site/`: published documentation; `docs/notebooks/`: source notebooks; `docs/references/`:
   upstream guides. Historical migration guides live in `dev/records/milestones/`.
   Do not mirror configs into docs. Full layout: `dev/reference/repo-layout.md`.

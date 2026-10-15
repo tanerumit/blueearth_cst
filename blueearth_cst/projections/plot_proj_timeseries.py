@@ -168,15 +168,21 @@ def render_suite(
     if not isinstance(captioned_figures, bool):
         raise TypeError("captioned_figures must be bool")
     root = Path(plots_root)
-    log_row(
-        "Windows used: "
-        + listed(
+    references = {tuple(w["reference"]) for w in record["windows"]}
+    if len(references) == 1:
+        reference = next(iter(references))
+        window_description = listed([w["window_id"] for w in record["windows"]])
+        window_description += f"; reference: {reference[0]}–{reference[1]}"
+    else:
+        window_description = listed(
             [
                 f"{w['window_id']} (reference {w['reference'][0]}–{w['reference'][1]})"
                 for w in record["windows"]
             ]
-        ),
-        module="plot_proj_timeseries",
+        )
+    log_row(
+        "Rendering windows: " + window_description,
+        module="projection_plots",
     )
     folders = [
         "full_period",
@@ -221,7 +227,7 @@ def render_suite(
             try:
                 save_figure(
                     root / relative,
-                    module="plot_proj_timeseries",
+                    module="projection_plots",
                     fig=fig,
                     dpi=600,
                     facecolor="white",
@@ -230,7 +236,7 @@ def render_suite(
                     add_caption(fig, text)
                     save_figure(
                         root / "captioned" / relative,
-                        module="plot_proj_timeseries",
+                        module="projection_plots",
                         fig=fig,
                         dpi=600,
                         facecolor="white",
@@ -298,8 +304,8 @@ def render_suite(
     )
     (root / "figure_captions.md").write_text("\n".join(markdown), encoding="utf-8")
     log_row(
-        f"{plural(len(manifest), 'figure')} written; {plural(len(skipped), 'product')} unavailable",
-        module="plot_proj_timeseries",
+        f"Wrote {plural(len(manifest), 'figure')}; skipped {len(skipped)} (eligibility reasons → figure_captions.md)",
+        module="projection_plots",
     )
     return manifest, skipped
 

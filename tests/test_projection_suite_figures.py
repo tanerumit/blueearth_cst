@@ -179,7 +179,7 @@ def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
     ],
 )
 def test_manifest_bijection_unavailable_and_captioned_copy(
-    suite, tmp_path, extra_path, message
+    suite, tmp_path, extra_path, message, capsys
 ):
     tables, record = suite
     # Keep one real available product to exercise 600dpi and caption copies.
@@ -194,6 +194,10 @@ def test_manifest_bijection_unavailable_and_captioned_copy(
     plots = tmp_path / "plots"
     manifest, skipped = render_suite(tables, record, plots, captioned_figures=True)
     assert len(manifest) == 1 and len(skipped) == 18
+    console = capsys.readouterr().out
+    assert "projection_plots - Rendering windows:" in console
+    assert "; reference: " in console
+    assert "Wrote 1 figure; skipped 18" in console
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }

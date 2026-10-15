@@ -30,9 +30,20 @@ Verification: 165 focused model, waterbody, evaluation, export, map, gauge and f
 the focused batches and two wording rechecks. The WF1 DAG dry-run passed with normal Snakemake cache access.
 Scoped Ruff passed. The historical Julia driver changes only text; exit status and progress remain unchanged.
 
+## WF2 — complete
+
+Acquisition and reference-period warnings explain their operation without fixed slowdown claims. Change
+factors count ensemble combinations and combination–window pairs; partial coverage remains distinct from
+fully resolved composition records. Figure eligibility uses readable product labels and recorded reasons.
+Plot rows use `projection_plots`, with a shared reference stated once where applicable.
+
+Verification: 145 focused acquisition, window, change-factor, preparation and basin-series checks passed
+after two reference-warning expectation updates. Two render/manifest checks passed, preserving ordinary
+and captioned artifacts and verifying the new messages. WF2 DAG dry-run and scoped Ruff passed.
+
 ## Remaining sequence
 
-WF2 projection acquisition and diagnostic products; WF3 generation and collection publication;
-WF4 simulation/metrics operation and retained response reporting. WF3 source-file hashes participate in
+WF3 generation and collection publication; WF4 simulation/metrics operation and retained response reporting.
+WF3 source-file hashes participate in
 stochastic identity: its R log strings will be translated in the excluded shared console renderer so wording
 alone cannot re-key generation or change its random sequence.

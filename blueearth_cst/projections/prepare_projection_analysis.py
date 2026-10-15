@@ -323,7 +323,26 @@ def skipped_product_messages(availability):
         ["filename", "reason"], sort=False
     ):
         key = figure_key(filename)
-        label = key.removesuffix(".png").replace("-", " ")
+        label = {
+            "availability.png": "Ensemble coverage",
+            "trajectory-temperature.png": "Temperature anomaly trajectories",
+            "trajectory-precipitation.png": "Precipitation anomaly trajectories",
+            "annual-temperature.png": "Annual temperature overview",
+            "annual-precipitation.png": "Annual precipitation overview",
+            "change-temperature.png": "Temperature changes",
+            "change-precipitation-pct.png": "Percentage precipitation changes",
+            "change-precipitation-abs.png": "Absolute precipitation changes",
+            "seasonal-cycle-temperature.png": "Temperature seasonal cycle",
+            "seasonal-cycle-precipitation.png": "Precipitation seasonal cycle",
+            "monthly-change-temperature.png": "Monthly temperature changes",
+            "monthly-change-precipitation.png": "Monthly precipitation changes",
+            "variability-ratio-temperature-sd.png": "Temperature variability ratios",
+            "variability-ratio-precipitation-sd.png": "Precipitation standard-deviation ratios",
+            "variability-ratio-precipitation-cv.png": "Precipitation coefficient-of-variation ratios",
+            "change-factor-cloud.png": "Annual temperature–precipitation change cloud",
+            "sign-agreement.png": "Model sign agreement",
+            "change-factor-cloud-combined.png": "Combined-window temperature–precipitation change cloud",
+        }.get(key, key.removesuffix(".png").replace("-", " "))
         if key == "variability-member-ratios.png":
             label = "Annual variability member-ratio boxplots"
             if reason == "no model with two eligible member ratios":
@@ -367,7 +386,7 @@ def run(sm):
         json.dumps(record, indent=2, allow_nan=False) + "\n", encoding="utf-8"
     )
     log_row(
-        f"Used {plural(len(record['windows']), 'window')}: {listed([w['window_id'] for w in record['windows']])}",
+        f"Analysis windows: {listed([w['window_id'] for w in record['windows']])}",
         module="analysis",
     )
     available = int(tables["availability"].available.sum())
@@ -385,14 +404,14 @@ def run(sm):
         )
     missing = tables["availability"].loc[~tables["availability"].available]
     log_row(
-        f"Available {plural(available, 'product')}; not produced {len(missing)}",
+        f"Figure eligibility: {available} available, {len(missing)} skipped",
         module="analysis",
     )
     for message in skipped_product_messages(tables["availability"]):
         log_row(message, module="analysis")
     if record["unavailable_members"]:
         log_row(
-            f"Unavailable {plural(len(record['unavailable_members']), 'member window')}; see analysis_record.json",
+            f"Skipped {plural(len(record['unavailable_members']), 'member–window combination')} in projection diagnostics; reasons → analysis_record.json",
             module="analysis",
         )
 

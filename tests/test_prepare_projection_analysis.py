@@ -43,7 +43,7 @@ def test_skipped_product_messages_explain_and_group_windows():
     assert list(producer.skipped_product_messages(availability)) == [
         "Annual variability member-ratio boxplots skipped (2041-2060, 2081-2100): "
         "no model has at least two eligible ensemble members",
-        "Availability skipped: no resolved members",
+        "Ensemble coverage skipped: no resolved members",
     ]
 
 

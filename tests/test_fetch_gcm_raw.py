@@ -79,7 +79,7 @@ def test_any_other_value_warns_and_says_what_it_will_cost(value):
     """
     row, level = hns_switch_row(value)
     assert level == "WARNING"
-    assert "~14x slower remote opens" in row
+    assert "remote reads may be slower" in row
     assert repr(value) in row
 
 

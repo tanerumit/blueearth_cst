@@ -624,10 +624,10 @@ if _best_effort:
     # only the name changes, so the names are what the row lists. Through
     # `defer_warning` for the reason given on the skip report above.
     defer_warning(
-        f"Best-effort, not catalog-certified: {listed(sorted(_best_effort))}. "
-        "The crawl proved only pr/tas present, so a listed member may not "
+        f"Variable availability is unverified for {listed(sorted(_best_effort))}. "
+        "The catalog checks only pr/tas. A listed member may not "
         "publish them -- that fails at read time rather than skipping at "
-        "resolution (design 5.5, ruling A3).", module="resolution"
+        "catalog selection.", module="resolution"
     )
 
 # The series set is DERIVED from resolution, not from the config cross-product.
@@ -828,15 +828,15 @@ declare_path_tokens(
 declare_project_root(project_dir)
 RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
 LOG_RULES = RULES.log_rules
-DELINEATE_REGION = RULES.logged("2.01", "delineate_region")
-DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("2.02", "delineate_subbasins_and_rivers")
-FETCH_CMIP6_PROJECTIONS = RULES.logged("2.03", "fetch_cmip6_projections", summary="download one CMIP6 slice")
-REDUCE_TO_BASIN_AVERAGES = RULES.logged("2.04", "reduce_to_basin_averages", summary="reduce the slice to a basin-average series")
-DERIVE_CHANGE_FACTORS = RULES.logged("2.05", "derive_change_factors", summary="compare each horizon against the reference period")
-PREPARE_PROJECTION_ANALYSIS = RULES.logged("2.05b", "prepare_projection_analysis", summary="prepare analysis-window diagnostics")
-PLOT_CLIMATE_PROJECTIONS = RULES.logged("2.06", "plot_climate_projections")
-GATHER_BENCHMARKS = RULES.banner_only("2.07", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("2.08", "gather_logs")
+DELINEATE_REGION = RULES.logged("2.01", "delineate_region", summary="delineate the basin boundary")
+DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("2.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
+FETCH_CMIP6_PROJECTIONS = RULES.logged("2.03", "fetch_cmip6_projections", summary="acquire one basin slice")
+REDUCE_TO_BASIN_AVERAGES = RULES.logged("2.04", "reduce_to_basin_averages", summary="compute basin-average climate series")
+DERIVE_CHANGE_FACTORS = RULES.logged("2.05", "derive_change_factors", summary="compare each future window with the reference period")
+PREPARE_PROJECTION_ANALYSIS = RULES.logged("2.05b", "prepare_projection_analysis", summary="compute projection diagnostics and figure eligibility")
+PLOT_CLIMATE_PROJECTIONS = RULES.logged("2.06", "plot_climate_projections", summary="render eligible projection figures")
+GATHER_BENCHMARKS = RULES.banner_only("2.07", "gather_benchmarks", summary="merge rule timing and resource-use records")
+GATHER_LOGS = RULES.banner_only("2.08", "gather_logs", summary="merge rule logs")
 
 # all — target aggregator: change-factor summaries + projection plots
 #

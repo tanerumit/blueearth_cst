@@ -134,7 +134,7 @@ def run_staged_batch(records, simulation_path, staging, launch):
     pending = prepare_staging(members, staging, file_sha256(simulation_path))
     if len(pending) < len(members):
         log_row(
-            f"Reusing {plural(len(members) - len(pending), 'staged run')} "
+            f"Reusing {plural(len(members) - len(pending), 'verified staged run output')} "
             "from an earlier attempt",
             module="batching",
         )

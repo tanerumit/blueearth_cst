@@ -53,6 +53,30 @@ minimal launcher plan fixtures and one old slowdown assertion. The owned source-
 The complete 18-file generation inventory was compared against the pre-implementation tree: no hashed
 source changed. Scoped Ruff passed. R code and generation algorithms were not edited.
 
-## Remaining sequence
+## WF4 — complete
 
-WF4 simulation/metrics operation and retained response reporting.
+Simulation rows distinguish scenario runs, concurrent batches, retained native responses, and metric
+declarations. Reuse, model identity, forcing completion, export destinations, and publication are explicit.
+Metric publication reports actual finite/non-finite estimates from validated result tables; these tables
+do not retain per-result diagnostic reasons, so the console does not invent them. Batch failure identities,
+duplicate-location mappings, and disk-budget warnings remain visible.
+
+Direct and tee output fold unsupported glyphs on legacy Windows consoles while preserving UTF-8 log text.
+An early metric-planning print uses ASCII because it precedes the console wrapper.
+
+Verification: 117 focused simulation, metric-plan, reservation, batching, and reporting checks passed.
+Six rule-graph and runner-admission checks passed. Following the encoding correction, seven reporting and
+encoding checks and 392 shared-console checks passed. The broader runner/console batch had 96 passes;
+its three checkpoint checks required the early-print encoding correction and were rerun separately.
+The dry-run/stale-response and current-storage publication/reuse cases passed. The legacy-storage case
+passed publication and ordinary reuse, then timed out during `--forceall` across an apparent system pause
+(the reported remaining timeout was negative by 2,497 seconds). A targeted recovery using that preserved
+fixture passed both remaining assertions: `--forceall` preserved every published byte, and a tampered
+response was refused without changing publication. The fixture's original response bytes were restored.
+Repository lint passed; format-check reported 462 files formatted, with the final test import-order
+correction also checked by the formatter. `git diff --check` passed.
+
+No real basin simulation or scientific baseline comparison was run. Existing WF4 code-identity guards
+include changed sources: previously frozen experiments or metric sets can require a new identity after
+these edits. The guards were preserved. Generation provider sources and stochastic seed identity remain
+unchanged. No workflow was landed or pushed.

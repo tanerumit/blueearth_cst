@@ -29,8 +29,8 @@ METRIC_RESULT_PATTERN = metric_result_pattern(
 # RULES comes from whichever module was included above.
 # One metric request per invocation -> one plan -> one metric set, so each runs
 # one job once the simulation checkpoint resolves.
-PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=1)
-DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=1, summary="reduce the retained responses to the immutable metric set")
+PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=1, summary="check retained responses against the metric request")
+DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=1, summary="compute and publish the immutable metric set from retained responses")
 
 
 def _current_metric_request(wc=None):
@@ -99,7 +99,9 @@ rule derive_system_indicators:
         metric_set_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:
         from blueearth_cst.experiment.metric_plan import publish_metric_set
-        publish_metric_set(exp_dir, read_canonical_json(Path(input.plan)))
+        from blueearth_cst.experiment.console_reporting import report_metric_set
+        manifest = publish_metric_set(exp_dir, read_canonical_json(Path(input.plan)))
+        report_metric_set(Path(exp_dir), manifest)
 
 
 # simulations_and_indicators -- target (unnumbered)
@@ -194,6 +196,13 @@ def _header():
         open_run_header("wf4 simulate_system", project_dir, config_path,
                         experiment=experiment, operation=OPERATION,
                         **({"batching": batching} if batching else {}))
+        from blueearth_cst.shared.run_log_core import log_row, plural
+        if OPERATION == "metrics-only":
+            log_row("Metrics-only: reading retained responses; no scenario generation, forcing preparation, or hydrological simulation will run", module="metrics")
+        else:
+            log_row(f"Selected scenario collection: {COLLECTION['collection_id']}; {plural(len(RUN_IDS), 'explicit run ID')}; resolution mode: {SELECTION['resolution_mode']}", module="experiment")
+            if globals().get("_simulation_complete"):
+                log_row(f"Reusing completed simulation {stored['simulation_id']}; retained native responses will be checked for the metric request", module="responses")
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

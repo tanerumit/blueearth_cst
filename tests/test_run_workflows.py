@@ -689,7 +689,7 @@ def test_experiment_selection_is_inside_opening_settings(
         tmp_path, capsys, {name: "true" for name in rw.WORKFLOW_ORDER}
     )
     assert _group_rows(output, "settings")["experiment"] == "test (continue)"
-    assert "Experiment:" not in output
+    assert "Selected experiment:" not in output
 
 
 def test_region_description_keeps_unhandled_configuration():

@@ -66,16 +66,46 @@ _GENERATION_MESSAGES = (
 
 
 def _presentation_message(module: str, message: str) -> str:
-    """Present generation messages without changing hashed provider source or seeds."""
+    """Present retained-producer messages without editing their scientific sources."""
     if module == "weathergen":
         for pattern, replacement in _GENERATION_MESSAGES:
             if re.fullmatch(pattern, message):
                 return re.sub(pattern, replacement, message)
     if module == "experiment":
+        if message == "Model reference matches the live model":
+            return "Live model matches the recorded experiment identity"
+        reference = re.fullmatch(
+            r"Model reference: (.+) digest (\w+)\.\.\. over (\d+) inputs?", message
+        )
+        if reference:
+            path, digest, count = reference.groups()
+            return f"Model identity recorded: {path}; {plural(int(count), 'input')}; digest {digest}…"
         match = re.fullmatch(r"Wrote (.+) \((\d+) rows, (\d+) members?\)", message)
         if match:
             path, rows, points = match.groups()
             return f"Perturbation lookup written → {path} ({rows} monthly rows; {plural(int(points), 'perturbation point')})"
+    if module == "metrics":
+        match = re.fullmatch(
+            r"(\S+): (\d+) declarations? over (\d+) result keys?", message
+        )
+        if match:
+            identity, declarations, keys = match.groups()
+            return f"Metric set {identity} planned: {plural(int(declarations), 'metric declaration')}; {plural(int(keys), 'expected result key')}"
+    if module == "responses" and message.startswith(
+        "Duplicate series on one model point, kept once: "
+    ):
+        return message.replace(
+            "Duplicate series on one model point, kept once: ",
+            "Duplicate series at the same model location will be used once: ",
+            1,
+        )
+    if module == "wflow":
+        match = re.fullmatch(
+            r"FAILED \[(\d+/\d+)\] Run (\S+) batch=(\S+)  (.*)", message
+        )
+        if match:
+            position, run_id, batch, reason = match.groups()
+            return f"FAILED run {run_id} in batch {batch} [{position}]: {reason}"
     return message
 
 
@@ -138,7 +168,7 @@ def _compact_log_line(text):
     match = _HYDROMT_LOG_RE.match(core)
     if not match:
         own = re.fullmatch(
-            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
+            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment|metrics|responses|wflow) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
             core,
         )
         if own:
@@ -1039,6 +1069,16 @@ def _muted_on_console(text):
     )
 
 
+def _write_console(stream, text):
+    """Keep console glyphs safe on legacy code pages; leave UTF-8 log text intact."""
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        encoding = getattr(stream, "encoding", None) or "utf-8"
+        folded = text.translate(_ASCII_GLYPH_FALLBACK)
+        stream.write(folded.encode(encoding, "replace").decode(encoding))
+
+
 class _Tee:
     """Text stream mirroring in-process output to a live console and a log file.
 
@@ -1142,7 +1182,7 @@ class _Tee:
             # part-way through its own row: a library writing one line in two
             # calls would lose the first half.
             reset = "" if (self._mid_row or _redraw) else _line_reset(self._live)
-            self._live.write(reset + _paint_body(shown, self._colour))
+            _write_console(self._live, reset + _paint_body(shown, self._colour))
             # A redraw frame leaves the cursor on the bar, which the next row is
             # expected to clear -- so it does not count as a row in progress.
             self._mid_row = not _redraw and not shown.endswith("\n")
@@ -1190,7 +1230,9 @@ class _Tee:
         if self._held_frame:
             # The bar's closing newline: release the summary, then let `write`
             # terminate the log's own pending line as usual.
-            self._live.write(_paint_body(self._held_frame, self._colour) + "\n")
+            _write_console(
+                self._live, _paint_body(self._held_frame, self._colour) + "\n"
+            )
             self._held_frame = ""
         return self.write(text)
 
@@ -2019,8 +2061,9 @@ def log_row(message, module="cst", level="INFO"):
     message = _relativize_paths(
         str(message), os.environ.get(_PROJECT_ROOT_ENV, ""), _path_tokens()
     )
-    sys.stdout.write(
-        _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n"
+    _write_console(
+        sys.stdout,
+        _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n",
     )
     # Flushed, because off a terminal Python block-buffers stdout: under a
     # redirect or in CI a rule's rows then all arrived AFTER its DONE line,

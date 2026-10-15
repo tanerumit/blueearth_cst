@@ -2,7 +2,10 @@
 
 import json
 
+import pytest
+
 from blueearth_cst.climate_analysis.diagnostic_captions import TITLES as WF0_TITLES
+from blueearth_cst.climate_analysis.diagnostic_captions import title as wf0_title
 from blueearth_cst.climate_analysis.diagnostic_outputs import FORMS
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.projections.projection_captions import TITLES as WF2_TITLES
@@ -15,6 +18,19 @@ def test_all_declared_diagnostics_and_projection_products_have_titles():
     assert set(FORMS) <= set(WF0_TITLES)
     assert set(FIGURE_FILENAMES) == set(WF2_TITLES)
     assert {figure.stem for figure in SPATIAL_MAP_FIGURES} == set(FIGURE_TITLES)
+
+
+@pytest.mark.parametrize("name", WF0_TITLES)
+def test_wf0_titles_use_plot_dataset_and_parenthesized_window(name):
+    assert wf0_title(
+        name, ["ERA5"], (1971, 2020), "basin average, equal-weight cells"
+    ) == (f"{WF0_TITLES[name]} — ERA5 (1971–2020)")
+
+
+def test_wf0_comparison_titles_keep_dataset_names_and_actual_window():
+    assert wf0_title("coverage", ["ERA5", "CHIRPS"], (1981, 2020), "subbasin_101") == (
+        "Monthly climate data coverage — ERA5, CHIRPS (1981–2020)"
+    )
 
 
 def test_title_inventory_shares_keys_and_preserves_images_and_other_families(tmp_path):

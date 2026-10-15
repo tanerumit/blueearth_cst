@@ -109,8 +109,8 @@ TITLES = {
 
 
 def title(name: str, sources: list[str], period, support: str) -> str:
-    """Name the diagnostic and its actual source, period and spatial support."""
-    return f"{TITLES[name]} — {', '.join(sources)}; {period[0]}–{period[-1]}; {support}"
+    """Use the WF0 plot — dataset (years) format; support stays in captions."""
+    return f"{TITLES[name]} — {', '.join(sources)} ({period[0]}–{period[-1]})"
 
 
 def caption(name: str, view: View) -> str:

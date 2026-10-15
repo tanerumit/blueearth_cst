@@ -14,6 +14,9 @@ Use `plots/` for generated graphics throughout the toolbox. WF0–WF2 also write
 `plots/figure_titles.md` and a `figure_titles.json` inventory beside the corresponding caption JSON.
 Title keys match the caption inventory's ordinary figure keys.
 Each title identifies the figure's subject and relevant source, period or spatial support.
+WF0 titles use `[specific plot title] — [dataset] ([start year]–[end year])`, for example
+`Monthly climate data coverage — ERA5 (1971–2020)`. Comparisons list the contributing dataset names;
+spatial support and methods remain in captions and structured metadata.
 Project-level `plotting.annotation` selects `none` (default), `caption` or `title` at the ordinary PNG paths.
 Retain title and caption inventories independently of this setting. R/weathergenr figures are excluded.
 Spatial maps and legacy climate figure adapters that have no caption inventory still write title files.

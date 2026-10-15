@@ -879,8 +879,8 @@ def test_a_narrowed_window_is_reported_not_raised(
     _run_with_span(monkeypatch, tmp_path, 20, _RecordingDataCatalog)
     out = capsys.readouterr().out
     assert "era5: requested 2000-01-01..2020-12-31" in out
-    assert "does not cover the full shared.historical_window" in out
-    assert "widest range it holds" in out
+    assert "staged data cover only part of climate.window" in out
+    assert "widest available span" in out
 
 
 def test_a_covered_window_reports_the_span_without_the_narrowing_line(
@@ -890,7 +890,7 @@ def test_a_covered_window_reports_the_span_without_the_narrowing_line(
     conditional, so its presence stays informative rather than background."""
     _run_with_span(monkeypatch, tmp_path, 100, _RecordingDataCatalog)
     out = capsys.readouterr().out
-    assert "era5: requested 2000-01-01..2020-12-31, delivered" in out
+    assert "era5: requested 2000-01-01..2020-12-31; extracted period" in out
     assert "does not cover the full" not in out
 
 
@@ -907,15 +907,17 @@ def test_short_extraction_raises_naming_the_unified_floor(
     with pytest.raises(ValueError) as excinfo:
         _run_with_span(monkeypatch, tmp_path, 10, _RecordingDataCatalog)
     message = str(excinfo.value)
-    assert f"{MIN_HISTORICAL_YEARS}-year minimum" in message
-    assert "historical_window" in message
+    assert f"{MIN_HISTORICAL_YEARS}-year forcing requirement" in message
+    assert "climate.window" in message
     assert "era5" in message
     assert "weathergenr" in message
 
 
 def test_a_single_timestep_raises_too(tmp_path, fake_era5_catalog, monkeypatch):
     """The degenerate end of the same check -- no separate code path."""
-    with pytest.raises(ValueError, match=f"{MIN_HISTORICAL_YEARS}-year minimum"):
+    with pytest.raises(
+        ValueError, match=f"{MIN_HISTORICAL_YEARS}-year forcing requirement"
+    ):
         _run_with_span(monkeypatch, tmp_path, 1, _RecordingDataCatalog)
 
 
@@ -932,7 +934,7 @@ def test_a_relaxed_candidate_below_the_floor_warns_instead_of_raising(
         monkeypatch, tmp_path, 10, _RecordingDataCatalog, enforce_min_years=False
     )
     out = capsys.readouterr().out
-    assert f"{MIN_HISTORICAL_YEARS}-year minimum" in out
+    assert f"{MIN_HISTORICAL_YEARS}-year forcing requirement" in out
     assert "comparison candidate only" in out
     assert "WARNING" in out
 
@@ -1058,7 +1060,7 @@ def test_chirps_branch_clips_both_sources_to_their_overlap(
     # one. The fake steps 365 days at a time, so the first surviving chirps
     # timestamp lands near but not on the overlap boundary -- the year is the
     # honest assertion, the exact date would only pin the fake's arithmetic.
-    delivered = re.search(r"delivered (\d{4})-\d\d-\d\d", out)
+    delivered = re.search(r"extracted period (\d{4})-\d\d-\d\d", out)
     assert delivered is not None, out
     assert int(delivered.group(1)) >= 1990
 
@@ -1107,9 +1109,13 @@ def test_store_save_row_identifies_the_source(
         forcing_required=False,
     )
     rows = capsys.readouterr().out.splitlines()
-    saves = [row for row in rows if "saving to netcdf" in row.lower()]
+    saves = [
+        row for row in rows if "writing extracted climate grid to netcdf" in row.lower()
+    ]
     assert len(saves) == 1
-    assert saves[0].endswith(f" - extract - {source}: saving to netCDF")
+    assert saves[0].endswith(
+        f" - extract - {source}: writing extracted climate grid to netCDF"
+    )
 
 
 def test_region_source_is_stamped_relative_to_the_output(

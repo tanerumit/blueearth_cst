@@ -127,7 +127,7 @@ def clip_waterbodies(
         layers[layer] = _empty_layer()
         if source not in getattr(catalog, "sources", {}):
             log_row(
-                f"Catalog has no {source!r} source; the study-area map draws no {layer}",
+                f"Waterbody layer omitted from the study-area map: {source} is absent from the catalog ({layer})",
                 module="spatial",
                 level="WARNING",
             )
@@ -137,8 +137,8 @@ def clip_waterbodies(
         except NoDataException as error:
             if "found no files" in str(error):
                 log_row(
-                    f"{source} file is missing ({catalog.get_source(source).full_uri}); "
-                    f"the study-area map draws no {layer}",
+                    f"Waterbody layer omitted from the study-area map: source file missing for {source} ({catalog.get_source(source).full_uri}); "
+                    f"layer: {layer}",
                     module="spatial",
                     level="WARNING",
                 )
@@ -152,7 +152,7 @@ def clip_waterbodies(
         f"{plural(len(f), name[:-1], name)}" for name, f in layers.items() if len(f)
     ]
     if drawn:
-        log_row(f"Waterbodies in the basins: {', '.join(drawn)}", module="spatial")
+        log_row(f"Basin waterbodies: {', '.join(drawn)}", module="spatial")
     return layers
 
 
@@ -537,8 +537,8 @@ def _snap_gauge_points(
         original = original_wgs84.iloc[index]
         resolved = snapped_wgs84.geometry.iloc[index]
         log_row(
-            f"{original.station_name} "
-            f"(lon={original.geometry.x:.9f}, lat={original.geometry.y:.9f}) -> "
+            f"{original.station_name}: "
+            f"original (lon={original.geometry.x:.9f}, lat={original.geometry.y:.9f}) → adjusted "
             f"(lon={resolved.x:.9f}, lat={resolved.y:.9f})",
             module="spatial",
             level="WARNING",
@@ -1010,17 +1010,17 @@ def prepare_spatial_units(
     stranded = locations_off_network(locations, rivers)
     if stranded:
         log_row(
-            "Network vectorization and river_mask disagree: "
-            f"{plural(len(stranded), 'location')} off the derived network "
+            "River-network consistency warning: vector geometry and river_mask disagree; "
+            f"{plural(len(stranded), 'output location')} off the derived network "
             f"({listed(stranded)})",
             module="spatial",
             level="WARNING",
         )
     else:
         log_row(
-            f"River network: {plural(len(rivers), 'reach', 'reaches')} at "
+            f"River network: {plural(len(rivers), 'reach', 'reaches')}; upstream-area threshold "
             f"{float(maps['river_mask'].attrs.get('upstream_area_threshold_km2', 0)):g}"
-            f" km2, reaching all {plural(len(locations), 'location')}",
+            f" km²; connected output locations: {plural(len(locations), 'location')}",
             module="spatial",
         )
     for frame in (basins, subbasins, catchments):

@@ -98,10 +98,10 @@ class WindowCoverage:
         delivered = f"{self.effective_start.date()}..{self.effective_end.date()}"
         requested = f"{self.requested_start.date()}..{self.requested_end.date()}"
         if delivered == requested:
-            return f"{self.source}: {delivered} (~{format_years(self.years)} years)"
+            return f"{self.source}: extracted period {delivered} (~{format_years(self.years)} years)"
         return (
-            f"{self.source}: requested {requested}, "
-            f"delivered {delivered} (~{format_years(self.years)} years)"
+            f"{self.source}: requested {requested}; "
+            f"extracted period {delivered} (~{format_years(self.years)} years)"
         )
 
 
@@ -176,7 +176,7 @@ def floor_shortfall_message(coverage: WindowCoverage, *, where: str) -> str:
         f"{coverage.effective_start.date()}..{coverage.effective_end.date()} "
         f"(~{format_years(coverage.years)} years) for the requested "
         f"{coverage.requested_start.date()}..{coverage.requested_end.date()}, "
-        f"below the {MIN_HISTORICAL_YEARS}-year minimum this toolbox requires "
+        f"below the {MIN_HISTORICAL_YEARS}-year forcing requirement "
         f"(weathergenr's wavelet decomposition needs at least "
         f"{MIN_HISTORICAL_YEARS} annual observations). {where}"
     )
@@ -205,8 +205,8 @@ def report_coverage(
     log_row(coverage.describe(), module=module)
     if coverage.is_narrowed:
         log_row(
-            f"{coverage.source}: the staged source does not cover the full "
-            f"shared.historical_window; extracted the widest range it holds "
+            f"{coverage.source}: staged data cover only part of "
+            f"climate.window; using the widest available span "
             f"inside it",
             module=module,
             level="WARNING",
@@ -272,10 +272,10 @@ def require_min_years(bounds, source: str, climate_nc, *, where: str) -> None:
         f"The {source} store at {climate_nc} covers "
         f"{bounds[0].date()}..{bounds[1].date()} "
         f"(~{format_years((bounds[1] - bounds[0]).days / 365.25)} years), below the "
-        f"{MIN_HISTORICAL_YEARS}-year minimum this toolbox requires "
+        f"{MIN_HISTORICAL_YEARS}-year forcing requirement "
         f"(weathergenr's wavelet decomposition needs at least "
         f"{MIN_HISTORICAL_YEARS} annual observations). If wf0 wrote it as a "
         f"comparison candidate, where the floor is relaxed, re-extract it under "
-        f"shared.clim_historical -- or move shared.historical_window onto years "
+        f"climate.selected -- and set climate.window within years "
         f"the source covers. {where}"
     )

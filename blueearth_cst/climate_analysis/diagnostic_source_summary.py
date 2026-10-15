@@ -163,7 +163,7 @@ def write_comparison_table(table: "pd.DataFrame", out_dir: Union[str, Path]) -> 
         encoding="utf-8",
     )
     log_row(
-        f"Table ({len(table)} sources) -> {csv_path.name}, {md_path.name}",
+        f"Source overview written for {len(table)} datasets → {csv_path.name}, {md_path.name}",
         module="compare",
     )
     return [csv_path, md_path]

@@ -159,6 +159,14 @@ def render_subbasins(sm, settings, sources):
         + ["plots/_engine/figure_captions.json", "plots/figure_captions.md"]
     )
     write_json(captions_path, inventory)
+    if comparison and inventory["unavailable_subbasins"]:
+        from blueearth_cst.shared.snake_utils import log_row, plural
+
+        log_row(
+            f"Subbasin comparison omitted for {plural(len(inventory['unavailable_subbasins']), 'subbasin')}: "
+            "not all sources have intersecting cells; details → plots/_engine/figure_captions.json",
+            module="compare",
+        )
     (root / "plots" / "figure_captions.md").write_text(
         "# Figure captions\n\n"
         + "\n\n".join(

@@ -3,6 +3,7 @@
 import json
 import math
 import re
+from collections import Counter
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -12,6 +13,7 @@ import xarray as xr
 
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis.diagnostic_captions import caption
+from blueearth_cst.climate_analysis.diagnostic_settings import carries_temp
 from blueearth_cst.climate_analysis.diagnostic_tables import write_json
 from blueearth_cst.climate_analysis.diagnostics import (
     monthly_reference_diagnostics,
@@ -29,6 +31,7 @@ from blueearth_cst.shared.map_reference import (
     reference_arguments,
     validate_fields,
 )
+from blueearth_cst.shared.snake_utils import listed, log_row, plural
 
 
 def load_map_overlays(overlays):
@@ -518,4 +521,23 @@ def render(
         + "\n",
         encoding="utf-8",
     )
+    unavailable = Counter(
+        item["availability"]
+        for item in records.values()
+        if item["availability"] != "available"
+    )
+    log_row(
+        f"Wrote {plural(len(records), 'diagnostic figure')} for {listed(sources)}; "
+        f"{sum(unavailable.values())} with unavailable or unscaled estimates; "
+        "availability details → plots/_engine/figure_captions.json",
+        module="diagnostics",
+    )
+    for reason, count in unavailable.items():
+        log_row(f"{plural(count, 'figure')}: {reason}", module="diagnostics")
+    if len(sources) == 1 and not carries_temp(sources[0]):
+        log_row(
+            f"{sources[0]}: temperature and precipitation–temperature figures not requested "
+            "because this source has no native temperature data",
+            module="diagnostics",
+        )
     return records

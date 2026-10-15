@@ -313,7 +313,9 @@ def test_save_figure_writes_creates_parent_and_announces(tmp_path, capsys):
     assert out.exists()
     su.flush_figure_bundles()
     printed = capsys.readouterr().out.strip()
-    assert printed.endswith(f"- plot - {_figure_console_path(out)}"), printed
+    assert printed.endswith(f"- plot - Figure written → {_figure_console_path(out)}"), (
+        printed
+    )
 
 
 def test_save_figure_bundles_one_directory_into_one_row(tmp_path, capsys):
@@ -325,7 +327,7 @@ def test_save_figure_bundles_one_directory_into_one_row(tmp_path, capsys):
     assert capsys.readouterr().out == ""  # nothing announced until the flush
     su.flush_figure_bundles()
     rows = [line.split(" - ", 2)[2] for line in capsys.readouterr().out.splitlines()]
-    assert rows == [f"3 figures -> {_figure_console_path(first.parent)}"], rows
+    assert rows == [f"Wrote 3 figures → {_figure_console_path(first.parent)}"], rows
 
 
 def test_save_figure_bundles_alternating_directories_separately(tmp_path, capsys):
@@ -340,8 +342,8 @@ def test_save_figure_bundles_alternating_directories_separately(tmp_path, capsys
     # Two rows, in the order the directories were FIRST written to -- not four,
     # and not one per alternation.
     assert rows == [
-        f"2 figures -> {_figure_console_path(tmp_path / 'plots')}",
-        f"2 figures -> {_figure_console_path(tmp_path / 'maps')}",
+        f"Wrote 2 figures → {_figure_console_path(tmp_path / 'plots')}",
+        f"Wrote 2 figures → {_figure_console_path(tmp_path / 'maps')}",
     ], rows
 
 
@@ -353,7 +355,7 @@ def test_an_ordinary_row_flushes_the_bundle_first(tmp_path, capsys):
     log_row("Wrote 2 canonical climate figures", module="plot")
     rows = [line.split(" - ", 2)[2] for line in capsys.readouterr().out.splitlines()]
     assert rows == [
-        f"2 figures -> {_figure_console_path(tmp_path / 'plots')}",
+        f"Wrote 2 figures → {_figure_console_path(tmp_path / 'plots')}",
         "Wrote 2 canonical climate figures",
     ], rows
 
@@ -461,7 +463,7 @@ def test_target_banner_puts_one_target_per_line(monkeypatch):
     monkeypatch.setattr(sys, "stderr", io.StringIO())  # isatty() -> False
     monkeypatch.delenv("NO_COLOR", raising=False)
     out = target_banner("all", ["a/x.csv", "b/y.png"])
-    assert out == "Target: all\n    a/x.csv\n    b/y.png"
+    assert out == "Target: all - confirm requested outputs\n    a/x.csv\n    b/y.png"
     assert ", " not in out
 
 
@@ -473,7 +475,7 @@ def test_target_banner_accepts_a_dict_values_view(monkeypatch):
     monkeypatch.delenv("NO_COLOR", raising=False)
     targets = {"a": "one.csv", "b": "two.csv"}
     assert target_banner("all", targets.values()) == (
-        "Target: all\n    one.csv\n    two.csv"
+        "Target: all - confirm requested outputs\n    one.csv\n    two.csv"
     )
 
 
@@ -483,7 +485,7 @@ def test_target_banner_with_no_targets_is_just_the_banner(monkeypatch):
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
-    assert target_banner("all", []) == "Target: all"
+    assert target_banner("all", []) == "Target: all - confirm requested outputs"
 
 
 def test_target_banner_relativizes_against_project_dir(monkeypatch):
@@ -507,7 +509,7 @@ def test_target_banner_relativizes_against_project_dir(monkeypatch):
         root,
     )
     assert out == (
-        f"Target: all  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
+        f"Target: all - confirm requested outputs  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
     )
 
 
@@ -546,7 +548,7 @@ def test_target_banner_without_project_dir_keeps_paths_verbatim(monkeypatch):
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
     out = target_banner("all", ["C:/p/q.csv"])
-    assert out == "Target: all\n    C:/p/q.csv"
+    assert out == "Target: all - confirm requested outputs\n    C:/p/q.csv"
     assert "[" not in out
 
 
@@ -2843,10 +2845,16 @@ def test_console_start_line_leaves_a_multiline_banner_intact():
     out = _emit(
         handler,
         _console_record(event="progress", done=19, total=20),
-        _job_info(1, "all", "Target: all  [proj]\n    a/x.csv\n    logs/wf1.log"),
+        _job_info(
+            1,
+            "all",
+            "Target: all - confirm requested outputs  [proj]\n    a/x.csv\n    logs/wf1.log",
+        ),
     )
     lines = out.splitlines()
-    assert lines[0].endswith("Target: all  [proj]"), lines[0]
+    assert lines[0].endswith("Target: all - confirm requested outputs  [proj]"), lines[
+        0
+    ]
     assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
 
 
@@ -3961,7 +3969,7 @@ def test_run_summary_closes_a_success_in_one_line():
         "wf3_benchmarks.md",
         elapsed_seconds=176,
     )
-    assert out.splitlines() == ["wf3 run_stress_test done in 0:02:56"]
+    assert out.splitlines() == ["wf3 run_stress_test completed in 0:02:56"]
 
 
 def test_warning_tally_counts_across_processes(tmp_path, monkeypatch):
@@ -4052,7 +4060,7 @@ def test_run_summary_verdict_carries_the_warning_count(tmp_path, monkeypatch):
     out = cs.run_summary(
         "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
     )
-    assert out.splitlines()[0] == "wf1 done in 0:07:16  |  1 warning"
+    assert out.splitlines()[0] == "wf1 completed in 0:07:16  |  1 warning"
     su.note_warning("plot")
     out = cs.run_summary(
         "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
@@ -4069,7 +4077,7 @@ def test_run_summary_says_nothing_when_a_run_printed_no_warning(tmp_path, monkey
     out = cs.run_summary(
         "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
     )
-    assert out.splitlines() == ["wf1 done in 0:07:16"]
+    assert out.splitlines() == ["wf1 completed in 0:07:16"]
 
 
 def test_run_summary_ignores_a_tally_it_was_not_handed(tmp_path, monkeypatch):
@@ -4083,7 +4091,7 @@ def test_run_summary_ignores_a_tally_it_was_not_handed(tmp_path, monkeypatch):
     monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "t"))
     su.note_warning("someone else's run")
     out = cs.run_summary("wf1", "p", "l.log", "b.md", elapsed_seconds=436)
-    assert out.splitlines() == ["wf1 done in 0:07:16"]
+    assert out.splitlines() == ["wf1 completed in 0:07:16"]
 
 
 def test_run_summary_failure_verdict_carries_it_too(tmp_path, monkeypatch):
@@ -4118,7 +4126,7 @@ def test_run_summary_paints_only_the_failed_verdict(monkeypatch):
     assert failed.splitlines()[0] == su._ansi("wf3 FAILED", su._ANSI_FAIL)
     assert su._ANSI_FAIL not in ok
     # A success bolds the NAME only, matching the opening title.
-    assert ok.splitlines()[0] == su._ansi("wf3", cs._ANSI_TITLE) + " done"
+    assert ok.splitlines()[0] == su._ansi("wf3", cs._ANSI_TITLE) + " completed"
 
 
 def test_run_summary_verdict_is_plain_when_stderr_is_not_a_console(monkeypatch):
@@ -4523,7 +4531,7 @@ def test_console_target_jobs_are_not_counted_as_work(monkeypatch):
         _job_info(3, "work", "Rule 1.01: work"),
         _console_record(event="job_finished", job_id=3),
         _console_record(event="progress", done=3, total=4),
-        _job_info(4, "all", "Target: all"),
+        _job_info(4, "all", "Target: all - confirm requested outputs"),
         _console_record(event="job_finished", job_id=4),
         _console_record(event="progress", done=4, total=4),
     )

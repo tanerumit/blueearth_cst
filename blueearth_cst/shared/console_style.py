@@ -797,7 +797,7 @@ def run_summary(
     """
     project_dir = os.fspath(project_dir)
     lines = []
-    verdict = "FAILED" if failed else "done"
+    verdict = "FAILED" if failed else "completed"
     head = f"{workflow} {verdict}"
     if elapsed_seconds is not None:
         head = f"{head} in {format_elapsed(elapsed_seconds)}"
@@ -929,6 +929,13 @@ def target_banner(name, targets, project_dir=None):
     Evaluated once at Snakefile parse time, like :func:`rule_banner`.
     """
     banner = f"Target: {name}"
+    action = {
+        "all": "confirm requested outputs",
+        "simulations_only": "confirm retained native responses",
+        "simulations_and_indicators": "confirm outputs for the selected operation",
+    }.get(name)
+    if action:
+        banner += f" - {action}"
     listed = [os.fspath(target) for target in targets]
     if project_dir:
         # TWO forms of one directory, deliberately not one variable.

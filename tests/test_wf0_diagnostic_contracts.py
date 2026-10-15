@@ -142,7 +142,7 @@ def test_canonical_inventory_and_one_source_refusal():
 
 
 @pytest.mark.parametrize("kind", ["zero", "constant", "missing", "no_overlap"])
-def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind):
+def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind, capsys):
     idx = pd.date_range("2000-01-01", "2005-12-31")
     p = np.zeros(len(idx)) if kind == "zero" else np.ones(len(idx))
     if kind == "missing":
@@ -167,6 +167,10 @@ def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind):
         series = next(r for p, r in records.items() if "annual_trend_ts" in p)
         assert series["availability"].startswith("Unavailable")
         assert "no usable data or reference fit" in series["caption"]
+        output = capsys.readouterr().out
+        assert "Wrote 16 diagnostic figures for chirps" in output
+        assert "availability details → plots/_engine/figure_captions.json" in output
+        assert "no native temperature data" in output
 
 
 def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
@@ -259,7 +263,7 @@ def test_exact_basin_mask_and_unresolved_temperature_units(tmp_path):
     pd.DataFrame({"latitude": [0.0], "longitude": [10.0]}).to_csv(cells, index=False)
     frame, lineage = daily_series(nc, cells, "era5")
     assert frame.precip.eq(1.0).all() and frame.temp.isna().all()
-    assert "unresolved" in lineage["warnings"][0]
+    assert "era5: temperature diagnostics unavailable" in lineage["warnings"][0]
     pd.DataFrame({"latitude": [0.0, 3.0], "longitude": [10.0, 10.0]}).to_csv(
         cells, index=False
     )

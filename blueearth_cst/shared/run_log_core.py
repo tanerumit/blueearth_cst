@@ -2007,9 +2007,12 @@ def flush_figure_bundles():
                 # A rule that writes ONE figure names the file, exactly as
                 # before: "1 figure -> <dir>" would be a longer way of saying
                 # less, and several rules here write a single map.
-                log_row(os.path.join(directory, names[0]), module=module)
+                log_row(
+                    f"Figure written → {os.path.join(directory, names[0])}",
+                    module=module,
+                )
             else:
-                log_row(f"{len(names)} figures -> {directory}", module=module)
+                log_row(f"Wrote {len(names)} figures → {directory}", module=module)
     finally:
         _FIGURE_BUNDLE_FLUSHING = False
 

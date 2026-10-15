@@ -292,19 +292,19 @@ declare_path_tokens(
 declare_project_root(project_dir)
 RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
 LOG_RULES = RULES.log_rules
-DELINEATE_REGION = RULES.logged("0.01", "delineate_region")
-DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers")
-EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="clip global climate to the basin")
-PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference")
-COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics")
-PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics")
+DELINEATE_REGION = RULES.logged("0.01", "delineate_region", summary="delineate the basin boundary")
+DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
+EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="extract a basin climate grid")
+PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference", summary="prepare the shared historical map display reference")
+COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics", summary="compute source diagnostics and native-grid map fields")
+PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics", summary="render historical climate diagnostics")
 
 # Rule 0.05 exists only when there is more than one source to compare, so it
 # is registered -- and its label enters LOG_RULES -- only then.
 if len(CANDIDATE_SOURCES) > 1:
-    COMPARE_DIAGNOSTICS = RULES.logged("0.05", "compare_climate_diagnostics", summary="compare the candidate climate datasets")
-GATHER_BENCHMARKS = RULES.banner_only("0.06", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("0.07", "gather_logs")
+    COMPARE_DIAGNOSTICS = RULES.logged("0.05", "compare_climate_diagnostics", summary="compare sources over the configured common period")
+GATHER_BENCHMARKS = RULES.banner_only("0.06", "gather_benchmarks", summary="merge rule timing and resource-use records")
+GATHER_LOGS = RULES.banner_only("0.07", "gather_logs", summary="merge rule logs")
 
 
 DIAGNOSTIC_SETTINGS = parse_settings(my_cfg.get("diagnostics"), historical_window, CANDIDATE_SOURCES)
@@ -622,6 +622,10 @@ def _header():
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
         open_run_header("wf0 analyze_climate", project_dir, config_path)
+        from blueearth_cst.shared.snake_utils import listed, log_row
+        log_row(f"Historical climate diagnostics: {len(CANDIDATE_SOURCES)} sources ({listed(CANDIDATE_SOURCES)}); selected forcing source: {clim_source}; requested extraction period: {historical_window['start']}–{historical_window['end']}", module="diagnostics")
+        reference = DIAGNOSTIC_SETTINGS["reference_period"]
+        log_row(f"Diagnostic reference period: {reference['start']}–{reference['end']}; reporting year starts in {WATER_YEAR_START}", module="diagnostics")
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

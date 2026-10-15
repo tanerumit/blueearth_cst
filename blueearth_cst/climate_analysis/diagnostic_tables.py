@@ -102,11 +102,11 @@ def daily_series(climate_nc, cells_csv, source, data_sources=None):
                     ):
                         values[:] = np.nan
                         warning.append(
-                            "Temperature unit/value contract unresolved; temperature unavailable"
+                            f"{source}: temperature diagnostics unavailable because units or values could not be verified"
                         )
                     elif normalized_legacy:
                         warning.append(
-                            "Extraction labels temperature K but catalog-normalized values are Celsius; no second conversion"
+                            f"{source}: temperature values are already in °C despite the K label; using the catalog conversion record without converting again"
                         )
                 daily[var] = values
                 daily[f"{var}_cells"] = field.notnull().sum([LAT, LON]).to_series()

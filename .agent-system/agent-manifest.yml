@@ -5,6 +5,7 @@
 roles:
   - cst-architect
   - cst-case-manager
+  - stress-test-analyst
   - model-builder
   - model-validator
   - geospatial-data-analyst

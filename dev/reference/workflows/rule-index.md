@@ -214,7 +214,7 @@ The selected forcing remains a project configuration decision.
 | 0.03b | `produce_historical_map_reference` | Shared frame, scales and verified native-field identities. |
 | 0.04 | `compute_climate_diagnostics_<source>` | Numerical diagnostics, per source. |
 | 0.04b | `plot_climate_diagnostics_<source>` | PNGs and captions, per source. |
-| 0.05 | `compare_climate_diagnostics` | Common-period comparison, multiple sources only. |
+| 0.05 | `plot_climate_comparison` | Common-period comparison, multiple sources only. |
 | 0.06 | `gather_benchmarks` | Gather benchmark records. |
 | 0.07 | `gather_logs` | Gather log records. |
 
@@ -257,7 +257,7 @@ in `plots/_engine/figure_captions.json` and readable captions in `plots/figure_c
 Captioned copies and subbasin products are opt-in. Unknown subbasin IDs are covered
 by declared directories; disabled options create no placeholder directories.
 
-#### 0.05 · `compare_climate_diagnostics`
+#### 0.05 · `plot_climate_comparison`
 
 Exists only with more than one configured source. Recomputes common-period diagnostics
 from retained daily basin series, retaining SPI reference fits before display clipping.

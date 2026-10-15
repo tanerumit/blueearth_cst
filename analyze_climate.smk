@@ -302,7 +302,7 @@ PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics", summary="re
 # Rule 0.05 exists only when there is more than one source to compare, so it
 # is registered -- and its label enters LOG_RULES -- only then.
 if len(CANDIDATE_SOURCES) > 1:
-    COMPARE_DIAGNOSTICS = RULES.logged("0.05", "compare_climate_diagnostics", summary="compare sources over the configured common period")
+    COMPARE_DIAGNOSTICS = RULES.logged("0.05", "plot_climate_comparison", summary="compare sources over the configured common period")
 GATHER_BENCHMARKS = RULES.banner_only("0.06", "gather_benchmarks", summary="merge rule timing and resource-use records")
 GATHER_LOGS = RULES.banner_only("0.07", "gather_logs", summary="merge rule logs")
 
@@ -500,7 +500,7 @@ if COMPARISON_DIAGNOSTICS:
             _comparison_outputs["captioned_subbasins"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/plots/captioned/subbasins")
         _comparison_inputs["subbasin_tables"] = [f"{spec['root']}/tables/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
 
-    rule compare_climate_diagnostics:
+    rule plot_climate_comparison:
         message: COMPARE_DIAGNOSTICS.banner()
         input: **_comparison_inputs,
         output: **_comparison_outputs,

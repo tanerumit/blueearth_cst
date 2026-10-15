@@ -104,11 +104,15 @@ Replace `<source>` with its configured ID, for example `plot_climate_diagnostics
 | Figures | Workflow | Target |
 |---|---|---|
 | WF0 source diagnostics | `analyze_climate` | `plot_climate_diagnostics_<source>` |
-| WF0 comparison | `analyze_climate` | `compare_climate_diagnostics` |
+| WF0 comparison | `analyze_climate` | `plot_climate_comparison` |
 | WF1 spatial maps | `build_model` | `plot_basin_map` |
 | WF1 forcing | `build_model` | `plot_model_forcing` |
 | WF1 evaluation | `build_model` | `plot_model_evaluation` |
 | WF2 projections | `analyze_projections` | `plot_climate_projections` |
+
+Rule 0.05 was renamed from `compare_climate_diagnostics` to `plot_climate_comparison`.
+Update saved `--target` commands; log and benchmark parts use the new name. Output data and figure
+paths are unchanged. Historical log parts are retained under their original names.
 
 Retain the diagnostic tables/map fields, projection-analysis tables, forcing and spatial inputs.
 WF1 evaluation also needs `<model>/run_default/output.csv`; a missing file can require another

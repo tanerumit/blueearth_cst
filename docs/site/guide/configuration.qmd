@@ -76,7 +76,9 @@ workflows:
 ```
 
 **`schema_version: 2` is required.** Older project files need conversion before
-they can be used with the current toolbox.
+they can be used with the current toolbox. The v1-to-v2 converter and its guide
+are available in toolbox v0.3.0; current releases reject old schemas and name
+retired keys that remain in a version 2 file.
 
 - **`project.catalog`** names one or more HydroMT data catalogs. They tell the
   toolbox where to find climate, terrain, and other input datasets. The rapid

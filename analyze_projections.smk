@@ -215,7 +215,7 @@ VARIABLE_SPEC = _vs.parse(get_config(my_cfg, "variables", optional=False))
 # reaches the digest components.
 variables = _vs.source_names(VARIABLE_SPEC)
 
-# Water-year start, from the SHARED key so WF2, WF3 and the climate figures
+# Water-year start, from the project climate key so WF2, WF3 and the figures
 # cannot disagree about what an annual value is.
 #
 # The old `workflows.analyze_projections.start_month_hyd_year` is REFUSED, not
@@ -230,9 +230,9 @@ _legacy_hyd = my_cfg.get("start_month_hyd_year")
 if _legacy_hyd is not None:
     raise ValueError(
         "workflows.analyze_projections.start_month_hyd_year has moved to "
-        f"shared.water_year_start (it is now honoured by WF2, WF3 and the "
+        "climate.water_year_start (it is now honoured by WF2, WF3 and the "
         f"climate figures alike). Remove it and set:\n\n"
-        f"    shared:\n      water_year_start: {_legacy_hyd}\n\n"
+        f"    climate:\n      water_year_start: {_legacy_hyd}\n\n"
         "It never reached the change-factor arithmetic before, which always "
         "used Jan, so a non-Jan value will move every change factor once."
     )

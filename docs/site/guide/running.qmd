@@ -83,6 +83,42 @@ format; subsequent equivalent configurations reuse the staged inputs.
 To preview the enabled workflows, add `-- --dry-run` to the command. A dry run
 may show only part of a workflow until inputs from an earlier step exist.
 
+## Regenerate figures after visual changes
+
+When only styling, titles or captions change, target the plotting rule using the same project config
+and output root as the completed run. From the toolbox root, preview first:
+
+```powershell
+pixi run python scripts/run_workflow.py analyze_projections `
+  --config C:/path/to/project.yml --project-dir C:/path/to/existing-run `
+  --target plot_climate_projections --dry-run -- --force --notemp
+```
+
+Check the scheduled jobs, then remove `--dry-run` to render. `--force` reruns the selected target;
+`--notemp` preserves temporary inputs. Avoid `--forceall`, which also forces upstream jobs.
+Missing or stale inputs can still schedule upstream work: inspect the dry-run before proceeding.
+
+Substitute the workflow and target below. Repeat `--target` to select several rules in one workflow.
+Replace `<source>` with its configured ID, for example `plot_climate_diagnostics_era5`.
+
+| Figures | Workflow | Target |
+|---|---|---|
+| WF0 source diagnostics | `analyze_climate` | `plot_climate_diagnostics_<source>` |
+| WF0 comparison | `analyze_climate` | `compare_climate_diagnostics` |
+| WF1 spatial maps | `build_model` | `plot_basin_map` |
+| WF1 forcing | `build_model` | `plot_model_forcing` |
+| WF1 evaluation | `build_model` | `plot_model_evaluation` |
+| WF2 projections | `analyze_projections` | `plot_climate_projections` |
+
+Retain the diagnostic tables/map fields, projection-analysis tables, forcing and spatial inputs.
+WF1 evaluation also needs `<model>/run_default/output.csv`; a missing file can require another
+historical simulation. Use `--notemp` on the original model run to retain it.
+
+Currently, WF0 comparison recomputes its statistics from retained daily series, WF1 forcing recomputes
+plotting summaries, and WF1 evaluation recomputes metrics. These are combined calculation/rendering
+steps. Other listed targets reuse prepared products. Title and caption inventories are refreshed with
+the figures; this procedure does not add independent title/caption rendering switches.
+
 ## Run one workflow
 
 From the toolbox root, after `pixi shell`, use the individual runner for any

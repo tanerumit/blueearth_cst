@@ -37,6 +37,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import xarray as xr
 
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared.cartographic_map import (
     ELEVATION_LABEL,
     RASTER_DPI,
@@ -281,6 +282,11 @@ def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
         dpi=RASTER_DPI,
         metadata={"Software": None},
     )
+    write_figure_titles(
+        plot_dir,
+        {"elevation_basin.png": {"title": "Basin elevation and drainage network"}},
+        merge=True,
+    )
     plt.close(fig)
 
 
@@ -342,6 +348,11 @@ def plot_basin_map_from_model(project_dir, gauges_fn, plot_dir=None, model_dir=N
         # Same reason: the default embeds the matplotlib version, which
         # would move the baseline fingerprint on every env bump.
         metadata={"Software": None},
+    )
+    write_figure_titles(
+        plot_dir,
+        {"elevation_basin.png": {"title": "Basin elevation and drainage network"}},
+        merge=True,
     )
     plt.close(fig)
 

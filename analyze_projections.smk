@@ -874,6 +874,8 @@ WF2_TARGETS = {
     "composition": (clim_project_dir + "/summary/composition.csv"),
     # Runtime availability decides which PNGs exist within these owned folders.
     **{f"figure_folder_{folder}": path for folder, path in WF2_SUITE_PATHS.items()},
+    "figure_titles": f"{clim_project_dir}/plots/figure_titles.md",
+    "figure_title_manifest": f"{clim_project_dir}/_engine/figure_titles.json",
     "figure_captions": FIGURE_CAPTIONS_MD,
     "figure_manifest": FIGURE_CAPTIONS_JSON,
     **({"captioned_figures": f"{clim_project_dir}/plots/captioned"} if captioned_figures else {}),
@@ -1278,6 +1280,8 @@ rule plot_climate_projections:
         captioned_figures = captioned_figures,
     output:
         folders = [directory(path) for path in WF2_SUITE_PATHS.values()],
+        titles_md = f"{clim_project_dir}/plots/figure_titles.md",
+        titles_json = f"{clim_project_dir}/_engine/figure_titles.json",
         captions_md = FIGURE_CAPTIONS_MD,
         captions_json = FIGURE_CAPTIONS_JSON,
         captioned = [directory(f"{clim_project_dir}/plots/captioned")] if captioned_figures else [],

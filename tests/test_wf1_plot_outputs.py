@@ -67,6 +67,10 @@ DECLARED_PLOT_OUTPUTS = (
     # Rule 1.12's basin map. PNG only since 2026-08-10; the vector deliverable
     # was dropped because nothing read it.
     "data/spatial/plots/elevation_basin.png",
+    "data/spatial/plots/figure_titles.md",
+    "data/spatial/plots/_engine/figure_titles.json",
+    "models/hydrology/wflow/forcing/plots/figure_titles.md",
+    "models/hydrology/wflow/forcing/plots/_engine/figure_titles.json",
     "models/hydrology/wflow/forcing/plots/figure_captions.md",
     "models/hydrology/wflow/forcing/plots/_engine/figure_captions.json",
 ) + tuple(
@@ -182,6 +186,8 @@ def project_with_basavg_outvar(tmp_path, request):
         optional.write_bytes(b"placeholder")
         basin_figures.append(optional)
     captions = [
+        basavg.parent / "figure_titles.md",
+        basavg.parent / "_engine/figure_titles.json",
         basavg.parent / "figure_captions.md",
         basavg.parent / "_engine/figure_captions.json",
     ]

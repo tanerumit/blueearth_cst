@@ -25,6 +25,7 @@ import scipy.stats as stats
 import xarray as xr
 from hydromt.stats import skills
 
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared import plot_style
 from blueearth_cst.shared.snake_utils import save_figure
 
@@ -440,6 +441,7 @@ def _basavg_caption(
     if warmup_excluded:
         caption += " The first simulation year is excluded."
     inventory["figures"][name] = {
+        "title": f"Simulated {quantity}: {'annual series' if kind == 'annual_ts' else 'seasonal cycle'} — {label}; {period}",
         "caption": caption,
         "sources": ["simulated"],
         "period": info["period"],
@@ -472,8 +474,11 @@ def _basavg_caption(
 def _basavg_write_inventory(folder, inventory):
     import json
 
+    write_figure_titles(folder, inventory["figures"])
     path = folder / "_engine/figure_captions.json"
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]

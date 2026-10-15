@@ -129,11 +129,17 @@ def test_a_narrowed_set_ignores_a_variable_absent_from_the_dataset(tmp_path):
 
 
 def test_writes_exactly_the_declared_names(tmp_path):
+    import json
+
     written = cf.plot_climate_figures(_dataset(), tmp_path, "source")
     assert [p.name for p in written] == cf.figure_names("source")
     on_disk = sorted(p.name for p in tmp_path.glob("*.png"))
     assert on_disk == sorted(cf.figure_names("source"))
     assert all(p.stat().st_size > 0 for p in written)
+    titles = json.loads(
+        (tmp_path / "_engine/figure_titles.json").read_text(encoding="utf-8")
+    )["figures"]
+    assert set(titles) == set(on_disk)
 
 
 def test_the_figure_bundle_is_drained_before_returning(tmp_path, capsys):
@@ -152,7 +158,7 @@ def test_the_figure_bundle_is_drained_before_returning(tmp_path, capsys):
     cf.plot_climate_figures(_dataset(), tmp_path, "source", variables=("precip",))
 
     assert su._FIGURE_BUNDLES == {}, su._FIGURE_BUNDLES
-    assert "figures ->" in capsys.readouterr().out
+    assert "Wrote 3 figures" in capsys.readouterr().out
 
 
 def test_a_dask_backed_dataset_works(tmp_path):

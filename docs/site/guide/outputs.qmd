@@ -127,6 +127,10 @@ Read the record for requested and used windows, exclusions, and numerical method
 
 The figure suite lives in `plots/full_period/` and `plots/period_<a>_<b>/`, where `<a>-<b>`
 identifies the actual analysis water years. Horizons sharing those years share a folder.
+WF0–WF2 retain figure titles separately in `plots/figure_titles.md`, with matching figure keys in
+`figure_titles.json` beside each caption JSON inventory. Titles are metadata for later independent
+title/caption rendering controls; the default images still omit figure titles.
+
 `plots/figure_captions.md` explains each written figure and unavailable products;
 `_engine/figure_captions.json` inventories written PNGs, with paths relative to `plots/`.
 Optional captioned copies

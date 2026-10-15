@@ -84,6 +84,7 @@ from pathlib import Path
 #     `RasterStyle` constants below cost nothing to declare;
 #   * `plot_style` is the page/typography contract, stdlib-only, and owns
 #     `RASTER_DPI` directly (`cartographic_map` merely re-exports it).
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared.plot_style import RASTER_DPI
 from blueearth_cst.shared.raster_style import RasterStyle
 from blueearth_cst.shared.snake_utils import save_figure
@@ -243,6 +244,18 @@ def land_cover_classes(layer):
 
 #: Legend titles for the nominal figures, by figure stem.
 LEGEND_TITLES = {"land_cover_basin": "Land cover", "subbasins": "Subbasins"}
+FIGURE_TITLES = {
+    "subbasins": "Basin and subbasin delineation",
+    "land_cover_basin": "Basin land cover",
+    "lai_clim_basin": "Basin leaf area index climatology",
+    "soil_clay_basin": "Basin topsoil clay content",
+    "soil_silt_basin": "Basin topsoil silt content",
+    "soil_sand_basin": "Basin topsoil sand content",
+    "soil_organic_carbon_basin": "Basin topsoil organic carbon",
+    "soil_ph_basin": "Basin topsoil pH",
+    "soil_bulk_density_basin": "Basin topsoil bulk density",
+    "soil_depth_to_bedrock_basin": "Basin depth to bedrock",
+}
 
 #: Subbasin fills: ColorBrewer Set3 without its grey, a light qualitative set
 #: that keeps rivers and divides readable over it, drawn at ``SUBBASIN_ALPHA``.
@@ -840,6 +853,12 @@ def plot_spatial_maps(
         plt.close(fig)
 
     maps.close()
+    titles = {path.name: {"title": FIGURE_TITLES[path.stem]} for path in written}
+    if (Path(plot_dir) / "elevation_basin.png").is_file():
+        titles["elevation_basin.png"] = {
+            "title": "Basin elevation and drainage network"
+        }
+    write_figure_titles(plot_dir, titles)
     return written
 
 

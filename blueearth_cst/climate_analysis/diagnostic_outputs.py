@@ -79,6 +79,8 @@ def inventory(root, sources, settings, comparison=False):
         compute["daily"] = str(root / "tables" / "daily_basin.csv")
         compute["maps"] = str(root / "tables" / "annual_climatology.nc")
     render = {
+        "titles_json": str(root / "plots" / "_engine" / "figure_titles.json"),
+        "titles_md": str(root / "plots" / "figure_titles.md"),
         "captions_json": str(root / "plots" / "_engine" / "figure_captions.json"),
         "captions_md": str(root / "plots" / "figure_captions.md"),
     }

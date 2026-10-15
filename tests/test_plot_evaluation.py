@@ -233,6 +233,12 @@ def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
         (tmp_path / "_engine" / "figure_captions.json").read_text(encoding="utf-8")
     )["figures"]
     assert set(captions) == written
+    titles = json.loads(
+        (tmp_path / "_engine/figure_titles.json").read_text(encoding="utf-8")
+    )["figures"]
+    assert set(titles) == written
+    assert all("auto_01" in entry["title"] for entry in titles.values())
+    assert (tmp_path / "figure_titles.md").is_file()
     for kind in ("peaks", "lows"):
         caption = captions[f"signatures_{kind}_1010.png"]["caption"]
         assert "Synthetic observations for demonstration." in caption

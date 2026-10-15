@@ -16,6 +16,7 @@ from blueearth_cst.climate_analysis.diagnostic_render import (
 )
 from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
 from blueearth_cst.plotting import prepared_charts as pc
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import MONTH_ABBR, STYLE
 from blueearth_cst.shared.variable_registry import CLIMATE_VARS
 
@@ -312,6 +313,7 @@ def render_forcing_figures(
                 "regridding, configured temperature correction and PET derivation."
             )
             records[name] = {
+                "title": f"{label} {'annual climatology map' if kind == 'map' else 'annual series' if kind == 'annual' else 'monthly climatology'} — Wflow forcing; {years[0]}–{years[-1]}; model basin cells",
                 "caption": caption,
                 "sources": ["forcing"],
                 "period": [int(years[0]), int(years[-1])],
@@ -356,7 +358,12 @@ def render_forcing_figures(
                 "schema_version": 1,
                 "figures": records,
                 "produced_paths": list(records)
-                + ["figure_captions.md", "_engine/figure_captions.json"],
+                + [
+                    "figure_titles.md",
+                    "_engine/figure_titles.json",
+                    "figure_captions.md",
+                    "_engine/figure_captions.json",
+                ],
             },
             indent=2,
             ensure_ascii=False,
@@ -372,4 +379,5 @@ def render_forcing_figures(
         + "\n",
         encoding="utf-8",
     )
+    write_figure_titles(root, records)
     return written

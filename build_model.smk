@@ -957,6 +957,8 @@ _basavg_pngs = [
 # Caption records exist only when the configured basin-average family is drawn.
 _basavg_captions = (
     [
+        f"{basin_dir}/evaluation/plots/figure_titles.md",
+        f"{basin_dir}/evaluation/plots/_engine/figure_titles.json",
         f"{basin_dir}/evaluation/plots/figure_captions.md",
         f"{basin_dir}/evaluation/plots/_engine/figure_captions.json",
     ]
@@ -1182,6 +1184,8 @@ rule plot_basin_map:
         # PNG only since 2026-08-10 (owner's call): nothing in the toolbox
         # or the platform read the vector deliverable, and 600 dpi at 180 mm
         # carries the figure everywhere it is used.
+        titles_md = f"{spatial_dir}/plots/figure_titles.md",
+        titles_json = f"{spatial_dir}/plots/_engine/figure_titles.json",
         basin_png = f"{spatial_dir}/plots/elevation_basin.png",
         # From the registry the plotter iterates, not restated here — the same
         # contract rule 1.12 has with climate_figures.figure_names(). Only the
@@ -1240,6 +1244,8 @@ rule plot_model_forcing:
     # rather than being restated here.
     output:
         _forcing_climate_pngs,
+        titles_md = f"{FORCING_PLOTS_DIR}/figure_titles.md",
+        titles_json = f"{FORCING_PLOTS_DIR}/_engine/figure_titles.json",
         captions_md = f"{FORCING_PLOTS_DIR}/figure_captions.md",
         captions_json = f"{FORCING_PLOTS_DIR}/_engine/figure_captions.json",
     params:

@@ -8,6 +8,10 @@ per-rule sections.
 **Does** is the rule's job; **Writes** transcribes its `output:` block, so the claim can be
 checked against the Snakefile rather than believed.
 
+WF0–WF2 plotting rules also write `figure_titles.md` in each owning plot directory and
+`figure_titles.json` beside the caption JSON inventory (or in `plots/_engine/` for spatial maps).
+These identify ordinary figures independently of captions; titles are not embedded in rendered images.
+
 Rule numbers are reused, so any `W.NN` written before 2026-09-24 may name a
 different rule — translate through [What changed](#what-changed) before reading one in
 `dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` or a dated migration record.

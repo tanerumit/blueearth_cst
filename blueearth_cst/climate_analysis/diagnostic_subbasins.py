@@ -8,9 +8,10 @@ import numpy as np
 import pandas as pd
 
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
-from blueearth_cst.climate_analysis.diagnostic_captions import caption
+from blueearth_cst.climate_analysis.diagnostic_captions import caption, title
 from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_json
 from blueearth_cst.climate_analysis.figure_naming import figure_filename
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import STYLE, add_caption
 
 
@@ -135,6 +136,15 @@ def render_subbasins(sm, settings, sources):
                     captioned = f"plots/captioned/subbasins/{name}"
                 plt.close(fig)
             inventory["figures"][f"plots/subbasins/{name}"] = {
+                "title": title(
+                    form,
+                    [
+                        view.labels[s]
+                        for s in (carriers if variable == "temp" else sources)
+                    ],
+                    period,
+                    view.support,
+                ),
                 "caption": text,
                 "sources": carriers if variable == "temp" else sources,
                 "period": period,
@@ -156,9 +166,15 @@ def render_subbasins(sm, settings, sources):
             for record in inventory["figures"].values()
             if record["captioned_path"]
         ]
-        + ["plots/_engine/figure_captions.json", "plots/figure_captions.md"]
+        + [
+            "plots/_engine/figure_titles.json",
+            "plots/figure_titles.md",
+            "plots/_engine/figure_captions.json",
+            "plots/figure_captions.md",
+        ]
     )
     write_json(captions_path, inventory)
+    write_figure_titles(root / "plots", inventory["figures"])
     if comparison and inventory["unavailable_subbasins"]:
         from blueearth_cst.shared.snake_utils import log_row, plural
 

@@ -7,7 +7,14 @@ the underlying calculation or statistical interpretation.
 
 ## Output paths
 
-Use `plots/` for generated graphics throughout the toolbox. Keep readable captions in
+Use `plots/` for generated graphics throughout the toolbox. WF0–WF2 also write readable titles to
+`plots/figure_titles.md` and a `figure_titles.json` inventory beside the corresponding caption JSON.
+Title keys match the caption inventory's ordinary figure keys; optional captioned copies use the same
+title. Each title identifies the figure's subject and relevant source, period or spatial support.
+Titles are retained independently for future rendering controls; this does not enable titles in PNGs.
+Spatial maps and legacy climate figure adapters that have no caption inventory still write title files.
+
+Keep readable captions in
 `plots/figure_captions.md`. Machine plot manifests and internal analysis records belong in the cohesive
 output unit's single root `_engine/`, following [the output naming rule](naming.md#generated-outputs-under-project_dir).
 WF2 uses the ensemble root's `_engine/`, with manifest figure paths relative to `plots/`.

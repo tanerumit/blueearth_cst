@@ -209,6 +209,13 @@ def test_manifest_bijection_unavailable_and_captioned_copy(
     assert (
         json.loads((tmp_path / "_engine/figure_captions.json").read_text()) == manifest
     )
+    titles = json.loads(
+        (tmp_path / "_engine/figure_titles.json").read_text(encoding="utf-8")
+    )["figures"]
+    assert set(titles) == set(manifest)
+    assert all(item["title"] for item in titles.values())
+    assert "2036–2065 relative to" in next(iter(titles.values()))["title"]
+    assert (plots / "figure_titles.md").is_file()
     assert not (plots / "_engine").exists()
     assert "Not produced" in (plots / "figure_captions.md").read_text()
     stale = plots / extra_path

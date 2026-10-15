@@ -12,13 +12,14 @@ import pandas as pd
 import xarray as xr
 
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
-from blueearth_cst.climate_analysis.diagnostic_captions import caption
+from blueearth_cst.climate_analysis.diagnostic_captions import caption, title
 from blueearth_cst.climate_analysis.diagnostic_settings import carries_temp
 from blueearth_cst.climate_analysis.diagnostic_tables import write_json
 from blueearth_cst.climate_analysis.diagnostics import (
     monthly_reference_diagnostics,
     sen_trend,
 )
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import STYLE, add_caption, new_fig
 from blueearth_cst.plotting.prepared_maps import MapFrame, RasterMap, draw_raster_map
 from blueearth_cst.shared.map_reference import (
@@ -474,6 +475,9 @@ def render(
                 else sources
             )
             records[relative] = {
+                "title": title(
+                    form, [view.labels[s] for s in contributing], period, support
+                ),
                 "caption": text,
                 "sources": contributing,
                 "period": period,
@@ -510,7 +514,12 @@ def render(
             "anomaly_bounds": bounds,
             "produced_paths": list(records)
             + [r["captioned_path"] for r in records.values() if r["captioned_path"]]
-            + ["plots/_engine/figure_captions.json", "plots/figure_captions.md"],
+            + [
+                "plots/_engine/figure_titles.json",
+                "plots/figure_titles.md",
+                "plots/_engine/figure_captions.json",
+                "plots/figure_captions.md",
+            ],
         },
     )
     Path(paths["render"]["captions_md"]).write_text(
@@ -521,6 +530,7 @@ def render(
         + "\n",
         encoding="utf-8",
     )
+    write_figure_titles(root / "plots", records)
     unavailable = Counter(
         item["availability"]
         for item in records.values()

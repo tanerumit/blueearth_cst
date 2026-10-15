@@ -3,6 +3,37 @@
 from blueearth_cst.climate_analysis.diagnostic_figures import plural
 from blueearth_cst.projections.projection_figures import figure_key
 
+TITLES = {
+    "availability.png": "CMIP6 ensemble availability",
+    "trajectory-temperature.png": "Annual temperature anomalies",
+    "trajectory-precipitation.png": "Annual precipitation anomalies",
+    "annual-temperature.png": "Annual temperature projections",
+    "annual-precipitation.png": "Annual precipitation projections",
+    "change-temperature.png": "Annual and seasonal temperature changes",
+    "change-precipitation-pct.png": "Annual and seasonal precipitation changes (%)",
+    "change-precipitation-abs.png": "Annual and seasonal precipitation changes (absolute)",
+    "seasonal-cycle-temperature.png": "Monthly temperature climatology",
+    "seasonal-cycle-precipitation.png": "Monthly precipitation climatology",
+    "monthly-change-temperature.png": "Monthly temperature changes",
+    "monthly-change-precipitation.png": "Monthly precipitation changes (%)",
+    "variability-ratio-temperature-sd.png": "Annual and seasonal temperature variability ratios (SD)",
+    "variability-ratio-precipitation-sd.png": "Annual and seasonal precipitation variability ratios (SD)",
+    "variability-ratio-precipitation-cv.png": "Annual and seasonal precipitation variability ratios (CV)",
+    "variability-member-ratios.png": "Annual interannual variability ratios by ensemble member",
+    "change-factor-cloud.png": "Annual precipitation and temperature changes",
+    "sign-agreement.png": "Model sign agreement in annual and monthly climate changes",
+    "change-factor-cloud-combined.png": "Annual precipitation and temperature changes across future periods",
+}
+
+
+def title(filename, record, window_id=""):
+    """Name a projection product using its resolved period, not a horizon alias."""
+    name = TITLES[figure_key(filename)]
+    if window_id:
+        window = next(w for w in record["windows"] if w["window_id"] == window_id)
+        name += f" — {window['used'][0]}–{window['used'][1]} relative to {window['reference'][0]}–{window['reference'][1]}"
+    return f"{name}; CMIP6 basin average"
+
 
 def _mask(years):
     """Compact exact coordinates: span, count and any internal missing labels."""

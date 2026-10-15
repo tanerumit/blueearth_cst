@@ -1,5 +1,6 @@
 """Canonical WF0 declaration, missing-data and table round-trip contracts."""
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -162,6 +163,12 @@ def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind, c
         paths["figures"].pop("map-precip")
         records = render(paths, settings, 1, ["chirps"], [paths["root"]])
         assert len(records) == 16
+        titles = json.loads(
+            (tmp_path / "plots/_engine/figure_titles.json").read_text(encoding="utf-8")
+        )["figures"]
+        assert set(titles) == set(records)
+        assert all("CHIRPS" in entry["title"] for entry in titles.values())
+        assert (tmp_path / "plots/figure_titles.md").is_file()
         assert not any("monthly_percentile" in path for path in records)
         assert all((Path(paths["root"]) / p).is_file() for p in records)
         series = next(r for p, r in records.items() if "annual_trend_ts" in p)

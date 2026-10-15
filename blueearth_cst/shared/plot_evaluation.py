@@ -47,6 +47,7 @@ import os
 # order to learn the word "stations". The constant stays HERE, beside the code
 # that draws into the bin, for the reason its own comment gives; it is the
 # imports that move.
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared import plot_style
 from blueearth_cst.shared.snake_utils import save_figure
 
@@ -761,6 +762,7 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
         else {"schema_version": 1, "figures": {}}
     )
     inventory["figures"][name] = {
+        "title": f"Discharge hydrograph, seasonal cycle and flow duration — {station.caption}; {start}–{end}",
         "caption": caption,
         "sources": ["simulated", "observed"] if observed is not None else ["simulated"],
         "period": [start, end],
@@ -784,7 +786,10 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
             if prepared[key] is not None
         },
     }
+    write_figure_titles(root, inventory["figures"])
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]
@@ -990,6 +995,7 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         else {"schema_version": 1, "figures": {}}
     )
     inventory["figures"][f"signatures_{kind}_{station.wflow_id}.png"] = {
+        "title": f"{'High' if peaks else 'Low'}-flow diagnostics — {station.caption}; {'–'.join(period)}",
         "caption": caption,
         "sources": ["simulated", "observed"],
         "period": period,
@@ -999,7 +1005,10 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         "captioned_path": None,
         "highlighted_year": int(year),
     }
+    write_figure_titles(root, inventory["figures"])
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]
@@ -1382,6 +1391,7 @@ def _performance_caption(support, station, plot_dir, caveat):
         else {"schema_version": 1, "figures": {}}
     )
     inventory["figures"][f"performance_{station.wflow_id}.png"] = {
+        "title": f"Discharge performance — {station.caption}; {span}",
         "caption": caption.strip(),
         "sources": ["simulated", "observed"],
         "period": period,
@@ -1403,7 +1413,10 @@ def _performance_caption(support, station, plot_dir, caveat):
             "caveat": caveat,
         },
     }
+    write_figure_titles(root, inventory["figures"])
     inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_titles.md",
+        "_engine/figure_titles.json",
         "figure_captions.md",
         "_engine/figure_captions.json",
     ]

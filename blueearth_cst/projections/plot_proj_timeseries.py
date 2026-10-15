@@ -14,9 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import STYLE, add_caption
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
-from blueearth_cst.projections.projection_captions import caption
+from blueearth_cst.projections.projection_captions import caption, title
 from blueearth_cst.projections.projection_figures import (
     SUITE_PRODUCTS,
     figure_key,
@@ -244,6 +245,7 @@ def render_suite(
             finally:
                 plt.close(fig)
         manifest[relative] = {
+            "title": title(row["filename"], record, window_id),
             "caption": text,
             "window_id": window_id,
             "counts": counts,
@@ -282,6 +284,9 @@ def render_suite(
     )
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    write_figure_titles(
+        root, manifest, manifest_path=manifest_path.with_name("figure_titles.json")
+    )
     markdown = [
         "# Projection figure captions",
         "",

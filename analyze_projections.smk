@@ -62,7 +62,9 @@ config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="analyze_projections", declared_sections=CONFIG_PROJECTION,
 )
 from blueearth_cst.shared.plot_config import resolve_annotation
+from blueearth_cst.shared.plot_setup import setup_digest
 plot_annotation = resolve_annotation(config)
+plot_setup_digest = setup_digest()
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -1278,6 +1280,7 @@ rule plot_climate_projections:
     params:
         scenarios = scenarios,
         annotation = plot_annotation,
+        plot_setup_digest = plot_setup_digest,
     output:
         folders = [directory(path) for path in WF2_SUITE_PATHS.values()],
         titles_md = f"{clim_project_dir}/plots/figure_titles.md",

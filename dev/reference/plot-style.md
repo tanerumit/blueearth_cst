@@ -27,6 +27,41 @@ its owning data product. Generated filenames and directories use lowercase snake
 `full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
 with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the rename mapping.
 
+## Shared colour defaults
+
+`config/plotting/colors.yml` owns the default categorical cycle, dataset and evaluation colours,
+SSP colours, climate-map colormaps and precipitation-anomaly colormap. Read it through
+`blueearth_cst.shared.plot_colors`; do not duplicate these values in renderers. The loader resolves the
+file relative to the toolbox, validates its structure and hex colours, and reads it once per process.
+Restart an interactive Python session after editing it. Matplotlib resolves colormap names when drawing.
+
+`config/plotting/style.yml` owns page/export defaults, typography, shared chart dimensions, lines,
+markers, bands, label backgrounds and evaluation-sheet appearance. `shared.plot_setup` loads these
+preferences; `shared.plot_style` and `plotting.fundamentals` retain the existing drawing interfaces.
+Figure-specific geometry stays with its renderer. Keep shared appearance preferences in this setup
+directory instead of adding new literals to individual plots.
+
+The default cycle is Option A, Expanded original, selected on 2026-10-15. Its order is Original blue
+`#0D38E0`, Terracotta `#CC593D`, Original green `#00B389`, Amber `#D99A19`, Violet `#8054B3`, Rose
+`#BE5084`, Cyan `#169CC4`, Slate `#66768A`. Blue and Terracotta are the first comparison pair.
+ERA5 and observed series use blue; CHIRPS and simulated series use Terracotta. Dataset and evaluation
+entries refer to named cycle colours so an edit stays consistent across those families. Unknown datasets
+take the remaining cycle colours in configuration order, skipping colours used by named datasets present
+in the comparison. Marker shapes change when those colours repeat. This palette has not been certified
+for colour-vision deficiencies; preserve line styles, markers and labels as additional distinctions.
+
+Both shared Matplotlib style contexts apply the cycle. Explicit semantic presets take precedence:
+the IPCC scenario colours and existing climate-map and anomaly colormaps retain their values.
+`historical_maps` preserves the custom ramps used by the current WF0/WF1 display reference; `climate_maps`
+preserves named colormaps used by the legacy map adapter. Colour defaults do not change classification,
+normalization, data, or scientific configuration identity.
+WF0–WF2 plotting rules track a digest of both YAML files in renderer params, so an edit schedules
+plotting jobs.
+WF1 evaluation also refreshes metrics written by its combined evaluation/plotting job. R/weathergenr
+figures retain their own settings.
+The historical map-reference producer also tracks the YAML as a display dependency so cached map colours
+refresh consistently across WF0 and WF1. This does not change the extracted climate data or simulation identity.
+
 ## SSP scenario colors
 
 WF2 uses the IPCC AR6 scenario palette, including all eight ScenarioMIP SSPs and the LowNTCF variant.
@@ -47,7 +82,8 @@ derived from the [IPCC WG1 color maps](https://github.com/IPCC-WG1/colormaps).
 | `ssp370-lowNTCF` | SSP3-7.0-LowNTCF | `#e61d25` |
 | `ssp585` | SSP5-8.5 | `#980002` |
 
-Keep the mapping in `projections/projection_figures.py`; all WF2 suite artists use it.
+Keep the mapping in `config/plotting/colors.yml`; `projections/projection_figures.py` re-exports it
+for existing callers, and all WF2 suite artists use it.
 Unknown experiments retain their literal labels and muted fallback color.
 
 ## Typography, axes and layout
@@ -93,7 +129,7 @@ Unknown experiments retain their literal labels and muted fallback color.
 - Use contrasting point colors over map layers. For scatter plots, use partly transparent fills and
   darker outlines so points remain visible. The reviewed enlarged scatter points use area 36 pt²,
   alpha 0.7 and an approximately 0.7 pt dark edge; adapt where the plot density requires it.
-- Keep dataset colors consistent: CHIRPS orange `#bf6a3c`, ERA5 blue `#236b8e`.
+- Keep dataset colors consistent using the shared defaults: CHIRPS Terracotta `#CC593D`, ERA5 blue `#0D38E0`.
 
 ## Color scales and colorbars
 
@@ -146,7 +182,7 @@ These summaries describe forcing QA; they do not modify the forcing or simulatio
 WF1 station hydrographs retain the five-panel layout: daily discharge, annual means, seasonal cycle,
 and linear/log flow-duration curves. Apply the common typography, frames, soft horizontal grids,
 short panel titles and inside legend. Observations remain blue and dashed; simulation remains
-vermillion and solid. Use discharge units alone on vertical axes, three-letter months and percentage
+Terracotta and solid. Use discharge units alone on vertical axes, three-letter months and percentage
 exceedance labels. Annual labels start at the preceding five-year grid mark (ten years for records
 longer than 35 years), retaining annual minor ticks so the left edge has a nearby calendar label.
 Station identity, dates, support and methods

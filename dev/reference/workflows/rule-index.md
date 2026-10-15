@@ -11,6 +11,8 @@ checked against the Snakefile rather than believed.
 WF0–WF2 plotting rules also write `figure_titles.md` in each owning plot directory and
 `figure_titles.json` beside the caption JSON inventory (or in `plots/_engine/` for spatial maps).
 These identify ordinary figures independently of captions; titles are not embedded in rendered images.
+WF0–WF2 Python plotting rules also track `config/plotting/colors.yml` and `style.yml` by content digest in
+renderer params. Palette edits schedule those jobs without entering scientific configuration identity.
 
 Rule numbers are reused, so any `W.NN` written before 2026-09-24 may name a
 different rule — translate through [What changed](#what-changed) before reading one in

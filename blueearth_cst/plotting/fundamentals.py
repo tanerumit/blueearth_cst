@@ -12,57 +12,65 @@ from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.transforms import Affine2D, Bbox
 
-W_COL1, W_PANEL, W_MID, W_FULL = 88.0, 120.0, 140.0, 180.0
+from blueearth_cst.shared import plot_style
+from blueearth_cst.shared.plot_colors import NEUTRAL_COLORS
+from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
+
+_CHARTS = STYLE_SETTINGS["charts"]
+W_COL1, W_PANEL, W_MID, W_FULL = (
+    _CHARTS["widths"][key] for key in ("col1", "panel", "mid", "full")
+)
 
 
 MM = 1 / 25.4
 
 
-H_SINGLE, H_STACK2, H_SIDE2, H_ROW3, H_GRID4 = 80.0, 110.0, 86.0, 80.0, 142.0
-
-
-OUTER_PAD_X_MM, OUTER_PAD_Y_MM = 4.0, 3.0
-
-
-FS_LABEL, FS_TICK, FS_NOTE = 7, 6, 6
-
-
-INK = "#17303c"
-
-
-MUTED = "#536875"
-
-
-AXIS = "#82939b"
-
-
-GRID = "#e6edef"
-
-
-BOUNDARY = "#c6d2d8"
-
-
-LW_LINE, LW_MEAN, LW_REF, LW_EDGE, LW_RANGE, LW_IQR, LW_STEM = (
-    1.2,
-    1.5,
-    0.8,
-    0.6,
-    0.8,
-    3.0,
-    1.6,
+H_SINGLE, H_STACK2, H_SIDE2, H_ROW3, H_GRID4 = (
+    _CHARTS["heights"][key] for key in ("single", "stack2", "side2", "row3", "grid4")
 )
 
 
-LW_BOUNDARY = 0.9
+OUTER_PAD_X_MM, OUTER_PAD_Y_MM = (_CHARTS["padding"][key] for key in ("x", "y"))
 
 
-MS_LINE, MS_POINT, S_SCATTER = 3.0, 4.5, 16
+FS_LABEL, FS_TICK, FS_NOTE = (
+    _CHARTS["fonts"][key] for key in ("label", "tick", "note")
+)
 
 
-BAND_ALPHA = 0.18
+INK = NEUTRAL_COLORS["ink"]
 
 
-LABEL_BOX = {"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2}
+MUTED = NEUTRAL_COLORS["muted"]
+
+
+AXIS = NEUTRAL_COLORS["axis"]
+
+
+GRID = NEUTRAL_COLORS["grid"]
+
+
+BOUNDARY = NEUTRAL_COLORS["boundary"]
+
+
+LW_LINE, LW_MEAN, LW_REF, LW_EDGE, LW_RANGE, LW_IQR, LW_STEM = (
+    _CHARTS["lines"][key]
+    for key in ("line", "mean", "ref", "edge", "range", "iqr", "stem")
+)
+
+
+LW_BOUNDARY = _CHARTS["lines"]["boundary"]
+
+
+MS_LINE, MS_POINT, S_SCATTER = (
+    _CHARTS["markers"][key] for key in ("line", "point", "scatter")
+)
+
+
+BAND_ALPHA = _CHARTS["band_alpha"]
+
+
+LABEL_BOX = dict(_CHARTS["label_box"])
 
 
 MONTH_ABBR = (
@@ -82,40 +90,29 @@ MONTH_ABBR = (
 
 
 STYLE = {
-    "font.family": "DejaVu Sans",
-    "mathtext.fontset": "dejavusans",
+    **_CHARTS["rcparams"],
+    "axes.prop_cycle": plot_style.rcparams()["axes.prop_cycle"],
     "font.size": FS_LABEL,
     "axes.titlesize": FS_LABEL,
-    "axes.titleweight": "normal",
-    "axes.titlelocation": "left",
     "axes.titlecolor": INK,
     "axes.labelsize": FS_LABEL,
     "axes.labelcolor": INK,
     "axes.edgecolor": BOUNDARY,
     "axes.linewidth": LW_BOUNDARY,
-    "axes.spines.top": True,
-    "axes.spines.right": True,
-    "axes.axisbelow": True,
     "xtick.color": AXIS,
     "ytick.color": AXIS,
     "xtick.labelcolor": MUTED,
     "ytick.labelcolor": MUTED,
     "xtick.labelsize": FS_TICK,
     "ytick.labelsize": FS_TICK,
-    "xtick.major.size": 2.5,
-    "ytick.major.size": 2.5,
     "xtick.major.width": LW_EDGE,
     "ytick.major.width": LW_EDGE,
     "grid.color": GRID,
     "grid.linewidth": LW_EDGE,
-    "legend.frameon": False,
     "legend.fontsize": FS_TICK,
     "legend.title_fontsize": FS_TICK,
     "legend.labelcolor": INK,
-    "legend.handlelength": 2.0,
-    "figure.facecolor": "white",
-    "savefig.facecolor": "white",
-    "savefig.dpi": 600,
+    "savefig.dpi": plot_style.RASTER_DPI,
 }
 
 

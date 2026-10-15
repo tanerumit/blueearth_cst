@@ -64,7 +64,9 @@ config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="build_model", declared_sections=CONFIG_PROJECTION,
 )
 from blueearth_cst.shared.plot_config import resolve_annotation
+from blueearth_cst.shared.plot_setup import setup_digest
 plot_annotation = resolve_annotation(config)
+plot_setup_digest = setup_digest()
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input list below does not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -1116,6 +1118,7 @@ rule plot_model_evaluation:
        ),
    params:
        annotation = plot_annotation,
+       plot_setup_digest = plot_setup_digest,
        project_dir = f"{project_dir}",
        # The model root is OWNED BY THE RULE, not rebuilt inside the script.
        # plot_results.py used to derive `{project_dir}/hydrology_model` itself,
@@ -1204,6 +1207,7 @@ rule plot_basin_map:
         spatial_figures = figure_paths(f"{spatial_dir}/plots"),
     params:
         annotation = plot_annotation,
+        plot_setup_digest = plot_setup_digest,
         spatial_dir = f"{spatial_dir}",
     log:
         PLOT_BASIN_MAP.log(),
@@ -1258,6 +1262,7 @@ rule plot_model_forcing:
         captions_json = f"{FORCING_PLOTS_DIR}/_engine/figure_captions.json",
     params:
         annotation = plot_annotation,
+        plot_setup_digest = plot_setup_digest,
         project_dir = f"{project_dir}",
         # Rule-owned model root; see rule 1.15's note.
         model_dir = basin_dir,

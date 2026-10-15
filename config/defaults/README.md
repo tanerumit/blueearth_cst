@@ -2,7 +2,8 @@
 
 **Referenced from a project config and read by a rule. Changing one changes a
 run.** These are not templates — do not copy them, point a config at them (or at
-your own edited copy elsewhere).
+your own edited copy elsewhere). Shared appearance defaults live separately in
+`config/plotting/`.
 
 | File | Consumer |
 | --- | --- |

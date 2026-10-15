@@ -49,6 +49,8 @@ import os
 # imports that move.
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared import plot_style
+from blueearth_cst.shared.plot_colors import EVALUATION_COLORS, NEUTRAL_COLORS
+from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
 from blueearth_cst.shared.snake_utils import save_figure
 
 #: The bin every per-station sheet is written into, relative to
@@ -67,29 +69,29 @@ STATION_PLOT_DIRNAME = "stations"
 # TUNABLE CONSTANTS
 # ===========================================================================
 
-#: Observed and simulated, in that order. Okabe-Ito blue and vermillion: the
-#: pair stays separable under all three dichromacies AND differs in lightness,
-#: so the dashed/solid distinction below is a greyscale BACKUP rather than the
-#: only cue carrying the difference. Owner's call 2026-08-10 that observed is
-#: blue and simulated red; the specific hexes are the accessible version of it.
-COLOR_OBSERVED = "#0072B2"
-COLOR_SIMULATED = "#D55E00"
+#: Expanded original blue for observed, Terracotta for simulated. Preserve
+#: dashed/solid distinctions; this palette is not certified for colour vision.
+COLOR_OBSERVED = EVALUATION_COLORS["observed"]
+COLOR_SIMULATED = EVALUATION_COLORS["simulated"]
 #: Marks that belong to neither series — the period mean, a 1:1 line's anchor.
-COLOR_NEUTRAL = "#1a1a1a"
-COLOR_GRID = "#dcdcdc"
+COLOR_NEUTRAL = NEUTRAL_COLORS["evaluation_neutral"]
+COLOR_GRID = NEUTRAL_COLORS["evaluation_grid"]
 #: The 1:1 reference line on every scatter panel.
-COLOR_REFERENCE = "0.55"
+COLOR_REFERENCE = NEUTRAL_COLORS["evaluation_reference"]
 
 #: Observed dashes, simulated solid. Simulated is solid because it is the dense
 #: series — a dashed line over 7000 daily values reads as a smear.
-DASH_OBSERVED = (0, (3, 1.6))
-LINE_WIDTH = 0.7
+DASH_OBSERVED = (
+    STYLE_SETTINGS["evaluation"]["observed_dash"][0],
+    tuple(STYLE_SETTINGS["evaluation"]["observed_dash"][1]),
+)
+LINE_WIDTH = STYLE_SETTINGS["evaluation"]["line_width"]
 
 #: Sheet heights in millimetres. The width is ``plot_style.FIGURE_WIDTH_MM`` for
 #: all four, so they stack in a report at one size.
-HEIGHT_HYDROGRAPH_MM = 148.0
-HEIGHT_EXTREMES_MM = 122.0
-HEIGHT_PERFORMANCE_MM = 118.0
+HEIGHT_HYDROGRAPH_MM = STYLE_SETTINGS["evaluation"]["heights"]["hydrograph"]
+HEIGHT_EXTREMES_MM = STYLE_SETTINGS["evaluation"]["heights"]["extremes"]
+HEIGHT_PERFORMANCE_MM = STYLE_SETTINGS["evaluation"]["heights"]["performance"]
 
 #: Return periods marked on the frequency panels.
 RETURN_PERIODS = (2.0, 5.0, 10.0, 30.0)

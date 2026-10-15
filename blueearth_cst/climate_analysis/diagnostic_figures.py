@@ -158,17 +158,24 @@ from blueearth_cst.plotting.fundamentals import (
     ygrid as ygrid,
 )
 from blueearth_cst.plotting.prepared_charts import TREND_DASH as TREND_DASH
+from blueearth_cst.shared.plot_colors import (
+    DATASET_COLORS,
+    DEFAULT_COLOR_CYCLE,
+    NEUTRAL_COLORS,
+    PRECIP_ANOMALY_COLORMAP,
+)
+from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
 
-MISSING = "#a0a0a0"
+MISSING = NEUTRAL_COLORS["missing"]
 
 
-QA = "#882255"
+QA = NEUTRAL_COLORS["qa"]
 
 
-SOURCE_STYLE = {"era5": ("#236b8e", "o"), "chirps": ("#bf6a3c", "o")}
-
-
-FREE_SLOTS = (("#009E73", "o"), ("#CC79A7", "o"))
+SOURCE_STYLE = {
+    name: (color, STYLE_SETTINGS["charts"]["dataset_marker"])
+    for name, color in DATASET_COLORS.items()
+}
 
 
 DODGE = 0.2
@@ -190,17 +197,19 @@ UNITS = {
 
 def source_styles(keys: Sequence[str]) -> dict[str, tuple[str, str]]:
     """Colour and marker per source id: registry first, then free slots in config order."""
+    reserved = {SOURCE_STYLE[k.lower()][0] for k in keys if k.lower() in SOURCE_STYLE}
+    available = [color for color in DEFAULT_COLOR_CYCLE if color not in reserved]
+    available = available or list(DEFAULT_COLOR_CYCLE)
     free_index = 0
     out = {}
     for k in keys:
         if k.lower() in SOURCE_STYLE:
             out[k] = SOURCE_STYLE[k.lower()]
         else:
-            palette = plt.get_cmap("tab10")
-            markers = ("s", "^", "D", "v", "P", "X")
+            markers = STYLE_SETTINGS["charts"]["fallback_markers"]
             out[k] = (
-                to_hex(palette(free_index % 10)),
-                markers[(free_index // 10) % len(markers)],
+                available[free_index % len(available)],
+                markers[(free_index // len(available)) % len(markers)],
             )
             free_index += 1
     return out
@@ -488,7 +497,7 @@ def anomaly(v: View) -> Figure:
     bounds = v.anom_bounds or [-1.0, 1.0]
     limit = max(abs(bounds[0]), abs(bounds[-1]))
     norm = Normalize(-limit, limit)
-    cmap = plt.get_cmap("BrBG").with_extremes(bad=MISSING)
+    cmap = plt.get_cmap(PRECIP_ANOMALY_COLORMAP).with_extremes(bad=MISSING)
     fig, axs, stack = _stack(v)
     mesh = None
     for i, (ax, s) in enumerate(zip(axs[:, 0], v.sources)):

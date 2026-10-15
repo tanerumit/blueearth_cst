@@ -315,8 +315,8 @@ def test_an_unknown_extremes_kind_is_refused(tmp_path):
 def test_observed_is_blue_and_simulated_is_red():
     """Owner's call 2026-08-10. The hexes are the Okabe-Ito pair, so the two
     stay separable under all three dichromacies and differ in lightness."""
-    assert plot_evaluation.COLOR_OBSERVED == "#0072B2"
-    assert plot_evaluation.COLOR_SIMULATED == "#D55E00"
+    assert plot_evaluation.COLOR_OBSERVED == "#0D38E0"
+    assert plot_evaluation.COLOR_SIMULATED == "#CC593D"
 
 
 def test_every_metric_the_table_can_show_declares_an_ideal_and_a_format():

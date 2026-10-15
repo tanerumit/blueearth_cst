@@ -5,7 +5,8 @@ One basin assessment ships figures from four different producers. Before this
 module each decided its own printed width, resolution and type sizes
 independently, so the deliverable a reader actually sees did not look like
 itself: 180 mm beside ``figsize=(16/2.54, 22/2.54)`` beside ``figsize=(8, 6)``,
-and 600 dpi beside 300. This is the one place those are decided.
+and 600 dpi beside 300. This adapter exposes the defaults in
+``config/plotting/style.yml`` through the existing Python constants and context.
 
 **Scope: the page, not the picture.** What belongs here is anything that would
 be the same whether the figure is a map, a time series or a scatter — width,
@@ -46,6 +47,11 @@ A constant snapshots its inputs at import.
 
 from __future__ import annotations
 
+from cycler import cycler
+
+from blueearth_cst.shared.plot_colors import DEFAULT_COLOR_CYCLE, NEUTRAL_COLORS
+from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
+
 # ===========================================================================
 # PAGE AND EXPORT
 # ===========================================================================
@@ -54,7 +60,7 @@ from __future__ import annotations
 #: downstream. 180 mm is the double-column width that Elsevier (190), AGU (190)
 #: and Copernicus (170) all accept without downscaling. Set this to your target
 #: journal's column width; every other size is chosen to work at it.
-FIGURE_WIDTH_MM = 180.0
+FIGURE_WIDTH_MM = STYLE_SETTINGS["page"]["figure_width_mm"]
 
 #: Millimetres per inch. matplotlib thinks in inches; the block above thinks in
 #: millimetres, because that is what a journal's author guide states.
@@ -79,7 +85,7 @@ MM_PER_INCH = 25.4
 #:
 #: The PDF remains the deliverable for print: it is vector, so it has no
 #: resolution to get wrong.
-RASTER_DPI = 600
+RASTER_DPI = STYLE_SETTINGS["page"]["raster_dpi"]
 
 # ===========================================================================
 # TYPOGRAPHY
@@ -92,28 +98,28 @@ RASTER_DPI = 600
 
 #: Fallback for any text element that does not carry its own size, and the base
 #: the axes title is derived from (+1 pt).
-FONT_SIZE_BASE = 8.0
+FONT_SIZE_BASE = STYLE_SETTINGS["typography"]["base"]
 
 #: Axis tick labels — on a map, the coordinate graticule labels.
-FONT_SIZE_TICK = 7.0
+FONT_SIZE_TICK = STYLE_SETTINGS["typography"]["tick"]
 
 #: Legend entries and the legend's own title.
-FONT_SIZE_LEGEND = 6.5
+FONT_SIZE_LEGEND = STYLE_SETTINGS["typography"]["legend"]
 
 #: A figure-level ``suptitle``. One point above base so it reads as a title
 #: without shouting at a 180 mm width.
-FONT_SIZE_TITLE = 9.0
+FONT_SIZE_TITLE = STYLE_SETTINGS["typography"]["title"]
 
 #: The provenance/caveat footnote a figure carries under its axes — the "these
 #: are simulated, not observed" line. Deliberately the smallest type on the
 #: page: it must be legible when looked for and invisible when not.
-FONT_SIZE_CAVEAT = 6.0
+FONT_SIZE_CAVEAT = STYLE_SETTINGS["typography"]["caveat"]
 
 #: Font family. ``None`` keeps matplotlib's default (DejaVu Sans, which embeds
 #: cleanly in the PDF). Set e.g. ``"Arial"`` or ``["Helvetica", "Arial"]`` to
 #: match a manuscript — but check the exported PDF, because a missing family
 #: falls back SILENTLY.
-FONT_FAMILY = None
+FONT_FAMILY = STYLE_SETTINGS["typography"]["family"]
 
 # ===========================================================================
 # COLOUR
@@ -121,7 +127,7 @@ FONT_FAMILY = None
 
 #: The caveat footnote's ink. Grey rather than black so it sits below the
 #: figure's own content in the reading order.
-COLOR_CAVEAT = "0.35"
+COLOR_CAVEAT = NEUTRAL_COLORS["caveat"]
 
 #: Fallback x for a caveat footnote, in figure fractions.
 #:
@@ -174,7 +180,7 @@ def align_caveat_to_plot_area(fig, ax) -> None:
 #: 42 = TrueType. matplotlib's default (Type 3) is not editable in Illustrator
 #: and is rejected outright by several publishers' preflight, so every figure
 #: this toolbox exports sets it.
-PDF_FONTTYPE = 42
+PDF_FONTTYPE = STYLE_SETTINGS["page"]["pdf_fonttype"]
 
 
 # ===========================================================================
@@ -227,6 +233,7 @@ def rcparams(
     family = FONT_FAMILY if font_family is None else font_family
 
     params = {
+        "axes.prop_cycle": cycler(color=DEFAULT_COLOR_CYCLE),
         "font.size": base,
         "axes.titlesize": base + 1.0,
         "axes.labelsize": base,

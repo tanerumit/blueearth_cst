@@ -217,12 +217,37 @@ The former WF0 `diagnostics.captioned_figures` and WF2 `captioned_figures` setti
 Remove them and set `plotting.annotation: caption` in the project file to embed captions at the
 ordinary plot paths. Existing files under `plots/captioned/` are left in place and are no longer targeted.
 
+### Colour defaults
+
+Python plots load `config/plotting/colors.yml` automatically from the toolbox checkout.
+Edit this file to change the categorical cycle or named presets; no project-config key is needed.
+The default cycle uses Expanded original, with Original blue (`#0D38E0`) and Terracotta (`#CC593D`)
+first. ERA5/observed use blue and CHIRPS/simulated use Terracotta. The file also holds the existing
+IPCC scenario colours, climate-map colormaps and precipitation-anomaly colormap.
+
+`default_cycle` is an ordered mapping of colour names to quoted six-digit hex strings. `datasets` and
+`evaluation` refer to those names; `scenarios` contains hex strings directly. `climate_maps` and
+`precip_anomaly` contain Matplotlib colormap names. `historical_maps` contains the current WF0/WF1 custom
+ramps and their under/over colours. These defaults apply to all projects using this
+checkout. Restart an interactive Python session after editing the palette.
+
+`config/plotting/style.yml` holds page width, export resolution, typography and shared chart/evaluation
+appearance preferences. Both files are toolbox-wide; existing Python plotting adapters consume them.
+See `config/plotting/README.md` for ownership and editing conventions.
+
+Palette edits schedule WF0–WF2 plotting jobs without changing scenario or simulation identity.
+The historical display-reference record also refreshes so cached map colours remain consistent.
+WF1 evaluation also refreshes the metrics written by its combined evaluation/plotting job.
+R/weathergenr figures keep their own palette. Colormap edits change colours only; classification,
+normalization and missing-value handling remain defined by the plotting code.
+
 ## Where the other configuration lives
 
 | Directory | What it is | Do you edit it? |
 |---|---|---|
 | `config/catalogs/` | HydroMT data catalogs — the `-d` targets | Yes, to register a data source |
-| `config/defaults/` | Supplied settings used by the model and weather generator | Only when you need to change those settings |
+| `config/defaults/` | Supplied model and weather-generator defaults | Only when you need to change those settings |
+| `config/plotting/` | Shared palettes and appearance | Change toolbox-wide plotting defaults |
 | `config/templates/` | Starting files for a new project | Copy them to your project settings directory |
 | `config/advanced_settings.yml` | Toolbox-wide limits and defaults | Usually leave as supplied |
 

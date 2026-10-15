@@ -358,7 +358,7 @@ _PRE_DAG_STEPS = {}
 
 # The plan head's tally label for pre-DAG steps. Their table cell is empty,
 # like an up-to-date rule's: the head states the count once.
-_PRE_DAG_LABEL = "done in planning"
+_PRE_DAG_LABEL = "completed before DAG execution"
 
 # Rules whose jobs Snakemake adds only after a checkpoint resolves, so they are
 # absent from the opening job table without being up to date. name -> the job
@@ -729,7 +729,7 @@ def pre_dag_step(number, name):
     """Register a step completed before Snakemake built the DAG.
 
     The plan table lists it at its number, dimmed with an empty count cell,
-    and the head tallies it as ``done in planning``, so a workflow whose
+    and the head tallies it as ``completed before DAG execution``, so a workflow whose
     planning runs outside Snakemake (WF3) still reads as one numbered
     pipeline. Call it only once the step has actually run.
     """

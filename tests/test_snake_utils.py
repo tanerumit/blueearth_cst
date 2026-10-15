@@ -97,6 +97,61 @@ def test_falsey_values_returned_as_is(falsey):
 # --- _compact_log_line (hydromt format) --------------------------------------
 
 
+@pytest.mark.parametrize(
+    "module,current,proposed",
+    [
+        (
+            "weathergen",
+            "Reading weather netcdf: source.nc",
+            "Reading historical climate for weather generation → source.nc",
+        ),
+        (
+            "weathergen",
+            "Resampling on 1 basin cell(s) of 9 in the store",
+            "Weather resampling uses 1 basin-intersecting cell from the 9-cell extracted grid",
+        ),
+        (
+            "weathergen",
+            "Generating 1 weather realization(s)",
+            "Generating 1 stochastic weather realization",
+        ),
+        (
+            "weathergen",
+            "Moving 2 figure(s) to plots",
+            "Moving 2 weather-generator diagnostic figures → plots",
+        ),
+        (
+            "weathergen",
+            "Saving realization 1 of 2",
+            "Writing stochastic realization 1 of 2",
+        ),
+        (
+            "weathergen",
+            "run_001 reading realization root.nc",
+            "run_001: reading source realization root.nc",
+        ),
+        (
+            "weathergen",
+            "run_001 applying perturbations (temp=+2)",
+            "run_001: applying climate perturbations (temp=+2)",
+        ),
+        (
+            "experiment",
+            "Wrote lookup.csv (12 rows, 1 member)",
+            "Perturbation lookup written → lookup.csv (12 monthly rows; 1 perturbation point)",
+        ),
+    ],
+)
+def test_provider_console_wording_preserves_identity_and_level(
+    module, current, proposed
+):
+    # Provider source is hashed into the seed. Change presentation, not that source.
+    row = f"12:34:56 - {module} - WARNING - {current}\n"
+    expected = f"12:34:56 - {module} - WARNING - {proposed}\n"
+    assert _compact_log_line(row) == expected
+    assert _compact_log_line(expected) == expected
+
+
 def test_compact_shortens_timestamp_and_drops_dotted_name():
     line = (
         "2026-07-21 18:03:38,474 - hydromt.model.model - model - INFO - "
@@ -1890,7 +1945,7 @@ def test_tee_keeps_the_gcsfs_switch_row_that_explains_a_slow_run(tmp_path, capsy
     with tee_to_log(log, heartbeat_interval=0):
         log_row(message, module="fetch", level=level)
     out = capsys.readouterr().out
-    assert "WARNING" in out and "14x slower" in out
+    assert "WARNING" in out and "remote reads may be slower" in out
 
 
 def test_log_row_emits_one_write_so_the_console_mute_can_see_it(monkeypatch):

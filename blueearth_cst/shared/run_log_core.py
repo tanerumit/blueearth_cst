@@ -35,6 +35,50 @@ _DATA_SOURCE_READ_RE = re.compile(
 _DATA_SOURCE_FROM_RE = re.compile(r"^Reading (\S+) from (\S+)$")
 
 
+_GENERATION_MESSAGES = (
+    (
+        r"Reading weather netcdf: (.+)",
+        r"Reading historical climate for weather generation → \1",
+    ),
+    (
+        r"Resampling on (\d+) basin cell\(s\) of (\d+) in the store",
+        lambda m: (
+            f"Weather resampling uses {plural(int(m[1]), 'basin-intersecting cell')} from the {m[2]}-cell extracted grid"
+        ),
+    ),
+    (
+        r"Generating (\d+) weather realization\(s\)",
+        lambda m: f"Generating {plural(int(m[1]), 'stochastic weather realization')}",
+    ),
+    (
+        r"Moving (\d+) figure\(s\) to (.+)",
+        lambda m: (
+            f"Moving {plural(int(m[1]), 'weather-generator diagnostic figure')} → {m[2]}"
+        ),
+    ),
+    (r"Saving realization (\d+) of (\d+)", r"Writing stochastic realization \1 of \2"),
+    (r"(\S+) reading realization (.+)", r"\1: reading source realization \2"),
+    (
+        r"(\S+) applying perturbations \((.*)\)",
+        r"\1: applying climate perturbations (\2)",
+    ),
+)
+
+
+def _presentation_message(module: str, message: str) -> str:
+    """Present generation messages without changing hashed provider source or seeds."""
+    if module == "weathergen":
+        for pattern, replacement in _GENERATION_MESSAGES:
+            if re.fullmatch(pattern, message):
+                return re.sub(pattern, replacement, message)
+    if module == "experiment":
+        match = re.fullmatch(r"Wrote (.+) \((\d+) rows, (\d+) members?\)", message)
+        if match:
+            path, rows, points = match.groups()
+            return f"Perturbation lookup written → {path} ({rows} monthly rows; {plural(int(points), 'perturbation point')})"
+    return message
+
+
 def _log_row_text(hms, module, level, message):
     """Assemble one log row: ``HH:MM:SS - <module> - <message>``.
 
@@ -58,6 +102,7 @@ def _log_row_text(hms, module, level, message):
     three emitters with three spellings of one grammar is how the grammar stops
     being one.
     """
+    message = _presentation_message(module, message)
     if str(level).strip().upper() == "INFO":
         return f"{hms} - {module} - {message}"
     return f"{hms} - {module} - {level} - {message}"
@@ -92,6 +137,15 @@ def _compact_log_line(text):
     core = text[:-1] if had_newline else text
     match = _HYDROMT_LOG_RE.match(core)
     if not match:
+        own = re.fullmatch(
+            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
+            core,
+        )
+        if own:
+            hms, module, level, message = own.groups()
+            return _log_row_text(hms, module, level or "INFO", message) + (
+                "\n" if had_newline else ""
+            )
         return text
     hms, module, level, message = match.groups()
     prefixed = _COMPONENT_PREFIX_RE.match(message)

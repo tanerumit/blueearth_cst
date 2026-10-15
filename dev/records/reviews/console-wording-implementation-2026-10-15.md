@@ -41,9 +41,18 @@ Verification: 145 focused acquisition, window, change-factor, preparation and ba
 after two reference-warning expectation updates. Two render/manifest checks passed, preserving ordinary
 and captioned artifacts and verifying the new messages. WF2 DAG dry-run and scoped Ruff passed.
 
+## WF3 — complete
+
+Realizations, perturbation points, baseline transformations, and retained scenario runs are named separately.
+Ready-collection reuse is explicit; publication summaries appear only after successful publication.
+R messages and lookup counts are translated in the excluded shared console renderer, leaving provider
+source and stochastic seeds unchanged. Pre-DAG completion is distinguished from jobs scheduled in the DAG.
+
+Verification: 404 focused launcher, seed, inventory-boundary and console checks passed after updating three
+minimal launcher plan fixtures and one old slowdown assertion. The owned source-phase DAG dry-run passed.
+The complete 18-file generation inventory was compared against the pre-implementation tree: no hashed
+source changed. Scoped Ruff passed. R code and generation algorithms were not edited.
+
 ## Remaining sequence
 
-WF3 generation and collection publication; WF4 simulation/metrics operation and retained response reporting.
-WF3 source-file hashes participate in
-stochastic identity: its R log strings will be translated in the excluded shared console renderer so wording
-alone cannot re-key generation or change its random sequence.
+WF4 simulation/metrics operation and retained response reporting.

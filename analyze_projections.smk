@@ -46,6 +46,8 @@ CAPTURE_RECORD = require_capture("analyze_projections", config_path)
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
 CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_projections")
+# Presentation-only plotting settings are tracked by renderer params below,
+# independently of scientific configuration identity.
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -59,6 +61,8 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="analyze_projections", declared_sections=CONFIG_PROJECTION,
 )
+from blueearth_cst.shared.plot_config import resolve_annotation
+plot_annotation = resolve_annotation(config)
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -70,9 +74,6 @@ project_cfg = config["project"]
 # is where the v1 `shared_cfg` indirection was buying nothing.
 climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["analyze_projections"]
-captioned_figures = get_config(my_cfg, "captioned_figures", False, optional=True)
-if not isinstance(captioned_figures, bool):
-    raise WorkflowError("workflows.analyze_projections.captioned_figures must be bool")
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
@@ -878,7 +879,6 @@ WF2_TARGETS = {
     "figure_title_manifest": f"{clim_project_dir}/_engine/figure_titles.json",
     "figure_captions": FIGURE_CAPTIONS_MD,
     "figure_manifest": FIGURE_CAPTIONS_JSON,
-    **({"captioned_figures": f"{clim_project_dir}/plots/captioned"} if captioned_figures else {}),
     # ADR 0003 §8. The vector rule has NO WF2 consumer yet (§10), so a target
     # entry is what makes it reachable at all — an undeclared leaf is simply
     # never scheduled. One representative schedules the whole multi-output rule,
@@ -1277,14 +1277,13 @@ rule plot_climate_projections:
         record = ANALYSIS_OUTPUTS["analysis_record"],
     params:
         scenarios = scenarios,
-        captioned_figures = captioned_figures,
+        annotation = plot_annotation,
     output:
         folders = [directory(path) for path in WF2_SUITE_PATHS.values()],
         titles_md = f"{clim_project_dir}/plots/figure_titles.md",
         titles_json = f"{clim_project_dir}/_engine/figure_titles.json",
         captions_md = FIGURE_CAPTIONS_MD,
         captions_json = FIGURE_CAPTIONS_JSON,
-        captioned = [directory(f"{clim_project_dir}/plots/captioned")] if captioned_figures else [],
     threads: 1
     resources:
         mem_mb = 1024,

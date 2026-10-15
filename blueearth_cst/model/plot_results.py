@@ -202,6 +202,7 @@ def analyse_wflow_historical(
     gauges_locs: Union[Path, str] = None,
     location_registry: Union[Path, str] = None,
     subbasin_plots: bool = False,
+    annotation: str = "none",
 ):
     """
     Analyse and plot wflow model performance for historical run.
@@ -388,6 +389,7 @@ def analyse_wflow_historical(
             Folder_plots,
             cell_counts=subcatchment_cell_counts(mod.staticmaps.data),
             subbasin_plots=subbasin_plots,
+            annotation=annotation,
             warmup_excluded=warmup_excluded,
         )
         plt.close()
@@ -468,6 +470,7 @@ def analyse_wflow_historical(
             metrics=metrics,
             signatures=do_signatures and qobs_i is not None,
             log=_log,
+            annotation=annotation,
         )
         plt.close("all")
 
@@ -498,6 +501,7 @@ if __name__ == "__main__":
                 gauges_locs=getattr(sm.input, "output_locations", None),
                 location_registry=sm.input.location_registry,
                 subbasin_plots=sm.params.subbasin_plots,
+                annotation=getattr(sm.params, "annotation", "none"),
                 # declared only on the chirps/chirps_global branch (ext2-1)
             )
     else:

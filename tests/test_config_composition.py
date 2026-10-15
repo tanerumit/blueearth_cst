@@ -125,6 +125,39 @@ MINIMAL_T1_SECTIONS: dict = {
 }
 
 
+def test_plotting_is_project_owned_and_preserved(tmp_path):
+    sections = {**MINIMAL_T1_SECTIONS, "plotting": {"annotation": "title"}}
+    path = write_split(tmp_path, sections=sections, bodies={"build_model": {}})
+    config = cc.load_composed_config(path)
+    assert config["plotting"] == {"annotation": "title"}
+
+
+@pytest.mark.parametrize("key", ["plotting", "annotation"])
+def test_plotting_cannot_be_declared_in_workflow_file(tmp_path, key):
+    path = write_split(tmp_path, bodies={"build_model": {key: "title"}})
+    with pytest.raises(ValueError, match=key):
+        cc.load_composed_config(path)
+
+
+def test_invalid_annotation_is_refused_during_composition(tmp_path):
+    path = write_split(tmp_path, sections={"plotting": {"annotation": "clean"}})
+    with pytest.raises(ValueError, match="plotting.annotation"):
+        cc.load_composed_config(path)
+
+
+@pytest.mark.parametrize(
+    "owner,body",
+    [
+        ("analyze_climate", {"diagnostics": {"captioned_figures": True}}),
+        ("analyze_projections", {"captioned_figures": False}),
+    ],
+)
+def test_old_caption_switch_names_project_replacement(tmp_path, owner, body):
+    path = write_split(tmp_path, bodies={owner: body})
+    with pytest.raises(ValueError, match="plotting.annotation: caption"):
+        cc.load_composed_config(path)
+
+
 def write_split(
     directory: Path,
     stem: str = "project_config_test",

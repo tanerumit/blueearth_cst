@@ -19,8 +19,9 @@ from blueearth_cst.climate_analysis.diagnostics import (
     monthly_reference_diagnostics,
     sen_trend,
 )
+from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
-from blueearth_cst.plotting.fundamentals import STYLE, add_caption, new_fig
+from blueearth_cst.plotting.fundamentals import STYLE, new_fig
 from blueearth_cst.plotting.prepared_maps import MapFrame, RasterMap, draw_raster_map
 from blueearth_cst.shared.map_reference import (
     drawing_frame,
@@ -224,8 +225,9 @@ def render(
     *,
     map_reference=None,
     map_reference_params=None,
+    annotation="none",
 ):
-    """Export standard PNGs, optional captioned copies, JSON and Markdown."""
+    """Export selected PNG annotations and independent JSON/Markdown inventories."""
     root = Path(paths["root"])
     has_maps = any(form.startswith("map-") for form in paths["figures"])
     arguments = (
@@ -460,20 +462,26 @@ def render(
                 else {}
             )
             validate_current()
-            fig.savefig(filename, dpi=600, facecolor="white", **map_export)
-            captioned = paths["render"].get(f"captioned_{form}")
-            if captioned:
-                Path(captioned).parent.mkdir(parents=True, exist_ok=True)
-                add_caption(fig, text)
-                validate_current()
-                fig.savefig(captioned, dpi=600, facecolor="white", **map_export)
-            plt.close(fig)
-            relative = str(Path(filename).relative_to(root)).replace("\\", "/")
             contributing = (
                 [s for s in sources if results[s]["tclim"] is not None]
                 if form == "temperature"
                 else sources
             )
+            figure_title = title(
+                form, [view.labels[s] for s in contributing], period, support
+            )
+            export_figure(
+                fig,
+                filename,
+                annotation=annotation,
+                title=figure_title,
+                caption=text,
+                dpi=600,
+                facecolor="white",
+                **map_export,
+            )
+            plt.close(fig)
+            relative = str(Path(filename).relative_to(root)).replace("\\", "/")
             records[relative] = {
                 "title": title(
                     form, [view.labels[s] for s in contributing], period, support
@@ -486,11 +494,7 @@ def render(
                 "encoding": form,
                 "methods": metadata["methods"],
                 "availability": availability,
-                "captioned_path": str(Path(captioned).relative_to(root)).replace(
-                    "\\", "/"
-                )
-                if captioned
-                else None,
+                "captioned_path": None,
                 "caveats": [
                     "Not scientifically qualified",
                     "Source agreement is not accuracy",
@@ -513,7 +517,6 @@ def render(
             "figures": records,
             "anomaly_bounds": bounds,
             "produced_paths": list(records)
-            + [r["captioned_path"] for r in records.values() if r["captioned_path"]]
             + [
                 "plots/_engine/figure_titles.json",
                 "plots/figure_titles.md",

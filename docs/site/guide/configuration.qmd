@@ -195,6 +195,28 @@ results in a later workflow, check that they belong to the same basin, climate
 source, model, and settings you intend to use.
 :::
 
+## Plot annotations
+
+Set the presentation of all Python workflow figures in the project file:
+
+```yaml
+plotting:
+  annotation: none   # none | caption | title
+```
+
+`none` preserves the default appearance. `caption` adds the figure caption below the image;
+`title` adds its title above. Axis labels, legends and panel labels remain in all modes.
+R/weathergenr figures keep their own settings. The selected mode uses the existing PNG paths;
+separate title and caption inventories remain available in every mode.
+
+The setting is optional and defaults to `none`. It belongs in the project file, not a workflow file.
+Changing it schedules affected plotting jobs without changing scenario or simulation identity.
+WF1 evaluation also refreshes the metrics written by its combined evaluation/plotting job.
+
+The former WF0 `diagnostics.captioned_figures` and WF2 `captioned_figures` settings are retired.
+Remove them and set `plotting.annotation: caption` in the project file to embed captions at the
+ordinary plot paths. Existing files under `plots/captioned/` are left in place and are no longer targeted.
+
 ## Where the other configuration lives
 
 | Directory | What it is | Do you edit it? |

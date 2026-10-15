@@ -1013,7 +1013,9 @@ def warning_count():
         return None
 
 
-def save_figure(path, module="plot", fig=None, **kwargs):
+def save_figure(
+    path, module="plot", fig=None, *, annotation="none", title="", caption="", **kwargs
+):
     """Save a matplotlib figure to ``path`` and announce it as part of a bundle.
 
     Centralizes the "write a figure + log one line" pattern for the plotting
@@ -1070,7 +1072,9 @@ def save_figure(path, module="plot", fig=None, **kwargs):
         if parent:
             os.makedirs(parent, exist_ok=True)
         fig = plt.gcf()
-    export_figure(fig, path, **kwargs)
+    export_figure(
+        fig, path, annotation=annotation, title=title, caption=caption, **kwargs
+    )
     # Grouped by ABSOLUTE directory, so two callers spelling one directory
     # differently (relative vs absolute, `./plots` vs `plots`) still group. The
     # row is printed from this spelling and relativized by the tee like any

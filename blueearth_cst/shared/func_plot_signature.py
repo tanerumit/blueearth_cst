@@ -251,6 +251,7 @@ def plot_basavg(
     cell_counts=None,
     subbasin_plots=False,
     warmup_excluded=False,
+    annotation="none",
 ):
     """Draw weighted basin annual/seasonal summaries and optional individual plots.
 
@@ -378,25 +379,32 @@ def plot_basavg(
                             transform=ax.transAxes,
                         )
                     name = f"wflow_{BASAVG_FIGURE_STEMS[code]}_{kind}_{support}.png"
-                    save_figure(str(folder / name), fig=fig, dpi=plot_style.RASTER_DPI)
+                    record = _basavg_caption(
+                        folder,
+                        name,
+                        meta,
+                        kind,
+                        label,
+                        info,
+                        weights
+                        if support == "basin_avg"
+                        else {
+                            int(support.split("_")[-1]): weights[
+                                int(support.split("_")[-1])
+                            ]
+                        },
+                        warmup_excluded,
+                        trend,
+                    )
+                    save_figure(
+                        str(folder / name),
+                        fig=fig,
+                        annotation=annotation,
+                        title=record["title"],
+                        caption=record["caption"],
+                        dpi=plot_style.RASTER_DPI,
+                    )
                     plt.close(fig)
-                _basavg_caption(
-                    folder,
-                    name,
-                    meta,
-                    kind,
-                    label,
-                    info,
-                    weights
-                    if support == "basin_avg"
-                    else {
-                        int(support.split("_")[-1]): weights[
-                            int(support.split("_")[-1])
-                        ]
-                    },
-                    warmup_excluded,
-                    trend,
-                )
 
 
 def _basavg_caption(
@@ -469,6 +477,7 @@ def _basavg_caption(
         },
     }
     _basavg_write_inventory(folder, inventory)
+    return inventory["figures"][name]
 
 
 def _basavg_write_inventory(folder, inventory):

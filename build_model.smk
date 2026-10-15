@@ -48,6 +48,8 @@ CAPTURE_RECORD = require_capture("build_model", config_path)
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
 CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.build_model")
+# Presentation-only plotting settings are tracked by renderer params below,
+# independently of scientific configuration identity.
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -61,6 +63,8 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.build_mo
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="build_model", declared_sections=CONFIG_PROJECTION,
 )
+from blueearth_cst.shared.plot_config import resolve_annotation
+plot_annotation = resolve_annotation(config)
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input list below does not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -596,8 +600,8 @@ rule delineate_subbasins_and_rivers:
 rule prepare_land_and_soil_maps:
     message: PREPARE_LAND_AND_SOIL_MAPS.banner()
     input:
-        config_snake = config_path,
-        config_workflows = WF_CONFIG_PATHS,
+        # Consumed settings are tracked by basin_config/model_config params.
+        # Raw config inputs would rebuild the model after a presentation edit.
         data_catalogs = DATA_SOURCES,
         hydrography = SPATIAL_UNITS.outputs["hydrography"],
         basins = SPATIAL_UNITS.outputs["basins"],
@@ -1111,6 +1115,7 @@ rule plot_model_evaluation:
            f"{basin_dir}/evaluation/plots/{STATION_PLOT_DIRNAME}"
        ),
    params:
+       annotation = plot_annotation,
        project_dir = f"{project_dir}",
        # The model root is OWNED BY THE RULE, not rebuilt inside the script.
        # plot_results.py used to derive `{project_dir}/hydrology_model` itself,
@@ -1186,6 +1191,8 @@ rule plot_basin_map:
         # carries the figure everywhere it is used.
         titles_md = f"{spatial_dir}/plots/figure_titles.md",
         titles_json = f"{spatial_dir}/plots/_engine/figure_titles.json",
+        captions_md = f"{spatial_dir}/plots/figure_captions.md",
+        captions_json = f"{spatial_dir}/plots/_engine/figure_captions.json",
         basin_png = f"{spatial_dir}/plots/elevation_basin.png",
         # From the registry the plotter iterates, not restated here — the same
         # contract rule 1.12 has with climate_figures.figure_names(). Only the
@@ -1196,6 +1203,7 @@ rule plot_basin_map:
         # See SpatialFigure.guaranteed.
         spatial_figures = figure_paths(f"{spatial_dir}/plots"),
     params:
+        annotation = plot_annotation,
         spatial_dir = f"{spatial_dir}",
     log:
         PLOT_BASIN_MAP.log(),
@@ -1249,6 +1257,7 @@ rule plot_model_forcing:
         captions_md = f"{FORCING_PLOTS_DIR}/figure_captions.md",
         captions_json = f"{FORCING_PLOTS_DIR}/_engine/figure_captions.json",
     params:
+        annotation = plot_annotation,
         project_dir = f"{project_dir}",
         # Rule-owned model root; see rule 1.15's note.
         model_dir = basin_dir,

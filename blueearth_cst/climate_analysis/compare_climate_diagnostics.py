@@ -146,7 +146,14 @@ def run(sm):
         "\n".join(lines) + "\n", encoding="utf-8"
     )
     write_tables(paths, tables, settings, m0, period, lineage)
-    render(paths, settings, m0, sources, list(sm.params.pooled_roots))
+    render(
+        paths,
+        settings,
+        m0,
+        sources,
+        list(sm.params.pooled_roots),
+        annotation=getattr(sm.params, "annotation", "none"),
+    )
     if settings["subbasin_figures"]:
         from blueearth_cst.climate_analysis.diagnostic_subbasins import render_subbasins
 

@@ -187,9 +187,7 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
     from blueearth_cst.climate_analysis.diagnostic_subbasins import render_subbasins
     from blueearth_cst.climate_analysis.diagnostic_tables import write_json
 
-    settings = parse_settings(
-        {"captioned_figures": True}, {"start": 2000, "end": 2016}, ["era5", "chirps"]
-    )
+    settings = parse_settings({}, {"start": 2000, "end": 2016}, ["era5", "chirps"])
     settings["subbasin_figures"] = True
     folders = []
     idx = pd.date_range("2000-01-01", "2016-12-31")
@@ -224,11 +222,12 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
         )
         output = SimpleNamespace(
             subbasin_figures=str(root / "plots" / "subbasins"),
-            captioned_subbasins=str(root / "plots" / "captioned" / "subbasins"),
             subbasin_tables=str(root / "tables" / "subbasins"),
         )
         sm = SimpleNamespace(
-            params=SimpleNamespace(subbasin_table_dirs=folders[: len(sources)], m0=1),
+            params=SimpleNamespace(
+                subbasin_table_dirs=folders[: len(sources)], m0=1, annotation="caption"
+            ),
             output=output,
         )
         render_subbasins(sm, settings, sources)
@@ -239,7 +238,7 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
         )["figures"]
         assert len(records) == (3 if len(sources) == 1 else 2)
         assert all(
-            (root / path).is_file() and (root / r["captioned_path"]).is_file()
+            (root / path).is_file() and r["captioned_path"] is None
             for path, r in records.items()
         )
         assert (

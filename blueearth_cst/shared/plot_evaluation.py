@@ -335,7 +335,7 @@ def wettest_and_driest_year(simulated):
     return int(annual.idxmax().values), int(annual.idxmin().values)
 
 
-def _save(fig, plot_dir, stem):
+def _save(fig, plot_dir, stem, annotation="none", record=None):
     """Write one sheet and return its path.
 
     PNG only since 2026-08-10 (owner's call, applied across the deliverable).
@@ -349,7 +349,16 @@ def _save(fig, plot_dir, stem):
     import matplotlib.pyplot as plt
 
     png = os.path.join(str(plot_dir), f"{stem}.png")
-    save_figure(png, fig=fig, dpi=plot_style.RASTER_DPI, metadata={"Software": None})
+    record = record or {}
+    save_figure(
+        png,
+        fig=fig,
+        annotation=annotation,
+        title=record.get("title", ""),
+        caption=record.get("caption", ""),
+        dpi=plot_style.RASTER_DPI,
+        metadata={"Software": None},
+    )
     plt.close(fig)
     return png
 
@@ -359,7 +368,9 @@ def _save(fig, plot_dir, stem):
 # ===========================================================================
 
 
-def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
+def plot_hydrograph(
+    simulated, station, plot_dir, observed=None, caveat=None, *, annotation="none"
+):
     """What the model produces: daily, annual, seasonal, and both FDCs.
 
     The one sheet drawn for EVERY station on every run — every panel is
@@ -450,8 +461,10 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
         artists.inside_legend(fig, ax_daily, handles, lines=ax_daily.lines)
         # Finalize layout after the adaptive legend chooses its corner.
         fig.canvas.draw()
-        filename = _save(fig, plot_dir, f"hydrograph_{station.wflow_id}")
-    _hydrograph_caption(prepared, station, plot_dir, caveat)
+        record = _hydrograph_caption(prepared, station, plot_dir, caveat)
+        filename = _save(
+            fig, plot_dir, f"hydrograph_{station.wflow_id}", annotation, record
+        )
     return filename
 
 
@@ -754,7 +767,7 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
         caption += " No overlapping comparison span."
     caption += " " + " ".join(details)
     engine = root / "_engine"
-    engine.mkdir(exist_ok=True)
+    engine.mkdir(parents=True, exist_ok=True)
     path = engine / "figure_captions.json"
     inventory = (
         json.loads(path.read_text(encoding="utf-8"))
@@ -806,8 +819,12 @@ def _hydrograph_caption(prepared, station, plot_dir, caveat):
         encoding="utf-8",
     )
 
+    return inventory["figures"][name]
 
-def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
+
+def plot_extremes(
+    simulated, observed, station, plot_dir, kind, caveat=None, *, annotation="none"
+):
     """One end of the distribution: frequency, year-by-year, and one year.
 
     ``kind`` is ``"peaks"`` or ``"lows"``. The two sheets are deliberately
@@ -957,8 +974,8 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
             # Leave room for c) only when the less occupied corner is on the left.
             legend.set_bbox_to_anchor((0, 0, 1, 0.88))
         stem = f"signatures_{'peaks' if peaks else 'lows'}_{station.wflow_id}"
-        _extremes_caption(simulated, station, plot_dir, kind, year, caveat)
-        return _save(fig, plot_dir, stem)
+        record = _extremes_caption(simulated, station, plot_dir, kind, year, caveat)
+        return _save(fig, plot_dir, stem, annotation, record)
 
 
 def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
@@ -1024,6 +1041,8 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
         + "\n",
         encoding="utf-8",
     )
+
+    return inventory["figures"][f"signatures_{kind}_{station.wflow_id}.png"]
 
 
 #: Row positions of the metrics table, in axes fractions: the group band, the
@@ -1225,7 +1244,9 @@ def _performance_r_squared(pairs):
     return float(np.corrcoef(valid["observed"], valid["simulated"])[0, 1] ** 2)
 
 
-def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=None):
+def plot_performance(
+    simulated, observed, station, plot_dir, metrics, caveat=None, *, annotation="none"
+):
     """Paired-day scatter and cumulative volume, with the supplied CSV metrics."""
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
@@ -1362,8 +1383,10 @@ def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=Non
             )
         score = _performance_r_squared(pairs)
         support["squared_pearson_r"] = float(score) if np.isfinite(score) else None
-        _performance_caption(support, station, plot_dir, caveat)
-        return _save(fig, plot_dir, f"performance_{station.wflow_id}")
+        record = _performance_caption(support, station, plot_dir, caveat)
+        return _save(
+            fig, plot_dir, f"performance_{station.wflow_id}", annotation, record
+        )
 
 
 def _performance_caption(support, station, plot_dir, caveat):
@@ -1383,7 +1406,7 @@ def _performance_caption(support, station, plot_dir, caveat):
         + (f"{caveat}" if caveat else "")
     )
     engine = root / "_engine"
-    engine.mkdir(exist_ok=True)
+    engine.mkdir(parents=True, exist_ok=True)
     path = engine / "figure_captions.json"
     inventory = (
         json.loads(path.read_text(encoding="utf-8"))
@@ -1433,6 +1456,8 @@ def _performance_caption(support, station, plot_dir, caveat):
         encoding="utf-8",
     )
 
+    return inventory["figures"][f"performance_{station.wflow_id}.png"]
+
 
 def r_squared(observed, simulated):
     """Coefficient of determination between two aligned series.
@@ -1462,6 +1487,7 @@ def plot_station_evaluation(
     signatures=False,
     caveat=None,
     log=print,
+    annotation="none",
 ):
     """Every sheet this station's data supports, in reading order.
 
@@ -1473,7 +1499,11 @@ def plot_station_evaluation(
     A sheet that cannot be drawn is REPORTED, never silently absent: "there are
     no observations" and "the figure failed" look identical in an empty folder.
     """
-    written = [plot_hydrograph(simulated, station, plot_dir, observed, caveat)]
+    written = [
+        plot_hydrograph(
+            simulated, station, plot_dir, observed, caveat, annotation=annotation
+        )
+    ]
     if observed is None:
         log(
             f"wflow_id {station.wflow_id}: simulation hydrograph written; observation-based evaluation omitted because no observations are available"
@@ -1481,12 +1511,28 @@ def plot_station_evaluation(
         return written
     if metrics is not None:
         written.append(
-            plot_performance(simulated, observed, station, plot_dir, metrics, caveat)
+            plot_performance(
+                simulated,
+                observed,
+                station,
+                plot_dir,
+                metrics,
+                caveat,
+                annotation=annotation,
+            )
         )
     if signatures:
         for kind in ("peaks", "lows"):
             written.append(
-                plot_extremes(simulated, observed, station, plot_dir, kind, caveat)
+                plot_extremes(
+                    simulated,
+                    observed,
+                    station,
+                    plot_dir,
+                    kind,
+                    caveat,
+                    annotation=annotation,
+                )
             )
     else:
         log(

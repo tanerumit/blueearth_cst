@@ -26,6 +26,7 @@ def plot_forcing(
     anchor: str = DEFAULT_WATER_YEAR_ANCHOR,
     map_reference: Optional[Union[str, Path]] = None,
     map_reference_params: Optional[dict] = None,
+    annotation: str = "none",
 ):
     """Write the canonical climate figure set for the wflow forcing.
 
@@ -114,6 +115,7 @@ def plot_forcing(
             m0,
             reference=reference,
             validate_current=validate_current,
+            annotation=annotation,
         )
 
 
@@ -141,4 +143,5 @@ if __name__ == "__main__":
                 anchor=water_year_end_anchor(sm.params.water_year_start),
                 map_reference=sm.input.map_reference,
                 map_reference_params=dict(sm.params.map_reference_params),
+                annotation=getattr(sm.params, "annotation", "none"),
             )

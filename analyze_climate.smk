@@ -47,6 +47,8 @@ CAPTURE_RECORD = require_capture("analyze_climate", config_path)
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
 CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_climate")
+# Presentation-only plotting settings are tracked by renderer params below,
+# independently of scientific configuration identity.
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -60,6 +62,8 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="analyze_climate", declared_sections=CONFIG_PROJECTION,
 )
+from blueearth_cst.shared.plot_config import resolve_annotation
+plot_annotation = resolve_annotation(config)
 CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
@@ -458,8 +462,6 @@ for _source in CANDIDATE_SOURCES:
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
         _render_inputs["subbasin_tables"] = f"{_diag['root']}/tables/subbasins"
         _render_outputs["subbasin_figures"] = directory(f"{_diag['root']}/plots/subbasins")
-        if DIAGNOSTIC_SETTINGS["captioned_figures"]:
-            _render_outputs["captioned_subbasins"] = directory(f"{_diag['root']}/plots/captioned/subbasins")
 
     rule:
         name: PLOT_DIAGNOSTICS.job_name(_source)
@@ -467,6 +469,7 @@ for _source in CANDIDATE_SOURCES:
         input: **_render_inputs,
         output: **_render_outputs,
         params:
+            annotation=plot_annotation,
             settings=DIAGNOSTIC_SETTINGS, source=_source, store_dir=_spec.store_dir,
             m0=DIAGNOSTIC_M0, pooled_roots=POOLED_ROOTS,
             subbasin_table_dirs=[f"{_diag['root']}/tables/subbasins"],
@@ -496,8 +499,6 @@ if COMPARISON_DIAGNOSTICS:
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
         _comparison_outputs["subbasin_figures"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/plots/subbasins")
         _comparison_outputs["subbasin_tables"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/tables/subbasins")
-        if DIAGNOSTIC_SETTINGS["captioned_figures"]:
-            _comparison_outputs["captioned_subbasins"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/plots/captioned/subbasins")
         _comparison_inputs["subbasin_tables"] = [f"{spec['root']}/tables/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
 
     rule plot_climate_comparison:
@@ -505,6 +506,7 @@ if COMPARISON_DIAGNOSTICS:
         input: **_comparison_inputs,
         output: **_comparison_outputs,
         params:
+            annotation=plot_annotation,
             settings=DIAGNOSTIC_SETTINGS, sources=CANDIDATE_SOURCES,
             comparison_dir=COMPARISON_DIR, m0=DIAGNOSTIC_M0,
             pooled_roots=POOLED_ROOTS,

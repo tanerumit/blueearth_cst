@@ -25,6 +25,69 @@ def _differences(left, right):
     ]
 
 
+def _resolved_annotation_params(rule):
+    """Resolve WF2's series-key lambdas instead of comparing function addresses."""
+    values = []
+    for value in rule.params:
+        if callable(value):
+            series = value.__globals__["SERIES"]
+            values.append(
+                {key: value(SimpleNamespace(series_key=key)) for key in sorted(series)}
+            )
+        else:
+            values.append(value)
+    return values
+
+
+@pytest.mark.parametrize(
+    "snakefile,plot_rules",
+    [
+        (
+            "analyze_climate.smk",
+            {
+                "plot_climate_diagnostics_era5",
+                "plot_climate_diagnostics_chirps",
+                "plot_climate_comparison",
+            },
+        ),
+        (
+            "build_model.smk",
+            {
+                "plot_basin_map",
+                "plot_model_forcing",
+                "plot_model_evaluation",
+            },
+        ),
+        ("analyze_projections.smk", {"plot_climate_projections"}),
+    ],
+)
+def test_annotation_changes_only_plot_rule_parameters(tmp_path, snakefile, plot_rules):
+    """Presentation edits keep every upstream input/output/parameter unchanged."""
+    cfg = load_composed_config(CONFIG_FN)
+    cfg["climate"]["sources"] = ["era5", "chirps"]
+    path = write_config(tmp_path, cfg)
+    original = _parse_workflow(snakefile, path)
+    originals = {rule.name: rule for rule in original.rules}
+    for mode in ("caption", "title"):
+        cfg["plotting"] = {"annotation": mode}
+        write_config(tmp_path, cfg)
+        changed = _parse_workflow(snakefile, path)
+        changed_rules = set()
+        for rule in changed.rules:
+            differences = _differences(
+                (original, originals[rule.name]), (changed, rule)
+            )
+            if "params" in differences and _resolved_annotation_params(
+                originals[rule.name]
+            ) == _resolved_annotation_params(rule):
+                differences.remove("params")
+            if differences:
+                assert differences == ["params"], (rule.name, differences)
+                assert rule.params.annotation == mode
+                changed_rules.add(rule.name)
+        assert changed_rules == plot_rules
+
+
 @pytest.mark.parametrize("source", ["era5", "chirps", "chirps_global"])
 def test_wf0_exclusively_owns_source_diagnostics_at_store_root(tmp_path, source):
     cfg = load_composed_config(CONFIG_FN)

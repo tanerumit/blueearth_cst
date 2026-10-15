@@ -78,7 +78,10 @@ def test_prepare_spatial_maps_declares_the_raster_file_contract():
     ):
         assert consumed in block
     assert "directory(" not in block
-    assert "config_snake = config_path" in block
+    assert "config_snake =" not in block
+    assert "config_workflows =" not in block
+    assert "basin_config = basin_cfg" in block
+    assert "model_config = my_cfg" in block
     assert "data_catalogs = DATA_SOURCES" in block
     assert "log:" in block and "benchmark:" in block
 

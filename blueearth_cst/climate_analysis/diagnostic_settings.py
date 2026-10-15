@@ -9,7 +9,6 @@ DEFAULTS = {
     "max_missing_days_year": 15,
     "wet_day_threshold_mm": 1.0,
     "spi_distribution": "gamma",
-    "captioned_figures": False,
     "pt_temperature_source": "era5",
 }
 
@@ -47,9 +46,6 @@ def parse_settings(block, window, sources):
         raise ValueError("wet_day_threshold_mm must be finite and positive")
     if settings["spi_distribution"] not in {"gamma", "pearson3"}:
         raise ValueError("spi_distribution must be gamma or pearson3")
-    for key in ("captioned_figures",):
-        if type(settings[key]) is not bool:
-            raise ValueError(f"{key} requires a boolean")
     carrier = settings["pt_temperature_source"]
     if "pt_temperature_source" in block and (
         carrier not in sources or not carries_temp(carrier)

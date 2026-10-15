@@ -907,8 +907,9 @@ cloud needs at least two distinct windows with paired changes. No scalar inputs 
 
 **Writes.** Owned directories `<proj>/plots/full_period/` and `period_<start>_<end>/`, plus
 `plots/figure_captions.md` and `<proj>/_engine/figure_captions.json`. Ordinary PNG paths and manifest keys
-form a bijection, with manifest paths relative to `<proj>/plots/`. Optional `captioned_figures: true`
-adds owned `captioned/` copies, identified by manifest `captioned_path` metadata.
+form a bijection, with manifest paths relative to `<proj>/plots/`. Project-level
+`plotting.annotation: none | caption | title` selects the annotation at the ordinary PNG paths;
+there are no separately targeted captioned copies.
 Predecessor `overview/` and `windows/` products are retired; existing files
 are retained but untargeted and listed in the captions.
 

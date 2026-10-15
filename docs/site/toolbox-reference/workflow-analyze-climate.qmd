@@ -59,7 +59,6 @@ the project file. Start from `config/templates/project_config.analyze_climate.te
 ```yaml
 subbasin_figures: false
 diagnostics:
-  captioned_figures: false
   # Optional overrides; omitted periods resolve from climate.window.
   # reference_period: {start: 1991, end: 2020}
   # comparison_period: {start: 1991, end: 2020}

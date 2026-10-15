@@ -258,7 +258,7 @@ def test_signature_context_retains_full_record_and_highlights_selected_year(
     wet, dry = wettest_and_driest_year(simulated)
     year = wet if kind == "peaks" else dry
 
-    def inspect(fig, plot_dir, stem):
+    def inspect(fig, plot_dir, stem, annotation="none", record=None):
         ax = fig.axes[2]
         for line, expected in zip(ax.lines, (observed, simulated), strict=True):
             np.testing.assert_array_equal(line.get_ydata(), expected.values)

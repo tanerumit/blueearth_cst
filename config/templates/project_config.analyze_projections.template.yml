@@ -61,4 +61,3 @@ future_windows:
 # -----------------------------------------------------------------------------
 
 #stats: [mean, median, std]               # ensemble statistics to report
-#captioned_figures: false    # also write plots/captioned/<folder>/<name>.png with the caption below the image

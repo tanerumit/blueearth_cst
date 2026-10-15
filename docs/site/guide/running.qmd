@@ -121,7 +121,8 @@ historical simulation. Use `--notemp` on the original model run to retain it.
 Currently, WF0 comparison recomputes its statistics from retained daily series, WF1 forcing recomputes
 plotting summaries, and WF1 evaluation recomputes metrics. These are combined calculation/rendering
 steps. Other listed targets reuse prepared products. Title and caption inventories are refreshed with
-the figures; this procedure does not add independent title/caption rendering switches.
+the figures. Set project-level `plotting.annotation` to `none`, `caption` or `title` to choose
+the annotation at the existing plot paths; changing this parameter schedules the plotting jobs.
 
 ## Run one workflow
 

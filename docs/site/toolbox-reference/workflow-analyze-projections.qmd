@@ -107,7 +107,7 @@ at least two distinct windows have paired changes. Missing products carry reason
 
 `plots/figure_captions.md` describes every produced figure and lists unavailable and retired products;
 `_engine/figure_captions.json` maps ordinary PNG paths to captions and counts. Set
-`captioned_figures: true` in the workflow YAML for copies under `plots/captioned/`, recorded by each
-manifest entry's `captioned_path`. Spread describes the ensemble, not a confidence interval; sign
+`plotting.annotation: caption` or `title` in the project YAML to annotate those PNGs in place.
+The default `none` leaves them unannotated. Spread describes the ensemble, not a confidence interval; sign
 counts are diagnostic agreement, not likelihood. The predecessor `plots/overview/` and `plots/windows/`
 products are retired. Existing files there are left in place but no longer targeted.

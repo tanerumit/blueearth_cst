@@ -227,14 +227,24 @@ def colourbar(
     )
 
 
-def add_caption(fig: Figure, text: str) -> None:
-    """Add a caption below finalized artists without changing their physical size.
+def add_caption(
+    fig: Figure,
+    text: str,
+    *,
+    above: bool = False,
+    crop: bool = False,
+    pad_inches: float = 0,
+) -> None:
+    """Add a caption below, or title above, without changing artists' physical size.
 
     Call after drawing the ordinary product and before its final captioned export.
     Layout and axes locators are frozen at the configured save DPI: the caption
     extends the canvas rather than asking constrained layout to resize the panels.
     Export at that same DPI; further figure resizing or artist edits need a new
     ordinary figure rather than rerunning layout on this finalized copy.
+    ``above=True`` uses the label font and a band above the original canvas.
+    ``crop=True`` freezes the tight artist bounds plus ``pad_inches`` before
+    adding the band; export that finalized canvas without another tight crop.
     """
     original_dpi = fig.dpi
     try:
@@ -243,7 +253,13 @@ def add_caption(fig: Figure, text: str) -> None:
             fig.set_dpi(export_dpi)
         fig.canvas.draw()
         renderer = fig.canvas.get_renderer()
-        width, height = fig.get_size_inches()
+        old_width, old_height = fig.get_size_inches()
+        bounds = (
+            fig.get_tightbbox(renderer).padded(pad_inches)
+            if crop
+            else Bbox.from_bounds(0, 0, old_width, old_height)
+        )
+        width, height = bounds.width, bounds.height
         axes = [(ax, ax.get_position().frozen()) for ax in fig.axes]
         legends = [*fig.legends]
         legends.extend(ax.get_legend() for ax in fig.axes if ax.get_legend())
@@ -256,16 +272,20 @@ def add_caption(fig: Figure, text: str) -> None:
             )
             for legend in legends
         ]
-        left = min((box.x0 for _, box in axes), default=0.04)
-        right = max((box.x1 for _, box in axes), default=0.96)
+        left = (
+            min((box.x0 for _, box in axes), default=0.04) * old_width - bounds.x0
+        ) / width
+        right = (
+            max((box.x1 for _, box in axes), default=0.96) * old_width - bounds.x0
+        ) / width
         caption = fig.text(
             left,
             0,
             "",
             ha="left",
             va="bottom",
-            fontsize=FS_NOTE,
-            color=MUTED,
+            fontsize=FS_LABEL if above else FS_NOTE,
+            color=INK if above else MUTED,
             linespacing=1.3,
         )
         available = (right - left) * width * fig.dpi
@@ -295,15 +315,23 @@ def add_caption(fig: Figure, text: str) -> None:
         fig.set_size_inches(width, height + extra)
         mapping = (
             Affine2D()
-            .scale(1, height / (height + extra))
-            .translate(0, extra / (height + extra))
+            .scale(old_width / width, old_height / (height + extra))
+            .translate(
+                -bounds.x0 / width,
+                (-bounds.y0 + (0 if above else extra)) / (height + extra),
+            )
         )
         for ax, box in axes:
             ax.set_axes_locator(None)
             ax.set_position(mapping.transform_bbox(box))
         for legend, box in anchors:
             legend.set_bbox_to_anchor(
-                Bbox.from_bounds(box.x0, box.y0 + extra, box.width, box.height),
+                Bbox.from_bounds(
+                    box.x0 - bounds.x0,
+                    box.y0 - bounds.y0 + (0 if above else extra),
+                    box.width,
+                    box.height,
+                ),
                 fig.dpi_scale_trans,
             )
         for artist in fig.get_children():
@@ -319,7 +347,9 @@ def add_caption(fig: Figure, text: str) -> None:
                 artist.set_transform(
                     transform - fig.transFigure + mapping + fig.transFigure
                 )
-        caption.set_position((left, 3 * MM / (height + extra)))
+        caption.set_position(
+            (left, (height + 3 * MM if above else 3 * MM) / (height + extra))
+        )
     finally:
         fig.set_dpi(original_dpi)
 

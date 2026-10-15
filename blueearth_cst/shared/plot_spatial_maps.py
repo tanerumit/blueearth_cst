@@ -71,6 +71,8 @@ annotations are native — and ``tests/test_model_reference.py`` enforces it.
 import os
 from pathlib import Path
 
+from blueearth_cst.plotting.figure_captions import write_figure_captions
+
 # NOTHING HEAVY AT MODULE SCOPE, deliberately. `build_model.smk` imports this
 # module at PARSE time, for `figure_paths` alone -- a pure string function --
 # and every dry-run of WF1 then paid for whatever this block pulled in. It used
@@ -736,7 +738,13 @@ def source_caveat(layer):
 
 
 def plot_spatial_maps(
-    spatial_dir, plot_dir=None, variables=None, dpi=None, formats=("png",)
+    spatial_dir,
+    plot_dir=None,
+    variables=None,
+    dpi=None,
+    formats=("png",),
+    *,
+    annotation="none",
 ):
     """Render the family into ``<spatial_dir>/plots``, returning what it wrote.
 
@@ -838,6 +846,19 @@ def plot_spatial_maps(
             show_key=figure.stem != "subbasins",
             locator=figure.stem == "subbasins",
         )
+        record = {
+            "title": FIGURE_TITLES[figure.stem],
+            "caption": f"{FIGURE_TITLES[figure.stem]}. "
+            "Colors show the mapped values or classes; basin boundaries and supplied rivers and observation locations provide spatial context. "
+            + (source_caveat(layer) or ""),
+        }
+        from blueearth_cst.plotting.fundamentals import add_caption
+
+        if annotation != "none":
+            if annotation not in ("caption", "title"):
+                raise ValueError("annotation must be none, caption, or title")
+            with plt.rc_context({"savefig.dpi": dpi or RASTER_DPI}):
+                add_caption(fig, record[annotation], above=annotation == "title")
         for extension in formats:
             path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")
             # PDF takes no dpi and needs its timestamp scrubbed; PNG takes dpi
@@ -850,6 +871,7 @@ def plot_spatial_maps(
             )
             save_figure(path, fig=fig, **scrub)
             written.append(Path(path))
+            write_figure_captions(plot_dir, {f"{figure.stem}.{extension}": record})
         plt.close(fig)
 
     maps.close()
@@ -881,7 +903,9 @@ def plot_spatial_figure_set(spatial_dir, plot_dir=None, **kwargs):
     """
     from blueearth_cst.shared.plot_map import plot_basin_map_from_spatial
 
-    plot_basin_map_from_spatial(spatial_dir, plot_dir=plot_dir)
+    plot_basin_map_from_spatial(
+        spatial_dir, plot_dir=plot_dir, annotation=kwargs.get("annotation", "none")
+    )
     return plot_spatial_maps(spatial_dir, plot_dir=plot_dir, **kwargs)
 
 
@@ -891,4 +915,7 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
-            plot_spatial_figure_set(spatial_dir=sm.params.spatial_dir)
+            plot_spatial_figure_set(
+                spatial_dir=sm.params.spatial_dir,
+                annotation=getattr(sm.params, "annotation", "none"),
+            )

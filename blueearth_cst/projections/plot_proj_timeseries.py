@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from blueearth_cst.plotting.figure_titles import write_figure_titles
-from blueearth_cst.plotting.fundamentals import STYLE, add_caption
+from blueearth_cst.plotting.fundamentals import STYLE
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
 from blueearth_cst.projections.projection_captions import caption, title
 from blueearth_cst.projections.projection_figures import (
@@ -155,19 +155,11 @@ def render_suite(
     record,
     plots_root,
     *,
-    captioned_figures=False,
+    annotation="none",
     scenarios=None,
     captions_json=None,
 ):
-    """Assert ordinary keys and optional captioned_path metadata bijections.
-
-    Manifest keys identify ordinary figures. Optional copies are identified by
-    each entry's captioned_path, relative to plots_root, rather than extra keys.
-    The manifest defaults to the output unit's root _engine directory; the
-    workflow supplies its declared captions_json output explicitly.
-    """
-    if not isinstance(captioned_figures, bool):
-        raise TypeError("captioned_figures must be bool")
+    """Render selected annotations and preserve independent figure metadata."""
     root = Path(plots_root)
     references = {tuple(w["reference"]) for w in record["windows"]}
     if len(references) == 1:
@@ -191,8 +183,6 @@ def render_suite(
     ]
     for folder in folders:
         (root / folder).mkdir(parents=True, exist_ok=True)
-    if captioned_figures:
-        (root / "captioned").mkdir(parents=True, exist_ok=True)
     available = tables["availability"]
     expected = {
         (folder, filename)
@@ -230,18 +220,12 @@ def render_suite(
                     root / relative,
                     module="projection_plots",
                     fig=fig,
+                    annotation=annotation,
+                    title=title(row["filename"], record, window_id),
+                    caption=text,
                     dpi=600,
                     facecolor="white",
                 )
-                if captioned_figures:
-                    add_caption(fig, text)
-                    save_figure(
-                        root / "captioned" / relative,
-                        module="projection_plots",
-                        fig=fig,
-                        dpi=600,
-                        facecolor="white",
-                    )
             finally:
                 plt.close(fig)
         manifest[relative] = {
@@ -256,8 +240,6 @@ def render_suite(
                 for h in w.get("horizons", [])
             ],
         }
-        if captioned_figures:
-            manifest[relative]["captioned_path"] = f"captioned/{relative}"
     pngs = {
         str(path.relative_to(root)).replace("\\", "/")
         for folder in folders
@@ -267,16 +249,6 @@ def render_suite(
         raise RuntimeError(
             f"owned PNGs differ from caption manifest: extra={pngs - set(manifest)}, missing={set(manifest) - pngs}"
         )
-    if captioned_figures:
-        copies = {
-            str(path.relative_to(root)).replace("\\", "/")
-            for path in (root / "captioned").rglob("*.png")
-        }
-        declared_copies = {entry["captioned_path"] for entry in manifest.values()}
-        if copies != declared_copies:
-            raise RuntimeError(
-                f"captioned PNGs differ from caption metadata: extra={copies - declared_copies}, missing={declared_copies - copies}"
-            )
     manifest_path = (
         Path(captions_json)
         if captions_json is not None
@@ -290,7 +262,7 @@ def render_suite(
     markdown = [
         "# Projection figure captions",
         "",
-        "Manifest keys identify ordinary figures; captioned_path metadata identifies optional captioned copies.",
+        "Manifest keys identify the rendered figures.",
         "",
     ]
     for relative, item in manifest.items():
@@ -330,7 +302,7 @@ def run(sm):
         tables,
         record,
         root,
-        captioned_figures=sm.params.captioned_figures,
+        annotation=getattr(sm.params, "annotation", "none"),
         scenarios=getattr(sm.params, "scenarios", None),
         captions_json=sm.output.captions_json,
     )

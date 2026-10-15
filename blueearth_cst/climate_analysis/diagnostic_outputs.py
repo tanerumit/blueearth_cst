@@ -85,13 +85,6 @@ def inventory(root, sources, settings, comparison=False):
         "captions_md": str(root / "plots" / "figure_captions.md"),
     }
     render.update({f"figure_{k}": v for k, v in figures.items()})
-    if settings["captioned_figures"]:
-        render.update(
-            {
-                f"captioned_{k}": str(Path(v).parent / "captioned" / Path(v).name)
-                for k, v in figures.items()
-            }
-        )
     return {"root": str(root), "compute": compute, "render": render, "figures": figures}
 
 

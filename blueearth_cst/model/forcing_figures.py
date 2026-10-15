@@ -16,6 +16,7 @@ from blueearth_cst.climate_analysis.diagnostic_render import (
 )
 from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
 from blueearth_cst.plotting import prepared_charts as pc
+from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import MONTH_ABBR, STYLE
 from blueearth_cst.shared.variable_registry import CLIMATE_VARS
@@ -150,6 +151,7 @@ def render_forcing_figures(
     *,
     reference: dict,
     validate_current,
+    annotation: str = "none",
 ) -> list[Path]:
     """Write nine canonical figures using the validated historical reference."""
     validate_current()
@@ -283,20 +285,6 @@ def render_forcing_figures(
                     available = bool(results[variable]["clim"]["mean"].notna().any())
                 name = f"forcing_{variable}_{kind}.png"
                 path = root / name
-                try:
-                    validate_current()
-                    fig.savefig(
-                        path,
-                        dpi=600,
-                        facecolor="white",
-                        **(
-                            {"bbox_inches": "tight", "pad_inches": 2 / 25.4}
-                            if kind == "map"
-                            else {}
-                        ),
-                    )
-                finally:
-                    plt.close(fig)
             caption = (
                 f"{label} in Wflow forcing on the model grid, reporting years {years[0]}–{years[-1]}. {details} "
                 f"Input dates: {input_period[0]}–{input_period[1]}; basin support: {basin_cells} model cells. "
@@ -348,6 +336,25 @@ def render_forcing_figures(
                     records[name]["availability"] = (
                         "unscaled: historical reference unavailable"
                     )
+            try:
+                validate_current()
+                with plt.rc_context(STYLE):
+                    export_figure(
+                        fig,
+                        path,
+                        annotation=annotation,
+                        title=records[name]["title"],
+                        caption=caption,
+                        dpi=600,
+                        facecolor="white",
+                        **(
+                            {"bbox_inches": "tight", "pad_inches": 2 / 25.4}
+                            if kind == "map"
+                            else {}
+                        ),
+                    )
+            finally:
+                plt.close(fig)
             written.append(path)
     validate_current()
     engine = root / "_engine"

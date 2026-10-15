@@ -5,13 +5,17 @@ revisions. Apply relevant defaults across plot types; preserve the explicit exce
 decisions belong here, alongside changes to the plotting code. A style decision does not authorize changing
 the underlying calculation or statistical interpretation.
 
+Descriptions of figures without displayed titles or footers below describe the default `none` mode.
+Selecting `caption` or `title` adds the requested text outside the existing plotting canvas.
+
 ## Output paths
 
 Use `plots/` for generated graphics throughout the toolbox. WF0–WF2 also write readable titles to
 `plots/figure_titles.md` and a `figure_titles.json` inventory beside the corresponding caption JSON.
-Title keys match the caption inventory's ordinary figure keys; optional captioned copies use the same
-title. Each title identifies the figure's subject and relevant source, period or spatial support.
-Titles are retained independently for future rendering controls; this does not enable titles in PNGs.
+Title keys match the caption inventory's ordinary figure keys.
+Each title identifies the figure's subject and relevant source, period or spatial support.
+Project-level `plotting.annotation` selects `none` (default), `caption` or `title` at the ordinary PNG paths.
+Retain title and caption inventories independently of this setting. R/weathergenr figures are excluded.
 Spatial maps and legacy climate figure adapters that have no caption inventory still write title files.
 
 Keep readable captions in
@@ -70,8 +74,8 @@ Unknown experiments retain their literal labels and muted fallback color.
   and plot labels; retain version metadata in source records where relevant.
 - Keep grid lines subtle and partly transparent. Avoid competing with the data or annotations.
 - Always label multiple plotting panels `a)`, `b)`, etc.; explain panel contents in the caption.
-- Do not display figure titles inside or above the plotting area. Identify the variable, spatial
-  support and plot type in the caption and review-page heading. Preserve explicitly agreed panel labels.
+- Default to no displayed figure title. With `plotting.annotation: title`, add the title above the figure
+  without resizing its plotting area. Preserve explicitly agreed panel labels in every annotation mode.
 
 ## Legends, labels and points
 

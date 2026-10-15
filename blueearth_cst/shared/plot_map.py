@@ -37,7 +37,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import xarray as xr
 
-from blueearth_cst.plotting.figure_titles import write_figure_titles
+from blueearth_cst.plotting.figure_captions import write_figure_captions
 from blueearth_cst.shared.cartographic_map import (
     ELEVATION_LABEL,
     RASTER_DPI,
@@ -236,7 +236,7 @@ def load_spatial_basin_layers(spatial_dir):
     return elevation, layers
 
 
-def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
+def plot_basin_map_from_spatial(spatial_dir, plot_dir=None, *, annotation="none"):
     """Render elevation_basin.{pdf,png} from the shared spatial products.
 
     Reading the foundation rather than the model retired this rule's HDF5 race
@@ -276,21 +276,26 @@ def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
     # it; at 600 dpi and 180 mm the PNG carries the figure everywhere it is
     # actually used. Dropping it also halves this rule's render time, since the
     # figure was serialised twice.
+    record = {
+        "title": "Basin elevation and drainage network",
+        "caption": "Elevation within the basin, with basin and subbasin boundaries, rivers and supplied observation locations. "
+        + (source_caveat(elevation) or ""),
+    }
     save_figure(
         os.path.join(str(plot_dir), "elevation_basin.png"),
         fig=fig,
+        annotation=annotation,
+        **record,
         dpi=RASTER_DPI,
         metadata={"Software": None},
     )
-    write_figure_titles(
-        plot_dir,
-        {"elevation_basin.png": {"title": "Basin elevation and drainage network"}},
-        merge=True,
-    )
     plt.close(fig)
+    write_figure_captions(plot_dir, {"elevation_basin.png": record})
 
 
-def plot_basin_map_from_model(project_dir, gauges_fn, plot_dir=None, model_dir=None):
+def plot_basin_map_from_model(
+    project_dir, gauges_fn, plot_dir=None, model_dir=None, *, annotation="none"
+):
     """Render elevation_basin.{pdf,png} for a wflow model on disk.
 
     The file-reading half of the figure: it resolves a model directory into the
@@ -341,20 +346,22 @@ def plot_basin_map_from_model(project_dir, gauges_fn, plot_dir=None, model_dir=N
     #
     # PNG only, matching `plot_basin_map_from_spatial` above — the two write the
     # same figure and should not disagree about its formats.
+    record = {
+        "title": "Model basin elevation and river network",
+        "caption": "Elevation on the model grid, with basin and subbasin boundaries, river network, and supplied gauges, outlets and water bodies.",
+    }
     save_figure(
         os.path.join(plot_dir, "elevation_basin.png"),
         fig=fig,
+        annotation=annotation,
+        **record,
         dpi=RASTER_DPI,
         # Same reason: the default embeds the matplotlib version, which
         # would move the baseline fingerprint on every env bump.
         metadata={"Software": None},
     )
-    write_figure_titles(
-        plot_dir,
-        {"elevation_basin.png": {"title": "Basin elevation and drainage network"}},
-        merge=True,
-    )
     plt.close(fig)
+    write_figure_captions(plot_dir, {"elevation_basin.png": record})
 
 
 if __name__ == "__main__":
@@ -363,4 +370,7 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
-            plot_basin_map_from_spatial(spatial_dir=sm.params.spatial_dir)
+            plot_basin_map_from_spatial(
+                spatial_dir=sm.params.spatial_dir,
+                annotation=getattr(sm.params, "annotation", "none"),
+            )

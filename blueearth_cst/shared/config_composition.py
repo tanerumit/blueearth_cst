@@ -74,6 +74,8 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 import yaml
 
+from blueearth_cst.shared.plot_config import resolve_annotation
+
 if TYPE_CHECKING:
     from blueearth_cst.shared.workflow_config_snapshot import CapturedSource
 
@@ -129,6 +131,7 @@ T1_SHARED_SECTIONS: dict[str, tuple[str, ...]] = {
     "basin": ("region", "resolution", "output_locations", "delineation", "sources"),
     "climate": ("sources", "selected", "window", "water_year_start", "map_reference"),
     "model": ("outvars",),
+    "plotting": ("annotation",),
 }
 
 #: T1's top level, closed (D-9.5). Closing it is what makes the migration
@@ -1033,6 +1036,7 @@ def compose_config(
     # contents went. See `_check_retired_keys`.
     _check_retired_keys(t1, {})
     _check_t1_top_level(t1)
+    resolve_annotation(t1)
 
     t1_dir = os.path.dirname(os.path.abspath(os.fspath(t1_path))) or os.getcwd()
     for section in T1_SHARED_SECTIONS:
@@ -1106,6 +1110,16 @@ def compose_config(
     # of it having moved, and a half-migrated WF3 file would otherwise report a
     # missing `trajectory:` for an axis still spelled `stress_test:`.
     bodies = {probe.name: probe.body for probe in probes if probe.status == "ok"}
+    for owner, body in bodies.items():
+        diagnostics = body.get("diagnostics")
+        if "captioned_figures" in body or (
+            isinstance(diagnostics, Mapping) and "captioned_figures" in diagnostics
+        ):
+            raise ValueError(
+                f"{owner} file: captioned_figures is retired; set "
+                "plotting.annotation: caption in the project file instead "
+                "(or none for unannotated figures)."
+            )
     _check_retired_keys(t1, bodies)  # the T2 half; the T1 half ran above
     _check_climate_selection(t1, workflows, t1_path)
     _check_observations(t1, bodies)

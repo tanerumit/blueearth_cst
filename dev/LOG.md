@@ -17,6 +17,7 @@ issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-15 | t2610032349 | Number experiments and add a new-experiment flag | wf4  |
 | 2026-10-15 | t2610151519 | Simplify obsolete config migration diagnostics | config |
 | 2026-10-10 | t2610101521 | Drop the active output folder convention | config |
 | 2026-10-09 | t2610091518 | Review and migrate legacy development files | maintenance |

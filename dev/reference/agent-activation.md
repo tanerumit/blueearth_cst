@@ -248,3 +248,9 @@ role-binding side and are not duplicated here.
   is the separate half of the fix: small R edits stay inline with the un-roled
   main loop, which a `when …` binding never reaches. Catalog cost 293 chars
   (9,211 → 9,504), well inside the ceiling.
+
+## Climate analysis handoff
+
+Activate `stress-test-analyst` alongside the case manager and model validator. It consumes qualified
+outputs, computes surfaces and robustness scores, and returns findings to the commissioning owner.
+Its conditional domain and plotting skills remain role-bound; no extra root skill entries are needed.

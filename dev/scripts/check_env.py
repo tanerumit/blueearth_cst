@@ -20,8 +20,12 @@ NOT guarantee, each of which has failed on its own:
    ``docs/site/setup/env-setup-notes.md`` for the recorded repair.
 
 **Worktrees are the case this exists for.** Each carries its own tracked
-``pixi.toml`` and therefore builds its own ``.pixi/``, so every session slot needs the
-``pixi run install`` layer separately. ``--all`` checks every worktree that
+``pixi.toml`` and can build its own ``.pixi/``, so every isolated session needs the
+``pixi run install`` layer separately when it needs an isolated runtime.
+Source/artifact sessions may instead borrow a compatible stable runtime; see
+``docs/site/setup/install.md``. An intentionally unprovisioned session is
+reported as absent here: this checks local installations, not borrowing
+eligibility. ``--all`` checks every worktree that
 ``git worktree list`` knows about, which is the question actually being asked:
 not "is this checkout complete" but "are they all".
 

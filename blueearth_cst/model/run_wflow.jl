@@ -37,7 +37,7 @@ using Wflow
 row(body) = println("$(Dates.format(now(), "HH:MM:SS")) - wflow - $(body)")
 
 if length(ARGS) != 1
-    row("FAILED run_wflow expects exactly one TOML path, got $(length(ARGS))")
+    row("FAILED: historical simulation expects one TOML path; received $(length(ARGS)) arguments")
     exit(2)
 end
 
@@ -45,12 +45,12 @@ tomlpath = ARGS[1]
 
 try
     dt = @elapsed run_with_progress(Wflow, tomlpath; label = "wflow")
-    row("simulation complete  $(format_elapsed(dt))")
+    row("Historical simulation completed in $(format_elapsed(dt))")
     flush(stdout)
 catch e
     # `FAILED` is the spelling the console's severity matcher knows
     # (`_SEVERITY_PATTERNS` in shared/snake_utils.py), so this row paints red.
-    row("FAILED $(first(splitext(basename(tomlpath))))  $(sprint(showerror, e))")
+    row("FAILED historical simulation ($(first(splitext(basename(tomlpath)))))  $(sprint(showerror, e))")
     flush(stdout)
     exit(1)
 end

@@ -1462,7 +1462,9 @@ def plot_station_evaluation(
     """
     written = [plot_hydrograph(simulated, station, plot_dir, observed, caveat)]
     if observed is None:
-        log(f"wflow_id {station.wflow_id}: no observations; drew the hydrograph only.")
+        log(
+            f"wflow_id {station.wflow_id}: simulation hydrograph written; observation-based evaluation omitted because no observations are available"
+        )
         return written
     if metrics is not None:
         written.append(
@@ -1475,8 +1477,8 @@ def plot_station_evaluation(
             )
     else:
         log(
-            f"wflow_id {station.wflow_id}: record too short for annual statistics; "
-            "no peaks/lows sheets."
+            f"wflow_id {station.wflow_id}: annual peak/low-flow figures omitted because the evaluation record is too short; "
+            "other discharge figures are retained."
         )
     return written
 

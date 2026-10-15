@@ -231,7 +231,7 @@ def land_cover_classes(layer):
         if source.startswith(prefix):
             return table
     warnings.warn(
-        f"no land-cover class table for source {source!r}; drawn unclassified",
+        f"Land-cover map drawn without class labels: no classification table is registered for {source!r}",
         RuntimeWarning,
         stacklevel=2,
     )
@@ -296,8 +296,8 @@ def subbasin_classes(raster):
     labelled = len(codes) <= _MAX_LEGEND_SUBBASINS
     if not labelled:
         print(
-            f"note: {len(codes)} subbasins is more than a legend can carry; "
-            "drawing the delineation without a class key"
+            f"Subbasin boundaries drawn for all {len(codes)} subbasins; "
+            "class legend omitted because it would be too large"
         )
     colour_of = _neighbour_aware_colours(values, codes, SUBBASIN_COLORS)
     return tuple(
@@ -774,14 +774,16 @@ def plot_spatial_maps(
             # failure: it means the registry and ``prepare_land_and_soil_maps``
             # disagree about what the foundation contains.
             print(
-                f"skip {figure.stem}: {SPATIAL_MAPS_FILENAME} has no {figure.variable!r}"
+                f"Spatial figure not written: {figure.stem} requires {figure.variable!r}, which is missing from {SPATIAL_MAPS_FILENAME}"
             )
             continue
         layer = prepare_layer(maps, figure, basin_mask)
         degenerate, reason = _is_degenerate(layer)
         if degenerate:
             # Noted, then drawn anyway. See ``_is_degenerate``.
-            print(f"note {figure.stem}: {figure.variable} is {reason} over this basin")
+            print(
+                f"{figure.stem}: {figure.variable} within the basin: {reason}; rendering the map"
+            )
 
         style = figure.style
         if figure.classes is not None:

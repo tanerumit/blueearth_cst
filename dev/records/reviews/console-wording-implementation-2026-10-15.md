@@ -19,7 +19,20 @@ Snakemake cache access outside the Windows sandbox; a stack sample established t
 attempt was retrying temporary-directory creation before workflow evaluation. Scoped Ruff passed.
 No scientific calculations or workflow dependencies changed.
 
+## WF1 — complete
+
+Model and forcing starts describe their actual products. Waterbody setup reports recorded skipped-method
+reasons; outlet/gauge identities and duplicate handling remain visible. Warm-up messages describe
+postprocessing rather than a rerun. Simulation-only station figures are distinguished from observation-based
+evaluation, and the performance-table summary counts actual evaluated columns without claiming finite metrics.
+
+Verification: 165 focused model, waterbody, evaluation, export, map, gauge and forcing checks passed across
+the focused batches and two wording rechecks. The WF1 DAG dry-run passed with normal Snakemake cache access.
+Scoped Ruff passed. The historical Julia driver changes only text; exit status and progress remain unchanged.
+
 ## Remaining sequence
 
-WF1 model construction and simulation review; WF2 projection acquisition and diagnostic products;
-WF3 generation and collection publication; WF4 simulation/metrics operation and retained response reporting.
+WF2 projection acquisition and diagnostic products; WF3 generation and collection publication;
+WF4 simulation/metrics operation and retained response reporting. WF3 source-file hashes participate in
+stochastic identity: its R log strings will be translated in the excluded shared console renderer so wording
+alone cannot re-key generation or change its random sequence.

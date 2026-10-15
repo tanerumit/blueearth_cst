@@ -142,12 +142,9 @@ def _resolve(
     if len(available) == 1:
         return available[0]
     warnings.warn(
-        f"output_locations is set to {gauges_fn!r} but its {kind} could not be "
-        f"resolved: looked for {expected!r}, found "
-        f"{available or 'no gauge entries at all'}. The gauges will be missing "
-        f"from this output. If no gauge falls inside the model domain this is "
-        f"expected (hydromt logs 'Skipping method, as no data has been found' "
-        f"during rule 1.08); otherwise the model was built without them.",
+        f"Configured gauge {kind} not found for {gauges_fn!r}: expected {expected!r}; "
+        f"available {available or 'no gauge entries at all'}. Gauge outputs are unavailable. "
+        "Check whether the locations fall within the model domain and whether gauge/output setup was run.",
         stacklevel=3,
     )
     return None

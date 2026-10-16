@@ -63,3 +63,11 @@ Raw report retained verbatim. These are pending decisions, not accepted changes 
 
 Domain-2 remains open for the unit/coverage ruling. External support for the dimension mm does not
 approve annual-rate interpretation, actual coverage, or a change to the recorded 2026-08-08 ruling.
+
+## Focused follow-up dispositions
+
+External-review-r2.md reuses ext1-1 through ext1-6; it raises no new finding IDs.
+Ext1-1/2 remain pending design decisions; ext1-3/4 remain confirmed implementation/wording items;
+ext1-5/6 remain qualified as recorded in the index. No original severity is downgraded or finding closed.
+Concrete coverage and authored-ID alternatives are now available for a bounded revision.
+Reviewer-proposed wording is not design authority until adopted in a new version and checked.

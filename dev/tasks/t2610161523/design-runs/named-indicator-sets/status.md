@@ -7,7 +7,7 @@ started: 2026-10-16
 stage: owner-decisions
 external-rounds-completed: 1
 allocation: inline frontier plan below
-dispatches: 6
+dispatches: 7
 gates:
   G1: approved
   G2: pending
@@ -207,3 +207,34 @@ calculation aliases versus reference-only first schema, including metric-ID iden
 One worker call remains; the separate risk stage is still pending. Revision plus remaining risk review
 would exceed the original seven-call budget. Reassess bounded scope/budget with owner before dispatch.
 Do not launch a second full external round automatically.
+
+## Owner-authorized focused follow-up
+
+Owner: "yes, send it to the independent review one more time" following the recommendation to limit
+further review to annual-total coverage and authored indicator IDs. Dispatch call 7 to a fresh
+critical-thinker on Claude Opus/high, read-only, no nested delegation. Existing explicit transfer
+consent covers design/source and review instructions to Anthropic Claude; this continues that review.
+Supplement review-brief-r2.md bounds the request to decision resolution on unchanged v2; it does not
+claim a revised v3 exists or request another general audit. Prior findings are inputs after first reading.
+Fixed brief then supplement is the effective order. Original framing remains as recorded above.
+One focused call authorized now; no automatic further calls. Original seven-call budget exhausted
+after this dispatch. The separate general risk stage remains pending; G2 remains pending.
+
+Supplement SHA256: EC504A68142193B196F71314AA5BE2F7099B27030B404E679BF6E43FDD46EB38.
+Observed initialization: claude-opus-5-5, tools Read/Glob/Grep, dontAsk, no MCP. Requested effort high;
+effective effort not separately observable. Process session 72049; terminal result pending.
+
+## Focused follow-up completion
+
+Call 7 completed with exit 0 and success; CLI reports 320750 ms, 17 model turns.
+Raw external-review-r2.md SHA256:
+23BBF01010475D1F38DF8406259F781206698E8E84DFD9F2B21AA62C43E53BAC.
+Verdict revise on unchanged v2, limited to annual coverage and authored-ID decisions. No new IDs;
+ext1-1/2 confirmed, ext1-3/4 confirmed, ext1-5/6 qualified. Proposed resolutions retained verbatim.
+This was one focused follow-up, not an additional full-document round or post-revision verification.
+External full rounds completed remains 1. Seven worker calls used; no further dispatch automatically.
+
+Next: owner chooses coverage disclosure and whether to retain authored entries, then a bounded v3
+revision can incorporate those decisions and minor corrections. General risk stage remains pending;
+G2 remains pending. The reviewer advises no repeat review for faithful changes within its scoped
+recommendations, subject to its stated exceptions. Coordinator qualifications are in the index.

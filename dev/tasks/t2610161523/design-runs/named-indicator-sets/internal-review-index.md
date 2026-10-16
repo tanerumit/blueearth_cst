@@ -119,3 +119,37 @@ for the owner; do not silently overturn the earlier dated ruling or adopt a new 
 The external review supports the operation boundary, registry/YAML separation, publication ownership,
 collision rules and pre-change parity approach. It did not inspect exporter/runner/tests or inventory
 closure; the coordinator's ext1-6 source check narrows that concern. No v3 was commissioned here.
+
+## Focused independent follow-up on unchanged v2
+
+Raw report: external-review-r2.md. Verdict revise, confined to annual coverage and authored IDs.
+The fresh Opus reviewer confirms ext1-1/2 as major, confirms ext1-3/4, and qualifies ext1-5/6.
+No additional finding IDs were raised. It proposes wording; no candidate was revised or approved.
+
+- **Coverage proposal:** Keep mm and the existing arithmetic; add block_coverage to indicators.csv,
+  sourced from immutable evidence. Report block counts/completeness and missingness rather than claim
+  measured bias. D/B versus D/L is conditional estimand algebra; the year-duration convention for L
+  must be explicit. The reviewer prefers this over a new per-run CSV unless differing windows justify it.
+- **Authored-entry proposal:** Its preferred 2A defers authored entries, keeping definition references.
+  Alternative 2B retains them, includes authored IDs in numerical identity, keeps presentation edits
+  publication-only, exposes equivalent definitions and rejects duplicate calculations within a set.
+  These are alternatives for owner selection, not accepted scope changes.
+- **Minor changes:** Use the production anchor helper; compare shared rows across sets; explain month
+  selection by sums; test numeric mapping identity through the existing import closure/value contract.
+
+### Coordinator qualifications before adopting proposed wording
+
+The seed actually includes authored per-indicator metadata, method parameters and calculation bindings.
+The claim that reference-only sets fully satisfy that template is therefore a framing interpretation,
+not established equivalence. Prefer preserving the intended capability unless the owner narrows v1.
+
+Coverage also needs the existing location dimension: ResponseSeries.key is (run, variable, location),
+with a missing mask per series. The proposed per-(variable, run) evidence cannot silently collapse
+location-specific missingness. A future revision must preserve location distinctions or explicitly
+define a truthful summary with traceable evidence. Pattern ordering must use a total stable key;
+sorting only by first label and run count can leave ties. These are checks on the proposed remedy,
+not new raw reviewer findings. No percentages or hand examples were empirically executed.
+
+The reviewer considers another call unnecessary after a faithful revision with the stated checks,
+subject to its listed exceptions. That opinion is scoped to these decisions and does not constitute
+approval of an unwritten v3, waiver of unresolved scientific issues or completion of the whole loop.

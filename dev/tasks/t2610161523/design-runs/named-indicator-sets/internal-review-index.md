@@ -73,3 +73,49 @@ The owner approved the presented G1 framing and requested application of the Opu
 The earlier triage above describes v1 and is retained. The ledger records v2 dispositions separately;
 the original review and its severities remain unchanged. V2 requires independent review, including
 the proposed depth-versus-rate reporting convention, before G2. No parity claim is yet demonstrated.
+
+## Independent external review of v2
+
+Raw report: external-review-r1.md. Verdict revise; two major and four minor findings.
+The fresh Claude reviewer did not receive the earlier review or ledger. Original severities retained.
+
+| ID | Severity | Driver classification | Consequence |
+|---|---|---|---|
+| ext1-1 | major | Scientific/design issue | Decide coverage reporting and reconcile prior unit ruling. |
+| ext1-2 | major | Design issue | Define authored-ID identity or simplify schema v1. |
+| ext1-3 | minor | Implementation obligation | Check equal rows for shared definitions across sets. |
+| ext1-4 | minor | Design correction | Use production water-year helper in oracle/metadata. |
+| ext1-5 | minor | Metadata clarification | Explain reference-month selection by sums, not rate. |
+| ext1-6 | minor | Qualified implementation obligation | Cover numerical code and distinguish references. |
+
+Source checks and limits:
+- ext1-1: forcing_window renders Jan 1 through Dec 31 midnight; reduce_run uses annual sum then mean.
+  The N/(N+1) ratio is conditional algebra relative to total/N when there are N+1 nonempty bins,
+  not an observed bias estimate or universal hydrological truth. Actual member windows, calendar,
+  missingness and block counts still need verification. The dated 2026-08-08 unit ruling really is
+  recorded in indicator_tables.py; v2 must explicitly reconcile it before G2. Coverage diagnostics
+  are the reviewer's proposed remedy, not an automatically approved additional public artifact.
+- ext1-2: v2 admits authored aliases for the fixed existing calculations but does not explicitly
+  state whether authored IDs enter numerical identity. Resolve that ambiguity before implementation.
+  Prose titles alone cannot establish scientific meaning; dictionary method semantics remain important.
+- ext1-3: C3 checks identity/reuse but lacks a direct shared-row equality check. Add to existing coverage.
+- ext1-4: water_year_end_anchor returns YE-DEC/YE-SEP, confirming the YS-JAN/YS-OCT mismatch in O2.
+- ext1-5: registry reference selection uses calendar-month sums. Describe duration/coverage dependence
+  without asserting any fixed percentage for arbitrary data or month pairs.
+- ext1-6: the three-file declaration revision is real, but metric_plan also hashes a transitive static
+  Python import inventory through repository_code_inventory. A newly imported resolver can already be
+  covered. Stale reuse is therefore a conditional risk, not a demonstrated defect in the current code.
+  Require coverage of numeric mappings and a focused identity check, not a second hashing framework.
+
+### Conflicts and convergence
+
+The external reviewer supports mm as the dimension of the existing mean block-depth arithmetic.
+This qualifies the original domain review's preference for mm/yr: physical dimensional correctness
+does not settle annual-rate interpretation with partial blocks. Both reviews agree that users need
+explicit period/missingness semantics. The external analysis supplies a conditional block-count
+argument, not empirical validation of the actual run windows. Keep the unit/coverage decision open
+for the owner; do not silently overturn the earlier dated ruling or adopt a new numerical policy.
+
+The external review supports the operation boundary, registry/YAML separation, publication ownership,
+collision rules and pre-change parity approach. It did not inspect exporter/runner/tests or inventory
+closure; the coordinator's ext1-6 source check narrows that concern. No v3 was commissioned here.

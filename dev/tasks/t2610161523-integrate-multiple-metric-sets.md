@@ -18,8 +18,9 @@ updated: 2026-10-16
 
 G1 framing approved. All six Opus domain findings are incorporated in
 [design v2](t2610161523/design-runs/named-indicator-sets/design-v2.md); unit interpretation awaits review.
-Next: Independent Opus review of v2 is prepared; launch held by automatic approval review pending
-explicit payload/destination confirmation. Final design approval remains pending.
+Independent Opus review completed: revise, with two major and four minor findings.
+Next: Resolve coverage/unit reporting and authored-ID semantics, then agree bounded revision/review
+scope. Final design approval remains pending; one worker call remains in the original budget.
 
 - [x] Capture the agreed interface and remaining decisions in [the design](t2610161523/indicator-sets-design.md).
 - [ ] Implement the agreed integration and update affected consumers and documentation.

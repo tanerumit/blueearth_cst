@@ -4,10 +4,10 @@ target-repo: blueearth_cst
 genre: workflow-spec
 author-binding: cst-architect
 started: 2026-10-16
-stage: external-transfer-held
-external-rounds-completed: 0
+stage: owner-decisions
+external-rounds-completed: 1
 allocation: inline frontier plan below
-dispatches: 5
+dispatches: 6
 gates:
   G1: approved
   G2: pending
@@ -183,3 +183,27 @@ Claude. No process ran and no review was produced. Prior owner consent named Cla
 runtime approval boundary still blocked this attempt. No workaround or indirect launch attempted.
 Requested scope: v2, review instructions and narrowly relevant cited WF4 source; no datasets or secrets.
 Await explicit payload/destination confirmation before retry. Two calls remain; rejected attempt counted.
+
+## Explicit transfer authorization and retry
+
+Owner replied "yes" to: "Do you authorize sending design v2, review instructions, and relevant cited
+WF4 source files to Anthropic's Claude Opus for read-only review? No datasets or credentials are included."
+This explicitly authorizes the exact payload and destination rejected on call 5.
+Call 6 retries the unchanged scoped packet; one call remains after this attempt. No extra review round
+or implementation is authorized. Candidate and brief hashes remain as recorded above.
+
+## External review completion
+
+Call 6 completed with exit 0, success result; 248129 ms and 17 model turns reported by CLI.
+Observed model claude-opus-5-5; Read/Glob/Grep only, dontAsk, no MCP. Effective effort unknown.
+Raw external-review-r1.md SHA256:
+6216C8123B4645183D3649D9FC1D1356F2E218CDD336D000A05CCFF33947CDA2.
+Verdict revise on design-v2.md: ext1-1/2 major, ext1-3/4/5/6 minor. Six unique IDs indexed and ledgered.
+V2 remains unchanged. Driver checked source premises, preserving qualifications and raw severities.
+
+The requested independent review is complete; the design-review loop is not complete. G2 pending.
+Owner decisions: annual-block coverage disclosure and reconciliation of prior unit ruling; authored
+calculation aliases versus reference-only first schema, including metric-ID identity. No v3 written.
+One worker call remains; the separate risk stage is still pending. Revision plus remaining risk review
+would exceed the original seven-call budget. Reassess bounded scope/budget with owner before dispatch.
+Do not launch a second full external round automatically.

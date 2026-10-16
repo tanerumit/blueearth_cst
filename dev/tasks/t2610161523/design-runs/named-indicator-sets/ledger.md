@@ -47,3 +47,19 @@ it does not claim implementation verification or an independent approval of v2.
 
 Coordinator checked the whole v1-to-v2 diff against all six IDs. Remaining Opus reviews must examine
 v2; neither this check nor the owner revision request supplies a whole-document reviewer verdict.
+
+## External round 1 findings on v2
+
+Raw report retained verbatim. These are pending decisions, not accepted changes to the design.
+
+| ID | Review | Severity | Disposition | Resolution or rationale | Doc version |
+|---|---|---|---|---|---|
+| ext1-1 | external r1 | major | pending | Unit ruling and readable coverage need owner resolution. | v2 |
+| ext1-2 | external r1 | major | pending | Resolve authored aliases and metric-ID identity. | v2 |
+| ext1-3 | external r1 | minor | pending | Shared-row equality acceptance recommendation. | v2 |
+| ext1-4 | external r1 | minor | pending | Use production anchor helper instead of YS examples. | v2 |
+| ext1-5 | external r1 | minor | pending | Explain month selection by sums and duration coverage. | v2 |
+| ext1-6 | external r1 | minor | pending | Verify import inventory and clarify reference vocabulary. | v2 |
+
+Domain-2 remains open for the unit/coverage ruling. External support for the dimension mm does not
+approve annual-rate interpretation, actual coverage, or a change to the recorded 2026-08-08 ruling.

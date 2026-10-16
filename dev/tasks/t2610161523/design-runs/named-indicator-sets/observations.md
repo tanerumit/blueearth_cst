@@ -17,3 +17,12 @@
   The immutable report is the terminal result string, without editorial changes.
   An initial schema-check command mishandled PowerShell backticks; the corrected delimiter-safe
   parser passed. This did not require another reviewer call or modify the raw output.
+
+- Call 6: external review launched after explicit payload/destination consent. Observed initialization:
+  claude-opus-5-5; Read, Glob, Grep only; permissionMode=dontAsk; no MCP servers. Requested effort high;
+  effective effort not independently reported. Fresh session, no previous review supplied.
+  Candidate hash verified unchanged at launch. Coordinator tracks process session 39100 to terminal exit.
+- Call 6 completed: exit 0, success, 248129 ms, 17 model turns. Captured terminal result verbatim as
+  external-review-r1.md. Verdict revise on v2; two major and four minor findings, all six IDs unique.
+  No reviewer write/execute/delegate tools were available. Raw report and v2 hashes verified.
+  Coordinator source checks qualified the annual-block ratio and transitive code-inventory concern.

@@ -188,6 +188,8 @@ workflow execution, state affected consumers and omitted workflows; rapid must n
 - `README.md`: workflow execution and pipeline; start here.
 - `dev/reference/dev-task-and-session-workflow.md`: before board coordination, worktree handoff, or task closure.
 - `dev/reference/dev-record-lifecycle.md`: before promoting, shortening, superseding, or deleting dev records.
+- `dev/reference/dev-documentation.md`: before authoring or reviewing user guides,
+  scientific-method pages, toolbox reference, or technical notes.
 - `dev/reference/toolbox-plot-style.md`: before scientific plots/review pages; preserve defaults/exceptions and
   record newly approved styles. `dev/reference/dev-versioning.md`: before release/version decisions.
 - `docs/references/cst-toolbox-technical-note-2025.md`: methodology; code/current references win on stale

@@ -1,0 +1,3 @@
+# Preserve the exact bytes cited by review and protocol SHA256 identities.
+design-v*.md -text
+protocol/** -text

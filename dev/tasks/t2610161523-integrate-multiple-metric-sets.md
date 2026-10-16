@@ -1,7 +1,7 @@
 ---
 title: Integrate multiple metric sets
 type: todo-item
-status: backlog
+status: blocked
 effort: 2
 area: wf4
 queue:
@@ -16,7 +16,9 @@ updated: 2026-10-16
 
 ## Progress
 
-Next: Start the bounded design review when authorized; confirm the external reviewer allocation.
+*Blocked — Awaiting owner approval for scoped Anthropic Claude review payload, or a Codex-only alternative; revisit on the next owner reply.*
+
+Next: Complete candidate and independent domain review, then present G1 framing for owner approval.
 
 - [x] Capture the agreed interface and remaining decisions in [the design](t2610161523/indicator-sets-design.md).
 - [ ] Implement the agreed integration and update affected consumers and documentation.
@@ -28,3 +30,5 @@ Next: Start the bounded design review when authorized; confirm the external revi
 - Implementation: not started; no session currently allocated.
 - Task-ownership guard: landed at 307f1e65; all worktrees updated.
 - Verification: 4497 passed, 29 skipped, 1 expected failure; evidence in .tmp/task-ownership-landing.json.
+
+Review: [named indicator sets](t2610161523/design-runs/named-indicator-sets/status.md).

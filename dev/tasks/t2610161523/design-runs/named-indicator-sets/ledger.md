@@ -71,3 +71,32 @@ Ext1-1/2 remain pending design decisions; ext1-3/4 remain confirmed implementati
 ext1-5/6 remain qualified as recorded in the index. No original severity is downgraded or finding closed.
 Concrete coverage and authored-ID alternatives are now available for a bounded revision.
 Reviewer-proposed wording is not design authority until adopted in a new version and checked.
+
+## Owner-directed final resolution in v3
+
+Owner requested application of the final points and sealing. The selected authored-entry option is
+2B, preserving the intended template; reference-only 2A is retained as an alternative, not adopted.
+These dispositions resolve design requirements. Runtime validation remains required during delivery.
+
+| ID | Review | Severity | Disposition | Resolution / acceptance location | Doc version |
+|---|---|---|---|---|---|
+| domain-1 | domain | major | accepted | Pre-change O1-O6 oracle and C4 retained. | v3 |
+| domain-2 | domain | major | accepted | P2 block-depth units, ruling reconciliation and coverage. | v3 |
+| domain-3 | domain | major | accepted | P4 readable dictionary, inventory and recovery. | v3 |
+| domain-4 | domain | minor | accepted | Registry grain authority and key coverage. | v3 |
+| domain-5 | domain | minor | accepted | Neutral subset; non-exceedance p95 semantics. | v3 |
+| domain-6 | domain | minor | accepted | Ownership-aware collision refusal and valid refresh. | v3 |
+| ext1-1 | external r1/r2 | major | accepted | P2/P4 immutable coverage, units; independent example. | v3 |
+| ext1-2 | external r1/r2 | major | accepted | P2/P4 authored-ID identity and alias option 2B. | v3 |
+| ext1-3 | external r1/r2 | minor | accepted | C3 shared-definition rows and alias values agree. | v3 |
+| ext1-4 | external r1/r2 | minor | accepted | Resolved anchor truthfulness and pre-change parity. | v3 |
+| ext1-5 | external r1/r2 | minor | accepted | Month sums depend on length/coverage; no fixed bias. | v3 |
+| ext1-6 | external r1/r2 | minor | accepted | Numeric code inventory; distinct reference meanings. | v3 |
+
+No additional ext2 IDs exist. All original IDs retain their raw severities in immutable reports.
+Unit closure concerns the stated block-depth estimand; it does not validate actual runs or establish
+equivalence to normalized annual rates. The original sum, names and no-mm/day-rescaling decision
+remain; the earlier mm/yr interpretation is explicitly restricted. Location-specific missingness
+must remain visible. Source qualification of current YS callers versus the YE helper is in the index.
+There is no whole-document independent verdict on v3: finalization uses the two reviews' concrete
+resolutions, owner authorization, author reconciliation and the coordinator's full-diff check.

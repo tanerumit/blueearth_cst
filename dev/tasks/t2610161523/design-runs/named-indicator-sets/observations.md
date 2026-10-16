@@ -31,3 +31,8 @@
   verbatim as external-review-r2.md. No code execution or design edits. It confirms the two major
   issues, supplies alternative resolutions and adds no finding IDs. Coordinator checked the seed's
   authored-template scope and the location-specific response/missingness contract before triage.
+- Call 8: original author continuation completed design-v3.md; no additional reviewer dispatch.
+  Coordinator read the whole v2/v3 diff, checked the final scoped simplification and all finding IDs,
+  parsed YAML examples and checked line widths/final wording. Independent datetime/defaultdict
+  arithmetic reproduced the 1095-label January/October example, without importing package reducers.
+  Snapshot hashes retained. The user-directed seal and exact final identity are in status.md.

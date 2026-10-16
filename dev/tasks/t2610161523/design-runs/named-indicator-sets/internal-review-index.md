@@ -153,3 +153,18 @@ not new raw reviewer findings. No percentages or hand examples were empirically 
 The reviewer considers another call unnecessary after a faithful revision with the stated checks,
 subject to its listed exceptions. That opinion is scoped to these decisions and does not constitute
 approval of an unwritten v3, waiver of unresolved scientific issues or completion of the whole loop.
+
+## Final revision source qualification
+
+The author checked the WF4 callers directly: metric_plan.py:136 and
+experiment/rules/simulate_and_metrics.smk:64 construct YS-* anchors. The helper in snake_utils returns
+YE-*, but the earlier reviews did not establish that WF4 currently uses it. Thus ext1-4's underlying
+requirement is consistent resolved anchors and truthful metadata, not the asserted current YE usage.
+Preserve exact pre-change outputs/metadata; a future helper switch requires value/key parity on the
+supported daily labels and explicit treatment of metadata labels/closure. Raw reviews remain unchanged.
+
+The coordinator independently counted Gregorian dates for the review's constant-depth example:
+2000-01-02 through 2002-12-31 gives 1095 labels; October blocks are 273/365/365/92 (mean 273.75 mm),
+January blocks 365/365/365 (mean 365 mm). With one January block summed as zero under the stated
+all-missing policy, the mean is 730/3 mm. This checks calendar arithmetic, not package execution or
+actual response coverage. Preserve those distinctions in the sealed design and implementation evidence.

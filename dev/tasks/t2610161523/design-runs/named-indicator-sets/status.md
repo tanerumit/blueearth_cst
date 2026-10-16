@@ -4,13 +4,13 @@ target-repo: blueearth_cst
 genre: workflow-spec
 author-binding: cst-architect
 started: 2026-10-16
-stage: owner-decisions
+stage: sealed
 external-rounds-completed: 1
 allocation: inline frontier plan below
-dispatches: 7
+dispatches: 8
 gates:
   G1: approved
-  G2: pending
+  G2: approved-owner-directed-seal
 flags: [allocation-revised-reviews]
 ---
 
@@ -238,3 +238,52 @@ Next: owner chooses coverage disclosure and whether to retain authored entries, 
 revision can incorporate those decisions and minor corrections. General risk stage remains pending;
 G2 remains pending. The reviewer advises no repeat review for faithful changes within its scoped
 recommendations, subject to its stated exceptions. Coordinator qualifications are in the index.
+
+## Owner-directed final revision and sealing
+
+Owner: "Good, can you apply the final points the reviewer pointed out, and seal the design?"
+This authorizes one bounded author continuation (call 8) to apply the reviewed resolutions and seal
+the resulting design. Retain authored definitions using the reviewer’s option 2B, as recommended in
+the preceding response; add coverage to the existing dictionary. Preserve calculation behavior.
+The owner directs completion rather than another general review or confirmation cycle. This extends
+the seven-call allocation by this one revision and closes the unperformed general risk stage by owner
+direction; it does not claim that stage ran. No further reviewer calls or implementation are authorized.
+
+The original author owns design-v3.md. Coordinator will inspect the whole diff against the two reviews,
+verify coverage of all IDs and record the resulting exact path/hash as the seal. The user has approved
+application and sealing of the scoped resolutions, not inspected the future bytes. This explicit
+instruction supersedes a separate exact-byte confirmation step; scientific acceptance of runtime
+results remains an implementation obligation, not something owner authorization can establish.
+
+## Final seal — 2026-10-16
+
+Authoritative design: [design-v3.md](design-v3.md).
+SHA256: AD4CFED1B9D47C07897BF4B10D2AD259AA89603E19AA4980F31D3F09FC0F63D5.
+Owner: repository user; authorization is the quoted application-and-sealing request above.
+The seal records the resulting bytes after verification, not a claim that the owner viewed this hash
+before writing. Earlier G2-pending lines are historical; this section and frontmatter govern.
+
+Call 8 completed by the original author. Coordinator inspected the entire v2-to-v3 diff and the final
+coverage simplification against both external reviews. All domain-1..6 and ext1-1..6 have final ledger
+dispositions; focused follow-up added no IDs. YAML examples, finding coverage, line widths and stale
+pending-choice wording passed. Previous candidate/review hashes are unchanged. The independent
+standard-library calendar calculation confirms the illustrative counts only; no package, simulation,
+numerical-parity or publication-fault test was run. Documentation-only checks are sufficient to seal
+the specification; O1-O6 and C1-C6 remain mandatory implementation acceptance work under the live ladder.
+
+Adopted: authored-entry option 2B; mm block-depth reporting with explicit prior-ruling reconciliation;
+coverage in indicators.csv from immutable per-run/variable/location evidence; anchor parity before
+helper adoption; cross-set equality; month-sum semantics; existing numerical code inventory coverage.
+Coverage summaries preserve explicit location associations but do not duplicate missing masks.
+These resolve design issues, not measured scientific applicability or implementation correctness.
+
+Review provenance: one domain review, one full independent external review and one focused independent
+follow-up. Neither external report reviewed v3 bytes; the final revision implements their concrete
+resolutions with owner authorization and coordinator verification. The planned separate general risk
+review did not run and is closed by the owner's finalization direction, not reported as passed.
+Eight calls total including two rejected launches and the owner-authorized final author continuation.
+
+The review run is terminal. Do not mutate sealed v3; future contract changes require an explicit
+successor and review proportionate to the changed decisions. Keep the seed as discussion history and
+previous versions/raw reviews intact. The canonical task note points here and to v3. The containing
+implementation task stays open; this request does not execute or authorize implementation or pushing.

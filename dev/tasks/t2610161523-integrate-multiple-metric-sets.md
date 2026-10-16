@@ -16,14 +16,14 @@ updated: 2026-10-16
 
 ## Progress
 
-G1 framing approved. All six Opus domain findings are incorporated in
-[design v2](t2610161523/design-runs/named-indicator-sets/design-v2.md); unit interpretation awaits review.
-Independent Opus review completed: revise, with two major and four minor findings.
-Focused independent follow-up also completed; concrete resolutions retained in external-review-r2.md.
-Next: Select coverage disclosure and authored-ID option, then revise as v3. Final approval remains
-pending. Original seven-call budget used; no further reviewer dispatch is automatic.
+Design sealed at the owner's request on 2026-10-16:
+[final design v3](t2610161523/design-runs/named-indicator-sets/design-v3.md).
+All domain and external findings are resolved in the design or mapped to implementation acceptance.
+Authored definitions are retained; coverage and units are explicit. Exact seal and review limitations
+are in [status](t2610161523/design-runs/named-indicator-sets/status.md#final-seal--2026-10-16).
+Next: When implementation is authorized, capture the O1-O6 pre-change oracle before editing runtime code.
 
-- [x] Capture the agreed interface and remaining decisions in [the design](t2610161523/indicator-sets-design.md).
+- [x] Review and seal [the design](t2610161523/design-runs/named-indicator-sets/design-v3.md).
 - [ ] Implement the agreed integration and update affected consumers and documentation.
 - [ ] Verify default compatibility, independent set reuse, and failure recovery.
 

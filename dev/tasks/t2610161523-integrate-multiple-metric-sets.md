@@ -2,7 +2,6 @@
 title: Integrate multiple metric sets
 type: todo-item
 status: backlog
-branch: feat/t2610161523
 effort: 2
 area: wf4
 queue:
@@ -11,14 +10,21 @@ updated: 2026-10-16
 ---
 
 > [!note] Overview
-> **What changes** — Support using multiple metric sets together in downstream assessment.
-> **Why it matters** — Combined assessments need clear compatibility checks and traceable metric origins.
-> **What it takes** — Scope the combination rules, then update affected consumers and checks.
+> **What changes** — Select named indicator sets over shared responses and publish separate results.
+> **Why it matters** — Users need reusable indicator definitions, separate results, and traceable calculations.
+> **What it takes** — Review the design, then implement configuration, registry, and publication changes.
 
 ## Progress
 
-Next: Inspect current metric-set readers and define the intended combination use cases.
+Next: Start the bounded design review when authorized; confirm the external reviewer allocation.
 
-- [ ] Define combination rules, compatibility checks, and provenance requirements.
+- [x] Capture the agreed interface and remaining decisions in [the design](t2610161523/indicator-sets-design.md).
 - [ ] Implement the agreed integration and update affected consumers and documentation.
-- [ ] Verify compatible and incompatible combinations with representative metric sets.
+- [ ] Verify default compatibility, independent set reuse, and failure recovery.
+
+## Work location
+
+- Coordination: main :: dev/tasks/t2610161523/.
+- Implementation: not started; no session currently allocated.
+- Task-ownership guard: landed at 307f1e65; all worktrees updated.
+- Verification: 4497 passed, 29 skipped, 1 expected failure; evidence in .tmp/task-ownership-landing.json.

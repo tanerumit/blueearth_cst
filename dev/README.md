@@ -98,6 +98,14 @@ The `main-dev.lnk` shortcut opens main's `dev/` without a traversable directory 
 Use branch-local references and scripts when changing its contracts. Local `tasks/` and `TODO.md`
 snapshots should be excluded from session working directories; Git still retains them for merges.
 
+All task documents, including design drafts and review material in task folders, are authored in
+main's `dev/tasks/`. Sparse exclusion is intentional: never bypass it with `git add --sparse` to
+create a session-local task document. The pre-commit hook rejects staged changes to `dev/tasks/`,
+`dev/TODO.md`, or `dev/LOG.md` on any branch other than `main`, including detached checkouts and
+renames out of those paths. This requires `core.hooksPath .githooks`; hooks can still be explicitly
+bypassed, so the canonical-path rule also applies before writing. Use `git worktree list` to resolve
+the main checkout when Explorer shortcuts are unavailable.
+
 Primary-checkout maintenance is limited to `dev/tasks/`, generated `dev/TODO.md` and `dev/LOG.md`.
 References and developer scripts are branch-local implementation and integrate through Git. Native
 edit guards accept the named file scopes as well as the task directory; board operations still use

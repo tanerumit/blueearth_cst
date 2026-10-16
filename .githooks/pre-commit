@@ -30,6 +30,20 @@
 
 set -e
 
+# Task plans and board state have one writable home: the main checkout.
+# --no-renames checks both endpoints, including moves out of the owned paths.
+branch=$(git symbolic-ref --quiet --short HEAD || true)
+if [ "$branch" != main ]; then
+    if git diff --cached --quiet --no-renames -- dev/tasks/ dev/TODO.md dev/LOG.md; then
+        :
+    else
+        echo "pre-commit: REJECTED. Task documents and board state belong to main."
+        echo "Use main's dev/tasks/ (open .tmp/navigation/main-dev.lnk)."
+        echo "Commit task changes there separately; do not bypass sparse exclusion."
+        exit 1
+    fi
+fi
+
 if git diff --cached --name-only --diff-filter=ACM -z -- '*.ipynb' | grep -qz .; then
     echo "pre-commit: notebook outputs ..."
 else

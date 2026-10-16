@@ -16,9 +16,9 @@ updated: 2026-10-16
 
 ## Progress
 
-*Blocked — Awaiting owner approval for scoped Anthropic Claude review payload, or a Codex-only alternative; revisit on the next owner reply.*
+*Blocked — Awaiting owner G1 framing decision after Claude Opus domain review; resume risk/external review on the next owner reply.*
 
-Next: Complete candidate and independent domain review, then present G1 framing for owner approval.
+Next: Resolve G1 framing after Opus domain review, then run the remaining authorized Opus reviews.
 
 - [x] Capture the agreed interface and remaining decisions in [the design](t2610161523/indicator-sets-design.md).
 - [ ] Implement the agreed integration and update affected consumers and documentation.

@@ -4,10 +4,10 @@ target-repo: blueearth_cst
 genre: workflow-spec
 author-binding: cst-architect
 started: 2026-10-16
-stage: v2-awaiting-review
+stage: external-transfer-held
 external-rounds-completed: 0
 allocation: inline frontier plan below
-dispatches: 4
+dispatches: 5
 gates:
   G1: approved
   G2: pending
@@ -155,3 +155,31 @@ SHA256: C3EB945A1B2842D4326D36C833C77586F1A1BAD5DE2828D076651140449C477B.
 All six findings have v2 dispositions in ledger.md. Domain-2's scientific unit interpretation remains
 open before G2; incorporating the proposed clarification is not scientific closure.
 Numerical parity and publication recovery are future implementation acceptance obligations.
+
+## External dispatch, 2026-10-16
+
+Owner: "yes, send it to an indepedent agent review". Revalidated allocation: one fresh critical-thinker
+on Claude Opus/high, full external review of v2, read-only and no nested delegation. Existing consent
+covers the scoped design/source transfer to Claude. Call 5 of 7; two calls remain after this dispatch.
+This is the first external round, not a second full review. The separate risk stage remains pending.
+
+Settled framing supplied verbatim:
+- Operations are a list of simulations and/or indicators; indicators-only never launches Wflow.
+- Named YAML sets select reusable registered Python methods; separate readable results per set.
+- User-facing definitions/configuration stay in YAML; hashes and machine JSON stay under _engine.
+- Preserve existing arithmetic; expose temporal/missingness semantics and a readable dictionary.
+- Require proportionate pre-change parity evidence; reject ambiguous nulls in new configuration.
+- Use example_subset until a second scientific set is commissioned; unit interpretation remains open.
+- Owner requested application of the domain findings as v2 before remaining independent reviews.
+
+Input: design-v2.md at the SHA256 recorded above. Fixed contract: review-brief.md.
+No prior findings supplied to this fresh reviewer. G2 remains pending.
+
+Brief SHA256: 9112B86B8C6B30C5F99DE2FCE6BAC58C8D67075C759E821C028DED386EF7FBDA.
+
+Call 5 was rejected before process creation by automatic approval review: it considered the current
+authorization insufficiently explicit for transfer of this specific private design/source payload to
+Claude. No process ran and no review was produced. Prior owner consent named Claude Opus, but the
+runtime approval boundary still blocked this attempt. No workaround or indirect launch attempted.
+Requested scope: v2, review instructions and narrowly relevant cited WF4 source; no datasets or secrets.
+Await explicit payload/destination confirmation before retry. Two calls remain; rejected attempt counted.

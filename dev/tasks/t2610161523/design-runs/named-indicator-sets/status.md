@@ -4,12 +4,12 @@ target-repo: blueearth_cst
 genre: workflow-spec
 author-binding: cst-architect
 started: 2026-10-16
-stage: G1
+stage: v2-awaiting-review
 external-rounds-completed: 0
 allocation: inline frontier plan below
-dispatches: 3
+dispatches: 4
 gates:
-  G1: pending
+  G1: approved
   G2: pending
 flags: [allocation-revised-reviews]
 ---
@@ -127,3 +127,31 @@ No risk review or external round has run. User's one-round limit remains in forc
 Resume after G1: refresh candidate only if the ruling materially changes framing, then risk and
 external Opus reviewers examine the same current candidate. Count any author continuation and
 targeted verification against the remaining budget; request a bounded extension only if necessary.
+
+## Owner-directed v2 revision, 2026-10-16
+
+Owner: "Yes, please apply the OPUS reviver's findings and revise as v2".
+This approves the presented G1 framing and directs revision before the remaining reviews.
+G2 remains pending; neither implementation nor scientific equivalence is approved.
+
+- [done] G1 — owner accepts the proposed framing and requests v2.
+- [open] revision — call 4, original author continuation; owns design-v2.md only.
+  All six domain findings must have explicit dispositions; preserve v1 and the raw review.
+  Risk/external reviews remain pending and should examine the same v2 candidate.
+
+Three worker calls remain after this continuation. The one-round review limit remains unchanged.
+
+## V2 revision completion
+
+- [done] revision — call 4, same author; design-v2.md retained separately from v1.
+- [done] driver scope check — whole diff inspected against domain-1 through domain-6;
+  YAML examples parse, finding IDs are covered, neutral examples and line wrapping checked.
+  V1 and raw domain review hashes remain unchanged. Documentation-only revision; no runtime tests.
+- [pending] risk/external review — inspect v2, including the proposed unit convention.
+- [pending] G2 — no final design approval or implementation authorization.
+
+Current candidate: [design-v2.md](design-v2.md).
+SHA256: C3EB945A1B2842D4326D36C833C77586F1A1BAD5DE2828D076651140449C477B.
+All six findings have v2 dispositions in ledger.md. Domain-2's scientific unit interpretation remains
+open before G2; incorporating the proposed clarification is not scientific closure.
+Numerical parity and publication recovery are future implementation acceptance obligations.

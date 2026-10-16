@@ -66,3 +66,10 @@ For new configuration, recommend refusing ambiguous null output-variable selecti
 copying the current inconsistent branches; preserve explicitly supported legacy behavior separately.
 Use example_subset as the placeholder. Carry the two implementation obligations into acceptance.
 These are proposals pending owner G1; they are not revisions to the frozen candidate.
+
+## Owner direction, 2026-10-16
+
+The owner approved the presented G1 framing and requested application of the Opus findings as v2.
+The earlier triage above describes v1 and is retained. The ledger records v2 dispositions separately;
+the original review and its severities remain unchanged. V2 requires independent review, including
+the proposed depth-versus-rate reporting convention, before G2. No parity claim is yet demonstrated.

@@ -34,7 +34,7 @@ cssclasses: [todo-board]
 | 25     | [t2608121606][]          | Missing catalog source can hide a reservoir                  | wf1        | backlog      |
 | 26     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog      |
 | 27     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog      |
-|        | [t2610161523][]          | Integrate multiple metric sets                               | wf4        | blocked      |
+|        | [t2610161523][]          | Integrate multiple metric sets                               | wf4        | active (1/3) |
 
 [t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
 [t2610062309]: tasks/t2610062309-snakemake-scheduler-stalls-mid-run-on-long-wf2-fetch-batches.md

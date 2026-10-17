@@ -30,7 +30,10 @@ Next: When implementation is authorized, capture the O1-O6 pre-change oracle bef
 ## Work location
 
 - Coordination: main :: dev/tasks/t2610161523/.
-- Implementation: not started; no session currently allocated.
+- Implementation: started 2026-10-17 in session-2 on `feat/named-indicator-sets`.
+- Pre-change oracle: `.tmp/indicator-default-parity-prechange/` here (archived source at f1faac2b,
+  runtime-identical to 791fd1f). No retained metric-set/3 tree existed (all local WF4 trees were
+  simulation/2), so the owner chose a fresh rapid WF1+WF3+WF4 run into that evidence root.
 - Task-ownership guard: landed at 307f1e65; all worktrees updated.
 - Verification: 4497 passed, 29 skipped, 1 expected failure; evidence in .tmp/task-ownership-landing.json.
 

@@ -472,6 +472,10 @@ def test_metrics_only_uses_retained_readiness_without_new_input_reads(
     assert context.request is None
     context.recheck()
     assert durable_inventory(retained) == before
+    # A dry run selects the same retained experiment without a request to compare.
+    preview = admit(retained, preview=True)
+    assert (preview.name, preview.request) == (name, None)
+    assert durable_inventory(retained) == before
     if owner == "legacy":
         assert not (retained.project / "experiments/_engine/allocation.json").exists()
 

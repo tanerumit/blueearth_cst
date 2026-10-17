@@ -207,7 +207,8 @@ def admit_context_owned(
         )
         context.name = selected.name
         context.reservation_id = selected.reservation_id
-    elif selected.action == "continue" and selected.reservation_id:
+    elif selected.action == "continue" and selected.reservation_id and not metrics:
+        # Metrics-only never captures a request; admission compares none either.
         context.compare(read_reservation(root, selected.name)["request"], request)
     recipe = (
         context.root / "experiments" / context.name / "_engine/simulation-freeze.json"

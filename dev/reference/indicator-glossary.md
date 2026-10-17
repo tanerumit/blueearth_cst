@@ -105,6 +105,15 @@ once it leaves the project tree and needs no separate `variable` column.
 | `q_wettest_month_mean` | mean flow in the wettest month, chosen once from the pooled baseline | pooled (`rlz_id = 0`) |
 | `q_driest_month_mean` | mean flow in the driest month, same rule | pooled (`rlz_id = 0`) |
 
+**Discharge outside the default preset** — 5 registered definitions, owned by
+`metric_registry.py::OPTIONAL_Q_CALCULATIONS`. A custom indicator set selects them; `current_default`
+never expands them. IHA-style (eflowrisk `amax30d`, `amin30d`, `amin90d`, `mean_rate_rise`,
+`mean_rate_fall`), but averaged over water years rather than the eflowrisk median.
+
+- `q_mean_annual_30day_max`, `q_mean_annual_30day_min`, `q_mean_annual_90day_min`:
+  `annual_rolling_extreme/1` with `window` and `extreme`; m3 s-1.
+- `q_mean_rise_rate`, `q_mean_fall_rate`: `annual_daily_change/1` with `direction`; m3 s-1 d-1.
+
 The two return periods were the `Tpeak` / `Tlow` config keys until 2026-08-12,
 which made these two names partly config-derived — a project with `Tpeak: 50`
 emitted `q_return_level_50yr_max`, so `validate_hm7` had to match a *pattern*

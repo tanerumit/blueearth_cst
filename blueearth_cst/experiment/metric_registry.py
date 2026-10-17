@@ -316,10 +316,10 @@ METHODS = {
     "annual_rolling_extreme/1": MethodContract(
         "annual_rolling_extreme/1",
         {"q": {"window": (30, 90), "extreme": ("min", "max")}},
-        "rolling WINDOW-day mean over the whole member, then water-year blocks; "
+        "rolling N-day mean (N = window) over the whole member, then water-year blocks; "
         f"{_TEMPORAL}; windows cross water-year boundaries but never member boundaries",
         _PARTIAL,
-        "a rolling window needs WINDOW nonmissing values; block extrema and the "
+        "a rolling window needs N nonmissing values; block extrema and the "
         "mean over blocks skip NaN",
         "finite or native-reduction NaN; infinity refused; no clipping",
     ),

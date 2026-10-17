@@ -446,6 +446,13 @@ def declaration_for(definition: str) -> MetricDeclaration:
     return next(item for item in declarations([token]) if item.name == definition)
 
 
+def block_bins(anchor: str) -> str:
+    """How a water-year anchor closes and labels its resample blocks."""
+    if anchor.startswith("YS"):
+        return "left-closed, left-labelled"
+    return "right-closed, right-labelled"
+
+
 def _block_interval(label: pd.Timestamp, anchor: str):
     """The calendar interval one resample block covers, for its label."""
     offset = pd.tseries.frequencies.to_offset(anchor)
@@ -489,6 +496,7 @@ def series_coverage(item: ResponseSeries, anchor: str) -> dict:
         "timestep_seconds": int(item.timestep.total_seconds()),
         "time_label": item.time_label,
         "anchor": anchor,
+        "block_bins": block_bins(anchor),
         "first_label": str(item.time[0].date()),
         "last_label": str(item.time[-1].date()),
         "blocks": blocks,

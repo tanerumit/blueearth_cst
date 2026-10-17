@@ -93,14 +93,22 @@ def metric_anchor(project: dict) -> str:
     """The water-year resample anchor every metric request uses.
 
     One owner, so the planner, both Snakemake branches and post-run
-    publication cannot disagree. Binding through
-    ``snake_utils.water_year_end_anchor`` is gated on the pre-change parity
-    evidence (design v3, O2); until then the existing ``YS-*`` path stays.
+    publication cannot disagree. Bound through
+    ``snake_utils.water_year_end_anchor`` (``YE-DEC`` for January, ``YE-SEP``
+    for October): for midnight daily labels its right-closed bins hold the
+    same days as the former ``YS-*`` anchor, so values and result keys are
+    unchanged (design v3 O2 parity evidence); only the anchor recorded in the
+    request, and so the metric-set identity, differs.
     """
-    from blueearth_cst.shared.snake_utils import resolve_water_year_start
+    from blueearth_cst.shared.snake_utils import (
+        resolve_water_year_start,
+        water_year_end_anchor,
+    )
 
     climate = project.get("climate") or {}
-    return f"YS-{resolve_water_year_start(climate.get('water_year_start')).upper()}"
+    return water_year_end_anchor(
+        resolve_water_year_start(climate.get("water_year_start"))
+    )
 
 
 def metrics_only_configuration(config_path):

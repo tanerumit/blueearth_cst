@@ -64,7 +64,7 @@ def _alias(text=ALIAS):
 
 def _manifest(root, resolved):
     request = current_metric_request(
-        root, indicator_sets.calculation_records(resolved.indicators), "YS-JAN"
+        root, indicator_sets.calculation_records(resolved.indicators), "YE-DEC"
     )
     plan = write_metric_plan(root, request)
     publish_metric_set(root, plan)
@@ -131,7 +131,7 @@ def test_publication_layout_dictionary_and_no_machine_leakage(ready):
     assert "not a duration-normalized rate" in row["quantity"]
     assert row["equivalent_definition"] == "" and row["authored_references"] == ""
     assert row["grain"] == "run" and row["water_year_start"] == "Jan"
-    assert row["block_assignment"].startswith("YS-JAN (left-closed, left-labelled")
+    assert row["block_assignment"].startswith("YE-DEC (right-closed, right-labelled")
     assert "min_count=0" in row["missingness"]
     text = folder.joinpath("indicators.csv").read_text(encoding="utf-8")
     for leak in (record["metric_set_id"], record["publication_id"], "{", "sha256"):

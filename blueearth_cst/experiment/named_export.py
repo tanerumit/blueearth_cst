@@ -224,13 +224,8 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 "calendar": "; ".join(sorted({item["calendar"] for item in cover})),
                 "time_label": "; ".join(sorted({item["time_label"] for item in cover})),
                 "block_assignment": (
-                    f"{anchor} ("
-                    + (
-                        "left-closed, left-labelled"
-                        if anchor.startswith("YS")
-                        else "right-closed, right-labelled"
-                    )
-                    + f" water-year blocks); {contract.block_assignment}"
+                    f"{anchor} ({registry.block_bins(anchor)} water-year blocks); "
+                    f"{contract.block_assignment}"
                 ),
                 "partial_blocks": contract.partial_blocks,
                 "block_coverage": block_coverage(

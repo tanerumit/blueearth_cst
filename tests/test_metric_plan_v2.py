@@ -530,7 +530,7 @@ def test_metrics_only_reads_the_anchor_and_asserts_the_retained_collection(
     root, sets, anchor = metric_plan.metrics_only_configuration(config)
     assert root == experiment.root
     assert [item.metric for item in sets[0].indicators] == ["gwr_annual_total"]
-    assert anchor == "YS-OCT"
+    assert anchor == "YE-SEP"
     output = capsys.readouterr().out
     assert "seed" in output and "simulation_window" in output
     assert "model.name" in output and "_engine/simulation.json" in output

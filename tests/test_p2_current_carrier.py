@@ -41,7 +41,7 @@ def built(tmp_path_factory):
         )
         root = experiment.root
         plan = build_metric_plan(
-            root, current_metric_request(root, default_calculations(["gwr"]), "YS-JAN")
+            root, current_metric_request(root, default_calculations(["gwr"]), "YE-DEC")
         )
     return experiment, {
         name: Path(plan["tables"][name]).relative_to(root)

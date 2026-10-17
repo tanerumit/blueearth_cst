@@ -53,6 +53,18 @@ unit is now stated as **mm** (mean water-year block depth); the 2026-08-08 mm/yr
 complete, nonmissing water-year blocks. `indicators.csv` reports each set's block coverage so a reader can
 tell. No value changes.
 
+## Event 5 — water-year anchor: YS to YE
+
+| old | new |
+|---|---|
+| `YS-<start month>`, built in WF4 (e.g. `YS-OCT`) | `snake_utils.water_year_end_anchor` (e.g. `YE-SEP`; `YE-DEC` for January) |
+
+For midnight daily labels, right-closed, right-labelled YE bins hold the same days as the former left-closed
+YS bins. The pre-change oracle reduced the rapid responses (January and October), and the YE path matched
+it byte for byte: run/group tables, result keys and return-level evidence. Only the recorded anchor
+differs, so /4 identities differ. Coverage evidence records `block_bins`, and block labels move from the
+first to the last day of each water year.
+
 ## Consumers updated in the same change
 
 Both runners and their help, the WF4 Snakefiles, `config/templates/` (WF4 template and the new

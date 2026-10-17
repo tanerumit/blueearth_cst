@@ -217,7 +217,7 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "blueearth_cst.experiment.metric_plan.metrics_only_configuration",
-        lambda _: (tmp_path, (default,), "YS-JAN"),
+        lambda _: (tmp_path, (default,), "YE-DEC"),
     )
     monkeypatch.setattr(
         "blueearth_cst.experiment.metric_plan.current_metric_request",
@@ -297,7 +297,7 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
     assert {
         item.declaration.required_responses.variable for item in sets[0].indicators
     } == {"q"}
-    assert anchor == "YS-JAN"
+    assert anchor == "YE-DEC"
 
 
 def test_retired_target_names_reach_snakemake_as_current_rule_names():

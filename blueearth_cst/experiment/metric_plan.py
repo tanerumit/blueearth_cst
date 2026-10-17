@@ -4,6 +4,7 @@ import csv
 import io
 import json
 import os
+import shutil
 import uuid
 from dataclasses import asdict
 from pathlib import Path
@@ -88,6 +89,20 @@ def _plain(value):
     return json.loads(json.dumps(value, allow_nan=False))
 
 
+def metric_anchor(project: dict) -> str:
+    """The water-year resample anchor every metric request uses.
+
+    One owner, so the planner, both Snakemake branches and post-run
+    publication cannot disagree. Binding through
+    ``snake_utils.water_year_end_anchor`` is gated on the pre-change parity
+    evidence (design v3, O2); until then the existing ``YS-*`` path stays.
+    """
+    from blueearth_cst.shared.snake_utils import resolve_water_year_start
+
+    climate = project.get("climate") or {}
+    return f"YS-{resolve_water_year_start(climate.get('water_year_start')).upper()}"
+
+
 def metrics_only_configuration(config_path):
     """Read only the selected experiment and metric settings.
 
@@ -95,10 +110,7 @@ def metrics_only_configuration(config_path):
     """
     import yaml
 
-    from blueearth_cst.shared.snake_utils import (
-        resolve_water_year_start,
-        validate_experiment_name,
-    )
+    from blueearth_cst.shared.snake_utils import validate_experiment_name
 
     path = Path(config_path).resolve()
     project = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -148,7 +160,7 @@ def metrics_only_configuration(config_path):
         legacy_context="metrics_only",
     )
     climate = project.get("climate") or {}
-    anchor = f"YS-{resolve_water_year_start(climate.get('water_year_start')).upper()}"
+    anchor = metric_anchor(project)
     used = {"experiment_name", "metrics", "scenario_collection"}
     if not selection.legacy:
         used |= set(indicator_sets.SELECTION_KEYS)
@@ -932,14 +944,17 @@ def _publish_metric_set_v2(experiment_root, plan):
         engine / RETURN_LEVEL_EVIDENCE_FILENAME: evidence_payload,
         engine / COVERAGE_EVIDENCE_FILENAME: coverage_payload,
     }
-    staged = []
-    for number, (path, payload) in enumerate(files.items()):
-        temporary = staging / f"{number}.part"
-        temporary.write_bytes(payload)
-        staged.append((temporary, path))
-    for temporary, path in staged:
-        os.replace(temporary, path)
-    staging.rmdir()
+    try:
+        staged = []
+        for number, (path, payload) in enumerate(files.items()):
+            temporary = staging / f"{number}.part"
+            temporary.write_bytes(payload)
+            staged.append((temporary, path))
+        for temporary, path in staged:
+            os.replace(temporary, path)
+    finally:
+        # Without a manifest the set stays unready and is refused as partial.
+        shutil.rmtree(staging, ignore_errors=True)
     simulation = read_simulation_v2(root)
     result_relative = result.relative_to(root).as_posix()
     manifest = {

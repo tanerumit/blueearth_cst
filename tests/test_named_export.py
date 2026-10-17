@@ -396,3 +396,40 @@ def test_sets_complete_independently_and_failures_keep_prior_publications(
     assert {p.name: p.read_bytes() for p in folder.iterdir()} == before
     metric_export.report_publication(root, again)
     assert "mixed-age export" in capsys.readouterr().out
+
+
+def test_a_failed_rollback_keeps_backups_and_reports_them(ready, monkeypatch):
+    root, default, _ = ready
+    _publish(root, _default(), default)
+    real = named_export.os.replace
+    calls = []
+
+    def failing(source, target):
+        # Fail the second export-file replacement and every rollback restore.
+        if Path(source).name.endswith(".previous"):
+            raise OSError("injected rollback failure")
+        if (
+            Path(target).parent.name == "default"
+            and Path(target).parent.parent.name == "metric_sets"
+        ):
+            calls.append(target)
+            if len(calls) >= 2:
+                raise OSError("injected")
+        return real(source, target)
+
+    source = indicator_sets.SetSource(
+        "default",
+        indicator_sets.BUNDLED_ROOT / "default.yml",
+        True,
+        (indicator_sets.BUNDLED_ROOT / "default.yml")
+        .read_text(encoding="utf-8")
+        .replace("title: Default indicators", "title: Renamed"),
+    )
+    renamed = indicator_sets.resolve_set(source, ["gwr"])
+    monkeypatch.setattr(named_export.os, "replace", failing)
+    with pytest.raises(NamedExportError, match="rollback failed; backups kept"):
+        _publish(root, renamed, default)
+    monkeypatch.undo()
+    stages = list((root / "_engine/metric_sets/names/default").glob(".stage-*"))
+    assert len(stages) == 1
+    assert any(p.name.endswith(".previous") for p in stages[0].iterdir())

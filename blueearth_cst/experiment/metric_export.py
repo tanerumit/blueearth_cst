@@ -10,6 +10,7 @@ from pathlib import Path
 from blueearth_cst.experiment import indicator_sets
 from blueearth_cst.experiment.metric_plan import (
     current_metric_request,
+    metric_anchor,
     verify_metric_plan,
 )
 from blueearth_cst.experiment.named_export import (
@@ -54,7 +55,7 @@ def publish_selected_sets(
             request = current_metric_request(
                 root,
                 indicator_sets.calculation_records(item.indicators),
-                f"YS-{month.upper()}",
+                metric_anchor(project),
             )
             plan = verify_metric_plan(root, request)
             record = publish_named_set(

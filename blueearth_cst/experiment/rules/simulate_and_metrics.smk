@@ -62,7 +62,8 @@ GATHER_BENCHMARKS = RULES.banner_only("4.10", "gather_benchmarks", after_checkpo
 # Resolved once per invocation from the runner's selection snapshot. Legacy
 # configs keep the old metrics/outvars precedence (indicator_sets.legacy_tokens).
 METRIC_SETS = simulation_indicator_sets(project, my_cfg, _selection) if _selection.indicators else ()
-METRIC_ANCHOR = f"YS-{resolve_water_year_start((project.get('climate') or {}).get('water_year_start')).upper()}"
+from blueearth_cst.experiment.metric_plan import metric_anchor
+METRIC_ANCHOR = metric_anchor(project)
 
 # The run's key folders, stated ONCE -- the same block WF0/WF1/WF2 carry, and
 # the one `run_stress_test.smk` had before the R12 split (868c4b7c) dropped it.

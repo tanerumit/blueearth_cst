@@ -133,3 +133,22 @@ def test_a_published_set_is_reused_byte_for_byte_under_forceall(tmp_path):
     code, output = _simulate(experiment)
     assert code != 0, output
     assert _published(root) == published
+
+
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="run_project_child refuses project writers off Windows",
+)
+def test_a_forced_run_refuses_a_damaged_retained_set_before_launch(tmp_path):
+    experiment = build_v2_experiment(tmp_path)
+    root = experiment.root
+    code, output = _simulate(experiment)
+    assert code == 0, output
+    table = next((root / "_engine/metric_sets").glob("*/data/gwr_run_indicators.csv"))
+    table.write_bytes(table.read_bytes() + b"tampered\n")
+    before = _published(root)
+    code, output = _simulate(experiment, "--forceall")
+    assert code != 0, output
+    assert "metric table differs" in output, output
+    assert "Job stats:" not in output, output
+    assert _published(root) == before

@@ -3,6 +3,8 @@
 import textwrap
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import pytest
 
 from blueearth_cst.experiment import indicator_sets as sets
@@ -48,11 +50,40 @@ def test_registry_covers_every_existing_definition_exactly():
         for token in ("q", "aet", "gwr", "precip", "snow", "overland_flow")
         for item in registry.declarations([token])
     }
-    assert set(registry.DEFINITIONS) == names
-    assert len(names) == 16
+    optional = {item.name for item in registry.optional_declarations()}
+    assert not names & optional
+    assert set(registry.DEFINITIONS) == names | optional
+    assert (len(names), len(optional)) == (16, 5)
     for definition, (method, parameters, _) in registry.DEFINITIONS.items():
         assert registry.validate_calculation(method, parameters)[0] == definition
         assert registry.declaration_for(definition).name == definition
+
+
+def test_optional_definitions_stay_out_of_the_default_preset():
+    path = sets.BUNDLED_ROOT / "default.yml"
+    source = sets.SetSource("default", path, True, path.read_text(encoding="utf-8"))
+    resolved = sets.resolve_set(source, ["q"])
+    optional = {item.name for item in registry.optional_declarations()}
+    assert not {item.metric for item in resolved.indicators} & optional
+
+
+def test_optional_reductions_match_hand_computed_values():
+    time = pd.date_range("2001-01-02", periods=6, freq="D")
+    frame = pd.DataFrame({"g": [1.0, 3.0, 2.0, 2.0, 5.0, 4.0]}, index=time)
+    # One water-year block: rises 2 and 3, falls 1 and 1; the zero change is neither.
+    assert registry._reduce_optional(frame, "rise_rate", "YE-SEP")["g"] == 2.5
+    assert registry._reduce_optional(frame, "fall_rate", "YE-SEP")["g"] == 1.0
+    assert registry.output_units(registry.declaration_for("q_mean_rise_rate")) == (
+        "m3 s-1 d-1"
+    )
+    long = pd.DataFrame(
+        {"g": np.arange(60, dtype=float)},
+        index=pd.date_range("2001-01-01", periods=60, freq="D"),
+    )
+    # 30-day window over 0..59: means run 14.5 to 44.5 inside one block.
+    assert registry._reduce_optional(long, "Q30day_max", "YE-SEP")["g"] == 44.5
+    assert registry._reduce_optional(long, "Q30day_min", "YE-SEP")["g"] == 14.5
+    assert np.isnan(registry._reduce_optional(long, "Q90day_min", "YE-SEP")["g"])
 
 
 @pytest.mark.parametrize(

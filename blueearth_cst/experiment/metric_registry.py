@@ -35,6 +35,11 @@ GROUP_MEAN_STATISTICS = {
     "BaseFlowIndex",
     "wetmonth_mean",
     "drymonth_mean",
+    "Q30day_max",
+    "Q30day_min",
+    "Q90day_min",
+    "rise_rate",
+    "fall_rate",
 }
 
 
@@ -142,12 +147,33 @@ class MetricDeclaration:
     group_reduction: str
 
 
-def declarations(tokens: Sequence[str]) -> tuple[MetricDeclaration, ...]:
-    """Declare selected metrics using the existing authoritative vocabulary."""
+def _revision() -> str:
     digest = hashlib.sha256()
     for module in (Path(__file__), Path(md.__file__), Path(tables.__file__)):
         digest.update(module.read_bytes())
-    revision = digest.hexdigest()
+    return digest.hexdigest()
+
+
+def _run_declaration(name: str, statistic: str, revision: str) -> MetricDeclaration:
+    return MetricDeclaration(
+        name=name,
+        statistic=statistic,
+        grain="run",
+        required_responses=ResponseRequirement("q", "m3 s-1"),
+        bundle_by=None,
+        reference=None,
+        reference_location=None,
+        return_period=None,
+        blocks_per_return_period=None,
+        implementation_revision=revision,
+        value_validity="finite or native-reduction NaN; refuse infinity; no clipping",
+        group_reduction="equal-weight-run-reductions-propagate-nan/1",
+    )
+
+
+def declarations(tokens: Sequence[str]) -> tuple[MetricDeclaration, ...]:
+    """Declare selected metrics using the existing authoritative vocabulary."""
+    revision = _revision()
     result = []
     for token in tokens:
         if token == "q":
@@ -196,6 +222,15 @@ def declarations(tokens: Sequence[str]) -> tuple[MetricDeclaration, ...]:
     return tuple(result)
 
 
+def optional_declarations() -> tuple[MetricDeclaration, ...]:
+    """Declare the registered q metrics outside the ``current_default`` preset."""
+    revision = _revision()
+    return tuple(
+        _run_declaration(name, statistic, revision)
+        for statistic, (name, _, _) in OPTIONAL_Q_CALCULATIONS.items()
+    )
+
+
 #: Shared temporal semantics of every initial method (design v3, P2).
 _TEMPORAL = (
     "daily interval_end labels binned directly without shifting to interval "
@@ -209,7 +244,7 @@ class MethodContract:
     """One registered calculation method: closed parameters and declared policies."""
 
     method_id: str
-    parameters: dict[str, dict[str, tuple[str, ...]]]
+    parameters: dict[str, dict[str, tuple[str | int, ...]]]
     block_assignment: str
     partial_blocks: str
     missingness: str
@@ -278,6 +313,27 @@ METHODS = {
         "finite required; invalid GEV fit and untested probabilities refused; no "
         "clipping; screening is provisional operational policy",
     ),
+    "annual_rolling_extreme/1": MethodContract(
+        "annual_rolling_extreme/1",
+        {"q": {"window": (30, 90), "extreme": ("min", "max")}},
+        "rolling WINDOW-day mean over the whole member, then water-year blocks; "
+        f"{_TEMPORAL}; windows cross water-year boundaries but never member boundaries",
+        _PARTIAL,
+        "a rolling window needs WINDOW nonmissing values; block extrema and the "
+        "mean over blocks skip NaN",
+        "finite or native-reduction NaN; infinity refused; no clipping",
+    ),
+    "annual_daily_change/1": MethodContract(
+        "annual_daily_change/1",
+        {"q": {"direction": ("rise", "fall")}},
+        "day-to-day differences over the whole member, each in its later day's "
+        f"water-year block; {_TEMPORAL}; differences cross water-year boundaries "
+        "but never member boundaries",
+        _PARTIAL,
+        "a difference needs both days nonmissing; zero changes are neither rises "
+        "nor falls; a block without one is NaN; the mean over blocks skips NaN",
+        "finite or native-reduction NaN; infinity refused; no clipping",
+    ),
 }
 
 #: Registered definition id -> (method id, parameters, registry statistic).
@@ -295,17 +351,48 @@ _Q_CALCULATIONS = {
     "return_level_max": ("pooled_return_level/1", {"kind": "annual_max"}),
     "return_level_7day_min": ("pooled_return_level/1", {"kind": "rolling7_annual_min"}),
 }
-DEFINITIONS = {
-    tables.q_metric_name(statistic): (method, parameters, statistic)
-    for statistic, (method, parameters) in _Q_CALCULATIONS.items()
-} | {
-    tables.basin_metric_name(token): (
-        "annual_summary/1",
-        {"variable": token, "statistic": reduction},
-        reduction,
-    )
-    for token, (_, reduction) in tables.BASIN_METRIC_SUFFIXES.items()
+#: Registered q calculations OUTSIDE the ``current_default`` preset: a set file
+#: selects them, but ``declarations()`` never expands them, so ``default`` keeps
+#: its membership. IHA-style (eflowrisk amax30d, amin30d, amin90d,
+#: mean_rate_rise, mean_rate_fall), averaged over water years rather than the
+#: eflowrisk median. statistic -> (definition id, method, parameters).
+OPTIONAL_Q_CALCULATIONS = {
+    "Q30day_max": (
+        "q_mean_annual_30day_max",
+        "annual_rolling_extreme/1",
+        {"window": 30, "extreme": "max"},
+    ),
+    "Q30day_min": (
+        "q_mean_annual_30day_min",
+        "annual_rolling_extreme/1",
+        {"window": 30, "extreme": "min"},
+    ),
+    "Q90day_min": (
+        "q_mean_annual_90day_min",
+        "annual_rolling_extreme/1",
+        {"window": 90, "extreme": "min"},
+    ),
+    "rise_rate": ("q_mean_rise_rate", "annual_daily_change/1", {"direction": "rise"}),
+    "fall_rate": ("q_mean_fall_rate", "annual_daily_change/1", {"direction": "fall"}),
 }
+DEFINITIONS = (
+    {
+        tables.q_metric_name(statistic): (method, parameters, statistic)
+        for statistic, (method, parameters) in _Q_CALCULATIONS.items()
+    }
+    | {
+        tables.basin_metric_name(token): (
+            "annual_summary/1",
+            {"variable": token, "statistic": reduction},
+            reduction,
+        )
+        for token, (_, reduction) in tables.BASIN_METRIC_SUFFIXES.items()
+    }
+    | {
+        name: (method, parameters, statistic)
+        for statistic, (name, method, parameters) in OPTIONAL_Q_CALCULATIONS.items()
+    }
+)
 
 #: Readable registry title, description and citations per definition. Units and
 #: policies come from declarations and METHODS, never from this text.
@@ -374,6 +461,26 @@ DEFINITION_TEXT = {
         "Mean annual overland flow",
         "Water-year mean overland flow averaged over years.",
     ),
+    "q_mean_annual_30day_max": (
+        "Mean annual 30-day maximum discharge",
+        "Water-year maximum of the rolling 30-day mean averaged over years.",
+    ),
+    "q_mean_annual_30day_min": (
+        "Mean annual 30-day minimum discharge",
+        "Water-year minimum of the rolling 30-day mean averaged over years.",
+    ),
+    "q_mean_annual_90day_min": (
+        "Mean annual 90-day minimum discharge",
+        "Water-year minimum of the rolling 90-day mean averaged over years.",
+    ),
+    "q_mean_rise_rate": (
+        "Mean rate of rise",
+        "Water-year mean of positive day-to-day discharge changes, averaged over years.",
+    ),
+    "q_mean_fall_rate": (
+        "Mean rate of fall",
+        "Water-year mean magnitude of negative day-to-day discharge changes, averaged over years.",
+    ),
 }
 #: Registry citations per definition. Empty until a source the repository
 #: actually retains is cited; never filled from memory.
@@ -386,6 +493,8 @@ def output_units(declaration: MetricDeclaration) -> str:
     """Declared output units; never inferred from input units alone."""
     if declaration.statistic == "BaseFlowIndex":
         return "1"
+    if declaration.statistic in {"rise_rate", "fall_rate"}:
+        return "m3 s-1 d-1"
     if declaration.statistic == "sum":
         # Mean water-year block depth: mm per block, not a duration-normalized rate.
         return "mm"
@@ -402,6 +511,8 @@ def quantity(declaration: MetricDeclaration) -> str:
         )
     if declaration.statistic == "BaseFlowIndex":
         return "dimensionless ratio"
+    if declaration.statistic in {"rise_rate", "fall_rate"}:
+        return "mean over water years of the annual mean day-to-day change magnitude"
     if declaration.grain == "bundle":
         return f"{declaration.return_period}-year return level"
     return "mean over water years of an annual statistic"
@@ -437,6 +548,9 @@ def declaration_for(definition: str) -> MetricDeclaration:
     """The authoritative declaration of one registered definition id."""
     if definition not in DEFINITIONS:
         raise ValueError(f"unknown registered indicator definition {definition!r}")
+    optional = {item.name: item for item in optional_declarations()}
+    if definition in optional:
+        return optional[definition]
     token = next(
         token
         for token in ("q", *tables.BASIN_METRIC_SUFFIXES)
@@ -606,6 +720,20 @@ def resolve_month_reference(
     )
 
 
+def _reduce_optional(frame: pd.DataFrame, statistic: str, anchor: str) -> pd.Series:
+    """Evaluate one non-default q calculation (see OPTIONAL_Q_CALCULATIONS)."""
+    _, method, parameters = OPTIONAL_Q_CALCULATIONS[statistic]
+    if method == "annual_rolling_extreme/1":
+        blocks = frame.rolling(parameters["window"]).mean().resample(anchor)
+        return getattr(blocks, parameters["extreme"])().mean()
+    change = frame.diff()
+    if parameters["direction"] == "rise":
+        change = change.where(change > 0)
+    else:
+        change = (-change).where(change < 0)
+    return change.resample(anchor).mean().mean()
+
+
 def reduce_run(
     metric: MetricDeclaration,
     series: Sequence[ResponseSeries],
@@ -638,6 +766,8 @@ def reduce_run(
         values = getattr(frame.resample(anchor), statistic)().mean()
     elif statistic == "q95":
         values = frame.resample(anchor).quantile(0.95).mean()
+    elif statistic in OPTIONAL_Q_CALCULATIONS:
+        values = _reduce_optional(frame, statistic, anchor)
     else:
         reducer = {
             "Q7day_max": md.Q7d_maxyear,

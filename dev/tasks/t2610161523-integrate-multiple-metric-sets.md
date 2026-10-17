@@ -28,8 +28,9 @@ uses the local staged data bundle.
 C4 (Jan and Oct) and the YE gate gave byte-identical tables and keys. C6 showed 0 of 64 legacy
 branches differing. Named mode, named vs flat export, flat-export preservation and the O2 positive
 checks all pass. Evidence: `.tmp/indicator-default-parity-prechange/index.md`.
-Open: real-runner dry-runs (blocked by provenance and fixture state, see index); model-validator
-acceptance of the oracle coverage; landing.
+A full run created by the candidate (named simulate path) reproduced the oracle tables. Legacy and
+named dry runs both left WF4 up to date.
+Open: model-validator acceptance of the oracle coverage; landing.
 
 - [x] Review and seal [the design](t2610161523/design-runs/named-indicator-sets/design-v3.md).
 - [x] Implement the agreed integration and update affected consumers and documentation.

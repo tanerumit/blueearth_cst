@@ -3,6 +3,8 @@
 import csv
 import io
 import json
+import os
+import uuid
 from dataclasses import asdict
 from pathlib import Path
 
@@ -16,10 +18,10 @@ from blueearth_cst.experiment.content_identity import (
     read_canonical_json,
     repository_code_inventory,
 )
+from blueearth_cst.experiment.indicator_sets import declarations_for_calculations
 from blueearth_cst.experiment.metric_groups import metric_groups
 from blueearth_cst.experiment.metric_registry import (
     DeclaredBundle,
-    declarations,
     metric_unit_index,
     reduce_bundle,
     reduce_group_mean,
@@ -88,7 +90,6 @@ def metrics_only_configuration(config_path):
     """
     import yaml
 
-    from blueearth_cst.shared.indicator_tables import indicator_tables
     from blueearth_cst.shared.snake_utils import (
         resolve_water_year_start,
         validate_experiment_name,
@@ -124,28 +125,41 @@ def metrics_only_configuration(config_path):
                 raise MetricsOnlyIdentityMismatch(
                     f"{field}: retained={retained[field]!r}; asserted={asserted[field]!r}"
                 )
-    tokens = workflow.get("metrics")
-    if tokens is None:
-        outvars = (project.get("model") or {}).get("outvars")
-        if outvars is not None:
-            tokens = list(indicator_tables(outvars))
-        else:
-            request = intent_v2["documents"]["response_request"]
-            tokens = [item["variable"] for item in request["variables"]]
+    from blueearth_cst.experiment import indicator_sets
+
+    workflow_path = path.parent / descriptor["config_path"]
+    selection = indicator_sets.workflow_selection(workflow, workflow_path)
+
+    def retained_variables():
+        request = intent_v2["documents"]["response_request"]
+        return [item["variable"] for item in request["variables"]]
+
+    sets = indicator_sets.selected_sets(
+        project,
+        workflow,
+        selection,
+        simulation_path=False,
+        retained_variables=retained_variables,
+        legacy_context="metrics_only",
+    )
     climate = project.get("climate") or {}
     anchor = f"YS-{resolve_water_year_start(climate.get('water_year_start')).upper()}"
-    ignored = [
-        f"simulate_system.{key}"
-        for key in sorted(workflow)
-        if key not in {"experiment_name", "metrics", "scenario_collection"}
-    ]
+    used = {"experiment_name", "metrics", "scenario_collection"}
+    if not selection.legacy:
+        used |= set(indicator_sets.SELECTION_KEYS)
+    ignored = [f"simulate_system.{key}" for key in sorted(workflow) if key not in used]
     ignored += [
         f"climate.{key}" for key in sorted(climate) if key != "water_year_start"
     ]
+    outvars_used = (
+        workflow.get("metrics") is None
+        if selection.legacy
+        else any(item.source.set_id == indicator_sets.DEFAULT_SET for item in sets)
+    )
     ignored += [
         f"model.{key}"
         for key in sorted(project.get("model") or {})
-        if key != "outvars" or workflow.get("metrics") is not None
+        if key != "outvars" or not outvars_used
     ]
     if ignored:
         print(
@@ -155,7 +169,7 @@ def metrics_only_configuration(config_path):
             + ", ".join(ignored),
             flush=True,
         )
-    return root, list(tokens), anchor
+    return root, sets, anchor
 
 
 #: Metric-stage dependency roots. lmoments3 joins them because the return-level
@@ -194,7 +208,7 @@ def resolve_metric_environment():
     }
 
 
-def current_metric_request(experiment_root, tokens, anchor):
+def current_metric_request(experiment_root, calculations, anchor):
     """Resolve stage-three identity without any live source/model or Julia access."""
     root = Path(experiment_root).resolve()
     _require_v2(root)
@@ -202,12 +216,11 @@ def current_metric_request(experiment_root, tokens, anchor):
         record = read_simulation_v2(root)
         request = metric_request(
             record["simulation_id"],
-            tokens,
+            calculations,
             anchor,
             resolve_metric_environment(),
             return_level_validation.build_declaration(),
         )
-        request["schema_version"] = "metric-request/3"
         request["simulation_schema_version"] = record["schema_version"]
         return request
     if (root / "_engine/simulation_intent.json").is_file():
@@ -226,12 +239,11 @@ def current_metric_request(experiment_root, tokens, anchor):
         intent = read_simulation_intent_v2(root)
         request = metric_request(
             intent["simulation_id"],
-            tokens,
+            calculations,
             anchor,
             resolve_metric_environment(),
             return_level_validation.build_declaration(),
         )
-        request["schema_version"] = "metric-request/3"
         request["simulation_schema_version"] = "simulation/3"
         return request
     raise MetricsOnlySimulationUnavailable(
@@ -239,9 +251,14 @@ def current_metric_request(experiment_root, tokens, anchor):
     )
 
 
-def metric_request(simulation_id, tokens, anchor, environment, validation):
-    """Compute a scheduling request before response values or reference months exist."""
-    registry = declarations(tokens)
+def metric_request(simulation_id, calculations, anchor, environment, validation):
+    """Compute a scheduling request before response values or reference months exist.
+
+    ``calculations`` are resolved set records; they are sorted by metric key so
+    selection order, set ids and presentation never enter numerical identity.
+    """
+    calculations = sorted(calculations, key=lambda record: record["metric"])
+    registry = declarations_for_calculations(calculations)
     # A NEW request must carry the D4 declaration. Legacy acceptance is a read
     # compatibility guarantee (D6), never a write escape hatch, so the retained
     # pre-C record is refused here rather than silently re-emitted.
@@ -257,9 +274,10 @@ def metric_request(simulation_id, tokens, anchor, environment, validation):
     repo = directory.parents[1]
     code = repository_code_inventory(repo, ["blueearth_cst/experiment/metric_plan.py"])
     return {
-        "schema_version": "metric-request/1",
+        "schema_version": "metric-request/4",
         "simulation_id": simulation_id,
-        "tokens": list(tokens),
+        "tokens": sorted({item.required_responses.variable for item in registry}),
+        "calculations": _plain(calculations),
         "declarations": [_plain(asdict(item)) for item in registry],
         "grouping": "stochastic/st_id including empty unperturbed key",
         "reference": "unperturbed evaluated runs; first native q location; monthly sum; first month on ties",
@@ -360,14 +378,17 @@ def build_metric_plan(experiment_root, request):
     }
     if request["simulation_id"] != simulation["simulation_id"]:
         raise MetricPlanStale("metric request selects a different simulation")
+    if request.get("schema_version") != "metric-request/4":
+        raise MetricPlanStale(
+            f"unsupported metric request {request.get('schema_version')!r}"
+        )
     live = metric_request(
         simulation["simulation_id"],
-        request["tokens"],
+        request["calculations"],
         request["water_year_anchor"],
         request["metric_environment"],
         request["return_level_validation"],
     )
-    live["schema_version"] = "metric-request/3"
     live["simulation_schema_version"] = "simulation/3"
     if live != request:
         raise MetricPlanStale("metric declarations or invoked code changed")
@@ -388,7 +409,7 @@ def build_metric_plan(experiment_root, request):
         st_num=specification["n_design_points"],
         unit_id_capacity=intent["run_group_id_capacity"],
     )
-    registry = declarations(request["tokens"])
+    registry = declarations_for_calculations(request["calculations"])
     bundles = tuple(
         DeclaredBundle("st_id", key, members) for key, members in groups.items()
     )
@@ -466,7 +487,7 @@ def build_metric_plan(experiment_root, request):
         "metric_definition_sha256": definition_digest,
         "metric_environment_sha256": environment_digest,
         "groups": {key: list(value) for key, value in groups.items()},
-        "schema_version": "metric-set-identity/3",
+        "schema_version": "metric-set-identity/4",
         "run_groups": units,
         "reference": references,
         "water_year_anchor": request["water_year_anchor"],
@@ -476,14 +497,11 @@ def build_metric_plan(experiment_root, request):
     }
     identity = content_sha256(identity_projection)
     engine = root / "_engine/metric_sets" / identity_segment(identity, "metric_set_id")
-    marker = engine / "metrics.json"
-    destination = (
-        root / read_metric_set(root, marker)["result_root"]
-        if marker.is_file()
-        else engine / "data"
-    )
+    # metric-set/4 data always lives under its engine root; legacy /3
+    # results/<digest>/ roots are never adopted by a new request.
+    destination = engine / "data"
     plan = {
-        "schema_version": "metric-request/3",
+        "schema_version": "metric-request/4",
         "metric_request_id": content_sha256(request),
         "request": request,
         "response_inventory_sha256": inventory["response_inventory_sha256"],
@@ -512,37 +530,20 @@ def build_metric_plan(experiment_root, request):
                 / identity_segment(identity, "metric_set_id")
                 / "metric_environment.json"
             ).as_posix(),
-            **{
-                f"{token}_{scope}": (
-                    destination / f"{token}_{scope}_indicators.csv"
-                ).as_posix()
-                for token in request["tokens"]
-                for scope in ("run", "group")
-            },
+            "benchmark": (engine / return_level_validation.REPORT_FILENAME).as_posix(),
+        },
+        # Written by the same job as `targets` but not declared to Snakemake:
+        # their number varies with the selection, while rule outputs are fixed.
+        "tables": {
+            f"{token}_{scope}": (
+                destination / f"{token}_{scope}_indicators.csv"
+            ).as_posix()
+            for token in request["tokens"]
+            for scope in ("run", "group")
         },
     }
     plan["request_sha256"] = content_sha256(plan)
     return plan
-
-
-def metric_result_pattern(experiment_root, tokens, water_year_anchor, *, target=None):
-    """Choose the output template for this invocation's single selected set.
-
-    Snakemake needs static output patterns before its checkpoint resolves. A
-    completed simulation can already identify a retained set; preserve that
-    set's layout for forced reuse. Fresh simulations and metric sets use data
-    under the engine. The runner holds project execution ownership throughout.
-    """
-    root = Path(experiment_root).resolve()
-    if target == "simulations_only":
-        return (root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
-    if (root / "_engine/simulation.json").is_file():
-        request = current_metric_request(root, tokens, water_year_anchor)
-        plan = build_metric_plan(root, request)
-        result = Path(plan["targets"]["unit_index"]).parent
-        if result.parent == root / "results/metric_sets":
-            return (root / "results/metric_sets/{metric_set_id}").as_posix()
-    return (root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
 
 
 def _v2_run_groups(units):
@@ -599,27 +600,30 @@ def _rebased_plan(stored, root, expected):
 
     A plan's targets are absolute, so a tree copied from another project root
     keeps that root's (t2610042152). The copy is accepted only when every
-    target keeps its root-relative tail under one common old root and the
-    stored self-digest still matches; anything else is returned unchanged and
-    so still differs.
+    target and table path keeps its root-relative tail under one common old
+    root and the stored self-digest still matches; anything else is returned
+    unchanged and so still differs.
     """
-    targets = stored.get("targets")
-    if not isinstance(targets, dict) or set(targets) != set(expected["targets"]):
-        return stored
     here = root.as_posix()
     old_roots = set()
-    for key, target in expected["targets"].items():
-        tail = target[len(here) :]
-        old = targets[key]
-        if not (target.startswith(here + "/") and isinstance(old, str)):
+    rebased = {}
+    for field in ("targets", "tables"):
+        paths = stored.get(field)
+        if not isinstance(paths, dict) or set(paths) != set(expected[field]):
             return stored
-        if not old.endswith(tail):
-            return stored
-        old_roots.add(old[: -len(tail)])
+        for key, target in expected[field].items():
+            tail = target[len(here) :]
+            old = paths[key]
+            if not (target.startswith(here + "/") and isinstance(old, str)):
+                return stored
+            if not old.endswith(tail):
+                return stored
+            old_roots.add(old[: -len(tail)])
+        rebased[field] = expected[field]
     body = {key: value for key, value in stored.items() if key != "request_sha256"}
     if len(old_roots) != 1 or stored.get("request_sha256") != content_sha256(body):
         return stored
-    rebased = {**body, "targets": expected["targets"]}
+    rebased = {**body, **rebased}
     rebased["request_sha256"] = content_sha256(rebased)
     return rebased
 
@@ -675,7 +679,7 @@ def reduce_metric_plan(experiment_root, plan):
     check_live_metric_environment(plan)
     inventory = read_response_inventory_v2(root)
     native = _native_runs_v2(root, inventory)
-    registry = declarations(plan["request"]["tokens"])
+    registry = declarations_for_calculations(plan["request"]["calculations"])
     references = {
         key: MonthReference(
             **{
@@ -814,7 +818,7 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
 
 def publish_metric_set(experiment_root, plan):
     """Publish a whole declared set, preserving all bytes on exact ready reuse."""
-    if plan["schema_version"] != "metric-request/3":
+    if plan["schema_version"] != "metric-request/4":
         raise MetricPlanStale(f"unsupported metric plan {plan['schema_version']!r}")
     return _publish_metric_set_v2(experiment_root, plan)
 
@@ -904,17 +908,30 @@ def _publish_metric_set_v2(experiment_root, plan):
 
     result.mkdir(parents=True, exist_ok=True)
     engine.mkdir(parents=True, exist_ok=True)
-    for name, payload in payloads.items():
-        (result / name).write_bytes(payload)
-    (result / "group_members.csv").write_bytes(lookup)
-    (result / "group_metadata.csv").write_bytes(metadata_payload)
-    (engine / "metric_environment.json").write_bytes(environment)
-    (engine / return_level_validation.REPORT_FILENAME).write_bytes(report)
-    (engine / RETURN_LEVEL_EVIDENCE_FILENAME).write_bytes(evidence_payload)
+    # Stage every file beside the engine root, then move each into place; the
+    # manifest is written last, so an interrupted publish is never ready.
+    staging = engine.parent / f".stage-{short}-{uuid.uuid4().hex}"
+    staging.mkdir()
+    files = {
+        **{result / name: payload for name, payload in payloads.items()},
+        result / "group_members.csv": lookup,
+        result / "group_metadata.csv": metadata_payload,
+        engine / "metric_environment.json": environment,
+        engine / return_level_validation.REPORT_FILENAME: report,
+        engine / RETURN_LEVEL_EVIDENCE_FILENAME: evidence_payload,
+    }
+    staged = []
+    for number, (path, payload) in enumerate(files.items()):
+        temporary = staging / f"{number}.part"
+        temporary.write_bytes(payload)
+        staged.append((temporary, path))
+    for temporary, path in staged:
+        os.replace(temporary, path)
+    staging.rmdir()
     simulation = read_simulation_v2(root)
     result_relative = result.relative_to(root).as_posix()
     manifest = {
-        "schema_version": "metric-set/3",
+        "schema_version": "metric-set/4",
         "canonicalization_id": "collection-canon/1",
         "status": "ready",
         "metric_set_id": plan["metric_set_id"],
@@ -932,6 +949,7 @@ def _publish_metric_set_v2(experiment_root, plan):
         "group_metadata": ref(
             f"{result_relative}/group_metadata.csv", metadata_payload
         ),
+        "calculations": plan["request"]["calculations"],
         "declarations": plan["request"]["declarations"],
         "expected_result_keys": plan["expected_result_keys"],
         "tables": [
@@ -983,8 +1001,9 @@ def read_metric_set(experiment_root, manifest_path):
 def _read_metric_set_v2(experiment_root, marker):
     root = Path(experiment_root).resolve()
     manifest = read_canonical_json(marker)
+    version = manifest.get("schema_version")
     if (
-        manifest.get("schema_version") != "metric-set/3"
+        version not in ("metric-set/3", "metric-set/4")
         or manifest.get("status") != "ready"
     ):
         raise ImmutableMetricSetError(
@@ -1008,11 +1027,28 @@ def _read_metric_set_v2(experiment_root, marker):
     ):
         raise ImmutableMetricSetError("metric-set engine identity differs")
     result_relative = manifest["result_root"]
-    if result_relative not in (
-        f"_engine/metric_sets/{short}/data",
-        f"results/metric_sets/{short}",
-    ):
+    # Read-only /3 sets may occupy a legacy results/<digest>/ root; /4 never does.
+    allowed_roots = [f"_engine/metric_sets/{short}/data"]
+    if version == "metric-set/3":
+        allowed_roots.append(f"results/metric_sets/{short}")
+    if result_relative not in allowed_roots:
         raise ImmutableMetricSetError("metric-set result identity differs")
+    if version == "metric-set/4":
+        if (
+            manifest["identity_projection"].get("schema_version")
+            != "metric-set-identity/4"
+        ):
+            raise ImmutableMetricSetError(
+                "metric-set/4 identity projection version differs"
+            )
+        # Structural only: an immutable record stays readable after later code
+        # changes, so it is never re-derived against the live registry here.
+        if [item["metric"] for item in manifest["calculations"]] != [
+            item["name"] for item in manifest["declarations"]
+        ]:
+            raise ImmutableMetricSetError(
+                "metric-set calculations and declarations name different metrics"
+            )
     engine = root / manifest["engine_root"]
     result = root / manifest["result_root"]
     if (

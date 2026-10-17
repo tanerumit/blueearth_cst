@@ -13,29 +13,41 @@ from blueearth_cst.experiment.metric_plan import (
     verify_metric_plan,
 )
 from blueearth_cst.experiment.simulation_record import read_simulation_intent_v2
-from blueearth_cst.shared.indicator_tables import indicator_tables
-from blueearth_cst.shared.snake_utils import (
-    DEFAULT_WFLOW_OUTVARS,
-    resolve_water_year_start,
-)
+from blueearth_cst.shared.snake_utils import resolve_water_year_start
 
 
-def export_selected_metrics(root: Path, project: dict, settings: dict) -> None:
-    """Resolve the successful runner's selection, including a no-op file target."""
-    tokens = settings.get("metrics")
-    if tokens is None:
-        outvars = (project.get("model") or {}).get("outvars")
-        if outvars is not None or settings["operation"] == "simulate-and-metrics":
-            tokens = list(
-                indicator_tables(DEFAULT_WFLOW_OUTVARS if outvars is None else outvars)
-            )
-        else:
-            request = read_simulation_intent_v2(root)["documents"]["response_request"]
-            tokens = [item["variable"] for item in request["variables"]]
+def export_selected_metrics(
+    root: Path, project: dict, settings: dict, selection
+) -> None:
+    """Resolve the successful runner's selection, including a no-op file target.
+
+    Interim single-set export: the flat view is refreshed only for a one-set
+    selection, until named per-set publication replaces it.
+    """
+    from blueearth_cst.experiment import indicator_sets
+
+    def retained_variables():
+        request = read_simulation_intent_v2(root)["documents"]["response_request"]
+        return [item["variable"] for item in request["variables"]]
+
+    sets = indicator_sets.selected_sets(
+        project,
+        settings,
+        selection,
+        simulation_path=settings["operation"] == "simulate-and-metrics",
+        retained_variables=retained_variables,
+        legacy_context="export",
+    )
+    if len(sets) != 1:
+        return
     month = resolve_water_year_start(
         (project.get("climate") or {}).get("water_year_start")
     )
-    request = current_metric_request(root, tokens, f"YS-{month.upper()}")
+    request = current_metric_request(
+        root,
+        indicator_sets.calculation_records(sets[0].indicators),
+        f"YS-{month.upper()}",
+    )
     plan = verify_metric_plan(root, request)
     export_metric_set(root, Path(plan["targets"]["manifest"]))
 

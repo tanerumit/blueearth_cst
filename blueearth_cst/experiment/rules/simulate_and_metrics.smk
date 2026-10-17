@@ -6,18 +6,17 @@ import tempfile
 import os
 import sys
 from blueearth_cst.shared.output_capture import captured_output
-from blueearth_cst.experiment.simulation_runner import simulation_settings, resolve_selected_collection
+from blueearth_cst.experiment.simulation_runner import simulation_indicator_sets, simulation_selection, resolve_selected_collection
 from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2, read_simulation_intent_v2, read_simulation_v2, SimulationFrozenError
 from blueearth_cst.experiment.wf4_ancillary_descriptor import resolve_wf4_preparation
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import resolved_unit_interpretation
 from blueearth_cst.experiment.reservation_context import resolve_experiment_name
 from blueearth_cst.experiment.batch_sizing import count_active_cells, disk_headroom_bytes, measure_member_footprint, resolve_batch_plan, resolve_batch_size, split_evenly
-from blueearth_cst.shared.indicator_tables import indicator_tables
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, resolve_water_year_start, validate_experiment_name
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, declare_path_tokens, declare_project_root, julia_prefix, resolve_water_year_start, validate_experiment_name
 from blueearth_cst.shared.console_style import RuleRegistry, defer_rows, defer_warning, target_banner
 from blueearth_cst.shared.run_log_core import log_row, plural
 
-project, my_cfg = simulation_settings(config_path)
+project, my_cfg, _selection = simulation_selection(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
 experiment = resolve_experiment_name(Path(project_dir), my_cfg.get("experiment_name"))
 experiment = validate_experiment_name(experiment, project_dir)
@@ -60,7 +59,9 @@ RUN_WFLOW_SIMULATIONS = RULES.logged("4.05", "run_wflow_simulations", summary="r
 PUBLISH_WFLOW_OUTPUTS = RULES.banner_only("4.06", "publish_wflow_outputs", summary="verify and retain the native simulation responses")
 GATHER_LOGS = RULES.banner_only("4.09", "gather_logs", after_checkpoint=True, summary="merge simulation workflow logs")
 GATHER_BENCHMARKS = RULES.banner_only("4.10", "gather_benchmarks", after_checkpoint=True, summary="merge simulation timing and resource-use records")
-METRIC_TOKENS = list(my_cfg.get("metrics", indicator_tables((project.get("model") or {}).get("outvars", DEFAULT_WFLOW_OUTVARS))))
+# Resolved once per invocation from the runner's selection snapshot. Legacy
+# configs keep the old metrics/outvars precedence (indicator_sets.legacy_tokens).
+METRIC_SETS = simulation_indicator_sets(project, my_cfg, _selection) if _selection.indicators else ()
 METRIC_ANCHOR = f"YS-{resolve_water_year_start((project.get('climate') or {}).get('water_year_start')).upper()}"
 
 # The run's key folders, stated ONCE -- the same block WF0/WF1/WF2 carry, and
@@ -135,6 +136,7 @@ rule all:
     input:
         f"{engine_dir}/simulation.json",
         f"{engine_dir}/response_inventory.json",
+        lambda wc: _metric_plan_paths(wc),
         lambda wc: _selected_metric_outputs(wc),
         # The gathers were declared but requested by nothing, so no WF4 run
         # merged its log or benchmark parts.
@@ -325,6 +327,7 @@ rule simulations_only:
 rule gather_logs:
     message: GATHER_LOGS.banner()
     input:
+        lambda wc: _metric_plan_paths(wc),
         lambda wc: _selected_metric_outputs(wc),
     output:
         f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
@@ -337,6 +340,7 @@ rule gather_logs:
 rule gather_benchmarks:
     message: GATHER_BENCHMARKS.banner()
     input:
+        lambda wc: _metric_plan_paths(wc),
         lambda wc: _selected_metric_outputs(wc),
     output:
         f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",

@@ -22,12 +22,12 @@ from blueearth_cst.experiment.content_identity import (
     identity_segment,
     read_canonical_json,
 )
+from blueearth_cst.experiment.indicator_sets import default_calculations
 from blueearth_cst.experiment.metric_plan import (
     ImmutableMetricSetError,
     MetricPlanStale,
     build_metric_plan,
     current_metric_request,
-    metric_result_pattern,
     publish_metric_set,
     read_metric_set,
     verify_metric_plan,
@@ -96,7 +96,9 @@ def published(_published_once, tmp_path, monkeypatch):
 
 
 def _plan(root, tokens=("gwr",)):
-    return build_metric_plan(root, current_metric_request(root, list(tokens), "YS-JAN"))
+    return build_metric_plan(
+        root, current_metric_request(root, default_calculations(list(tokens)), "YS-JAN")
+    )
 
 
 def _engine(root, plan):
@@ -118,21 +120,17 @@ def test_simulations_only_does_not_resolve_metric_requirements(experiment, monke
         lambda *_: pytest.fail("simulations_only must not resolve metrics"),
     )
     monkeypatch.setattr(
-        simulation_runner, "validate_targets", lambda *_: "simulate-and-metrics"
+        simulation_runner,
+        "resolve_targets",
+        lambda _, targets: (
+            "simulate-and-metrics",
+            simulation_runner.current_targets(targets),
+        ),
     )
     _, environment = simulation_runner.simulation_command(
         experiment.config, ["responses"], 1
     )
     assert environment["CST_SIMULATION_TARGET"] == "simulations_only"
-    assert (
-        metric_result_pattern(
-            experiment.root,
-            ["q"],
-            "YS-JAN",
-            target=environment["CST_SIMULATION_TARGET"],
-        )
-        == (experiment.root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
-    )
 
 
 def test_the_fixture_is_a_ready_v2_experiment_wherever_it_is_copied(experiment):
@@ -156,7 +154,7 @@ def test_the_fixture_is_a_ready_v2_experiment_wherever_it_is_copied(experiment):
 def test_a_v2_metric_set_publishes_once_and_is_reused_byte_for_byte(experiment):
     root = experiment.root
     plan = _plan(root)
-    assert plan["schema_version"] == "metric-request/3"
+    assert plan["schema_version"] == "metric-request/4"
     assert len(plan["expected_result_keys"]) == 4
     assert plan["units"] == [
         {"run_group_id": run, "grain": "run", "run_id": run} for run in RUN_IDS
@@ -169,10 +167,6 @@ def test_a_v2_metric_set_publishes_once_and_is_reused_byte_for_byte(experiment):
     assert (_result(root, plan) / "gwr_run_indicators.csv").is_file()
     assert not (root / "results/metric_sets").exists()
     assert (
-        metric_result_pattern(root, ["gwr"], "YS-JAN")
-        == (root / "_engine/metric_sets/{metric_set_id}/data").as_posix()
-    )
-    assert (
         plan["targets"]["unit_index"]
         == (_result(root, plan) / "group_members.csv").as_posix()
     )
@@ -183,14 +177,12 @@ def test_a_v2_metric_set_publishes_once_and_is_reused_byte_for_byte(experiment):
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
 
 
-def test_legacy_metric_storage_reuses_original_plan_and_exports(published):
-    from blueearth_cst.experiment.metric_export import export_metric_set
-
-    root, marker, result = published
+def _relocate_to_legacy_root(root, marker, result, schema):
     manifest = read_metric_set(root, marker)
     legacy = root / "results/metric_sets" / marker.parent.name
     legacy.parent.mkdir(parents=True)
     shutil.move(result, legacy)
+    manifest["schema_version"] = schema
     manifest["result_root"] = legacy.relative_to(root).as_posix()
     for reference in [
         manifest["group_members"],
@@ -208,26 +200,34 @@ def test_legacy_metric_storage_reuses_original_plan_and_exports(published):
         }
     )
     marker.write_bytes(canonical_json_bytes(manifest))
-    request = current_metric_request(root, ["gwr"], "YS-JAN")
-    plan = write_metric_plan(root, request)
-    assert plan["targets"]["gwr_run"] == (legacy / "gwr_run_indicators.csv").as_posix()
-    assert (
-        metric_result_pattern(root, ["gwr"], "YS-JAN")
-        == (root / "results/metric_sets/{metric_set_id}").as_posix()
-    )
+    return manifest, legacy
+
+
+def test_a_legacy_v3_results_root_stays_readable_and_exportable(published):
+    """Read-only /3 support: a legacy results/<digest>/ root is still read."""
+    from blueearth_cst.experiment.metric_export import export_metric_set
+
+    root, marker, result = published
+    manifest, legacy = _relocate_to_legacy_root(root, marker, result, "metric-set/3")
     files = [marker, *legacy.iterdir()]
     before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files}
-    assert verify_metric_plan(root, request) == plan
-    assert publish_metric_set(root, plan) == manifest
-    export_metric_set(root, marker)
+    assert read_metric_set(root, marker) == manifest
     export_metric_set(root, marker)
     assert before == {
         path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files
     }
-    assert not result.exists()
     assert (legacy.parent / "gwr_run_indicators.csv").read_bytes() == (
         legacy / "gwr_run_indicators.csv"
     ).read_bytes()
+
+
+def test_a_v4_set_never_adopts_a_legacy_results_root(published):
+    root, marker, result = published
+    _relocate_to_legacy_root(root, marker, result, "metric-set/4")
+    with pytest.raises(ImmutableMetricSetError, match="result identity"):
+        read_metric_set(root, marker)
+    plan = _plan(root)
+    assert plan["targets"]["unit_index"] == (result / "group_members.csv").as_posix()
 
 
 @pytest.mark.parametrize("changed", ["root", "lookup", "table"])
@@ -256,7 +256,7 @@ def test_mixed_or_escaping_metric_layout_is_refused(published, changed):
 
 def test_the_metric_environment_changes_only_the_metric_identity(experiment):
     root = experiment.root
-    request = current_metric_request(root, ["gwr"], "YS-JAN")
+    request = current_metric_request(root, default_calculations(["gwr"]), "YS-JAN")
     before = build_metric_plan(root, request)
     changed = deepcopy(request)
     changed["metric_environment"]["packages"]["numpy"] = "another"
@@ -294,7 +294,9 @@ def test_stable_export_tracks_selection_and_preserves_immutable_sets(published):
         result / "gwr_run_indicators.csv"
     ).read_bytes()
     assert immutable == {path: path.read_bytes() for path in immutable}
-    alternate = build_metric_plan(root, current_metric_request(root, ["gwr"], "YS-OCT"))
+    alternate = build_metric_plan(
+        root, current_metric_request(root, default_calculations(["gwr"]), "YS-OCT")
+    )
     publish_metric_set(root, alternate)
     export_metric_set(root, _engine(root, alternate) / "metrics.json")
     assert read_canonical_json(tracking)["metric_set_id"] == alternate["metric_set_id"]
@@ -530,7 +532,9 @@ def test_a_stale_live_environment_leaves_no_ready_marker(experiment, monkeypatch
 
 def _moved_plan(experiment, tmp_path_factory):
     """Write the gwr plan, then copy the experiment to another project root."""
-    request = current_metric_request(experiment.root, ["gwr"], "YS-JAN")
+    request = current_metric_request(
+        experiment.root, default_calculations(["gwr"]), "YS-JAN"
+    )
     write_metric_plan(experiment.root, request)
     moved = copy_v2_experiment(experiment, tmp_path_factory.mktemp("moved")).root
     (stored,) = (moved / "_engine/metric_requests").glob("*.json")
@@ -546,7 +550,8 @@ def test_a_plan_copied_from_another_root_verifies_at_the_new_root(
     plan = verify_metric_plan(moved, request)
     assert plan == build_metric_plan(moved, request)
     assert all(
-        target.startswith(moved.as_posix() + "/") for target in plan["targets"].values()
+        target.startswith(moved.as_posix() + "/")
+        for target in [*plan["targets"].values(), *plan["tables"].values()]
     )
 
 
@@ -556,8 +561,8 @@ def _other_field(plan, origin):
 
 def _mixed_roots(plan, origin):
     """One target keeps its tail but under a third root."""
-    target = plan["targets"]["gwr_run"]
-    plan["targets"]["gwr_run"] = "C:/elsewhere" + target[len(origin.as_posix()) :]
+    target = plan["tables"]["gwr_run"]
+    plan["tables"]["gwr_run"] = "C:/elsewhere" + target[len(origin.as_posix()) :]
 
 
 @pytest.mark.parametrize(
@@ -614,9 +619,9 @@ def test_metrics_only_reads_the_anchor_and_asserts_the_retained_collection(
         with pytest.raises(ValueError, match="collection_revision"):
             metric_plan.metrics_only_configuration(config)
         return
-    root, tokens, anchor = metric_plan.metrics_only_configuration(config)
+    root, sets, anchor = metric_plan.metrics_only_configuration(config)
     assert root == experiment.root
-    assert tokens == ["gwr"]
+    assert [item.metric for item in sets[0].indicators] == ["gwr_annual_total"]
     assert anchor == "YS-OCT"
     output = capsys.readouterr().out
     assert "seed" in output and "simulation_window" in output
@@ -780,6 +785,6 @@ def test_a_pre_release_v1_experiment_is_refused_by_name(tmp_path):
     (root / "config").mkdir(parents=True)
     (root / "config/simulation.json").write_bytes(b"{}\n")
     with pytest.raises(MetricsOnlySimulationUnavailable, match="pre-release v1"):
-        current_metric_request(root, ["gwr"], "YS-JAN")
+        current_metric_request(root, default_calculations(["gwr"]), "YS-JAN")
     with pytest.raises(MetricsOnlySimulationUnavailable, match="pre-release v1"):
         build_metric_plan(root, {})

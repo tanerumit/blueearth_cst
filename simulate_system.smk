@@ -21,23 +21,34 @@ if OPERATION == "metrics-only":
 else:
     include: "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
 
-from blueearth_cst.experiment.metric_plan import metric_result_pattern
-METRIC_RESULT_PATTERN = metric_result_pattern(
-    exp_dir, METRIC_TOKENS, METRIC_ANCHOR, target=os.environ.get("CST_SIMULATION_TARGET")
-)
+from blueearth_cst.experiment.indicator_sets import calculation_records
+
+# Both included modules define METRIC_SETS (resolved named sets) and
+# METRIC_ANCHOR. Sets with identical numerical requests share one plan and one
+# immutable metric set; set ids never enter a request or a wildcard.
+METRIC_CALCULATIONS = []
+for _item in METRIC_SETS:
+    _records = calculation_records(_item.indicators)
+    if _records not in METRIC_CALCULATIONS:
+        METRIC_CALCULATIONS.append(_records)
 
 # RULES comes from whichever module was included above.
-# One metric request per invocation -> one plan -> one metric set, so each runs
-# one job once the simulation checkpoint resolves.
-PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=1, summary="check retained responses against the metric request")
-DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=1, summary="compute and publish the immutable metric set from retained responses")
+# One plan and one metric set per distinct request once the simulation
+# checkpoint resolves.
+PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=max(len(METRIC_CALCULATIONS), 1), summary="check retained responses against each metric request")
+DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=max(len(METRIC_CALCULATIONS), 1), summary="compute and publish each immutable metric set from retained responses")
 
 
-def _current_metric_request(wc=None):
+def _current_metric_requests(wc=None):
+    """Map each distinct request's short digest to the request itself."""
     from blueearth_cst.experiment.metric_plan import current_metric_request
 
     _frozen_simulation(wc)
-    return current_metric_request(exp_dir, METRIC_TOKENS, METRIC_ANCHOR)
+    requests = {}
+    for records in METRIC_CALCULATIONS:
+        request = current_metric_request(exp_dir, records, METRIC_ANCHOR)
+        requests[short_digest(content_sha256(request))] = request
+    return requests
 
 
 # 4.07  prepare_indicator_plan
@@ -51,7 +62,7 @@ checkpoint prepare_indicator_plan:
     wildcard_constraints:
         metric_request_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     params:
-        request=_current_metric_request,
+        request=lambda wc: _current_metric_requests(wc)[wc.metric_request_id],
     run:
         from blueearth_cst.experiment.metric_plan import write_metric_plan
         if wildcards.metric_request_id != short_digest(content_sha256(params.request)):
@@ -59,23 +70,31 @@ checkpoint prepare_indicator_plan:
         write_metric_plan(exp_dir, params.request)
 
 
+def _metric_plan_paths(wc):
+    """Every selected plan as a plain input, so all checkpoint jobs are scheduled
+    together; ``_selected_metric_outputs`` stops at the first incomplete one."""
+    return [f"{engine_dir}/metric_requests/{identity}.json" for identity in _current_metric_requests(wc)]
+
+
 def _selected_metric_outputs(wc):
-    request = _current_metric_request(wc)
-    path = checkpoints.prepare_indicator_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
+    """Declared outputs of every selected plan; tables are not rule outputs."""
     from blueearth_cst.experiment.metric_plan import read_metric_set, verify_metric_plan
-    plan = verify_metric_plan(exp_dir, request)
-    if Path(plan["targets"]["manifest"]).exists():
-        read_metric_set(exp_dir, Path(plan["targets"]["manifest"]))
-    return list(plan["targets"].values())
+    outputs = []
+    for identity, request in _current_metric_requests(wc).items():
+        checkpoints.prepare_indicator_plan.get(metric_request_id=identity)
+        plan = verify_metric_plan(exp_dir, request)
+        if Path(plan["targets"]["manifest"]).exists():
+            read_metric_set(exp_dir, Path(plan["targets"]["manifest"]))
+        outputs.extend(plan["targets"].values())
+    return outputs
 
 
 def _metric_set_plan(wc):
-    request = _current_metric_request(wc)
-    path = checkpoints.prepare_indicator_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
-    plan = read_canonical_json(Path(path))
-    if wc.metric_set_id != short_digest(plan["metric_set_id"]):
-        raise ValueError("metric set differs from its exact selected plan")
-    return path
+    for identity in _current_metric_requests(wc):
+        path = checkpoints.prepare_indicator_plan.get(metric_request_id=identity).output[0]
+        if short_digest(read_canonical_json(Path(path))["metric_set_id"]) == wc.metric_set_id:
+            return path
+    raise ValueError("metric set is not produced by any selected plan")
 
 
 # 4.08  derive_system_indicators
@@ -85,8 +104,8 @@ rule derive_system_indicators:
         plan=_metric_set_plan,
     output:
         manifest=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metrics.json"),
-        units=update(f"{METRIC_RESULT_PATTERN}/group_members.csv"),
-        group_metadata=update(f"{METRIC_RESULT_PATTERN}/group_metadata.csv"),
+        units=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/data/group_members.csv"),
+        group_metadata=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/data/group_metadata.csv"),
         environment=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metric_environment.json"),
         # derive_system_indicators copies the checked benchmark report into the set so
         # a reader never needs the installed asset. Declared here because an
@@ -94,7 +113,10 @@ rule derive_system_indicators:
         # --forcerun or partial clean would leave a manifest whose
         # return_level_benchmark.sha256 binds a file that is gone.
         benchmark=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/return_level_benchmark.json"),
-        tables=[update(f"{METRIC_RESULT_PATTERN}/{token}_{scope}_indicators.csv") for token in METRIC_TOKENS for scope in ("run", "group")],
+        # The per-variable tables vary with each set's selection, so they are
+        # written and inventoried by the job (staged, manifest last) rather
+        # than declared here; the runner validates retained sets before any
+        # forced producer runs.
     wildcard_constraints:
         metric_set_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:
@@ -114,6 +136,7 @@ rule simulations_and_indicators:
     # `Published <id>` row instead.
     message: target_banner("simulations_and_indicators", [])
     input:
+        _metric_plan_paths,
         _selected_metric_outputs,
 
 

@@ -203,7 +203,8 @@ def legacy_selection(settings: dict) -> Selection:
     operation = settings.get("operation")
     if operation == "simulate-and-metrics":
         operations = ("simulations", "indicators")
-    elif operation == "metrics-only":
+    elif operation in ("metrics-only", None):
+        # Absent only in metrics-only projections that never read it.
         operations = ("indicators",)
     else:
         raise IndicatorSetError(f"unsupported legacy operation {operation!r}")
@@ -315,11 +316,14 @@ def _authored(entry: dict, label: str) -> ResolvedIndicator:
     )
 
 
-def resolve_set(source: SetSource, default_tokens=None) -> ResolvedSet:
+def resolve_set(
+    source: SetSource, default_tokens=None, *, legacy: bool = False
+) -> ResolvedSet:
     """Validate one captured set file and resolve its entries.
 
     ``default_tokens`` are the response variables the ``current_default``
-    preset expands; they are required only by a set using the preset.
+    preset expands; they are required only by a set using the preset. Legacy
+    mode keeps the old ``metrics: []`` behaviour of an empty selection.
     """
     label = f"indicator set {source.set_id!r} ({source.path.as_posix()})"
     try:
@@ -358,7 +362,7 @@ def resolve_set(source: SetSource, default_tokens=None) -> ResolvedSet:
             raise IndicatorSetError(
                 f"{label}: only the bundled default set may use preset {DEFAULT_PRESET}"
             )
-        if not default_tokens:
+        if default_tokens is None or (not default_tokens and not legacy):
             raise IndicatorSetError(
                 f"{label}: the default preset expanded to no response variables"
             )
@@ -405,6 +409,210 @@ def resolve_set(source: SetSource, default_tokens=None) -> ResolvedSet:
         source,
         tuple(indicators),
     )
+
+
+def default_tokens(
+    project: dict, *, simulation_path: bool, retained_variables
+) -> list[str]:
+    """Response variables the new-mode ``current_default`` preset expands.
+
+    ``model.outvars`` when it is a nonempty list; absent, the toolbox defaults on
+    a simulation path or the retained response variables on indicator-only.
+    Explicit null or an empty list is refused rather than normalized.
+    ``retained_variables`` is a callable, read only when consulted.
+    """
+    from blueearth_cst.shared.indicator_tables import indicator_tables
+    from blueearth_cst.shared.snake_utils import DEFAULT_WFLOW_OUTVARS
+
+    model = project.get("model") or {}
+    if "outvars" in model:
+        outvars = model["outvars"]
+        if not isinstance(outvars, list) or not outvars:
+            raise IndicatorSetError(
+                "the default indicator set needs model.outvars as a nonempty list "
+                f"(got {outvars!r}); remove the key to use the defaults"
+            )
+        return list(indicator_tables(outvars))
+    if simulation_path:
+        return list(indicator_tables(DEFAULT_WFLOW_OUTVARS))
+    return list(retained_variables())
+
+
+def legacy_tokens(
+    project: dict, settings: dict, context: str, retained_variables
+) -> list[str]:
+    """Legacy ``metrics``/``outvars`` precedence, preserved per observed branch.
+
+    The three pre-named-set branches disagree on null/absent values; each
+    expression is kept verbatim rather than normalized (design v3, P3/O5).
+    ``context`` is ``simulation_rule``, ``metrics_only`` or ``export``.
+    """
+    from blueearth_cst.shared.indicator_tables import indicator_tables
+    from blueearth_cst.shared.snake_utils import DEFAULT_WFLOW_OUTVARS
+
+    model = project.get("model") or {}
+    if context == "simulation_rule":
+        return list(
+            settings.get(
+                "metrics", indicator_tables(model.get("outvars", DEFAULT_WFLOW_OUTVARS))
+            )
+        )
+    tokens = settings.get("metrics")
+    if tokens is not None:
+        return list(tokens)
+    outvars = model.get("outvars")
+    if context == "metrics_only":
+        if outvars is not None:
+            return list(indicator_tables(outvars))
+        return list(retained_variables())
+    if context == "export":
+        if outvars is not None or settings["operation"] == "simulate-and-metrics":
+            return list(
+                indicator_tables(DEFAULT_WFLOW_OUTVARS if outvars is None else outvars)
+            )
+        return list(retained_variables())
+    raise ValueError(f"unknown legacy token context {context!r}")
+
+
+#: Environment variable naming the runner's captured selection snapshot, so
+#: every Snakemake parse/job process uses the bytes admitted at start.
+SNAPSHOT_ENV = "CST_INDICATOR_SELECTION"
+
+
+def write_selection_snapshot(selection: Selection, path: Path) -> Path:
+    """Persist the admitted set sources (paths and exact text) for this invocation."""
+    import json
+
+    payload = {
+        "schema_version": "indicator-selection/1",
+        "operations": list(selection.operations),
+        "legacy": selection.legacy,
+        "sets": [
+            {
+                "set_id": item.set_id,
+                "path": item.path.as_posix(),
+                "bundled": item.bundled,
+                "text": item.text,
+            }
+            for item in selection.sets
+        ],
+    }
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=1, sort_keys=True), encoding="utf-8")
+    return path
+
+
+def read_selection_snapshot(path) -> Selection:
+    """Read a snapshot written by :func:`write_selection_snapshot`."""
+    import json
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if payload.get("schema_version") != "indicator-selection/1":
+        raise IndicatorSetError(f"unsupported indicator selection snapshot {path}")
+    return Selection(
+        tuple(payload["operations"]),
+        tuple(
+            SetSource(item["set_id"], Path(item["path"]), item["bundled"], item["text"])
+            for item in payload["sets"]
+        ),
+        legacy=payload["legacy"],
+    )
+
+
+def workflow_selection(settings: dict, workflow_path) -> Selection:
+    """The invocation's selection: the runner snapshot when present, else live."""
+    import os
+
+    snapshot = os.environ.get(SNAPSHOT_ENV)
+    if snapshot:
+        return read_selection_snapshot(snapshot)
+    if uses_named_selection(settings):
+        return parse_selection(settings, workflow_path)
+    return legacy_selection(settings)
+
+
+def selected_sets(
+    project: dict,
+    settings: dict,
+    selection: Selection,
+    *,
+    simulation_path: bool,
+    retained_variables,
+    legacy_context: str,
+) -> tuple[ResolvedSet, ...]:
+    """Resolve every selected set, expanding the default preset by mode.
+
+    ``retained_variables`` is a callable; ``legacy_context`` names the legacy
+    branch (see :func:`legacy_tokens`) whose precedence applies.
+    """
+    resolved = []
+    for source in selection.sets:
+        tokens = None
+        if source.bundled and source.set_id == DEFAULT_SET:
+            tokens = (
+                legacy_tokens(project, settings, legacy_context, retained_variables)
+                if selection.legacy
+                else default_tokens(
+                    project,
+                    simulation_path=simulation_path,
+                    retained_variables=retained_variables,
+                )
+            )
+        resolved.append(resolve_set(source, tokens, legacy=selection.legacy))
+    return tuple(resolved)
+
+
+def calculation_records(indicators) -> list[dict]:
+    """Identity-relevant calculation records, canonically sorted by metric key.
+
+    Presentation (titles, descriptions, citations), set id, source path and
+    selection order are excluded; the metric key, method, normalized parameters
+    and resolved registered calculation are retained by value.
+    """
+    return sorted(
+        (
+            {
+                "metric": item.metric,
+                "definition": item.definition,
+                "method": item.method,
+                "parameters": dict(sorted(item.parameters.items())),
+            }
+            for item in indicators
+        ),
+        key=lambda record: record["metric"],
+    )
+
+
+def default_calculations(tokens) -> list[dict]:
+    """Calculation records of the registered default suite for ``tokens``."""
+    return calculation_records(
+        _registered(item.name) for item in registry.declarations(tokens)
+    )
+
+
+def declarations_for_calculations(records) -> tuple[registry.MetricDeclaration, ...]:
+    """Re-derive declarations from retained calculation records against live code.
+
+    Each record's method and parameters are re-validated, so a changed
+    parameter-to-reducer mapping is observed rather than trusted.
+    """
+    result = []
+    for record in records:
+        if set(record) != {"metric", "definition", "method", "parameters"}:
+            raise IndicatorSetError(f"invalid calculation record {record!r}")
+        definition, _ = registry.validate_calculation(
+            record["method"], record["parameters"]
+        )
+        if definition != record["definition"]:
+            raise IndicatorSetError(
+                f"{record['metric']}: calculation now resolves to {definition!r}, "
+                f"not the recorded {record['definition']!r}"
+            )
+        result.append(
+            replace(registry.declaration_for(definition), name=record["metric"])
+        )
+    return tuple(result)
 
 
 def required_variables(sets) -> list[str]:

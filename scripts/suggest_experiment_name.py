@@ -36,7 +36,8 @@ def main(argv: list[str] | None = None) -> int:
             root,
             args.name if args.name is not None else workflow.get("experiment_name"),
             new_experiment=args.new_experiment,
-            metrics_only=workflow.get("operation") == "metrics-only",
+            metrics_only=workflow.get("operation") == "metrics-only"
+            or workflow.get("operations") == ["indicators"],
             wf4_enabled=stanza["enabled"],
         )
         if selected.action in {"refuse", "missing"}:

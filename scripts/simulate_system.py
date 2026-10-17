@@ -11,6 +11,7 @@ from blueearth_cst.experiment.simulation_record import capture_simulation_source
 from blueearth_cst.experiment.simulation_runner import (
     current_targets,
     simulation_command,
+    simulation_selection,
     simulation_settings,
 )
 from blueearth_cst.shared import invocation_history
@@ -71,12 +72,17 @@ def main(argv=None):
         parent_invocation_id=os.environ.get(invocation_history.PARENT_ENV),
     )
     try:
-        project, settings = simulation_settings(args.config)
+        project, settings, selection = simulation_selection(args.config)
         if Path(project["project"]["project_dir"]).resolve() != root:
             raise ValueError("--project-dir differs from composed project root")
         record["operation"] = settings["operation"]
+        record["indicator_sets"] = [item.set_id for item in selection.sets]
         command, environment = simulation_command(
-            args.config, args.target, args.cores, extra
+            args.config,
+            args.target,
+            args.cores,
+            extra,
+            snapshot_path=record_path.with_suffix(".indicator-selection"),
         )
         record["configuration"]["source_config_sha256"] = file_sha256(Path(args.config))
         with archive_lock(root, "project-execution"):
@@ -92,6 +98,14 @@ def main(argv=None):
                 recover=args.recover_reservation,
                 preview=preview,
             )
+            if not preview:
+                from blueearth_cst.experiment.simulation_runner import (
+                    validate_retained_metric_sets,
+                )
+
+                validate_retained_metric_sets(
+                    root / "experiments" / context.name, command
+                )
             if not preview and settings["operation"] == "simulate-and-metrics":
                 context.bind_selection()
                 capture = capture_simulation_sources_v2(
@@ -114,6 +128,7 @@ def main(argv=None):
             if (
                 result == 0
                 and not preview
+                and selection.indicators
                 and current_targets(args.target) != ["simulations_only"]
             ):
                 from blueearth_cst.experiment.metric_export import (
@@ -123,7 +138,7 @@ def main(argv=None):
                 # Snakemake skips onsuccess when an explicit file target is current.
                 # Refresh here, still under project execution ownership, for all reuse.
                 export_selected_metrics(
-                    root / "experiments" / context.name, project, settings
+                    root / "experiments" / context.name, project, settings, selection
                 )
                 from blueearth_cst.shared.run_log_core import log_row
 

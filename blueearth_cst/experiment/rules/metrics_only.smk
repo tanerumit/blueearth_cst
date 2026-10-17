@@ -3,7 +3,7 @@ from blueearth_cst.experiment.metric_plan import metrics_only_configuration
 from blueearth_cst.shared.snake_utils import declare_path_tokens, declare_project_root
 from blueearth_cst.shared.console_style import RuleRegistry, target_banner
 
-_metric_root, METRIC_TOKENS, METRIC_ANCHOR = metrics_only_configuration(config_path)
+_metric_root, METRIC_SETS, METRIC_ANCHOR = metrics_only_configuration(config_path)
 exp_dir = _metric_root.as_posix()
 results_dir = f"{exp_dir}/results"
 engine_dir = f"{exp_dir}/_engine"
@@ -39,4 +39,5 @@ rule all:
     # nothing else.
     message: target_banner("all", ["selected immutable metric set"], project_dir)
     input:
+        lambda wc: _metric_plan_paths(wc),
         lambda wc: _selected_metric_outputs(wc),

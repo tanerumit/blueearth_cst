@@ -8,6 +8,7 @@ the unit seams that need no experiment at all.
 import pytest
 
 from blueearth_cst.experiment.content_identity import content_sha256, identity_segment
+from blueearth_cst.experiment.indicator_sets import default_calculations
 from blueearth_cst.experiment.metric_plan import metric_request
 from tests._v2_experiment import FIXTURE_ENVIRONMENT
 
@@ -26,7 +27,7 @@ def test_new_requests_refuse_the_legacy_validation_record():
     with pytest.raises(ValueError, match="readable, not writable"):
         metric_request(
             SIMULATION_ID,
-            ["gwr"],
+            default_calculations(["gwr"]),
             "YS-JAN",
             FIXTURE_ENVIRONMENT,
             {"status": "provisional_operational", "benchmark": "not assessed"},
@@ -38,7 +39,13 @@ def test_new_requests_refuse_an_unsupported_declaration():
 
     altered = dict(fixture_declaration(), screening_policy_validated=True)
     with pytest.raises(return_level_validation.ReturnLevelValidationError):
-        metric_request(SIMULATION_ID, ["gwr"], "YS-JAN", FIXTURE_ENVIRONMENT, altered)
+        metric_request(
+            SIMULATION_ID,
+            default_calculations(["gwr"]),
+            "YS-JAN",
+            FIXTURE_ENVIRONMENT,
+            altered,
+        )
 
 
 def test_metric_environment_records_the_estimator_source():
@@ -97,11 +104,13 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(
             {"run_group_id": "run_01", "grain": "run", "run_id": "run_01"},
             {"run_group_id": "group_01", "grain": "bundle", "run_id": "run_01"},
         ],
+        "schema_version": "metric-set-identity/4",
     }
     plan = {
-        "schema_version": "metric-request/3",
+        "schema_version": "metric-request/4",
         "metric_set_id": content_sha256(projection),
         "request": {
+            "calculations": default_calculations(["gwr"]),
             "declarations": [declaration],
             "metric_environment": environment,
             "return_level_validation": {"schema_version": "fixture/1"},
@@ -186,7 +195,7 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(
         assert not (engine / "metrics.json").exists()
         return
     marker = metric_plan._publish_metric_set_v2(tmp_path, plan)
-    assert marker["schema_version"] == "metric-set/3"
+    assert marker["schema_version"] == "metric-set/4"
     assert engine.joinpath("metrics.json").is_file()
     assert result.joinpath("group_members.csv").is_file()
     assert marker["group_members"]["path"] == (
@@ -219,10 +228,11 @@ def test_v2_metric_plan_reads_collection_from_intent(tmp_path, monkeypatch):
     (root / "_engine").mkdir(parents=True)
     (root / "_engine/simulation.json").write_bytes(b"{}\n")
     request = {
-        "schema_version": "metric-request/3",
+        "schema_version": "metric-request/4",
         "simulation_schema_version": "simulation/3",
         "simulation_id": "a" * 64,
         "tokens": ["gwr"],
+        "calculations": default_calculations(["gwr"]),
         "water_year_anchor": "YS-JAN",
         "metric_environment": {},
         "return_level_validation": {},

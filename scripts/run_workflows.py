@@ -1345,10 +1345,24 @@ def _run_owned(
                     if settings["operation"] == "simulate-and-metrics":
                         _check_wf1_leaves(flags, project_dir, config_path)
                     cmd, environment = simulation_command(
-                        config_path, list(simulation_targets), cores, extra
+                        config_path,
+                        list(simulation_targets),
+                        cores,
+                        extra,
+                        snapshot_path=history_path.with_name(
+                            f"{child_id}.indicator-selection"
+                        ),
                     )
                     if reservation_context is not None:
                         if not manifest["dry_run"]:
+                            from blueearth_cst.experiment.simulation_runner import (
+                                validate_retained_metric_sets,
+                            )
+
+                            validate_retained_metric_sets(
+                                project_dir / "experiments" / reservation_context.name,
+                                cmd,
+                            )
                             reservation_context.bind_selection()
                         environment.update(reservation_context.environment())
                     workflow["command"] = sanitize_argv(cmd)

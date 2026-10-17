@@ -182,12 +182,21 @@ def test_selected_collection_climate_source_matches_creator(tmp_path, monkeypatc
         )
 
 
-def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
+def _legacy_selection(monkeypatch, operation):
+    from blueearth_cst.experiment import indicator_sets
+
+    settings = {"operation": operation}
     monkeypatch.setattr(
         simulation_runner,
-        "simulation_settings",
-        lambda _: ({}, {"operation": "simulate-and-metrics"}),
+        "simulation_selection",
+        lambda _: ({}, settings, indicator_sets.legacy_selection(settings)),
     )
+
+
+def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
+    from blueearth_cst.experiment import indicator_sets
+
+    _legacy_selection(monkeypatch, "simulate-and-metrics")
     assert (
         simulation_runner.validate_targets("unused", ["all"]) == "simulate-and-metrics"
     )
@@ -202,14 +211,13 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
             simulation_runner.validate_targets("unused", [target])
 
     selected = tmp_path / "_engine/metric_sets/abc123/metrics.json"
-    monkeypatch.setattr(
-        simulation_runner,
-        "simulation_settings",
-        lambda _: ({}, {"operation": "metrics-only"}),
+    _legacy_selection(monkeypatch, "metrics-only")
+    default = indicator_sets.resolve_set(
+        indicator_sets.legacy_selection({"operation": "metrics-only"}).sets[0], ["gwr"]
     )
     monkeypatch.setattr(
         "blueearth_cst.experiment.metric_plan.metrics_only_configuration",
-        lambda _: (tmp_path, ["gwr"], "YS-JAN"),
+        lambda _: (tmp_path, (default,), "YS-JAN"),
     )
     monkeypatch.setattr(
         "blueearth_cst.experiment.metric_plan.current_metric_request",
@@ -217,7 +225,7 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "blueearth_cst.experiment.metric_plan.build_metric_plan",
-        lambda *_: {"targets": {"manifest": selected.as_posix()}},
+        lambda *_: {"targets": {"manifest": selected.as_posix()}, "tables": {}},
     )
     for target in ("simulations_and_indicators", "metrics"):
         assert simulation_runner.validate_targets("unused", [target]) == "metrics-only"
@@ -232,7 +240,8 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
                 "manifest": (
                     tmp_path / "_engine/metric_sets/other/metrics.json"
                 ).as_posix()
-            }
+            },
+            "tables": {},
         },
     )
     with pytest.raises(ValueError, match="UnsupportedOperationTarget"):
@@ -282,10 +291,12 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
     )
     monkeypatch.setattr(metric_plan, "read_simulation_intent_v2", lambda path: intent)
 
-    actual_root, tokens, anchor = metric_plan.metrics_only_configuration(config)
+    actual_root, sets, anchor = metric_plan.metrics_only_configuration(config)
 
     assert actual_root == root
-    assert tokens == ["q"]
+    assert {
+        item.declaration.required_responses.variable for item in sets[0].indicators
+    } == {"q"}
     assert anchor == "YS-JAN"
 
 
@@ -295,3 +306,60 @@ def test_retired_target_names_reach_snakemake_as_current_rule_names():
         "simulations_and_indicators",
         "all",
     ]
+
+
+def _named_selection(monkeypatch, tmp_path, settings, project=None):
+    from blueearth_cst.experiment import indicator_sets
+
+    selection = indicator_sets.parse_selection(settings, tmp_path / "wf4.yml")
+    operation = (
+        "metrics-only"
+        if selection.operations == ("indicators",)
+        else "simulate-and-metrics"
+    )
+    monkeypatch.setattr(
+        simulation_runner,
+        "simulation_selection",
+        lambda _: (project or {}, {**settings, "operation": operation}, selection),
+    )
+
+
+@pytest.mark.parametrize(
+    ("operations", "expected"),
+    [
+        (["simulations", "indicators"], ["all"]),
+        (["indicators", "simulations"], ["all"]),
+        (["simulations"], ["simulations_only"]),
+    ],
+)
+def test_named_operations_infer_their_target(
+    monkeypatch, tmp_path, operations, expected
+):
+    _named_selection(monkeypatch, tmp_path, {"operations": operations})
+    assert simulation_runner.resolve_targets("unused", ["all"]) == (
+        "simulate-and-metrics",
+        expected,
+    )
+    with pytest.raises(ValueError, match="omit --target"):
+        simulation_runner.resolve_targets("unused", ["simulations_only"])
+
+
+def test_named_simulation_preflight_refuses_unavailable_outputs(monkeypatch, tmp_path):
+    (tmp_path / "q_only.yml").write_text(
+        "schema_version: 1\nid: q_only\ntitle: t\ndescription: d\n"
+        "selection:\n  indicators:\n    - definition: aet_annual_total\n",
+        encoding="utf-8",
+    )
+    _named_selection(
+        monkeypatch,
+        tmp_path,
+        {
+            "indicator_sets": ["q_only"],
+            "indicator_set_definitions": {"q_only": {"config_path": "q_only.yml"}},
+        },
+        project={"model": {"outvars": ["river discharge"]}},
+    )
+    with pytest.raises(
+        ValueError, match=r"q_only:aet_annual_total \(annual_summary/1\) needs aet"
+    ):
+        simulation_runner.resolve_targets("unused", ["all"])

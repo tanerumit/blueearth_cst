@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
+from blueearth_cst.experiment.indicator_sets import default_calculations
 from blueearth_cst.experiment.metric_plan import (
     build_metric_plan,
     current_metric_request,
@@ -39,9 +40,11 @@ def built(tmp_path_factory):
             metric_plan, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
         )
         root = experiment.root
-        plan = build_metric_plan(root, current_metric_request(root, ["gwr"], "YS-JAN"))
+        plan = build_metric_plan(
+            root, current_metric_request(root, default_calculations(["gwr"]), "YS-JAN")
+        )
     return experiment, {
-        name: Path(plan["targets"][name]).relative_to(root)
+        name: Path(plan["tables"][name]).relative_to(root)
         for name in ("gwr_run", "gwr_group")
     }
 

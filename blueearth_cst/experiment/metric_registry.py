@@ -375,14 +375,9 @@ DEFINITION_TEXT = {
         "Water-year mean overland flow averaged over years.",
     ),
 }
-DEFINITION_REFERENCES = {
-    "q_return_level_10yr_max": (
-        "Hosking, J. R. M. (1990). L-moments. J. R. Stat. Soc. B, 52(1), 105-124.",
-    ),
-    "q_return_level_2yr_7day_min": (
-        "Hosking, J. R. M. (1990). L-moments. J. R. Stat. Soc. B, 52(1), 105-124.",
-    ),
-}
+#: Registry citations per definition. Empty until a source the repository
+#: actually retains is cited; never filled from memory.
+DEFINITION_REFERENCES: dict[str, tuple[str, ...]] = {}
 if set(DEFINITION_TEXT) != set(DEFINITIONS):
     raise ValueError("DEFINITION_TEXT must cover exactly the registered definitions")
 

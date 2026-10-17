@@ -127,11 +127,6 @@ INDICATOR_COLUMNS = (
     "value",
 )
 
-#: ``rlz_id`` for a pooled row. A numeric sentinel in a numeric key column is safe
-#: ONLY because no metric emits both grains; if that ever changes it must become a
-#: string, or ``groupby("rlz_id")`` folds pooled rows in as another realization.
-POOLED_REALIZATION = 0
-
 #: The reserved ``location`` for a basin-scalar value (Q11, 2026-08-07): emitted
 #: independently rather than derived from per-location values, because whether
 #: subcatchments nest or tile decides whether an area-weighted mean is even valid.
@@ -190,8 +185,10 @@ RETURN_PERIOD_LOW_YR = 2
 #: period is no longer a config value (see :data:`RETURN_PERIOD_PEAK_YR`), so
 #: the vocabulary is now a fixed enumeration rather than a pattern.
 #:
-#: Grain classes (CR-2): **A** is emitted per realization, **B** and **C** only
-#: pooled (``rlz_id = 0``). See ``METRIC_CLASSES``.
+#: Classes: **A** and **C** have run values plus equal-weight group summaries;
+#: **C** additionally resolves one reference month. **B** (return levels) has
+#: pooled group fits only. Grain and group policy are owned by
+#: ``experiment/metric_registry.declarations``, not by these letters.
 Q_METRIC_SUFFIXES = {
     "mean": ("annual_mean", "A"),
     "max": ("mean_annual_max", "A"),
@@ -217,11 +214,15 @@ Q_METRIC_SUFFIXES = {
 #: 1. **Overland flow reduces with a MEAN, not a sum.** It is a volume flow rate
 #:    (m³ s⁻¹), so summing daily values produces a quantity in no unit anyone
 #:    wants; the annual mean preserves the native unit. ET, recharge and
-#:    precipitation keep ``annual_total`` in mm/yr — a daily sum of a mm Δt⁻¹
-#:    flux is a legitimate time-integral, which is precisely why overland flow
-#:    was the odd one out. Scoped deliberately to overland flow: reporting ET as
-#:    mm/day instead would rescale it by 365 and is not what a water-balance
-#:    reader expects.
+#:    precipitation keep ``annual_total`` and report **mm**: the mean over
+#:    water-year blocks of each block's summed daily depth, with partial edge
+#:    blocks retained unnormalized and missing days contributing zero. That is
+#:    mean annual depth (mm/yr) only when every block is complete and
+#:    nonmissing (named-indicator-sets design v3, 2026-10-16). A daily sum of a
+#:    mm Δt⁻¹ flux is a legitimate time-integral, which is precisely why
+#:    overland flow was the odd one out. Scoped deliberately to overland flow:
+#:    reporting ET as mm/day instead would rescale it by 365 and is not what a
+#:    water-balance reader expects.
 #: 2. **The suffixes omit the ``mean_`` prefix** the q vocabulary uses
 #:    (``snow_annual_max``, not ``snow_mean_annual_max``), by owner ruling
 #:    2026-08-08. **Accepted asymmetry, recorded so a reader does not read it as
@@ -235,11 +236,6 @@ BASIN_METRIC_SUFFIXES = {
     "snow": ("annual_max", "max"),
     "overland_flow": ("annual_mean", "mean"),
 }
-
-#: Grain per class. `0` means pooled over realizations; see the
-#: `rlz_id = 0` decision, and note the sentinel is only safe because no
-#: metric emits both grains — if that ever changes, it must become a string.
-METRIC_CLASSES = {"A": "per-realization", "B": "pooled", "C": "pooled"}
 
 
 def q_metric_name(statistic: str) -> str:
@@ -266,31 +262,6 @@ def output_code(token: str) -> str:
 def basin_reduction(token: str) -> str:
     """The annual reduction a basin-scalar variable uses (``sum``/``max``/``mean``)."""
     return BASIN_METRIC_SUFFIXES[token][1]
-
-
-def metric_grain(token: str, metric: str) -> str | None:
-    """``'per-realization'`` / ``'pooled'`` for a metric name, or ``None`` if unknown.
-
-    A plain enumeration since 2026-08-12. It was a PATTERN — the two return-level
-    suffixes interpolated ``Tpeak``/``Tlow``, so their names were partly
-    config-derived and an enumerating validator would have rejected every project
-    whose return periods differed from the fixture's. Retiring those config keys
-    (:data:`RETURN_PERIOD_PEAK_YR`) makes the vocabulary closed, so the check can
-    say exactly which names are legal instead of which shapes are.
-
-    Returning ``None`` rather than raising lets the caller report *which* metric is
-    unrecognised alongside its other findings, instead of dying on the first one.
-    """
-    if token == "q":
-        for suffix, grain_class in Q_METRIC_SUFFIXES.values():
-            if metric == f"q_{suffix}":
-                return METRIC_CLASSES[grain_class]
-        return None
-    if token in BASIN_METRIC_SUFFIXES:
-        # Basin-scalar metrics are linear in years, so they carry the finest
-        # grain available, exactly as class A does.
-        return "per-realization" if metric == basin_metric_name(token) else None
-    return None
 
 
 #: Config keys ``workflows.generate_scenarios`` no longer has, and what to tell

@@ -196,6 +196,261 @@ def declarations(tokens: Sequence[str]) -> tuple[MetricDeclaration, ...]:
     return tuple(result)
 
 
+#: Shared temporal semantics of every initial method (design v3, P2).
+_TEMPORAL = (
+    "daily interval_end labels binned directly without shifting to interval "
+    "starts; the first label is starttime+step"
+)
+_PARTIAL = "partial edge blocks retained; each block weighted equally; no duration normalization"
+
+
+@dataclass(frozen=True)
+class MethodContract:
+    """One registered calculation method: closed parameters and declared policies."""
+
+    method_id: str
+    parameters: dict[str, dict[str, tuple[str, ...]]]
+    block_assignment: str
+    partial_blocks: str
+    missingness: str
+    validity: str
+
+
+#: Registered method vocabulary. ``parameters`` maps each response variable to
+#: the closed choices of every required parameter; wrappers around existing
+#: reductions only, so the whitelists span exactly the registered definitions.
+METHODS = {
+    "annual_summary/1": MethodContract(
+        "annual_summary/1",
+        {
+            "q": {"statistic": ("mean", "max", "min", "p95")},
+            "aet": {"statistic": ("sum",)},
+            "gwr": {"statistic": ("sum",)},
+            "precip": {"statistic": ("sum",)},
+            "snow": {"statistic": ("max",)},
+            "overland_flow": {"statistic": ("mean",)},
+        },
+        f"water-year blocks; {_TEMPORAL}",
+        _PARTIAL,
+        "sum skips NaN with min_count=0 (an all-missing block sums to 0); mean/max/min "
+        "and quantile skip NaN and keep NaN for an all-missing block; the mean over "
+        "blocks skips NaN blocks",
+        "finite or native-reduction NaN; infinity refused; no clipping",
+    ),
+    "annual_rolling7_extreme/1": MethodContract(
+        "annual_rolling7_extreme/1",
+        {"q": {"extreme": ("min", "max")}},
+        f"rolling 7-day mean over the whole member, then water-year blocks; {_TEMPORAL}; "
+        "windows cross water-year boundaries but never member boundaries",
+        _PARTIAL,
+        "a rolling window needs seven nonmissing values; block extrema and the mean "
+        "over blocks skip NaN",
+        "finite or native-reduction NaN; infinity refused; no clipping",
+    ),
+    "annual_min7_mean_ratio/1": MethodContract(
+        "annual_min7_mean_ratio/1",
+        {"q": {}},
+        f"annual minimum of the rolling 7-day mean over the annual mean; {_TEMPORAL}",
+        _PARTIAL,
+        "rolling windows need seven nonmissing values; 0/0 gives NaN for that block; "
+        "the mean over blocks skips NaN",
+        "infinite final value refused (a zero annual mean with a positive minimum); "
+        "no clipping",
+    ),
+    "reference_month_mean/1": MethodContract(
+        "reference_month_mean/1",
+        {"q": {"which": ("wet", "dry")}},
+        "fixed calendar month from pooled monthly SUMS of unperturbed evaluated members "
+        "at the first native q location (not the highest/lowest daily mean rate; the "
+        "choice depends on month length, member coverage and missingness; first month "
+        f"on ties); that month's water-year means averaged; {_TEMPORAL}",
+        _PARTIAL,
+        "monthly selection sums skip NaN; block means and the mean over blocks skip NaN",
+        "finite or native-reduction NaN; infinity refused; no clipping",
+    ),
+    "pooled_return_level/1": MethodContract(
+        "pooled_return_level/1",
+        {"q": {"kind": ("annual_max", "rolling7_annual_min")}},
+        "member-local annual maxima or rolling 7-day annual minima pooled per design "
+        f"group; L-moment GEV; fixed 10/2-year periods; {_TEMPORAL}",
+        "partial member-local blocks retained; pooling weights each usable block equally",
+        "nonfinite blocks dropped; at least max(ceil(T), 10) usable blocks",
+        "finite required; invalid GEV fit and untested probabilities refused; no "
+        "clipping; screening is provisional operational policy",
+    ),
+}
+
+#: Registered definition id -> (method id, parameters, registry statistic).
+#: Built from the existing vocabulary so ids and suffixes keep one owner.
+_Q_CALCULATIONS = {
+    "mean": ("annual_summary/1", {"variable": "q", "statistic": "mean"}),
+    "max": ("annual_summary/1", {"variable": "q", "statistic": "max"}),
+    "min": ("annual_summary/1", {"variable": "q", "statistic": "min"}),
+    "q95": ("annual_summary/1", {"variable": "q", "statistic": "p95"}),
+    "Q7day_max": ("annual_rolling7_extreme/1", {"extreme": "max"}),
+    "Q7day_min": ("annual_rolling7_extreme/1", {"extreme": "min"}),
+    "BaseFlowIndex": ("annual_min7_mean_ratio/1", {}),
+    "wetmonth_mean": ("reference_month_mean/1", {"which": "wet"}),
+    "drymonth_mean": ("reference_month_mean/1", {"which": "dry"}),
+    "return_level_max": ("pooled_return_level/1", {"kind": "annual_max"}),
+    "return_level_7day_min": ("pooled_return_level/1", {"kind": "rolling7_annual_min"}),
+}
+DEFINITIONS = {
+    tables.q_metric_name(statistic): (method, parameters, statistic)
+    for statistic, (method, parameters) in _Q_CALCULATIONS.items()
+} | {
+    tables.basin_metric_name(token): (
+        "annual_summary/1",
+        {"variable": token, "statistic": reduction},
+        reduction,
+    )
+    for token, (_, reduction) in tables.BASIN_METRIC_SUFFIXES.items()
+}
+
+#: Readable registry title, description and citations per definition. Units and
+#: policies come from declarations and METHODS, never from this text.
+DEFINITION_TEXT = {
+    "q_annual_mean": (
+        "Mean annual discharge",
+        "Water-year mean discharge averaged over years.",
+    ),
+    "q_mean_annual_max": (
+        "Mean annual maximum discharge",
+        "Water-year maximum daily discharge averaged over years.",
+    ),
+    "q_mean_annual_min": (
+        "Mean annual minimum discharge",
+        "Water-year minimum daily discharge averaged over years.",
+    ),
+    "q_mean_annual_p95": (
+        "Mean annual 95th-percentile discharge",
+        "Water-year 0.95 non-exceedance quantile (a HIGH flow, not conventional low-flow Q95) averaged over years.",
+    ),
+    "q_mean_annual_7day_max": (
+        "Mean annual 7-day maximum discharge",
+        "Water-year maximum of the rolling 7-day mean averaged over years.",
+    ),
+    "q_mean_annual_7day_min": (
+        "Mean annual 7-day minimum discharge",
+        "Water-year minimum of the rolling 7-day mean averaged over years.",
+    ),
+    "q_baseflow_index": (
+        "Baseflow index",
+        "Water-year ratio of the 7-day minimum to the annual mean, averaged over years.",
+    ),
+    "q_wettest_month_mean": (
+        "Wettest-month mean discharge",
+        "Mean discharge in the reference wet month (largest pooled monthly sum), averaged over years.",
+    ),
+    "q_driest_month_mean": (
+        "Driest-month mean discharge",
+        "Mean discharge in the reference dry month (smallest pooled monthly sum), averaged over years.",
+    ),
+    "q_return_level_10yr_max": (
+        "10-year return level of annual maximum discharge",
+        "GEV (L-moments) 10-year level of pooled member-local annual maxima.",
+    ),
+    "q_return_level_2yr_7day_min": (
+        "2-year return level of annual 7-day minimum discharge",
+        "GEV (L-moments) 2-year level of pooled member-local annual 7-day minima.",
+    ),
+    "aet_annual_total": (
+        "Mean water-year actual evapotranspiration depth",
+        "Daily depths summed per water-year block, averaged with equal block weight.",
+    ),
+    "gwr_annual_total": (
+        "Mean water-year groundwater recharge depth",
+        "Daily depths summed per water-year block, averaged with equal block weight.",
+    ),
+    "precip_annual_total": (
+        "Mean water-year precipitation depth",
+        "Daily depths summed per water-year block, averaged with equal block weight.",
+    ),
+    "snow_annual_max": (
+        "Mean annual maximum snowpack liquid water depth",
+        "Water-year maximum depth averaged over years.",
+    ),
+    "overland_flow_annual_mean": (
+        "Mean annual overland flow",
+        "Water-year mean overland flow averaged over years.",
+    ),
+}
+DEFINITION_REFERENCES = {
+    "q_return_level_10yr_max": (
+        "Hosking, J. R. M. (1990). L-moments. J. R. Stat. Soc. B, 52(1), 105-124.",
+    ),
+    "q_return_level_2yr_7day_min": (
+        "Hosking, J. R. M. (1990). L-moments. J. R. Stat. Soc. B, 52(1), 105-124.",
+    ),
+}
+if set(DEFINITION_TEXT) != set(DEFINITIONS):
+    raise ValueError("DEFINITION_TEXT must cover exactly the registered definitions")
+
+
+def output_units(declaration: MetricDeclaration) -> str:
+    """Declared output units; never inferred from input units alone."""
+    if declaration.statistic == "BaseFlowIndex":
+        return "1"
+    if declaration.statistic == "sum":
+        # Mean water-year block depth: mm per block, not a duration-normalized rate.
+        return "mm"
+    return declaration.required_responses.units
+
+
+def quantity(declaration: MetricDeclaration) -> str:
+    """The quantity a value measures, stated for the readable dictionary."""
+    if declaration.statistic == "sum":
+        return (
+            "mean water-year block depth: daily mm dt-1 values summed within each "
+            "block and averaged with equal block weight; mean annual depth only for "
+            "complete nonmissing blocks; not a duration-normalized rate"
+        )
+    if declaration.statistic == "BaseFlowIndex":
+        return "dimensionless ratio"
+    if declaration.grain == "bundle":
+        return f"{declaration.return_period}-year return level"
+    return "mean over water years of an annual statistic"
+
+
+def validate_calculation(method: str, parameters) -> tuple[str, dict]:
+    """Validate an authored calculation; return its registered definition id.
+
+    Parameters are closed: extras, omissions and values outside the method's
+    whitelist are refused, with no implicit numerical defaults.
+    """
+    contract = METHODS.get(method)
+    if contract is None:
+        raise ValueError(
+            f"unknown indicator method {method!r}; known: {sorted(METHODS)}"
+        )
+    if not isinstance(parameters, dict):
+        raise ValueError(f"{method}: parameters must be a mapping")
+    normalized = dict(sorted(parameters.items()))
+    for definition, (registered, registered_parameters, _) in DEFINITIONS.items():
+        if registered == method and normalized == dict(
+            sorted(registered_parameters.items())
+        ):
+            return definition, normalized
+    variables = sorted(contract.parameters)
+    raise ValueError(
+        f"{method}: unsupported parameters {normalized!r}; required keys and "
+        f"choices per variable: { ({v: contract.parameters[v] for v in variables}) }"
+    )
+
+
+def declaration_for(definition: str) -> MetricDeclaration:
+    """The authoritative declaration of one registered definition id."""
+    if definition not in DEFINITIONS:
+        raise ValueError(f"unknown registered indicator definition {definition!r}")
+    token = next(
+        token
+        for token in ("q", *tables.BASIN_METRIC_SUFFIXES)
+        if definition.startswith(f"{token}_")
+        and any(item.name == definition for item in declarations([token]))
+    )
+    return next(item for item in declarations([token]) if item.name == definition)
+
+
 def validate_requirement(
     metric: MetricDeclaration, series: Sequence[ResponseSeries]
 ) -> None:

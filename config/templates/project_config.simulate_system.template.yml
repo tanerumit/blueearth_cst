@@ -16,8 +16,25 @@
 # selects its own numbered family; an exact numbered name pins that experiment.
 #experiment_name: my_experiment
 
-# simulate-and-metrics | metrics-only (retained completed responses)
-operation: simulate-and-metrics
+# What to run, in any order: simulations, indicators, or both (the default).
+# Indicators alone read the retained responses and never start Wflow.
+operations: [simulations, indicators]
+
+
+# -----------------------------------------------------------------------------
+#  INDICATOR SETS
+# -----------------------------------------------------------------------------
+
+# Named sets, each published to results/metric_sets/<set-id>/ with an
+# indicators.csv dictionary. `default` is bundled; omitted means [default].
+indicator_sets: [default]
+
+# Custom sets: set id -> file. A relative config_path resolves against THIS
+# file; absolute paths are allowed. Copy config/templates/indicator_set.template.yml.
+#indicator_set_definitions: {example_subset: {config_path: indicator_sets/example_subset.yml}}
+
+# The scalar `operation:` and `metrics:` keys are the legacy interface,
+# accepted for one feature release; they cannot be mixed with the keys above.
 
 
 # -----------------------------------------------------------------------------

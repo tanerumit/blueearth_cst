@@ -38,9 +38,12 @@ use a directory outside the toolbox checkout.
     _engine/metric_sets/<id>/
       metrics.json              indicator definitions and source records
       return_level_benchmark.json  scope of return-level checks
-    _engine/metric_sets/current.json  current export identity and file inventory
-    results/metric_sets/         stable CSV copies of the current metric set
-    _engine/metric_sets/<id>/data/
+      coverage_evidence.json    per-series water-year block coverage
+    _engine/metric_sets/<id>/data/   immutable tables (same files as below)
+    _engine/metric_sets/names/<set-id>/
+      current.json              committed publication of this set
+    results/metric_sets/<set-id>/    readable view of one indicator set
+      indicators.csv            dictionary: units, method, policies, coverage
       group_members.csv         group_id,run_id (including singleton groups)
       group_metadata.csv        group_id,st_id,is_reference
       <token>_run_indicators.csv    metric,location,run_id,value
@@ -64,7 +67,10 @@ for allocation and creation recovery; it is not an experiment.
 
 Fresh collections and metric sets keep their immutable data under `_engine/`. Readers still accept
 completed legacy data at `scenarios/<id>/` and `results/metric_sets/<id>/`; their manifests retain those
-paths. Stable exports remain at `scenarios/` and `experiments/<name>/results/metric_sets/`.
+paths. The stable scenario export remains at `scenarios/`. Indicator sets publish one folder each at
+`experiments/<name>/results/metric_sets/<set-id>/`; a set id never takes over a legacy
+`results/metric_sets/<id>/` root. Older flat exports directly under `results/metric_sets/` with
+`_engine/metric_sets/current.json` are preserved but no longer refreshed.
 
 New projects use this layout from October 2026: the former `config/runs/` contents now sit directly
 under `config/`, and former `config/experiments/` state sits under `experiments/_engine/`.
@@ -147,17 +153,32 @@ files at those paths are not current suite outputs and are not deleted automatic
 
 ## Reading a metric set
 
-For post-processing, read CSVs directly from `experiments/<name>/results/metric_sets/`.
-Every successful WF4 invocation requesting indicators refreshes these copies, including reuse of an
-existing set. `_engine/metric_sets/current.json` records the selected hash, source manifest, and exported
-filenames with checksums. The hashed directories retain immutable results for reproducibility.
+For post-processing, read CSVs from `experiments/<name>/results/metric_sets/<set-id>/`, one folder per
+selected indicator set (`default` unless the WF4 file names others). Start with `indicators.csv`: one row
+per metric with its title, variable, input and output units, quantity, method and parameters, grain and
+group policy, water-year start and block assignment, partial-block, missingness and validity policies,
+references, and `block_coverage`. Coverage lists every contributing run/location pair with its blocks
+(observed/expected days and missing values); it discloses coverage, not sample adequacy. An authored
+indicator shows its registered counterpart in `equivalent_definition`; its numbers equal that
+definition's, under its own metric key.
 
-Wait for workflow completion before reading the flat export: replacement is atomic per file, not across
-the whole set. Failed calculation or validation leaves the previous export intact; ordinary export I/O
-failures roll back the replaced files. Dry-runs and `simulations_only` do not refresh it. Files tracked by
-the previous export but absent from the new selection are removed; unrelated files are preserved, and
-untracked filename collisions are refused. Rerun an indicator request to populate exports in existing
-experiments. Export copies are managed outputs; keep custom tables under different filenames.
+Every successful WF4 invocation requesting indicators refreshes each selected set's folder, including
+reuse of an existing set. `_engine/metric_sets/names/<set-id>/current.json` records the committed
+publication: the immutable metric set, the captured set definition, the dictionary metadata and every
+exported file's checksum. Sets publish independently: a failed set keeps its previous folder (the run
+summary names such mixed-age exports) and the command exits nonzero. Editing only titles, descriptions
+or authored citations refreshes `indicators.csv` without recomputing values.
+
+Wait for workflow completion before reading an export: replacement is atomic per file, not across the
+folder. Ordinary export I/O failures roll back the replaced files. Dry-runs and `simulations_only` do not
+refresh exports. A folder is refreshed only when this set's committed publication owns it; an existing
+folder with unknown files, or one claimed by a legacy metric set, is refused and left untouched. A
+rerun restores managed files edited by hand; keep custom tables elsewhere.
+
+Annual-total indicators (`aet`, `gwr`, `precip`) report **mm**: daily depths summed within each
+water-year block and averaged with equal block weight. Partial first and last blocks are kept without
+duration normalization and missing days contribute zero, so the value equals mean annual depth (mm/yr)
+only when every block is complete and nonmissing; `block_coverage` shows whether it is.
 
 Read `experiments/<name>/_engine/metric_sets/<id>/metrics.json` before
 its tables. It identifies the

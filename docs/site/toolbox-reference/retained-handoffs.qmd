@@ -11,7 +11,8 @@ independent plausibility overlay and does not select stress-test scenarios.
 |---|---|---|
 | Scenario collection | `scenarios/<collection_id>/` for generated series and lookups; `scenarios/_engine/collections/<collection_id>/collection.json` for the inventory | WF4 selects a ready collection and explicit run IDs. |
 | Simulation responses | `experiments/<experiment_name>/hydrology/wflow/output/`, with `experiments/<experiment_name>/_engine/response_inventory.json` | Metric reduction reads retained native Wflow responses. |
-| Metric set | `experiments/<experiment_name>/results/metric_sets/<metric_set_id>/` for tables and lookup; the experiment's `_engine/metric_sets/<metric_set_id>/metrics.json` for metadata | Result readers join indicator tables to their run-group lookup and request metadata. |
+| Metric set | The experiment's `_engine/metric_sets/<metric_set_id>/` (`metrics.json`, `data/` tables and lookups, coverage evidence); legacy sets may keep tables at `results/metric_sets/<metric_set_id>/` | Result readers join indicator tables to their run-group lookup and request metadata. |
+| Named indicator set | `experiments/<experiment_name>/results/metric_sets/<set-id>/` (tables, lookups, `indicators.csv`), committed by `_engine/metric_sets/names/<set-id>/current.json` | Post-processing reads one set's readable view after the workflow finishes. |
 
 The collection, simulation, and metric set have separate identities. A changed
 collection, model, or simulation setting requires a new experiment. A changed
@@ -19,10 +20,12 @@ metric request creates another metric set from retained responses without
 rerunning Wflow. Published products are validated before reuse and are not
 silently overwritten.
 
-For a stable post-processing path, WF4 also exports the selected CSVs directly into
-`experiments/<experiment_name>/results/metric_sets/` after success, including reuse.
-The mutable export inventory is `_engine/metric_sets/current.json` within the experiment.
-Read these copies after the workflow finishes; the hashed metric sets remain immutable.
+For a stable post-processing path, WF4 publishes each selected indicator set to
+`experiments/<experiment_name>/results/metric_sets/<set-id>/` after each invocation, including reuse.
+Each set's committed inventory is `_engine/metric_sets/names/<set-id>/current.json` within the
+experiment; sets commit independently. Read these copies after the workflow finishes; the hashed
+metric sets remain immutable. Older flat exports directly under `results/metric_sets/` are preserved
+but no longer refreshed.
 
 WF3 similarly mirrors the selected collection's full contents directly into `scenarios/`, including
 lookup CSVs, `series/`, `config/`, and `weathergenr/`.

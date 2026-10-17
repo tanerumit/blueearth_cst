@@ -2,4 +2,5 @@
 # see the header of `project_config_baseline_linux.yml`.
 
 experiment_name: experiment
-operation: simulate-and-metrics
+operations: [simulations, indicators]
+indicator_sets: [default]

@@ -1957,7 +1957,8 @@ def main(argv: list[str] | None = None) -> int:
         "--simulation-target",
         nargs="+",
         default=["all"],
-        help="explicit WF4 targets; metrics-only requires metrics or one selected metric-set file",
+        help="explicit WF4 targets for a legacy operation config (metrics-only requires "
+        "metrics or one selected metric-set file); operations/indicator_sets infer the target",
     )
     ap.add_argument(
         "extra",

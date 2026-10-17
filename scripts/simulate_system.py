@@ -24,7 +24,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--project-dir", type=Path)
-    parser.add_argument("--target", nargs="+", default=["all"])
+    parser.add_argument(
+        "--target",
+        nargs="+",
+        default=["all"],
+        help="legacy operation configs only; operations/indicator_sets infer the target",
+    )
     parser.add_argument("--cores", type=int, default=3)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--forceall", action="store_true")

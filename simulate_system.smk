@@ -15,7 +15,7 @@ config_path = workflow.configfiles[0]
 _, _settings = simulation_settings(config_path)
 OPERATION = _settings["operation"]
 if os.environ.get("CST_SIMULATION_OPERATION") != OPERATION or not os.environ.get("CST_SIMULATION_INVOCATION_ID"):
-    raise ValueError("Use python scripts/simulate_system.py --config <project> --target all (or --target simulations_and_indicators for metrics-only); bare simulate_system.smk is unsupported")
+    raise ValueError("Use python scripts/simulate_system.py --config <project> (operations/indicator_sets infer the target; a legacy operation config takes --target all, or --target simulations_and_indicators for metrics-only); bare simulate_system.smk is unsupported")
 if OPERATION == "metrics-only":
     include: "blueearth_cst/experiment/rules/metrics_only.smk"
 else:

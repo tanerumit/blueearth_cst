@@ -137,7 +137,10 @@ asymmetries in that table are ruled, not accidental:
 - **Overland flow reduces with a `mean`, the rest with a `sum` or a `max`.** It
   is a volume flow rate (m³ s⁻¹), so summing daily values gives a quantity in no
   unit anyone wants; the annual mean preserves the native unit. ET, recharge and
-  precipitation keep `annual_total` in mm/yr, because a daily sum of a mm Δt⁻¹
+  precipitation keep `annual_total` and report mm: the mean over water-year
+  blocks of each block's summed daily depth (partial edge blocks kept without
+  duration normalization, missing days contributing zero), which is mean annual
+  depth in mm/yr only for complete nonmissing blocks. A daily sum of a mm Δt⁻¹
   flux is a legitimate time-integral. Scoped deliberately to overland flow.
 - **These suffixes omit the `mean_` prefix the `q` vocabulary uses**
   (`snow_annual_max`, not `snow_mean_annual_max`), by owner ruling 2026-08-08.

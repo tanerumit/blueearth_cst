@@ -1,0 +1,28 @@
+# =============================================================================
+#  indicator set -- a named selection of registered WF4 indicators
+# =============================================================================
+#
+# Select it from the WF4 file through indicator_sets and
+# indicator_set_definitions. The id must equal the name selected there.
+# A set chooses registered calculations; it never defines arithmetic, units,
+# calendars, missingness or grain. This example illustrates reuse only; it is
+# not an approved second scientific set.
+
+schema_version: 1
+id: example_subset
+title: Example discharge subset
+description: Illustrative reuse, not an approved second scientific set.
+selection:
+  indicators:
+    # A registered definition id (see dev/reference/indicator-glossary.md).
+    - definition: q_annual_mean
+    - definition: q_mean_annual_7day_min
+    # An authored entry names one registered calculation under its own metric
+    # key; its numbers equal that definition's (shown as equivalent_definition).
+    #- id: high_flow_p95
+    #  title: Mean annual 95th-percentile discharge
+    #  description: Water-year 0.95 non-exceedance quantile, a HIGH flow.
+    #  references: []
+    #  calculation:
+    #    method: annual_summary/1
+    #    parameters: {variable: q, statistic: p95}

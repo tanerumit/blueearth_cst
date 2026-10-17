@@ -2,7 +2,7 @@
 title: "WF4 — Simulate system"
 ---
 
-`simulate_system.smk` runs Wflow-SBM for explicit series in a ready WF3 collection and reduces retained native responses to requested indicators. Invoke it through `scripts/simulate_system.py`, which validates the operation and target before Snakemake starts.
+`simulate_system.smk` runs Wflow-SBM for explicit series in a ready WF3 collection and reduces retained native responses to named indicator sets. Invoke it through `scripts/simulate_system.py`, which validates the selected operations and indicator sets before Snakemake starts.
 
 ## Rules
 
@@ -16,13 +16,13 @@ title: "WF4 — Simulate system"
 | 4.05 `run_wflow_simulations_batch_<batch>` | Run Wflow in batches, retaining native responses. |
 | 4.06 `publish_wflow_outputs` | Publish the response inventory. |
 | `simulations_only` (target) | Collect simulation outputs without indicators. |
-| 4.07 `prepare_indicator_plan` | Resolve metric-set identity and targets. |
-| 4.08 `derive_system_indicators` | Produce indicator tables and the metric-set marker. |
+| 4.07 `prepare_indicator_plan` | Resolve each distinct metric request's identity and targets. |
+| 4.08 `derive_system_indicators` | Produce each immutable metric set: tables, coverage evidence and marker. |
 | 4.09 `gather_logs` | Merge experiment logs. |
 | 4.10 `gather_benchmarks` | Merge experiment benchmarks. |
 | `simulations_and_indicators` (target) | Collect the selected metric set. |
 
-The supported target includes `all`; the workflow also exposes simulation-only and simulation-plus-indicator target aggregates. A metrics-only operation can produce another metric set from completed responses without rerunning Wflow. The wrapper selects the appropriate module and validates the requested operation/target combination.
+The runner infers its target from `operations`: both operations run `all`, simulations alone stop at `simulations_only`, and indicators alone read completed responses without rerunning Wflow. Sets with identical numerical requests share one plan and one immutable metric set. After Snakemake, the runner publishes each set separately; a failed set keeps its previous publication, and the command exits nonzero unless every set is current. With several sets, Snakemake runs with `--keep-going`, which also lets independent Wflow batches continue after one fails.
 
 ## Rule flow
 
@@ -39,18 +39,26 @@ flowchart LR
   F --> I
 ```
 
-The metrics-only operation starts from existing retained responses and proceeds through the indicator branch. The simulation-only target stops after response publication.
+Indicators alone start from existing retained responses and proceed through the indicator branch. Simulations alone stop after response publication.
 
 ## Configuration
 
-The project file supplies the `model` context and `workflows.simulate_system.enabled` and `.config_path`; the latter resolves the workflow YAML beside the project file. The WF4 file, `test_case/project_config_rapid_simulate_system.yml`, sets `experiment_name` (the output namespace) and `operation` (`simulate-and-metrics` or `metrics-only`). The template at `config/templates/project_config.simulate_system.template.yml` also describes the optional `compute` block: `julia_threads`, `max_parallel_batches`, `batch_size_max`, `batch_size`, and `disk_headroom_gb`. The runner target and explicit run selection complete the simulation request.
+The project file supplies the `model` context and `workflows.simulate_system.enabled` and `.config_path`; the latter resolves the workflow YAML beside the project file. The WF4 file, `test_case/project_config_rapid_simulate_system.yml`, sets `experiment_name` (the output namespace), `operations` and `indicator_sets`. The template at `config/templates/project_config.simulate_system.template.yml` also describes the optional `compute` block: `julia_threads`, `max_parallel_batches`, `batch_size_max`, `batch_size`, and `disk_headroom_gb`.
 
 ```yaml
 experiment_name: experiment_rapid
-operation: simulate-and-metrics
-# Optional compute: julia_threads, max_parallel_batches,
-# batch_size_max, batch_size, disk_headroom_gb
+operations: [simulations, indicators]   # either alone; omitted means both
+indicator_sets: [default, example_subset]
+indicator_set_definitions:
+  example_subset:
+    config_path: indicator_sets/example_subset.yml   # relative to this file
 ```
+
+`operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter. `indicator_sets` lists set ids (`[a-z][a-z0-9_]*`, at most 64 characters); omitted means `[default]`. `default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for `model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file that declares it. Selected set files are read once per invocation. Copy `config/templates/indicator_set.template.yml` for a custom set: it selects registered definitions, or names one registered calculation under an authored id. A set never defines arithmetic, units, calendars, missingness or grain.
+
+Selected indicators must be available: before simulating, their variables are checked against `model.outvars`; when indicators run alone, against the retained responses. A missing variable fails with the set, metric, method and variable; it never schedules a simulation.
+
+The scalar `operation: simulate-and-metrics | metrics-only` and `metrics:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
 
 ## Inputs
 
@@ -62,4 +70,4 @@ WF4 requires the completed WF1 model and an explicitly selected ready WF3 collec
 
 ## Outputs
 
-An experiment retains native Wflow response CSVs and a response inventory. Each metric set retains `metrics.json`, indicator tables, unit index, and declarations that identify the source responses. Logs and benchmarks are scoped to the experiment. A metric set is immutable; changing an indicator request creates another set from the retained responses. See [Reading the outputs](../guide/outputs.qmd) for paths and join keys.
+An experiment retains native Wflow response CSVs and a response inventory. Each immutable metric set (`metric-set/4`, under the experiment's `_engine/metric_sets/<id>/`) retains `metrics.json`, its indicator tables, group membership, declarations, return-level evidence and per-series block coverage. Each selected set is published as a readable view at `results/metric_sets/<set-id>/`: run and group tables, group lookups and an `indicators.csv` dictionary of units, methods, temporal and missingness policies, and coverage. Logs and benchmarks are scoped to the experiment. See [Reading the outputs](../guide/outputs.qmd) for paths and join keys.

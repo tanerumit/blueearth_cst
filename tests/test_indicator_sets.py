@@ -277,3 +277,18 @@ def test_required_variables_is_the_union_across_sets():
         ),
     ]
     assert sets.required_variables(resolved) == ["q", "aet"]
+
+
+def test_the_shipped_indicator_set_template_resolves():
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "config/templates/indicator_set.template.yml"
+    )
+    source = sets.SetSource(
+        "example_subset", path, False, path.read_text(encoding="utf-8")
+    )
+    resolved = sets.resolve_set(source)
+    assert [item.metric for item in resolved.indicators] == [
+        "q_annual_mean",
+        "q_mean_annual_7day_min",
+    ]

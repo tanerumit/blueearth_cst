@@ -30,11 +30,12 @@ branches differing. Named mode, named vs flat export, flat-export preservation a
 checks all pass. Evidence: `.tmp/indicator-default-parity-prechange/index.md`.
 A full run created by the candidate (named simulate path) reproduced the oracle tables. Legacy and
 named dry runs both left WF4 up to date.
-Open: model-validator acceptance of the oracle coverage; landing.
+Model-validator accepted the oracle coverage with recording-only conditions, both met (index updated;
+test 0717f60f). Limitations are recorded in the index. Open: landing (owner's decision).
 
 - [x] Review and seal [the design](t2610161523/design-runs/named-indicator-sets/design-v3.md).
 - [x] Implement the agreed integration and update affected consumers and documentation.
-- [ ] Verify default compatibility, independent set reuse, and failure recovery.
+- [x] Verify default compatibility, independent set reuse, and failure recovery.
 
 ## Work location
 

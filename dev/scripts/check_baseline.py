@@ -564,11 +564,11 @@ def resolve_metric_set_dir(project_dir: str) -> str:
             "select a dedicated baseline fixture (legacy tables are not a successor baseline)"
         )
     plan = read_canonical_json(plans[0])
-    if plan.get("schema_version") != "metric-request/3":
+    if plan.get("schema_version") not in ("metric-request/3", "metric-request/4"):
         raise BaselineFixtureError(
-            "baseline requires metric-request/3; regenerate the legacy fixture and re-record the baseline"
+            "baseline requires metric-request/3 or /4; regenerate the legacy fixture and re-record the baseline"
         )
-    # The /3 split-table layout retains the engine/results separation. Legacy
+    # The split-table layout retains the engine/results separation. Legacy
     # numeric-ID plans and mixed-table sets must be regenerated before recording.
     if (
         content_sha256(
@@ -591,9 +591,9 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     marker = read_canonical_json(
         experiment / "_engine/metric_sets" / segment / "metrics.json"
     )
-    if marker.get("schema_version") != "metric-set/3":
+    if marker.get("schema_version") not in ("metric-set/3", "metric-set/4"):
         raise BaselineFixtureError(
-            "baseline requires metric-set/3; regenerate the legacy fixture and re-record the baseline"
+            "baseline requires metric-set/3 or /4; regenerate the legacy fixture and re-record the baseline"
         )
     if (
         marker.get("status") != "ready"
@@ -611,10 +611,10 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     ):
         raise ValueError("baseline metric marker differs from the selected plan")
     result_root = marker.get("result_root")
-    if result_root not in (
-        f"_engine/metric_sets/{segment}/data",
-        f"results/metric_sets/{segment}",
-    ):
+    roots = [f"_engine/metric_sets/{segment}/data"]
+    if marker["schema_version"] == "metric-set/3":
+        roots.append(f"results/metric_sets/{segment}")
+    if result_root not in roots:
         raise ValueError("baseline metric result root differs from selected set")
     destination = experiment / result_root
     return destination.as_posix()

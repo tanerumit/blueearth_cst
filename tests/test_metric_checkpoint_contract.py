@@ -113,9 +113,9 @@ def test_a_published_set_is_reused_byte_for_byte_under_forceall(tmp_path):
         "group_metadata.csv",
     } <= {path.name for path in published}
 
-    tracking = root / "_engine/metric_sets/current.json"
+    tracking = root / "_engine/metric_sets/names/default/current.json"
     assert tracking.is_file()
-    stable = root / "results/metric_sets/gwr_run_indicators.csv"
+    stable = root / "results/metric_sets/default/gwr_run_indicators.csv"
     original = stable.read_bytes()
     stable.unlink()
     # No immutable rule output is missing: successful no-op reuse repairs the export.

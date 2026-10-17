@@ -126,26 +126,25 @@ def main(argv=None):
                 writing=not preview,
             )
             if (
-                result == 0
-                and not preview
+                not preview
                 and selection.indicators
                 and current_targets(args.target) != ["simulations_only"]
             ):
                 from blueearth_cst.experiment.metric_export import (
-                    export_selected_metrics,
+                    publish_selected_sets,
+                    report_publication,
                 )
 
-                # Snakemake skips onsuccess when an explicit file target is current.
-                # Refresh here, still under project execution ownership, for all reuse.
-                export_selected_metrics(
-                    root / "experiments" / context.name, project, settings, selection
+                # Per-set completion, still under project execution ownership:
+                # every ready set publishes even when another set's job failed,
+                # and the invocation is nonzero unless every set is current.
+                experiment_root = root / "experiments" / context.name
+                outcomes = publish_selected_sets(
+                    experiment_root, project, settings, selection
                 )
-                from blueearth_cst.shared.run_log_core import log_row
-
-                log_row(
-                    f"Selected metric tables exported → {root / 'experiments' / context.name / 'results/metric_sets'}",
-                    module="metrics",
-                )
+                record["indicator_set_outcomes"] = outcomes
+                if not report_publication(experiment_root, outcomes) and result == 0:
+                    result = 1
         invocation_history.finish(record_path, record, exit_code=result)
         return result
     except ValueError as exc:

@@ -46,6 +46,11 @@ def wrapper_only_admission(monkeypatch):
             environment=lambda: {},
         ),
     )
+    # The stubbed WF4 child publishes no metric set; real named publication is
+    # exercised by test_named_indicator_sets_workflow.
+    from blueearth_cst.experiment import metric_export
+
+    monkeypatch.setattr(metric_export, "publish_selected_sets", lambda *_args: [])
 
 
 def _write_cfg(path, flags, project_dir=None):

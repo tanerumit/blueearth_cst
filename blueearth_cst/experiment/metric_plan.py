@@ -27,6 +27,7 @@ from blueearth_cst.experiment.metric_registry import (
     reduce_group_mean,
     reduce_run,
     resolve_month_reference,
+    series_coverage,
 )
 from blueearth_cst.experiment.response_inventory import read_response_inventory_v2
 from blueearth_cst.experiment.scenario_rows import ScenarioRow
@@ -47,6 +48,10 @@ from blueearth_cst.shared.snake_utils import log_row, plural
 #: The published return-level provenance beside each v2 metric set's marker.
 RETURN_LEVEL_EVIDENCE_FILENAME = "return_level_evidence.json"
 RETURN_LEVEL_EVIDENCE_SCHEMA = "return-level-evidence/1"
+#: Per-series block coverage beside each metric-set/4 marker; diagnostic
+#: evidence bound by the response digest, not an identity input.
+COVERAGE_EVIDENCE_FILENAME = "coverage_evidence.json"
+COVERAGE_EVIDENCE_SCHEMA = "coverage-evidence/1"
 
 
 class MetricPlanStale(ValueError):
@@ -692,6 +697,7 @@ def reduce_metric_plan(experiment_root, plan):
     }
     output = {token: [] for token in plan["request"]["tokens"]}
     evidence = []
+    coverage = {}
     anchor = plan["request"]["water_year_anchor"]
     for group, members in plan["groups"].items():
         series = tuple(
@@ -699,6 +705,8 @@ def reduce_metric_plan(experiment_root, plan):
             for run in members
             for item in open_responses(run, native[run], ResponseRequest(tuple(output)))
         )
+        for item in series:
+            coverage.setdefault(item.key, series_coverage(item, anchor))
         for metric in registry:
             token = metric.required_responses.variable
             variable = [item for item in series if item.variable == token]
@@ -769,7 +777,7 @@ def reduce_metric_plan(experiment_root, plan):
         raise ImmutableMetricSetError(
             "reduced result keys differ from independent expected set"
         )
-    return output, evidence
+    return output, evidence, [coverage[key] for key in sorted(coverage)]
 
 
 def _validate_tables(tables, expected_keys, declarations_by_name, units):
@@ -849,7 +857,7 @@ def _publish_metric_set_v2(experiment_root, plan):
         for path in (result, legacy_result)
     ):
         raise ImmutableMetricSetError("partial metric set cannot be overwritten")
-    tables, evidence = reduce_metric_plan(root, plan)
+    tables, evidence, coverage = reduce_metric_plan(root, plan)
     declarations_by_name = {
         item["name"]: item for item in plan["request"]["declarations"]
     }
@@ -897,6 +905,9 @@ def _publish_metric_set_v2(experiment_root, plan):
     evidence_payload = canonical_json_bytes(
         {"schema_version": RETURN_LEVEL_EVIDENCE_SCHEMA, "bundles": _plain(evidence)}
     )
+    coverage_payload = canonical_json_bytes(
+        {"schema_version": COVERAGE_EVIDENCE_SCHEMA, "series": coverage}
+    )
     report = return_level_validation.load_report_bytes()
     return_level_validation.verify_declaration(
         plan["request"]["return_level_validation"], report
@@ -919,6 +930,7 @@ def _publish_metric_set_v2(experiment_root, plan):
         engine / "metric_environment.json": environment,
         engine / return_level_validation.REPORT_FILENAME: report,
         engine / RETURN_LEVEL_EVIDENCE_FILENAME: evidence_payload,
+        engine / COVERAGE_EVIDENCE_FILENAME: coverage_payload,
     }
     staged = []
     for number, (path, payload) in enumerate(files.items()):
@@ -966,6 +978,7 @@ def _publish_metric_set_v2(experiment_root, plan):
         ],
         "return_level_benchmark": ref(return_level_validation.REPORT_FILENAME, report),
         "return_level_evidence": ref(RETURN_LEVEL_EVIDENCE_FILENAME, evidence_payload),
+        "coverage_evidence": ref(COVERAGE_EVIDENCE_FILENAME, coverage_payload),
         "result_root": result_relative,
         "engine_root": f"_engine/metric_sets/{short}",
     }
@@ -1066,6 +1079,10 @@ def _read_metric_set_v2(experiment_root, marker):
     if manifest["return_level_evidence"]["path"] != RETURN_LEVEL_EVIDENCE_FILENAME:
         raise ImmutableMetricSetError("return-level evidence reference differs")
     artifacts.append(manifest["return_level_evidence"])
+    if version == "metric-set/4":
+        if manifest["coverage_evidence"]["path"] != COVERAGE_EVIDENCE_FILENAME:
+            raise ImmutableMetricSetError("coverage evidence reference differs")
+        artifacts.append(manifest["coverage_evidence"])
     for item in artifacts:
         if file_sha256(engine / item["path"]) != item["sha256"]:
             raise ImmutableMetricSetError(f"metric artifact differs: {item['path']}")

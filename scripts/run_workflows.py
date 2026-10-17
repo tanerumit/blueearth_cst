@@ -1336,6 +1336,7 @@ def _run_owned(
                         capture_simulation_sources_v2,
                     )
                     from blueearth_cst.experiment.simulation_runner import (
+                        current_targets,
                         simulation_command,
                         simulation_settings,
                     )
@@ -1410,6 +1411,37 @@ def _run_owned(
                             },
                         ),
                     )
+                    snapshot = environment.get("CST_INDICATOR_SELECTION")
+                    if (
+                        not manifest["dry_run"]
+                        and snapshot
+                        and reservation_context is not None
+                        and current_targets(list(simulation_targets))
+                        != ["simulations_only"]
+                    ):
+                        from blueearth_cst.experiment.indicator_sets import (
+                            read_selection_snapshot,
+                        )
+                        from blueearth_cst.experiment.metric_export import (
+                            publish_selected_sets,
+                            report_publication,
+                        )
+
+                        selection = read_selection_snapshot(snapshot)
+                        if selection.indicators:
+                            wf4_project, _ = simulation_settings(config_path)
+                            experiment_root = (
+                                project_dir / "experiments" / reservation_context.name
+                            )
+                            outcomes = publish_selected_sets(
+                                experiment_root, wf4_project, settings, selection
+                            )
+                            child_record["indicator_set_outcomes"] = outcomes
+                            if (
+                                not report_publication(experiment_root, outcomes)
+                                and result.returncode == 0
+                            ):
+                                result = subprocess.CompletedProcess(cmd, 1)
                 else:
                     env_for_child = {
                         **child_env,

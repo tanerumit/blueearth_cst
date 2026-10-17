@@ -145,6 +145,7 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(
                 ]
             },
             (),
+            [],
         ),
     )
     monkeypatch.setattr(

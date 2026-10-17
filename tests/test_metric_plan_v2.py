@@ -203,22 +203,16 @@ def _relocate_to_legacy_root(root, marker, result, schema):
     return manifest, legacy
 
 
-def test_a_legacy_v3_results_root_stays_readable_and_exportable(published):
+def test_a_legacy_v3_results_root_stays_readable(published):
     """Read-only /3 support: a legacy results/<digest>/ root is still read."""
-    from blueearth_cst.experiment.metric_export import export_metric_set
-
     root, marker, result = published
     manifest, legacy = _relocate_to_legacy_root(root, marker, result, "metric-set/3")
     files = [marker, *legacy.iterdir()]
     before = {path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files}
     assert read_metric_set(root, marker) == manifest
-    export_metric_set(root, marker)
     assert before == {
         path: (path.read_bytes(), path.stat().st_mtime_ns) for path in files
     }
-    assert (legacy.parent / "gwr_run_indicators.csv").read_bytes() == (
-        legacy / "gwr_run_indicators.csv"
-    ).read_bytes()
 
 
 def test_a_v4_set_never_adopts_a_legacy_results_root(published):
@@ -264,92 +258,6 @@ def test_the_metric_environment_changes_only_the_metric_identity(experiment):
     assert after["metric_set_id"] != before["metric_set_id"]
     assert after["response_inventory_sha256"] == before["response_inventory_sha256"]
     assert after["request"]["simulation_id"] == before["request"]["simulation_id"]
-
-
-def test_stable_export_tracks_selection_and_preserves_immutable_sets(published):
-    from blueearth_cst.experiment.metric_export import export_metric_set
-
-    root, marker, result = published
-    destination = root / "results/metric_sets"
-    tracking = root / "_engine/metric_sets/current.json"
-    immutable = {path: path.read_bytes() for path in result.iterdir()}
-    export_metric_set(root, marker)
-    record = read_canonical_json(tracking)
-    assert record["metric_set_id"] == read_metric_set(root, marker)["metric_set_id"]
-    assert {name: (destination / name).read_bytes() for name in record["files"]} == {
-        path.name: payload for path, payload in immutable.items()
-    }
-    # Model a previously selected variable and an unrelated user CSV.
-    obsolete = destination / "q_run_indicators.csv"
-    obsolete.write_bytes(b"previous export")
-    record["files"][obsolete.name] = "a" * 64
-    tracking.write_bytes(canonical_json_bytes(record))
-    unrelated = destination / "notes.csv"
-    unrelated.write_bytes(b"user data")
-    (destination / "gwr_run_indicators.csv").unlink()
-    export_metric_set(root, marker)
-    assert not obsolete.exists()
-    assert unrelated.read_bytes() == b"user data"
-    assert (destination / "gwr_run_indicators.csv").read_bytes() == (
-        result / "gwr_run_indicators.csv"
-    ).read_bytes()
-    assert immutable == {path: path.read_bytes() for path in immutable}
-    alternate = build_metric_plan(
-        root, current_metric_request(root, default_calculations(["gwr"]), "YS-OCT")
-    )
-    publish_metric_set(root, alternate)
-    export_metric_set(root, _engine(root, alternate) / "metrics.json")
-    assert read_canonical_json(tracking)["metric_set_id"] == alternate["metric_set_id"]
-    assert alternate["metric_set_id"] != record["metric_set_id"]
-    export_metric_set(root, marker)
-    assert read_canonical_json(tracking)["metric_set_id"] == record["metric_set_id"]
-
-
-@pytest.mark.parametrize(
-    "failure", ["source", "copy", "replace", "metadata", "unowned"]
-)
-def test_failed_export_preserves_previous_files(published, monkeypatch, failure):
-    from blueearth_cst.experiment import metric_export
-
-    root, marker, result = published
-    metric_export.export_metric_set(root, marker)
-    destination = root / "results/metric_sets"
-    tracking = root / "_engine/metric_sets/current.json"
-    # Distinct previous bytes prove rollback, even for files already replaced.
-    (destination / "group_members.csv").write_bytes(b"previous export")
-    if failure == "unowned":
-        tracking.unlink()
-    before = {
-        path: path.read_bytes()
-        for path in [*destination.glob("*.csv"), tracking]
-        if path.exists()
-    }
-
-    def fail(*args, **kwargs):
-        raise OSError("injected export failure")
-
-    if failure == "source":
-        (result / "gwr_run_indicators.csv").write_bytes(b"corrupt")
-    elif failure == "copy":
-        monkeypatch.setattr(metric_export.shutil, "copyfile", fail)
-    elif failure == "metadata":
-        monkeypatch.setattr(metric_export, "atomic_record", fail)
-    elif failure == "replace":
-        replace = metric_export.os.replace
-        calls = 0
-
-        def fail_second(source, target):
-            nonlocal calls
-            calls += 1
-            if calls == 2:
-                fail()
-            return replace(source, target)
-
-        monkeypatch.setattr(metric_export.os, "replace", fail_second)
-    with pytest.raises((ValueError, OSError)):
-        metric_export.export_metric_set(root, marker)
-    assert before == {path: path.read_bytes() for path in before}
-    assert not list(tracking.parent.glob(".export-*"))
 
 
 def test_an_xclim_revision_changes_only_the_metric_identity(bare, monkeypatch):

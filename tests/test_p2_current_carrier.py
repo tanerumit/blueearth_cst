@@ -101,8 +101,11 @@ def test_current_carrier_operation_target_matrix(
 
     exports = []
     monkeypatch.setattr(
-        metric_export, "export_selected_metrics", lambda *args: exports.append(args)
+        metric_export,
+        "publish_selected_sets",
+        lambda *args: exports.append(args) or [],
     )
+    monkeypatch.setattr(metric_export, "report_publication", lambda *args: True)
     if operation == "simulate-and-metrics":
         # This launch-target matrix has no producer catalog. Real admission is
         # covered by the context tests and the fresh all-five execution.

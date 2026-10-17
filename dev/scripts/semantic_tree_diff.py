@@ -586,12 +586,25 @@ def build_project_tree_rules(
             "metrics.json",
             "metric_environment.json",
             "return_level_benchmark.json",
+            "return_level_evidence.json",
+            "coverage_evidence.json",
         ):
             same_rx(
                 rf"experiments/{exp}/_engine/metric_sets/{digest}/{re.escape(leaf)}"
             )
         same_rx(rf"{metric_set}/group_(members|metadata)\.csv")
         same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_(run|group)_indicators\.csv")
+        # Named per-set exports (metric-set/4) and their committed pointers.
+        named = r"[a-z][a-z0-9_]{0,63}"
+        same_rx(
+            rf"experiments/{exp}/results/metric_sets/{named}/"
+            r"(?:group_(?:members|metadata)|indicators|[a-z][a-z0-9_]*_(?:run|group)_indicators)\.csv"
+        )
+        names = rf"experiments/{exp}/_engine/metric_sets/names/{named}"
+        same_rx(rf"{names}/current\.json")
+        same_rx(rf"{names}/definitions/[0-9a-f]{{64}}\.yml")
+        same_rx(rf"{names}/publications/[0-9a-f]{{64}}\.json")
+        # The retired flat export stays readable evidence in older trees.
         same(f"experiments/{e}/_engine/metric_sets/current.json")
         same_rx(rf"experiments/{exp}/results/metric_sets/group_(members|metadata)\.csv")
         same_rx(

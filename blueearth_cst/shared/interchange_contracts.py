@@ -853,7 +853,7 @@ def validate_hm7_v2(
     series,
     collection_run_ids,
 ) -> list[str]:
-    """HM-7 for metric-set/3; table keys are ``<token>_<run|group>``.
+    """HM-7 for metric-set/3 (read-only) and /4; table keys are ``<token>_<run|group>``.
 
     The historical function name remains for callers. Legacy /2 manifests are
     refused. Declarations, retained locations and collection runs independently
@@ -863,9 +863,9 @@ def validate_hm7_v2(
     import math
 
     label = "HM-7"
-    if manifest.get("schema_version") != "metric-set/3":
+    if manifest.get("schema_version") not in ("metric-set/3", "metric-set/4"):
         return [
-            f"{label}: expected metric-set/3; legacy mixed-ID sets must be recomputed"
+            f"{label}: expected metric-set/3 or /4; legacy mixed-ID sets must be recomputed"
         ]
     if tuple(lookup.columns) != HM7_V2_LOOKUP_COLUMNS:
         return [f"{label}: lookup header is not group_id,run_id"]

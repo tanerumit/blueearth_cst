@@ -149,3 +149,47 @@ def test_named_sets_publish_independent_immutable_sets(tmp_path):
         assert registered and len(registered) == len(authored)
         # Only the metric key differs; values and keys match exactly.
         assert [{**row, "metric": "gwr_annual_total"} for row in authored] == registered
+
+
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="run_project_child refuses project writers off Windows",
+)
+def test_named_sets_export_one_readable_folder_per_set(tmp_path):
+    from blueearth_cst.experiment.named_export import read_current_publication
+
+    experiment = build_v2_experiment(tmp_path)
+    root = experiment.root
+    _named(experiment, SETTINGS)
+    code, output = _simulate(experiment)
+    assert code == 0, output
+    records = {
+        set_id: read_current_publication(root, set_id)
+        for set_id in ("default", "depth_alias", "same_numbers")
+    }
+    # Identical normalized requests reuse one immutable metric set across names.
+    assert (
+        records["default"]["metric_set_id"] == records["same_numbers"]["metric_set_id"]
+    )
+    assert (
+        records["default"]["metric_set_id"] != records["depth_alias"]["metric_set_id"]
+    )
+    for set_id in records:
+        assert (root / "results/metric_sets" / set_id / "indicators.csv").is_file()
+    assert "Indicator set depth_alias current" in output, output
+    # A metadata-only edit refreshes the publication but not the numbers.
+    alias = experiment.config.parent / "sets/depth_alias.yml"
+    alias.write_text(
+        alias.read_text(encoding="utf-8").replace(
+            "title: Recharge depth\n", "title: Renamed\n"
+        ),
+        encoding="utf-8",
+    )
+    code, output = _simulate(experiment)
+    assert code == 0, output
+    refreshed = read_current_publication(root, "depth_alias")
+    assert refreshed["metric_set_id"] == records["depth_alias"]["metric_set_id"]
+    assert refreshed["publication_id"] != records["depth_alias"]["publication_id"]
+    assert "Renamed" in (
+        root / "results/metric_sets/depth_alias/indicators.csv"
+    ).read_text(encoding="utf-8")

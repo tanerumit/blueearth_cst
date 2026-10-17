@@ -446,6 +446,59 @@ def declaration_for(definition: str) -> MetricDeclaration:
     return next(item for item in declarations([token]) if item.name == definition)
 
 
+def _block_interval(label: pd.Timestamp, anchor: str):
+    """The calendar interval one resample block covers, for its label."""
+    offset = pd.tseries.frequencies.to_offset(anchor)
+    if anchor.startswith("YS"):
+        return label, label + offset
+    return label - offset, label
+
+
+def series_coverage(item: ResponseSeries, anchor: str) -> dict:
+    """Immutable per-series block coverage under the resolved water-year anchor.
+
+    Derived from the retained index and missing mask, never from requested
+    dates. A complete label block has every expected daily label of its
+    Gregorian anchor interval (leap days included); it may still hold NaNs.
+    """
+    labels = pd.Series(item.missing, index=item.time)
+    blocks = []
+    for block_label, group in labels.resample(anchor):
+        if group.empty:
+            continue
+        start, end = _block_interval(block_label, anchor)
+        expected = int((end - start) / item.timestep)
+        observed = len(group)
+        missing = int(group.sum())
+        blocks.append(
+            {
+                "block_label": str(block_label.date()),
+                "first_label": str(group.index[0].date()),
+                "last_label": str(group.index[-1].date()),
+                "observed": observed,
+                "expected": expected,
+                "missing": missing,
+                "all_missing": missing == observed,
+            }
+        )
+    return {
+        "run_id": item.run_id,
+        "variable": item.variable,
+        "location_id": item.location_id,
+        "calendar": item.calendar,
+        "timestep_seconds": int(item.timestep.total_seconds()),
+        "time_label": item.time_label,
+        "anchor": anchor,
+        "first_label": str(item.time[0].date()),
+        "last_label": str(item.time[-1].date()),
+        "blocks": blocks,
+        "block_count": len(blocks),
+        "complete_label_blocks": sum(b["observed"] == b["expected"] for b in blocks),
+        "missing_total": sum(b["missing"] for b in blocks),
+        "all_missing_blocks": sum(b["all_missing"] for b in blocks),
+    }
+
+
 def validate_requirement(
     metric: MetricDeclaration, series: Sequence[ResponseSeries]
 ) -> None:

@@ -1,35 +1,45 @@
-"""Stable CSV copies of the last successfully selected immutable metric set."""
+"""Publish each selected named indicator set after a WF4 invocation.
 
-import os
-import re
-import shutil
-import uuid
+Sets commit independently: a set whose immutable metric set is complete is
+published even when another set failed, and a failed set keeps its prior
+publication. This is per-set completion, not an all-set transaction.
+"""
+
 from pathlib import Path
 
-from blueearth_cst.experiment.content_identity import atomic_record, read_canonical_json
+from blueearth_cst.experiment import indicator_sets
 from blueearth_cst.experiment.metric_plan import (
     current_metric_request,
-    read_metric_set,
     verify_metric_plan,
+)
+from blueearth_cst.experiment.named_export import (
+    NamedExportError,
+    legacy_flat_export,
+    publish_named_set,
+    read_current_publication,
 )
 from blueearth_cst.experiment.simulation_record import read_simulation_intent_v2
 from blueearth_cst.shared.snake_utils import resolve_water_year_start
 
 
-def export_selected_metrics(
+def publish_selected_sets(
     root: Path, project: dict, settings: dict, selection
-) -> None:
-    """Resolve the successful runner's selection, including a no-op file target.
+) -> list[dict]:
+    """Publish every selected set whose metric set is ready; report each outcome.
 
-    Interim single-set export: the flat view is refreshed only for a one-set
-    selection, until named per-set publication replaces it.
+    Returns one record per set: ``status`` is ``current`` or ``failed``, with
+    the metric-set and publication ids, the failure reason, and any prior
+    publication a failed set keeps (a mixed-age export).
     """
-    from blueearth_cst.experiment import indicator_sets
+    root = Path(root).resolve()
 
     def retained_variables():
         request = read_simulation_intent_v2(root)["documents"]["response_request"]
         return [item["variable"] for item in request["variables"]]
 
+    month = resolve_water_year_start(
+        (project.get("climate") or {}).get("water_year_start")
+    )
     sets = indicator_sets.selected_sets(
         project,
         settings,
@@ -38,105 +48,69 @@ def export_selected_metrics(
         retained_variables=retained_variables,
         legacy_context="export",
     )
-    if len(sets) != 1:
-        return
-    month = resolve_water_year_start(
-        (project.get("climate") or {}).get("water_year_start")
-    )
-    request = current_metric_request(
-        root,
-        indicator_sets.calculation_records(sets[0].indicators),
-        f"YS-{month.upper()}",
-    )
-    plan = verify_metric_plan(root, request)
-    export_metric_set(root, Path(plan["targets"]["manifest"]))
-
-
-def export_metric_set(experiment_root: Path, manifest_path: Path) -> None:
-    """Refresh the flat export while the caller holds project execution ownership.
-
-    Validate and stage before replacing files, then publish tracking metadata last.
-    Roll back ordinary I/O failures. Readers must wait for workflow completion:
-    replacing several CSVs is not a single atomic filesystem operation.
-    """
-    root = Path(experiment_root).resolve()
-    manifest = read_metric_set(root, manifest_path)
-    destination = root / "results/metric_sets"
-    tracking = root / "_engine/metric_sets/current.json"
-    references = [
-        manifest["group_members"],
-        manifest["group_metadata"],
-        *(table["file"] for table in manifest["tables"]),
-    ]
-    files = {Path(item["path"]).name: item["sha256"] for item in references}
-    previous = {}
-    if tracking.exists():
-        record = read_canonical_json(tracking)
-        if record.get("schema_version") != "metric-export/1":
-            raise ValueError(f"unsupported metric export record: {tracking}")
-        previous = record["files"]
-        if not isinstance(previous, dict):
-            raise ValueError(f"invalid metric export file inventory: {tracking}")
-    names = set(previous) | set(files)
-    for name in names:
-        if not isinstance(name, str) or not re.fullmatch(
-            r"(?:group_members|group_metadata|[a-z][a-z0-9_]*_(?:run|group)_indicators)\.csv",
-            name,
-        ):
-            raise ValueError(f"invalid metric export filename: {name!r}")
-    for path in (destination, tracking, *(destination / name for name in names)):
-        if path.is_symlink() or path.resolve() != path:
-            raise ValueError(f"metric export path is aliased: {path}")
-    for name in names:
-        path = destination / name
-        if path.exists() and (name not in previous or not path.is_file()):
-            raise ValueError(f"metric export would overwrite an unowned path: {path}")
-
-    record = {
-        "schema_version": "metric-export/1",
-        "metric_set_id": manifest["metric_set_id"],
-        "manifest": f"{manifest['engine_root']}/metrics.json",
-        "files": files,
-    }
-    destination.mkdir(parents=True, exist_ok=True)
-    staging = tracking.parent / f".export-{uuid.uuid4().hex}"
-    staging.mkdir()
-    changed = []
-    rollback_failed = False
-    try:
-        # Stage both the new set and rollback copies before changing the export.
-        for item in references:
-            shutil.copyfile(root / item["path"], staging / Path(item["path"]).name)
-        for name in names:
-            path = destination / name
-            if path.exists():
-                shutil.copyfile(path, staging / f"{name}.previous")
+    outcomes = []
+    for item in sets:
         try:
-            for name in sorted(names):
-                path = destination / name
-                if name in files:
-                    os.replace(staging / name, path)
-                else:
-                    path.unlink(missing_ok=True)
-                changed.append(name)
-            atomic_record(tracking, record, replace=True)
-        except OSError:
+            request = current_metric_request(
+                root,
+                indicator_sets.calculation_records(item.indicators),
+                f"YS-{month.upper()}",
+            )
+            plan = verify_metric_plan(root, request)
+            record = publish_named_set(
+                root, item, Path(plan["targets"]["manifest"]), water_year_start=month
+            )
+            outcomes.append(
+                {
+                    "set_id": item.set_id,
+                    "status": "current",
+                    "metric_set_id": record["metric_set_id"],
+                    "publication_id": record["publication_id"],
+                }
+            )
+        except (OSError, KeyError, ValueError) as exc:
             try:
-                for name in reversed(changed):
-                    backup = staging / f"{name}.previous"
-                    path = destination / name
-                    if backup.exists():
-                        os.replace(backup, path)
-                    else:
-                        path.unlink(missing_ok=True)
-            except OSError as exc:
-                rollback_failed = True
-                raise OSError(
-                    f"metric export rollback failed; backups: {staging}"
-                ) from exc
-            raise
-    finally:
-        if not rollback_failed:
-            for path in staging.iterdir():
-                path.unlink()
-            staging.rmdir()
+                prior = read_current_publication(root, item.set_id)["publication_id"]
+            except (OSError, KeyError, ValueError, NamedExportError):
+                prior = None
+            outcomes.append(
+                {
+                    "set_id": item.set_id,
+                    "status": "failed",
+                    "reason": f"{type(exc).__name__}: {exc}",
+                    "prior_publication_id": prior,
+                }
+            )
+    return outcomes
+
+
+def report_publication(root: Path, outcomes) -> bool:
+    """Log one row per set and any preserved legacy flat export; True if all current."""
+    from blueearth_cst.shared.run_log_core import log_row
+
+    legacy = legacy_flat_export(root)
+    if legacy:
+        log_row(
+            f"Legacy flat metric export preserved, not refreshed: {legacy[0]}; named sets "
+            "publish under results/metric_sets/<set-id>/ (see the migration note)",
+            module="metrics",
+        )
+    for outcome in outcomes:
+        if outcome["status"] == "current":
+            log_row(
+                f"Indicator set {outcome['set_id']} current: metric set "
+                f"{outcome['metric_set_id'][:12]}, publication {outcome['publication_id'][:12]} "
+                f"→ {Path(root) / 'results/metric_sets' / outcome['set_id']}",
+                module="metrics",
+            )
+        else:
+            kept = (
+                f"prior publication {outcome['prior_publication_id'][:12]} kept (mixed-age export)"
+                if outcome["prior_publication_id"]
+                else "no prior publication"
+            )
+            log_row(
+                f"Indicator set {outcome['set_id']} FAILED; {kept}; {outcome['reason'].splitlines()[0]}",
+                module="metrics",
+            )
+    return all(outcome["status"] == "current" for outcome in outcomes)

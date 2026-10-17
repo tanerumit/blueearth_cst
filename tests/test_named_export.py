@@ -244,6 +244,61 @@ def test_coverage_text_separates_differing_windows_and_masks():
     assert named_export.block_coverage(list(reversed(evidence)), pairs[::-1]) == cell
 
 
+def test_series_coverage_keeps_window_and_mask_with_their_run_and_location():
+    """Real series_coverage output, not hand-built evidence, through block_coverage."""
+    from datetime import timedelta
+
+    import numpy as np
+    import pandas as pd
+
+    from blueearth_cst.experiment.metric_registry import series_coverage
+    from blueearth_cst.experiment.response_series import ResponseSeries
+
+    def series(run, location, start, end, missing_days=0):
+        time = pd.date_range(start, end, freq="D")
+        missing = np.zeros(len(time), dtype=bool)
+        missing[:missing_days] = True
+        values = np.where(missing, np.nan, 1.0)
+        return ResponseSeries(
+            run,
+            "q",
+            location,
+            int(location),
+            time,
+            "standard",
+            timedelta(days=1),
+            "interval_end",
+            "m3 s-1",
+            values,
+            missing,
+        )
+
+    responses = [
+        series("run_02", "2", "2001-03-01", "2001-03-20"),
+        series("run_01", "2", "2000-12-25", "2001-01-05", missing_days=3),
+        series("run_02", "1", "2001-03-01", "2001-03-20"),
+        series("run_01", "1", "2000-12-25", "2001-01-05"),
+    ]
+    evidence = [series_coverage(item, "YE-DEC") for item in responses]
+    pairs = sorted(
+        (item.run_id, "q", item.location_id, "evaluated") for item in responses
+    )
+    cell = named_export.block_coverage(evidence, pairs)
+    patterns = cell.split(" | ")
+    assert len(patterns) == 3
+    assert patterns[0].startswith('"run_01 at location 1" (evaluated):')
+    assert "labels 2000-12-25..2001-01-05; missing 0;" in patterns[0]
+    assert "2 blocks" in patterns[0]
+    assert patterns[1].startswith('"run_01 at location 2" (evaluated):')
+    assert "labels 2000-12-25..2001-01-05; missing 3;" in patterns[1]
+    assert patterns[2].startswith(
+        '"run_02 at location 1" (evaluated), "run_02 at location 2" (evaluated):'
+    )
+    assert "labels 2001-03-01..2001-03-20; missing 0;" in patterns[2]
+    assert all("anchor YE-DEC" in pattern for pattern in patterns)
+    assert named_export.block_coverage(list(reversed(evidence)), pairs[::-1]) == cell
+
+
 def test_unowned_and_legacy_claimed_folders_are_refused_with_bytes_preserved(ready):
     root, default, _ = ready
     folder = root / "results/metric_sets/default"

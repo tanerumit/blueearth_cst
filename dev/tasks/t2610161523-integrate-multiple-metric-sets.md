@@ -6,7 +6,7 @@ effort: 2
 area: wf4
 queue:
 created: 2026-10-16
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 > [!note] Overview
@@ -21,10 +21,14 @@ Design sealed at the owner's request on 2026-10-16:
 All domain and external findings are resolved in the design or mapped to implementation acceptance.
 Authored definitions are retained; coverage and units are explicit. Exact seal and review limitations
 are in [status](t2610161523/design-runs/named-indicator-sets/status.md#final-seal--2026-10-16).
-Next: When implementation is authorized, capture the O1-O6 pre-change oracle before editing runtime code.
+Implementation 2026-10-17 on `feat/named-indicator-sets` (session-2): design steps 1-4 committed
+(5c8aba2c, 88da969c, 64151d5a, fa6124da, bd539f24, b5488613). O3/O4/O6 package oracle captured from
+the archived pre-change source; the rapid O1/O2/O5 run is slow on the P-drive.
+Next: finish the oracle run, capture O2 Jan/Oct and O5, run C4/C6 comparisons, then adopt the YE
+anchor helper only if O2 parity holds (a separate commit 5).
 
 - [x] Review and seal [the design](t2610161523/design-runs/named-indicator-sets/design-v3.md).
-- [ ] Implement the agreed integration and update affected consumers and documentation.
+- [x] Implement the agreed integration and update affected consumers and documentation.
 - [ ] Verify default compatibility, independent set reuse, and failure recovery.
 
 ## Work location

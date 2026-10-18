@@ -7,6 +7,8 @@
 # A set chooses registered calculations; it never defines arithmetic, units,
 # calendars, missingness or grain. This example illustrates reuse only; it is
 # not an approved second scientific set.
+# Trusted local calculations additionally accept calculation.set; see the
+# authoring contract in blueearth_cst/metrics/README.md. YAML cannot load Python.
 
 schema_version: 1
 id: example_subset
@@ -26,3 +28,12 @@ selection:
     #  calculation:
     #    method: annual_summary/1
     #    parameters: {variable: q, statistic: p95}
+    # A genuinely new local callable needs no equivalent_definition:
+    #- id: retained_mean
+    #  title: Whole-period mean
+    #  description: Daily sample weighting, without annual block weighting.
+    #  references: []
+    #  calculation:
+    #    set: flow_regime
+    #    method: full_period_mean/1
+    #    parameters: {}

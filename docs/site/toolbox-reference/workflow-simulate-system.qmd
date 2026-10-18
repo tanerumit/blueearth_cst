@@ -70,4 +70,72 @@ WF4 requires the completed WF1 model and an explicitly selected ready WF3 collec
 
 ## Outputs
 
-An experiment retains native Wflow response CSVs and a response inventory. Each immutable metric set (`metric-set/4`, under the experiment's `_engine/metric_sets/<id>/`) retains `metrics.json`, its indicator tables, group membership, declarations, return-level evidence and per-series block coverage. Each selected set is published as a readable view at `results/metric_sets/<set-id>/`: run and group tables, group lookups and an `indicators.csv` dictionary of units, methods, temporal and missingness policies, and coverage. Logs and benchmarks are scoped to the experiment. See [Reading the outputs](../guide/outputs.qmd) for paths and join keys.
+An experiment retains native Wflow response CSVs and a response inventory. New immutable metric sets use
+`metric-set/5`, under `_engine/metric_sets/<id>/`. They retain `metrics.json`, indicator tables, group
+membership, declarations, return-level evidence, per-series block coverage and the execution context.
+Each selected set has a readable view at `results/metric_sets/<set-id>/`: run and group tables, group
+lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.qmd).
+
+## Local calculation sets
+
+`blueearth_cst/metrics/` provides a plain Python interface independent of WF4 files and Snakemake.
+Its [authoring guide](../../../blueearth_cst/metrics/README.md) documents contracts, dependencies,
+parameters, independent checks and extension examples. Trusted installed sets own formulas in
+`calculations.py`, registrations and fixed `ASSUMPTIONS` in `registry.py`, independent numerical
+checks in `checks.py`, and local guidance in `README.md`. Assumptions describe implemented choices;
+they do not offer alternative scientific methods. The water-year anchor remains explicit context.
+
+The optional bundled `flow_regime` set includes the matched prototype aliases and whole-period mean,
+plus five rolling extremes and daily change indicators. Its recharge entry requires retained `gwr`.
+`flood_risk` declares 2, 5, 10, 15 and 20-year discharge hazard levels. It remains opt-in, and the
+production probability qualification gate permits only 2 and 10 years with the shipped evidence.
+Selecting the entire example therefore fails explicitly at an unsupported probability. Select an
+eligible local calculation explicitly for a confined qualified calculation:
+
+```yaml
+schema_version: 1
+id: flood_10
+title: Ten-year discharge hazard
+description: Annual maximum discharge; no exposure or damage calculation.
+selection:
+  indicators:
+    - id: peak_10
+      title: Ten-year annual maximum discharge
+      description: Qualified production GEV estimator and screening requirements.
+      references: []
+      calculation:
+        set: flood_risk
+        method: flood_return_level/1
+        parameters: {return_period: 10}
+```
+
+`selection: {registry: flow_regime}` selects all registrations of that trusted module. An authored
+entry's optional `calculation.set` selects a trusted local callable. YAML cannot import a file path or
+execute Python. Legacy definitions and authored aliases retain their existing spelling and behavior.
+New local calculations have explicit set/metric identities and need no `equivalent_definition`.
+
+## Integrity and numerical rechecking
+
+Discover metric sets on demand with:
+
+```powershell
+pixi run python scripts/inspect_metrics.py --experiment <experiment-root> --list
+pixi run python scripts/inspect_metrics.py --experiment <experiment-root> --manifest <metrics.json>
+pixi run python scripts/inspect_metrics.py --experiment <experiment-root> --manifest <metrics.json> --recheck
+```
+
+The default command checks saved hashes, completion identity and artifact structure. It imports no
+current calculation registry and needs no original discharge input. It reports matching saved check
+receipts as **historical** evidence. Hash consistency does not prove authenticity against coordinated
+edits of artifacts and manifests.
+
+`--recheck` additionally requires matching execution sources, definitions, original input identity and
+recorded dependencies. It invokes current independent set checkers and records their hashes and current
+runtime in a new receipt. Changed checker-only code is allowed; it receives fresh attribution. A missing
+or changed input blocks numerical rechecking while preserving artifact inspection. A requested recheck
+exits nonzero if unavailable or unsuccessful. Both scripts support `--traceback` for diagnosis.
+
+The strict production reader retains its input and cache validity checks. Integrity inspection never
+makes a stale result reusable. Existing `/3` and `/4` publications remain readable without rewriting;
+their missing execution context conservatively prevents fresh numerical eligibility. See the
+[migration note](../../../dev/records/milestones/post-r12/migration-structured-metrics.md).

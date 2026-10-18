@@ -863,7 +863,11 @@ def validate_hm7_v2(
     import math
 
     label = "HM-7"
-    if manifest.get("schema_version") not in ("metric-set/3", "metric-set/4"):
+    if manifest.get("schema_version") not in (
+        "metric-set/3",
+        "metric-set/4",
+        "metric-set/5",
+    ):
         return [
             f"{label}: expected metric-set/3 or /4; legacy mixed-ID sets must be recomputed"
         ]

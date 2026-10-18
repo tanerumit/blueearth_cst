@@ -189,7 +189,19 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 f"{resolved_set.set_id}: {indicator.metric} differs from its immutable declaration"
             )
         variable = declaration.required_responses.variable
-        contract = registry.METHODS[indicator.method]
+        contract = registry.METHODS.get(indicator.method)
+        if indicator.calculation_set:
+            from types import SimpleNamespace
+
+            from blueearth_cst.metrics import loader
+
+            assumptions = loader.load_set(indicator.calculation_set).ASSUMPTIONS
+            contract = SimpleNamespace(
+                block_assignment=str(assumptions),
+                partial_blocks=declaration.required_responses.coverage,
+                missingness=declaration.required_responses.missingness,
+                validity=declaration.value_validity,
+            )
         pairs = {
             (run, var, location, "evaluated")
             for run, var, location in series
@@ -332,8 +344,8 @@ def publish_named_set(
     root = Path(root).resolve()
     set_id = resolved_set.set_id
     manifest = read_metric_set(root, Path(manifest_path))
-    if manifest["schema_version"] != "metric-set/4":
-        raise NamedExportError(f"{set_id}: named exports publish metric-set/4 only")
+    if manifest["schema_version"] not in ("metric-set/4", "metric-set/5"):
+        raise NamedExportError(f"{set_id}: named exports require metric-set/4 or /5")
     engine = root / manifest["engine_root"]
     evidence = read_canonical_json(engine / manifest["coverage_evidence"]["path"])
     if evidence.get("schema_version") != COVERAGE_EVIDENCE_SCHEMA:

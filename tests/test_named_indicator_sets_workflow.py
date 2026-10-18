@@ -128,7 +128,7 @@ def test_named_sets_publish_independent_immutable_sets(tmp_path):
     markers = sorted((root / "_engine/metric_sets").glob("*/metrics.json"))
     assert len(markers) == 2, markers
     manifests = [read_canonical_json(marker) for marker in markers]
-    assert {m["schema_version"] for m in manifests} == {"metric-set/4"}
+    assert {m["schema_version"] for m in manifests} == {"metric-set/5"}
     by_metric = {m["calculations"][0]["metric"]: m for m in manifests}
     assert set(by_metric) == {"gwr_annual_total", "recharge_depth"}
     alias = by_metric["recharge_depth"]["calculations"][0]

@@ -1,20 +1,52 @@
 """Metric declarations and reductions over neutral response series only."""
 
 import hashlib
-import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
-from blueearth_cst.experiment import gev_lmoments
-from blueearth_cst.experiment.response_series import (
-    ResponseSeries,
-    compatible_bundle,
-    response_frame,
-    validate_responses,
+from blueearth_cst.metrics import loader
+from blueearth_cst.metrics.contract import MetricDeclaration, ResponseRequirement
+from blueearth_cst.metrics.extremes import (
+    EXTRACTION_POLICY as EXTRACTION_POLICY,
+)
+from blueearth_cst.metrics.extremes import (
+    MISSINGNESS_POLICY as MISSINGNESS_POLICY,
+)
+from blueearth_cst.metrics.extremes import (
+    PARTIAL_BLOCK_POLICY as PARTIAL_BLOCK_POLICY,
+)
+from blueearth_cst.metrics.extremes import (
+    InsufficientReturnLevelBlocks as InsufficientReturnLevelBlocks,
+)
+from blueearth_cst.metrics.extremes import (
+    InvalidReturnLevelFit as InvalidReturnLevelFit,
+)
+from blueearth_cst.metrics.extremes import (
+    ReturnLevelEvidence as ReturnLevelEvidence,
+)
+from blueearth_cst.metrics.extremes import (
+    ReturnLevelProbabilityNotCovered as ReturnLevelProbabilityNotCovered,
+)
+from blueearth_cst.metrics.extremes import (
+    _shape_coverage as _shape_coverage,
+)
+from blueearth_cst.metrics.temporal import (
+    MonthReference as MonthReference,
+)
+from blueearth_cst.metrics.temporal import (
+    block_bins as block_bins,
+)
+from blueearth_cst.metrics.temporal import (
+    resolve_month_reference as resolve_month_reference,
+)
+from blueearth_cst.metrics.temporal import (
+    series_coverage as series_coverage,
+)
+from blueearth_cst.metrics.temporal import (
+    validate_requirement as validate_requirement,
 )
 from blueearth_cst.shared import indicator_tables as tables
 from blueearth_cst.shared import metrics_definition as md
@@ -115,42 +147,15 @@ def metric_unit_index(
     return tuple(result)
 
 
-@dataclass(frozen=True)
-class ResponseRequirement:
-    """Explicit physical and temporal requirements of a metric."""
-
-    variable: str
-    units: str
-    timestep_seconds: int = 86400
-    time_label: str = "interval_end"
-    coverage: str = "entire retained response; preserve partial water years"
-    location_grain: str = "location"
-    missingness: str = "native NaN; preserve pandas skipna and rolling completeness"
-    calendars: tuple[str, ...] = ("standard", "gregorian", "proleptic_gregorian")
-
-
-@dataclass(frozen=True)
-class MetricDeclaration:
-    """Meaning of one existing output name, independent of native files."""
-
-    name: str
-    statistic: str
-    grain: str
-    required_responses: ResponseRequirement
-    bundle_by: str | None
-    reference: str | None
-    reference_location: str | None
-    return_period: int | None
-    blocks_per_return_period: float | None
-    implementation_revision: str
-    value_validity: str
-    group_reduction: str
-
-
 def _revision() -> str:
     digest = hashlib.sha256()
-    for module in (Path(__file__), Path(md.__file__), Path(tables.__file__)):
-        digest.update(module.read_bytes())
+    for module in (
+        Path(__file__),
+        Path(md.__file__),
+        Path(tables.__file__),
+        *loader.execution_sources(),
+    ):
+        digest.update(module.read_bytes().replace(b"\r\n", b"\n"))
     return digest.hexdigest()
 
 
@@ -491,6 +496,8 @@ if set(DEFINITION_TEXT) != set(DEFINITIONS):
 
 def output_units(declaration: MetricDeclaration) -> str:
     """Declared output units; never inferred from input units alone."""
+    if declaration.calculation_set:
+        return loader.registration(declaration).units
     if declaration.statistic == "BaseFlowIndex":
         return "1"
     if declaration.statistic in {"rise_rate", "fall_rate"}:
@@ -503,6 +510,8 @@ def output_units(declaration: MetricDeclaration) -> str:
 
 def quantity(declaration: MetricDeclaration) -> str:
     """The quantity a value measures, stated for the readable dictionary."""
+    if declaration.calculation_set:
+        return loader.registration(declaration).description
     if declaration.statistic == "sum":
         return (
             "mean water-year block depth: daily mm dt-1 values summed within each "
@@ -560,509 +569,90 @@ def declaration_for(definition: str) -> MetricDeclaration:
     return next(item for item in declarations([token]) if item.name == definition)
 
 
-def block_bins(anchor: str) -> str:
-    """How a water-year anchor closes and labels its resample blocks."""
-    if anchor.startswith("YS"):
-        return "left-closed, left-labelled"
-    return "right-closed, right-labelled"
-
-
-def _block_interval(label: pd.Timestamp, anchor: str):
-    """The calendar interval one resample block covers, for its label."""
-    offset = pd.tseries.frequencies.to_offset(anchor)
-    if anchor.startswith("YS"):
-        return label, label + offset
-    return label - offset, label
-
-
-def series_coverage(item: ResponseSeries, anchor: str) -> dict:
-    """Immutable per-series block coverage under the resolved water-year anchor.
-
-    Derived from the retained index and missing mask, never from requested
-    dates. A complete label block has every expected daily label of its
-    Gregorian anchor interval (leap days included); it may still hold NaNs.
-    """
-    labels = pd.Series(item.missing, index=item.time)
-    blocks = []
-    for block_label, group in labels.resample(anchor):
-        if group.empty:
-            continue
-        start, end = _block_interval(block_label, anchor)
-        expected = int((end - start) / item.timestep)
-        observed = len(group)
-        missing = int(group.sum())
-        blocks.append(
-            {
-                "block_label": str(block_label.date()),
-                "first_label": str(group.index[0].date()),
-                "last_label": str(group.index[-1].date()),
-                "observed": observed,
-                "expected": expected,
-                "missing": missing,
-                "all_missing": missing == observed,
-            }
-        )
-    return {
-        "run_id": item.run_id,
-        "variable": item.variable,
-        "location_id": item.location_id,
-        "calendar": item.calendar,
-        "timestep_seconds": int(item.timestep.total_seconds()),
-        "time_label": item.time_label,
-        "anchor": anchor,
-        "block_bins": block_bins(anchor),
-        "first_label": str(item.time[0].date()),
-        "last_label": str(item.time[-1].date()),
-        "blocks": blocks,
-        "block_count": len(blocks),
-        "complete_label_blocks": sum(b["observed"] == b["expected"] for b in blocks),
-        "missing_total": sum(b["missing"] for b in blocks),
-        "all_missing_blocks": sum(b["all_missing"] for b in blocks),
-    }
-
-
-def validate_requirement(
-    metric: MetricDeclaration, series: Sequence[ResponseSeries]
-) -> None:
-    """Refuse metadata mismatches before a metric performs any reduction."""
-    validate_responses(series, evaluated_runs={item.run_id for item in series})
-    requirement = metric.required_responses
-    for item in series:
-        if (
-            item.variable,
-            item.units,
-            item.timestep.total_seconds(),
-            item.time_label,
-        ) != (
-            requirement.variable,
-            requirement.units,
-            requirement.timestep_seconds,
-            requirement.time_label,
-        ):
-            raise ValueError(
-                f"{metric.name}: incompatible response requirement at {item.key}"
-            )
-
-
-@dataclass(frozen=True)
-class MonthReference:
-    """Resolved Class-C reference; selection is never repeated per response."""
-
-    run_ids: tuple[str, ...]
-    reference_location_id: str
-    month: int
-    which: str
-    counts: tuple[tuple[str, str, str, int, int], ...]
-    selection_statistic: str = "monthly sum followed by argmax/argmin"
-    tie_rule: str = "first label in ascending calendar-month order"
-
-
-def resolve_month_reference(
-    series: Sequence[ResponseSeries],
-    *,
-    expected_run_ids: Sequence[str],
-    which: str,
-) -> MonthReference:
-    """Resolve the legacy first-native-gauge rule into an explicit location id."""
-    if which not in {"wet", "dry"} or not expected_run_ids:
-        raise ValueError(
-            "Class-C reference requires nonempty explicit members and wet/dry selection"
-        )
-    if len(set(expected_run_ids)) != len(expected_run_ids):
-        raise ValueError("Class-C reference has duplicate members")
-    validate_responses(series, evaluated_runs=set(expected_run_ids))
-    if any(
-        (item.variable, item.units, item.time_label, item.timestep.total_seconds())
-        != ("q", "m3 s-1", "interval_end", 86400)
-        for item in series
-    ):
-        raise ValueError(
-            "Class-C reference requires daily interval-end discharge responses"
-        )
-    if {item.run_id for item in series} != set(expected_run_ids):
-        raise ValueError("Class-C reference membership is incomplete")
-    locations = [
-        {item.location_id for item in series if item.run_id == run}
-        for run in expected_run_ids
-    ]
-    if any(observed != locations[0] for observed in locations):
-        raise ValueError("Class-C reference location sets differ")
-    for location in locations[0]:
-        compatible_bundle([item for item in series if item.location_id == location])
-    first = [
-        item for item in series if item.variable == "q" and item.location_ordinal == 0
-    ]
-    if (
-        len(first) != len(expected_run_ids)
-        or len({item.location_id for item in first}) != 1
-    ):
-        raise ValueError(
-            "Class-C reference needs the same first native q location in every member"
-        )
-    compatible_bundle(first)
-    location = first[0].location_id
-    ordered = sorted(first, key=lambda item: item.run_id)
-    pooled = pd.concat([pd.Series(item.values, index=item.time) for item in ordered])
-    monthly = pooled.groupby(pooled.index.month).sum()
-    month = int(monthly.idxmax() if which == "wet" else monthly.idxmin())
-    counts = tuple(
-        (
-            item.run_id,
-            str(item.time[0]),
-            str(item.time[-1]),
-            int(item.time[~item.missing].year.nunique()),
-            int(item.time[~item.missing].to_period("M").nunique()),
-        )
-        for item in ordered
-    )
-    return MonthReference(
-        tuple(item.run_id for item in ordered), location, month, which, counts
-    )
-
-
 def _reduce_optional(frame: pd.DataFrame, statistic: str, anchor: str) -> pd.Series:
-    """Evaluate one non-default q calculation (see OPTIONAL_Q_CALCULATIONS)."""
+    """Compatibility entry point for the existing optional formula callers."""
     _, method, parameters = OPTIONAL_Q_CALCULATIONS[statistic]
     if method == "annual_rolling_extreme/1":
         blocks = frame.rolling(parameters["window"]).mean().resample(anchor)
         return getattr(blocks, parameters["extreme"])().mean()
     change = frame.diff()
-    if parameters["direction"] == "rise":
-        change = change.where(change > 0)
-    else:
-        change = (-change).where(change < 0)
+    change = (
+        change.where(change > 0)
+        if parameters["direction"] == "rise"
+        else (-change).where(change < 0)
+    )
     return change.resample(anchor).mean().mean()
 
 
-def reduce_run(
-    metric: MetricDeclaration,
-    series: Sequence[ResponseSeries],
-    *,
-    anchor: str,
-    reference: MonthReference | None = None,
-) -> pd.Series:
-    """Evaluate one declared run-grain metric on location-labelled responses."""
+def reduce_run(metric, series, *, anchor, reference=None) -> pd.Series:
+    """Compatibility adapter to the independent set-owned run reduction."""
     if metric.grain != "run":
         raise ValueError(f"{metric.name}: expected a run-grain declaration")
-    validate_requirement(metric, series)
-    frame = response_frame(series)
-    statistic = metric.statistic
-    if metric.reference is not None:
-        which = "wet" if statistic == "wetmonth_mean" else "dry"
-        if (
-            reference is None
-            or reference.which != which
-            or reference.month not in range(1, 13)
-        ):
-            raise ValueError(
-                f"{metric.name}: explicit resolved month reference required"
-            )
-        values = (
-            frame[frame.index.month == reference.month].resample(anchor).mean().mean()
-        )
-    elif metric.required_responses.variable != "q":
-        values = getattr(frame.resample(anchor), statistic)().mean()
-    elif statistic in {"mean", "max", "min"}:
-        values = getattr(frame.resample(anchor), statistic)().mean()
-    elif statistic == "q95":
-        values = frame.resample(anchor).quantile(0.95).mean()
-    elif statistic in OPTIONAL_Q_CALCULATIONS:
-        values = _reduce_optional(frame, statistic, anchor)
-    else:
-        reducer = {
-            "Q7day_max": md.Q7d_maxyear,
-            "Q7day_min": md.Q7d_min,
-            "BaseFlowIndex": md.BFI,
-        }[statistic]
-        values = reducer(frame, anchor)
-    if np.isinf(values.to_numpy()).any():
-        raise ValueError(f"{metric.name}: infinite metric value")
-    return values
+    return loader.evaluate(metric, series, anchor=anchor, reference=reference).values
 
 
 def reduce_group_mean(
-    metric: MetricDeclaration,
-    series: Sequence[ResponseSeries],
-    *,
-    expected_run_ids: Sequence[str],
-    anchor: str,
-    reference: MonthReference | None = None,
+    metric, series, *, expected_run_ids, anchor, reference=None
 ) -> pd.Series:
-    """Average run reductions with equal realization weights and NaN propagation.
-
-    Member length never changes its weight. Class-C reductions use the same
-    resolved reference month as their individual-run products. Return levels
-    must use reduce_bundle, including for singleton groups.
-    """
-    if (
-        metric.statistic not in GROUP_MEAN_STATISTICS
-        or metric.group_reduction != "equal-weight-run-reductions-propagate-nan/1"
-    ):
-        raise ValueError(f"{metric.name}: no reviewed group mean policy")
-    if not expected_run_ids or len(set(expected_run_ids)) != len(expected_run_ids):
-        raise ValueError(f"{metric.name}: group needs unique evaluated members")
-    if {item.run_id for item in series} != set(expected_run_ids):
-        raise ValueError(f"{metric.name}: group membership differs from declaration")
-    values = [
-        reduce_run(
-            metric,
-            [item for item in series if item.run_id == run],
-            anchor=anchor,
-            reference=reference,
-        )
-        for run in expected_run_ids
-    ]
-    if any(set(value.index) != set(values[0].index) for value in values):
-        raise ValueError(f"{metric.name}: group location sets differ")
-    ordered = [value.reindex(values[0].index).to_numpy() for value in values]
-    # np.mean deliberately propagates NaN; pandas' default skipna would give
-    # invalid members zero weight and change the declared realization mean.
-    return pd.Series(np.mean(np.stack(ordered), axis=0), index=values[0].index)
+    """Compatibility adapter preserving equal member weights and NaN propagation."""
+    return loader.evaluate(
+        metric,
+        series,
+        anchor=anchor,
+        reference=reference,
+        expected_run_ids=expected_run_ids,
+        group=True,
+    ).values
 
 
-class InsufficientReturnLevelBlocks(ValueError):
-    """Operational screening refused a location before fitting."""
+def reduce_bundle(metric, series, *, expected_run_ids, anchor, validation=None):
+    """Resolve workflow qualification outside the neutral calculation module."""
+    from blueearth_cst.experiment import return_level_validation
 
-
-class InvalidReturnLevelFit(ValueError):
-    """The estimator refused this location; its structured record is attached.
-
-    Only a refusal reaches this exception. An unexpected fault keeps its own
-    traceback and propagates, because a fault silently converted into a refusal
-    row would be indistinguishable from a location the estimator genuinely
-    declined (D3).
-    """
-
-    def __init__(self, message: str, *, fit_result=None):
-        super().__init__(message)
-        self.fit_result = fit_result
-
-
-class ReturnLevelProbabilityNotCovered(ValueError):
-    """A requested probability lies outside the verified benchmark domain (D4).
-
-    This is a configuration and evidence-contract fault, not an estimator
-    refusal: it fires before the library is invoked and aborts publication.
-    Changing a return period must not silently inherit a bounded declaration,
-    so the domain is never clamped, substituted or expanded to accommodate it.
-    """
-
-
-#: Identifiers for the extraction rules D1 preserves, recorded per location so a
-#: retained fit says which sampling produced it rather than leaving it implied.
-EXTRACTION_POLICY = {
-    "return_level_max": "member_local_annual_max/1",
-    "return_level_7day_min": "member_local_rolling7_annual_min/1",
-}
-MISSINGNESS_POLICY = "drop_nonfinite_blocks/1"
-PARTIAL_BLOCK_POLICY = "retain_partial_period_blocks/1"
-
-
-@dataclass(frozen=True)
-class ReturnLevelEvidence:
-    """Usable-block counts, coverage and the retained fit for one location."""
-
-    location_id: str
-    member_counts: tuple[tuple[str, int, str, str], ...]
-    total: int
-    required: int
-    parameters: tuple[float, ...]
-    member_count: int = 0
-    extraction_policy: str = ""
-    missingness_policy: str = MISSINGNESS_POLICY
-    partial_block_policy: str = PARTIAL_BLOCK_POLICY
-    fit: dict | None = None
-    shape_coverage: dict | None = None
-
-
-def _declared_probabilities(validation) -> list:
-    """Read the verified declaration's tested probabilities once per reduction.
-
-    Resolved outside the per-location loop because building the declaration
-    reads and re-verifies the whole shipped report; the membership check itself
-    still runs before every individual fit.
-    """
-    from blueearth_cst.experiment import return_level_validation as rlv
-
-    declaration = rlv.build_declaration() if validation is None else validation
-    declared = declaration.get("tested_domain", {}).get("probabilities")
-    if not isinstance(declared, list):
-        raise ReturnLevelProbabilityNotCovered(
-            "the retained return-level validation declares no tested probabilities"
-        )
-    return declared
-
-
-def _declared_shapes(validation) -> list | None:
-    """Read the declaration's tested shape values, or None if it states none.
-
-    Unlike :func:`_declared_probabilities` this never raises. Shape coverage is
-    reported, never enforced -- see :func:`_shape_coverage` for why.
-    """
-    from blueearth_cst.experiment import return_level_validation as rlv
-
-    declaration = rlv.build_declaration() if validation is None else validation
-    declared = declaration.get("tested_domain", {}).get("shapes_c")
-    return declared if isinstance(declared, list) and declared else None
-
-
-def _shape_coverage(shape: float, declared: list | None) -> dict | None:
-    """Report whether a FITTED shape falls inside the assessed domain (D4).
-
-    This is deliberately **not** a guard, and it is not the shape-shaped twin of
-    :func:`_covered_probability`. Two reasons, both structural:
-
-    A probability is a property of the REQUEST, known before any fit, so
-    refusing an untested one costs nothing and is unambiguous. A shape is a
-    property of the RESULT: it does not exist until the fit does, and at the
-    block counts this reduction produces its sampling spread is comparable to
-    the width of the tested domain itself. Gating on it would refuse fits whose
-    true shape is inside the domain and admit fits whose true shape is outside.
-
-    And a refusal here is not local. ``InvalidReturnLevelFit`` is caught nowhere
-    in this package, so one refused fit aborts the whole metric set -- every
-    other location, every other metric, including statistics that are fully
-    inside the assessed domain. A reporting field costs a consumer nothing and
-    keeps that blast radius at zero.
-
-    ``excess`` is recorded alongside the boolean on purpose: a fitted shape just
-    outside the tested range is consistent with a true shape inside it, so a
-    consumer needs the distance to apply its own threshold rather than trusting
-    a bare flag. ``None`` means the declaration states no tested shapes --
-    unavailable, not "covered".
-    """
-    if declared is None:
-        return None
-    low, high = min(declared), max(declared)
-    inside = low <= shape <= high
-    return {
-        "tested_shapes_c": list(declared),
-        "tested_range_c": [low, high],
-        "fitted_c": shape,
-        "within_tested_range": inside,
-        "excess_beyond_tested_range": 0.0
-        if inside
-        else min(abs(shape - low), abs(shape - high)),
-    }
-
-
-def _covered_probability(probability: float, declared: list) -> None:
-    """Refuse a probability the verified benchmark domain does not cover (D4).
-
-    Exact numeric membership, for the fixed .9 and .5 values the declaration
-    names. No clamping, substitution or widening.
-    """
-    if not any(probability == value for value in declared):
-        raise ReturnLevelProbabilityNotCovered(
-            f"requested probability {probability!r} is outside the verified "
-            f"benchmark domain {declared!r}; the declaration is bounded and is "
-            "not expanded to cover a changed return period"
-        )
-
-
-def reduce_bundle(
-    metric: MetricDeclaration,
-    series: Sequence[ResponseSeries],
-    *,
-    expected_run_ids: Sequence[str],
-    anchor: str,
-    validation=None,
-) -> tuple[pd.Series, tuple[ReturnLevelEvidence, ...]]:
-    """Extract blocks within each member, screen and fit without splicing runs.
-
-    `validation` is the verified return-level declaration whose tested domain
-    bounds the probabilities that may be requested. The publication path passes
-    the declaration retained in its plan; omitting it resolves the shipped one.
-    """
-    if (
-        metric.grain != "bundle"
-        or metric.return_period is None
-        or metric.blocks_per_return_period is None
-    ):
-        raise ValueError(
-            f"{metric.name}: expected an explicit return-level bundle declaration"
-        )
-    if not expected_run_ids or len(set(expected_run_ids)) != len(expected_run_ids):
-        raise ValueError(f"{metric.name}: bundle needs unique evaluated members")
-    if {item.run_id for item in series} != set(expected_run_ids):
-        raise ValueError(
-            f"{metric.name}: bundle membership differs from declared grouping"
-        )
-    validate_requirement(metric, series)
-    by_run = {
-        run_id: [item for item in series if item.run_id == run_id]
-        for run_id in expected_run_ids
-    }
-    location_sets = [
-        {item.location_id for item in members} for members in by_run.values()
-    ]
-    if any(locations != location_sets[0] for locations in location_sets):
-        raise ValueError(f"{metric.name}: bundle location sets differ")
-    required = max(
-        math.ceil(metric.blocks_per_return_period * metric.return_period),
-        GEV_SCREENING_BLOCK_FLOOR,
+    validation = (
+        return_level_validation.build_declaration()
+        if validation is None
+        else validation
     )
-    maximum = metric.statistic == "return_level_max"
-    quantile = 1 - 1 / metric.return_period if maximum else 1 / metric.return_period
-    declared = _declared_probabilities(validation)
-    declared_shapes = _declared_shapes(validation)
-    values, evidence = {}, []
-    for location in sorted(location_sets[0]):
-        members = sorted(
-            [item for item in series if item.location_id == location],
-            key=lambda item: item.run_id,
-        )
-        compatible_bundle(members)
-        samples, counts = [], []
-        for item in members:
-            daily = pd.Series(item.values, index=item.time)
-            blocks = (
-                daily.resample(anchor).max()
-                if maximum
-                else daily.rolling(7).mean().resample(anchor).min()
-            )
-            usable = blocks.to_numpy(dtype="float64")
-            usable = usable[np.isfinite(usable)]
-            samples.append(usable)
-            counts.append(
-                (item.run_id, len(usable), str(item.time[0]), str(item.time[-1]))
-            )
-        sample = np.concatenate(samples)
-        context = (
-            f"metric={metric.name}, unit_members={tuple(expected_run_ids)}, location={location}, "
-            f"T={metric.return_period}, required={required}, actual={len(sample)}, per_member={counts}"
-        )
-        if len(sample) < required:
-            raise InsufficientReturnLevelBlocks(context)
-        context += (
-            f", sample_range={(float(sample.min()), float(sample.max()))}, "
-            f"estimator={gev_lmoments.ESTIMATOR_ID}/"
-            f"lmoments3-{gev_lmoments.DEPENDENCY_VERSION}, "
-            f"implementation_revision={metric.implementation_revision}"
-        )
-        # A constant sample is no longer screened out here: it reaches the
-        # adapter and comes back as a structured invalid_range refusal (D1).
-        _covered_probability(quantile, declared)
-        result = gev_lmoments.fit_case(sample, (quantile,))
-        if not result.accepted:
-            raise InvalidReturnLevelFit(
-                f"{context}: estimator refused: {', '.join(result.refusal_reasons)}",
-                fit_result=result,
-            )
-        value = result.value(quantile)
-        parameters = result.physical_parameters
-        values[location] = value
-        evidence.append(
-            ReturnLevelEvidence(
-                location,
-                tuple(counts),
-                len(sample),
-                required,
-                tuple(parameters[name] for name in ("c", "loc", "scale")),
-                member_count=len(members),
-                extraction_policy=EXTRACTION_POLICY[metric.statistic],
-                fit=result.record(),
-                shape_coverage=_shape_coverage(parameters["c"], declared_shapes),
-            )
-        )
-    return pd.Series(values), tuple(evidence)
+    validation = dict(
+        validation,
+        tested_domain=dict(
+            validation.get("tested_domain", {}), shapes_c=_declared_shapes(validation)
+        ),
+    )
+    result = loader.evaluate(
+        metric,
+        series,
+        anchor=anchor,
+        expected_run_ids=expected_run_ids,
+        validation=validation,
+    )
+    return result.values, result.metadata["evidence"]
+
+
+def _declared_shapes(validation):
+    """Compatibility access to qualified shape reporting; never a fit gate."""
+    from blueearth_cst.experiment import return_level_validation
+    from blueearth_cst.metrics.extremes import _declared_shapes as neutral_shapes
+
+    declaration = (
+        return_level_validation.build_declaration()
+        if validation is None
+        else validation
+    )
+    return neutral_shapes(declaration)
+
+
+def _declared_probabilities(validation):
+    """Compatibility access to the qualification declaration's probability gate."""
+    from blueearth_cst.experiment import return_level_validation
+    from blueearth_cst.metrics.extremes import (
+        _declared_probabilities as neutral_probabilities,
+    )
+
+    declaration = (
+        return_level_validation.build_declaration()
+        if validation is None
+        else validation
+    )
+    return neutral_probabilities(declaration)

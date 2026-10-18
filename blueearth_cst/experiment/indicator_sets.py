@@ -1,9 +1,8 @@
 """Named WF4 indicator sets: operation selection, closed set files and resolution.
 
-A set file selects registered calculations; it never defines arithmetic. Each
-selected entry resolves to an existing ``metric_registry`` declaration, either
-by its registered definition id or as an authored alias whose calculation
-contract equals one registered definition (``equivalent_definition``).
+A set file selects trusted calculations; it never executes Python. Existing
+definitions and authored aliases remain supported. Local calculations resolve
+through a selected trusted set, without requiring a legacy equivalent.
 Titles, descriptions and authored citations are presentation only.
 """
 
@@ -184,9 +183,10 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
             path = BUNDLED_ROOT / f"{name}.yml"
             bundled = True
             if not path.is_file():
+                known = sorted(p.stem for p in BUNDLED_ROOT.glob("*.yml"))
                 raise IndicatorSetError(
-                    f"unknown indicator set {name!r}: not bundled under "
-                    f"{BUNDLED_ROOT.as_posix()} and not in indicator_set_definitions"
+                    f"unknown indicator set {name!r}; discoverable sets: {known}; "
+                    "custom sets require indicator_set_definitions"
                 )
         try:
             text = path.read_text(encoding="utf-8")
@@ -229,6 +229,7 @@ class ResolvedIndicator:
     references: tuple[str, ...]
     authored_references: tuple[str, ...]
     equivalent_definition: str
+    calculation_set: str | None = None
 
     @property
     def metric(self) -> str:
@@ -266,7 +267,7 @@ def _registered(definition: str) -> ResolvedIndicator:
     )
 
 
-def _authored(entry: dict, label: str) -> ResolvedIndicator:
+def _authored(entry: dict, label: str, set_id: str = DEFAULT_SET) -> ResolvedIndicator:
     expected = {"id", "title", "description", "references", "calculation"}
     if set(entry) != expected:
         raise IndicatorSetError(
@@ -290,19 +291,47 @@ def _authored(entry: dict, label: str) -> ResolvedIndicator:
             f"{label}: references must be a list of nonempty strings"
         )
     calculation = entry["calculation"]
-    if not isinstance(calculation, dict) or set(calculation) != {
-        "method",
-        "parameters",
-    }:
+    if not isinstance(calculation, dict) or set(calculation) not in (
+        {
+            "method",
+            "parameters",
+        },
+        {"set", "method", "parameters"},
+    ):
         raise IndicatorSetError(
-            f"{label}: calculation is exactly {{method, parameters}}"
+            f"{label}/{metric}: calculation requires method, parameters; optional set"
+        )
+    if "set" in calculation:
+        from blueearth_cst.metrics import loader
+
+        owner = calculation["set"]
+        try:
+            declaration = loader.resolve(
+                owner,
+                calculation["method"],
+                calculation["parameters"],
+                metric_name=metric,
+            )
+        except ValueError as exc:
+            raise IndicatorSetError(f"{set_id}/{metric}: {exc}") from exc
+        return ResolvedIndicator(
+            declaration=declaration,
+            definition=f"{owner}:{metric}",
+            method=calculation["method"],
+            parameters=dict(calculation["parameters"]),
+            title=entry["title"],
+            description=entry["description"],
+            references=(),
+            authored_references=tuple(references),
+            equivalent_definition="",
+            calculation_set=owner,
         )
     try:
         definition, parameters = registry.validate_calculation(
             calculation["method"], calculation["parameters"]
         )
     except ValueError as exc:
-        raise IndicatorSetError(f"{label}: {exc}") from exc
+        raise IndicatorSetError(f"{set_id}/{metric} ({label}): {exc}") from exc
     return ResolvedIndicator(
         declaration=replace(registry.declaration_for(definition), name=metric),
         definition=definition,
@@ -352,7 +381,7 @@ def resolve_set(
     selection = document["selection"]
     if not isinstance(selection, dict) or len(selection) != 1:
         raise IndicatorSetError(
-            f"{label}: selection is exactly one of preset or indicators"
+            f"{label}: selection is exactly one of preset, registry or indicators"
         )
     ((kind, value),) = selection.items()
     if kind == "preset":
@@ -368,6 +397,30 @@ def resolve_set(
             )
         indicators = [
             _registered(item.name) for item in registry.declarations(default_tokens)
+        ]
+    elif kind == "registry":
+        from blueearth_cst.metrics import loader
+
+        try:
+            local = loader.declarations(value)
+            module = loader.load_set(value)
+        except ValueError as exc:
+            raise IndicatorSetError(f"{label}: {exc}") from exc
+        descriptions = {item.id: item.description for item in module.METRICS}
+        indicators = [
+            ResolvedIndicator(
+                declaration=item,
+                definition=f"{value}:{item.name}",
+                method=item.calculation_method,
+                parameters=dict(item.calculation_parameters),
+                title=item.name.replace("_", " "),
+                description=descriptions[item.name],
+                references=(),
+                authored_references=(),
+                equivalent_definition="",
+                calculation_set=value,
+            )
+            for item in local
         ]
     elif kind == "indicators":
         if not isinstance(value, list) or not value:
@@ -388,7 +441,7 @@ def resolve_set(
                     )
                 indicators.append(_registered(entry["definition"]))
             else:
-                indicators.append(_authored(entry, entry_label))
+                indicators.append(_authored(entry, entry_label, source.set_id))
     else:
         raise IndicatorSetError(f"{label}: unknown selection kind {kind!r}")
     metrics, contracts = {}, {}
@@ -577,6 +630,7 @@ def calculation_records(indicators) -> list[dict]:
                 "definition": item.definition,
                 "method": item.method,
                 "parameters": dict(sorted(item.parameters.items())),
+                **({"set": item.calculation_set} if item.calculation_set else {}),
             }
             for item in indicators
         ),
@@ -599,6 +653,22 @@ def declarations_for_calculations(records) -> tuple[registry.MetricDeclaration, 
     """
     result = []
     for record in records:
+        if "set" in record:
+            from blueearth_cst.metrics import loader
+
+            if set(record) != {"set", "metric", "definition", "method", "parameters"}:
+                raise IndicatorSetError(f"invalid local calculation record {record!r}")
+            if record["definition"] != f"{record['set']}:{record['metric']}":
+                raise IndicatorSetError(f"{record['metric']}: local identity differs")
+            result.append(
+                loader.resolve(
+                    record["set"],
+                    record["method"],
+                    record["parameters"],
+                    metric_name=record["metric"],
+                )
+            )
+            continue
         if set(record) != {"metric", "definition", "method", "parameters"}:
             raise IndicatorSetError(f"invalid calculation record {record!r}")
         definition, _ = registry.validate_calculation(

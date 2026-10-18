@@ -36,6 +36,9 @@ def main(argv=None):
     parser.add_argument("--new-experiment", action="store_true")
     parser.add_argument("--note")
     parser.add_argument("--recover-reservation", action="store_true")
+    parser.add_argument(
+        "--traceback", action="store_true", help="show exception causes for diagnosis"
+    )
     args, extra = parser.parse_known_args(argv)
     if extra[:1] == ["--"]:
         extra = extra[1:]
@@ -54,6 +57,8 @@ def main(argv=None):
         try:
             project, _ = simulation_settings(args.config)
         except (OSError, KeyError, TypeError, ValueError) as exc:
+            if args.traceback:
+                raise
             parser.error(str(exc))
         root = Path(project["project"]["project_dir"]).resolve()
     else:
@@ -154,6 +159,8 @@ def main(argv=None):
         return result
     except ValueError as exc:
         invocation_history.finish(record_path, record, exit_code=None, error=exc)
+        if args.traceback:
+            raise
         parser.error(str(exc))
     except BaseException as exc:
         invocation_history.finish(record_path, record, exit_code=None, error=exc)

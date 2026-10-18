@@ -97,14 +97,14 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(
     projection = {
         "simulation_id": simulation["simulation_id"],
         "response_identity_sha256": inventory["response_identity_sha256"],
-        "metric_definition_sha256": "d" * 64,
+        "metric_definition_sha256": content_sha256({"declarations": [declaration]}),
         "metric_environment_sha256": content_sha256(environment),
         "groups": {"": ["run_01"]},
         "run_groups": [
             {"run_group_id": "run_01", "grain": "run", "run_id": "run_01"},
             {"run_group_id": "group_01", "grain": "bundle", "run_id": "run_01"},
         ],
-        "schema_version": "metric-set-identity/4",
+        "schema_version": "metric-set-identity/5",
     }
     plan = {
         "schema_version": "metric-request/4",
@@ -116,6 +116,7 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(
             "return_level_validation": {"schema_version": "fixture/1"},
         },
         "identity_projection": projection,
+        "metric_definition": {"declarations": [declaration]},
         "metric_definition_sha256": projection["metric_definition_sha256"],
         "metric_environment_sha256": projection["metric_environment_sha256"],
         "response_inventory_sha256": inventory["response_inventory_sha256"],
@@ -129,6 +130,14 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(
     monkeypatch.setattr(metric_plan, "check_live_metric_environment", lambda _: None)
     monkeypatch.setattr(metric_plan, "read_simulation_v2", lambda _: simulation)
     monkeypatch.setattr(metric_plan, "read_response_inventory_v2", lambda _: inventory)
+    monkeypatch.setattr(
+        "blueearth_cst.experiment.simulation_record.read_simulation_v2",
+        lambda _: simulation,
+    )
+    monkeypatch.setattr(
+        "blueearth_cst.experiment.response_inventory.read_response_inventory_v2",
+        lambda _: inventory,
+    )
     monkeypatch.setattr(
         metric_plan,
         "reduce_metric_plan",
@@ -196,7 +205,7 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(
         assert not (engine / "metrics.json").exists()
         return
     marker = metric_plan._publish_metric_set_v2(tmp_path, plan)
-    assert marker["schema_version"] == "metric-set/4"
+    assert marker["schema_version"] == "metric-set/5"
     assert engine.joinpath("metrics.json").is_file()
     assert result.joinpath("group_members.csv").is_file()
     assert marker["group_members"]["path"] == (

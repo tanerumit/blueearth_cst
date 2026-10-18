@@ -8,6 +8,7 @@ import ctypes
 import os
 import shutil
 import subprocess
+import sys
 from ctypes import wintypes
 from pathlib import Path
 from typing import Mapping, Sequence
@@ -122,6 +123,18 @@ def run_project_child(
     command: Sequence[str], *, cwd: Path, env: Mapping[str, str], writing: bool = True
 ) -> int:
     """Run a project child, refusing unsupported writer lifetime semantics."""
+    if command and Path(command[0]).name.lower() in {"snakemake", "snakemake.exe"}:
+        command = [
+            sys.executable,
+            str(Path(__file__).with_name("snakemake_console.py")),
+            *command[1:],
+        ]
+    elif list(command[1:3]) == ["-m", "snakemake"]:
+        command = [
+            command[0],
+            str(Path(__file__).with_name("snakemake_console.py")),
+            *command[3:],
+        ]
     if os.name == "nt":
         return run_owned_child(command, cwd=cwd, env=env)
     if writing:

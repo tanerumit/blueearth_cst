@@ -161,7 +161,7 @@ Invalid points are rejected with their station names and original coordinates.
 Check their placement against the source hydrography before changing the snap
 tolerance. A point that reaches a pit without reaching a river is rejected.
 Successful coordinate adjustments in the spatial-units rule emit a warning
-with the station name and original and resolved longitude/latitude. This includes moving a point to its
+with only the station name and adjusted longitude/latitude. This includes moving a point to its
 model-cell centre even when no downstream movement is needed.
 
 ### The per-workflow files

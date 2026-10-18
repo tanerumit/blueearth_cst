@@ -537,9 +537,7 @@ def _snap_gauge_points(
         original = original_wgs84.iloc[index]
         resolved = snapped_wgs84.geometry.iloc[index]
         log_row(
-            f"{original.station_name}: "
-            f"original (lon={original.geometry.x:.9f}, lat={original.geometry.y:.9f}) → adjusted "
-            f"(lon={resolved.x:.9f}, lat={resolved.y:.9f})",
+            f"{original.station_name} adjusted to lon={resolved.x:.9f}, lat={resolved.y:.9f}",
             module="spatial",
             level="WARNING",
         )

@@ -7,6 +7,11 @@ Run all enabled workflows with `scripts/run_workflows.py`. To run one workflow,
 use `scripts/run_workflow.py <workflow_name>`. Scenario generation and simulation
 delegate to their dedicated runners.
 
+The runners hide routine Snakemake startup chatter during execution. Warnings,
+errors and workflow diagnostics remain visible, and Snakemake's log files retain
+the full record. Dry runs and `--verbose` keep native startup output.
+Routine map-extent padding notes are omitted; map-overlap warnings remain visible.
+
 | Workflow | What it does |
 |---|---|---|
 | Historical climate (`analyze_climate`) | Compare climate data sources before choosing the forcing for the model; optional |

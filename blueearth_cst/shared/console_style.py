@@ -974,7 +974,8 @@ def target_banner(name, targets, project_dir=None):
 # Snakemake's fixed PREAMBLE (`Assuming unrestricted shared filesystem usage.`,
 # `host: ...`, `Provided cores: N`) is deliberately absent: it is printed before
 # `onstart`, so no Snakefile hook can be installed early enough to mute it. It
-# is a handful of lines once per run; the volume was never there.
+# is filtered before handler installation by the owned runners' snakemake_console
+# entry point. Bare Snakemake, dry runs and verbose runs retain native startup output.
 #
 # Nor can `--quiet` reach it, which is the obvious next idea and was measured
 # route by route on 2026-09-18 (`dev/tasks/t2609181302-*`): the category named

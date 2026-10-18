@@ -7,7 +7,7 @@ This page runs the whole pipeline once, on the example basin that ships with the
 toolbox, so you can see what each stage produces before setting up your own
 basin. Allow at least an hour; the time depends on your computer and data access.
 
-If the toolbox is not installed yet, do that first: [Setup guide](../setup/install.md).
+If the toolbox is not installed yet, do that first: [Setup guide](../site/setup/install.md).
 The example also needs access to the datasets named in its HydroMT catalogs;
 the supplied catalog paths may need to be replaced for your machine. Check
 `project.catalog` and the data source entries before starting.
@@ -22,7 +22,7 @@ pixi run install
 
 The second command installs the weather generator and prepares the Julia
 environment. Julia itself must already be available through juliaup; see the
-[setup guide](../setup/install.md).
+[setup guide](../site/setup/install.md).
 :::
 
 ## The shape of a run
@@ -31,6 +31,8 @@ Five workflows share one project configuration set. The arrows show the
 all-workflow runner's execution order. Select a workflow to see what it does.
 
 <iframe src="assets/shape-of-a-run.html" title="Interactive diagram of the five workflows in execution order" style="width:100%;height:460px;border:0;" loading="lazy"></iframe>
+
+[Open the interactive diagram](assets/shape-of-a-run.html) if your Markdown editor does not show it inline.
 
 The model and generated climate scenarios are both needed for the stress test.
 The historical climate comparison is optional; run it on its own when choosing
@@ -110,7 +112,7 @@ temperature and precipitation change using the files described in
   skipped; run `pixi run install`.
 - **Julia not found** — Julia is deliberately not in the pixi environment. It is
   managed by juliaup and must be on your `PATH`; see the
-  [Setup guide](../setup/install.md).
+  [Setup guide](../site/setup/install.md).
 
 ## Next
 

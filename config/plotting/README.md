@@ -22,4 +22,4 @@ Style lengths are millimetres and font/line sizes are points; alpha is a fractio
 Classification, normalization, completeness, statistical methods and quantity-specific thresholds remain
 in Python. Geometry and artist placement specific to one figure also remain with that renderer.
 R/weathergenr plots retain their own setup. The agreed appearance and exceptions live in
-`dev/reference/plot-style.md`; user guidance is in `docs/site/guide/configuration.md`.
+`dev/reference/plot-style.md`; user guidance is in `docs/guide/configuration.md`.

@@ -563,7 +563,7 @@ degenerate) produces the remaining products and the listed one.
   - `docs/site/toolbox-reference/workflow-analyze-projections.qmd` — rule table (lines 11-17) gains 2.05b,
     the mermaid DAG (line 30 onward) becomes 2.04 → 2.05b → 2.06 with 2.05 parallel, an `analysis/` outputs
     paragraph (commit 4); figure list by folder and the retired-path note (commit 5b).
-  - `docs/site/guide/outputs.md` — the `data/climate/` line (line 15) names `analysis/` tables and the new
+  - `docs/guide/outputs.md` — the `data/climate/` line (line 15) names `analysis/` tables and the new
     `plots/` folders (commit 5b).
   - `dev/reference/workflows/rule-index.md` — the numbering table (:95-103), the stage DAG and its prose
     (:782-817: "2.06 reads 2.04's series, not 2.05" becomes "2.06 reads 2.05b's tables"; 2.05's
@@ -715,7 +715,7 @@ blueearth_cst/projections/
 ~ dev/reference/workflows/rule-index.md   :95-103 numbering, :782-817 DAG/prose, :881-908 entries + 2.05b
 ~ dev/scripts/check_baseline.py, dev/scripts/console_sample_specs.py (:292-298)
 ~ docs/site/toolbox-reference/workflow-analyze-projections.qmd   rule table, DAG, analysis/, figures, retired note
-~ docs/site/guide/outputs.md        analysis/ tables and plots/ folders
+~ docs/guide/outputs.md        analysis/ tables and plots/ folders
 ```
 
 **Generated** under `<project>/data/climate/projections/<ensemble>/`:

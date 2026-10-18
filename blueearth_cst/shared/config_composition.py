@@ -87,7 +87,7 @@ MIGRATION_RELEASE = "v0.3.0"
 MIGRATION_DOC = "docs/site/guide/migrating-project-config.qmd"
 
 #: Current guidance for configuring a project and its workflow files.
-CONFIG_DOC = "docs/site/guide/configuration.md"
+CONFIG_DOC = "docs/guide/configuration.md"
 
 #: The project config shape this loader accepts (R14 D-11.1). A document with no
 #: `schema_version`, or a lower one, is a v1 set and is refused rather than

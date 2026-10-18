@@ -92,14 +92,16 @@ purpose-named task folder and clean its temporary material at completion.
 
 ## docs/
 
-The Quarto site publishes `guide/`, `setup/`, `scientific-approach/`, and
+`docs/guide/` owns the canonical Markdown user guides and their assets.
+The Quarto site stages ignored copies in `docs/site/guide/` during pre-render
+and publishes them alongside `setup/`, `scientific-approach/`, and
 `toolbox-reference/`. `notebooks/` holds source-only walkthroughs;
 `references/` keeps the dated 2025
 technical note and vendored HydroMT / HydroMT-Wflow / Wflow guides for offline
 use. See `docs/README.md` for the map. Configs are not mirrored here;
 `config/` is the single source.
 Historical migration guides are filed under their relevant `dev/records/milestones/`
-directory; the current migrator is described in `docs/site/guide/`.
+directory; current user guidance lives in `docs/guide/`.
 
 ## .github/workflows/ci.yml
 

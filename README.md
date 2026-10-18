@@ -246,7 +246,7 @@ Text IDs such as `run_01` and `group_01` use independent namespaces.
 `group_metadata.csv` joins groups to `perturbation_lookup.csv` through `st_id`.
 Run tables join directly to the collection's `scenario_run_lookup.csv`.
 Group summaries give equal weight to each realization's run metric; return levels retain
-pooled-sample estimation. See [Reading the outputs](docs/site/guide/outputs.md) for validity and migration.
+pooled-sample estimation. See [Reading the outputs](docs/guide/outputs.md) for validity and migration.
 Collection inventories live in `scenarios/_engine/collections/<collection_id>/`;
 metric metadata lives in the experiment's `_engine/metric_sets/<metric_set_id>/`.
 Model-grid forcing and per-run catalogs are temporary. Collection forcing and
@@ -273,7 +273,7 @@ A custom `experiment_name` base selects another family; an exact numbered name p
 that identity. Changed scientific inputs without the flag refuse before producers.
 The suggestion helper is now read-only and does not edit YAML or reserve a folder.
 Existing owned dated or unnumbered experiment names remain explicit legacy selections.
-See [experiment selection and recovery](docs/site/guide/running.md#select-resume-or-create-an-experiment).
+See [experiment selection and recovery](docs/guide/running.md#select-resume-or-create-an-experiment).
 
 ### Logs and DAGs
 

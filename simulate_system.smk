@@ -22,6 +22,8 @@ else:
     include: "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
 
 from blueearth_cst.experiment.indicator_sets import calculation_records
+from blueearth_cst.experiment.console_reporting import matching_sets
+from blueearth_cst.shared.console_style import register_indicator_context
 
 # Both included modules define METRIC_SETS (resolved named sets) and
 # METRIC_ANCHOR. Sets with identical numerical requests share one plan and one
@@ -47,7 +49,9 @@ def _current_metric_requests(wc=None):
     requests = {}
     for records in METRIC_CALCULATIONS:
         request = current_metric_request(exp_dir, records, METRIC_ANCHOR)
-        requests[short_digest(content_sha256(request))] = request
+        identity = short_digest(content_sha256(request))
+        requests[identity] = request
+        register_indicator_context("metric_request_id", identity, [item.set_id for item in matching_sets(METRIC_SETS, records)])
     return requests
 
 
@@ -64,10 +68,10 @@ checkpoint prepare_indicator_plan:
     params:
         request=lambda wc: _current_metric_requests(wc)[wc.metric_request_id],
     run:
-        from blueearth_cst.experiment.metric_plan import write_metric_plan
+        from blueearth_cst.experiment.console_reporting import prepare_indicator_plan as report_plan
         if wildcards.metric_request_id != short_digest(content_sha256(params.request)):
             raise ValueError("metric request differs from its exact checkpoint")
-        write_metric_plan(exp_dir, params.request)
+        report_plan(exp_dir, params.request, METRIC_SETS)
 
 
 def _metric_plan_paths(wc):
@@ -92,7 +96,10 @@ def _selected_metric_outputs(wc):
 def _metric_set_plan(wc):
     for identity in _current_metric_requests(wc):
         path = checkpoints.prepare_indicator_plan.get(metric_request_id=identity).output[0]
-        if short_digest(read_canonical_json(Path(path))["metric_set_id"]) == wc.metric_set_id:
+        plan = read_canonical_json(Path(path))
+        if short_digest(plan["metric_set_id"]) == wc.metric_set_id:
+            request = plan["request"]
+            register_indicator_context("metric_set_id", wc.metric_set_id, [item.set_id for item in matching_sets(METRIC_SETS, request["calculations"])])
             return path
     raise ValueError("metric set is not produced by any selected plan")
 
@@ -122,8 +129,9 @@ rule derive_system_indicators:
     run:
         from blueearth_cst.experiment.metric_plan import publish_metric_set
         from blueearth_cst.experiment.console_reporting import report_metric_set
+        reused = Path(output.manifest).is_file()
         manifest = publish_metric_set(exp_dir, read_canonical_json(Path(input.plan)))
-        report_metric_set(Path(exp_dir), manifest)
+        report_metric_set(Path(exp_dir), manifest, METRIC_SETS, reused=reused)
 
 
 # simulations_and_indicators -- target (unnumbered)

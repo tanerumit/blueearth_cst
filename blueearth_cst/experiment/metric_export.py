@@ -8,6 +8,11 @@ publication. This is per-set completion, not an all-set transaction.
 from pathlib import Path
 
 from blueearth_cst.experiment import indicator_sets
+from blueearth_cst.experiment.console_reporting import (
+    record_indicator_detail,
+    result_counts,
+)
+from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.metric_plan import (
     current_metric_request,
     metric_anchor,
@@ -20,7 +25,7 @@ from blueearth_cst.experiment.named_export import (
     read_current_publication,
 )
 from blueearth_cst.experiment.simulation_record import read_simulation_intent_v2
-from blueearth_cst.shared.snake_utils import resolve_water_year_start
+from blueearth_cst.shared.snake_utils import plural, resolve_water_year_start
 
 
 def publish_selected_sets(
@@ -52,12 +57,19 @@ def publish_selected_sets(
     outcomes = []
     for item in sets:
         try:
+            previous = read_current_publication(root, item.set_id)["publication_id"]
+        except (OSError, KeyError, ValueError, NamedExportError):
+            previous = None
+        try:
             request = current_metric_request(
                 root,
                 indicator_sets.calculation_records(item.indicators),
                 metric_anchor(project),
             )
             plan = verify_metric_plan(root, request)
+            counts = result_counts(
+                root, read_canonical_json(Path(plan["targets"]["manifest"]))
+            )
             record = publish_named_set(
                 root, item, Path(plan["targets"]["manifest"]), water_year_start=month
             )
@@ -67,6 +79,9 @@ def publish_selected_sets(
                     "status": "current",
                     "metric_set_id": record["metric_set_id"],
                     "publication_id": record["publication_id"],
+                    "reused": previous == record["publication_id"],
+                    "available_results": counts[0],
+                    "missing_results": counts[1],
                 }
             )
         except (OSError, KeyError, ValueError) as exc:
@@ -92,26 +107,45 @@ def report_publication(root: Path, outcomes) -> bool:
     legacy = legacy_flat_export(root)
     if legacy:
         log_row(
-            f"Legacy flat metric export preserved, not refreshed: {legacy[0]}; named sets "
-            "publish under results/metric_sets/<set-id>/ (see the migration note)",
-            module="metrics",
+            f"Earlier results kept at {legacy[0]}; updated results are saved separately "
+            "under results/metric_sets/<set-id>/",
+            module="indicators",
         )
     for outcome in outcomes:
         if outcome["status"] == "current":
+            action = (
+                "results unchanged; reusing saved results"
+                if outcome.get("reused")
+                else "results saved"
+            )
+            destination = f"<experiment>/results/metric_sets/{outcome['set_id']}/"
             log_row(
-                f"Indicator set {outcome['set_id']} current: metric set "
-                f"{outcome['metric_set_id'][:12]}, publication {outcome['publication_id'][:12]} "
-                f"→ {Path(root) / 'results/metric_sets' / outcome['set_id']}",
-                module="metrics",
+                f"{outcome['set_id']}: {action} → {destination}",
+                module="indicators",
+            )
+            if outcome.get("missing_results"):
+                log_row(
+                    f"{outcome['set_id']}: {plural(outcome['missing_results'], 'result')} missing or invalid; "
+                    f"{plural(outcome['available_results'], 'result')} available; check result tables and coverage evidence",
+                    module="indicators",
+                    level="WARNING",
+                )
+            record_indicator_detail(
+                root,
+                f"{outcome['set_id']}; metric set {outcome['metric_set_id']}; "
+                f"publication {outcome['publication_id']}; "
+                f"available results={outcome.get('available_results')}; "
+                f"missing or invalid results={outcome.get('missing_results')}",
             )
         else:
             kept = (
-                f"prior publication {outcome['prior_publication_id'][:12]} kept (mixed-age export)"
+                "previous results kept; they have not been updated"
                 if outcome["prior_publication_id"]
-                else "no prior publication"
+                else "no saved results available"
             )
             log_row(
-                f"Indicator set {outcome['set_id']} FAILED; {kept}; {outcome['reason'].splitlines()[0]}",
-                module="metrics",
+                f"{outcome['set_id']}: could not update results; {kept}; {outcome['reason'].splitlines()[0]}",
+                module="indicators",
+                level="ERROR",
             )
     return all(outcome["status"] == "current" for outcome in outcomes)

@@ -176,7 +176,11 @@ def test_named_sets_export_one_readable_folder_per_set(tmp_path):
     )
     for set_id in records:
         assert (root / "results/metric_sets" / set_id / "indicators.csv").is_file()
-    assert "Indicator set depth_alias current" in output, output
+    assert "depth_alias: results saved" in output, output
+    assert "[default, same_numbers]" in output, output
+    assert "ready to calculate 1 indicator" in output, output
+    assert "expected result keys" not in output, output
+    assert "Updating checkpoint dependencies." not in output, output
     # A metadata-only edit refreshes the publication but not the numbers.
     alias = experiment.config.parent / "sets/depth_alias.yml"
     alias.write_text(
@@ -188,6 +192,7 @@ def test_named_sets_export_one_readable_folder_per_set(tmp_path):
     code, output = _simulate(experiment)
     assert code == 0, output
     refreshed = read_current_publication(root, "depth_alias")
+    assert "default: results unchanged; reusing saved results" in output, output
     assert refreshed["metric_set_id"] == records["depth_alias"]["metric_set_id"]
     assert refreshed["publication_id"] != records["depth_alias"]["publication_id"]
     assert "Renamed" in (

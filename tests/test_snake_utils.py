@@ -2839,6 +2839,28 @@ def test_console_finish_line_uses_the_banner_wildcard_grammar():
     assert "[rlz 1 | st 0]" in out and "rlz=1" not in out
 
 
+def test_indicator_start_and_finish_show_set_names_instead_of_hashes(monkeypatch):
+    monkeypatch.setattr(cs, "_INDICATOR_CONTEXTS", {})
+    monkeypatch.setitem(cs._RULE_NUMBERS, "prepare_indicator_plan", "4.07")
+    cs.register_indicator_context(
+        "metric_request_id", "opaque", ["default", "flow_regime"]
+    )
+    out = _emit(
+        _console_handler(),
+        _job_info(
+            1,
+            "prepare_indicator_plan",
+            "Rule 4.07: prepare_indicator_plan [metric_request opaque]",
+            {"metric_request_id": "opaque"},
+        ),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=1),
+    )
+    assert out.count("Check simulation outputs for indicators") == 2
+    assert out.count("[default, flow_regime]") == 2
+    assert "opaque" not in out
+
+
 def test_console_finish_line_drops_the_num_suffix_the_banner_drops():
     """`rlz_num` is the WILDCARD's name; `rlz` is the console's, on both lines.
 

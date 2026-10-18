@@ -11,6 +11,11 @@ The runners hide routine Snakemake startup chatter during execution. Warnings,
 errors and workflow diagnostics remain visible, and Snakemake's log files retain
 the full record. Dry runs and `--verbose` keep native startup output.
 Routine map-extent padding notes are omitted; map-overlap warnings remain visible.
+WF4 reports checking, calculating and saving indicators by their selected set names.
+Its final summary links each set's results, identifies reused results, and reports
+missing or invalid values. If one set fails, it states whether earlier results
+remain available. Internal request and publication identities remain in the
+retained manifests and the experiment's `logs/wf4_indicators.log`.
 
 | Workflow | What it does |
 |---|---|---|

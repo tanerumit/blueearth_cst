@@ -310,7 +310,9 @@ if not _simulation_complete:
                 raise ValueError("response temporal evidence differs from retained source calendar")
             inventory = publish_response_inventory_v2(exp_dir, native, evidence)
             published = publish_simulation_v2(exp_dir, inventory)
-            log_row(f"Simulation ready: {published['simulation_id']}; {plural(len(RUN_IDS), 'native run')} retained → {output.inventory}", module="responses")
+            log_row(f"Simulation outputs ready: {plural(len(RUN_IDS), 'run')} retained", module="responses")
+            from blueearth_cst.experiment.console_reporting import record_indicator_detail
+            record_indicator_detail(exp_dir, f"Simulation {published['simulation_id']}; response inventory → {output.inventory}")
 
 # simulations_only -- target (unnumbered): simulate, stop before indicators
 rule simulations_only:

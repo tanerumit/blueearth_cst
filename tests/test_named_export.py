@@ -450,7 +450,9 @@ def test_sets_complete_independently_and_failures_keep_prior_publications(
     assert again[0]["prior_publication_id"] == first
     assert {p.name: p.read_bytes() for p in folder.iterdir()} == before
     metric_export.report_publication(root, again)
-    assert "mixed-age export" in capsys.readouterr().out
+    assert (
+        "previous results kept; they have not been updated" in capsys.readouterr().out
+    )
 
 
 def test_a_failed_rollback_keeps_backups_and_reports_them(ready, monkeypatch):

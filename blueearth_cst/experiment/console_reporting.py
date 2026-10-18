@@ -9,12 +9,15 @@ from contextlib import redirect_stdout
 from datetime import datetime
 from pathlib import Path
 
-from blueearth_cst.shared.run_log_core import log_row, plural
+from blueearth_cst.shared.run_log_core import _write_console, log_row, plural
 
 
 def record_indicator_detail(root, message):
     """Retain technical details even in Snakemake workers without file handlers."""
-    logging.getLogger("snakemake.logging").info("Indicator details: " + message)
+    # Snakemake's asynchronous file handler can inherit a legacy Windows
+    # encoding. Keep that copy ASCII-safe; the dedicated log retains UTF-8.
+    native_message = message.encode("ascii", "backslashreplace").decode("ascii")
+    logging.getLogger("snakemake.logging").info("Indicator details: " + native_message)
     if root is not None:
         path = Path(root) / "logs/wf4_indicators.log"
         try:
@@ -23,7 +26,7 @@ def record_indicator_detail(root, message):
                 handle.write(f"{datetime.now():%H:%M:%S} - {message}\n")
         except OSError:
             # A console-only failure must not stop calculation or lose details.
-            sys.stdout.write("Indicator details: " + message + "\n")
+            _write_console(sys.stdout, "Indicator details: " + message + "\n")
 
 
 def matching_sets(sets, calculations):

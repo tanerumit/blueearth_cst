@@ -1,8 +1,11 @@
 """Publication summaries describe retained estimates without changing their values."""
 
 import io
+import logging
 import sys
 from dataclasses import replace
+from logging.handlers import QueueHandler, QueueListener
+from queue import Queue
 
 import pytest
 
@@ -10,6 +13,7 @@ from blueearth_cst.experiment import indicator_sets
 from blueearth_cst.experiment.console_reporting import (
     _PlanStream,
     matching_sets,
+    record_indicator_detail,
     report_metric_set,
     result_counts,
 )
@@ -31,6 +35,47 @@ def test_legacy_console_folds_arrows_without_corrupting_utf8_log(monkeypatch, te
     assert b"Written -> sample.csv" in data.getvalue()
     if tee:
         assert "Written → sample.csv" in log.getvalue()
+
+
+def test_indicator_details_survive_queued_cp1252_logging(tmp_path, monkeypatch, capsys):
+    """Snakemake's asynchronous file logger may use the Windows code page."""
+    native_log = tmp_path / "snakemake.log"
+    handler = logging.FileHandler(native_log, encoding="cp1252")
+    queue = Queue()
+    listener = QueueListener(queue, handler)
+    logger = logging.getLogger("snakemake.logging")
+    monkeypatch.setattr(logger, "handlers", [QueueHandler(queue)])
+    monkeypatch.setattr(logger, "level", logging.INFO)
+    monkeypatch.setattr(logger, "propagate", False)
+    message = "Metric set abc; manifest → C:/cases/café/水/metrics.json"
+    listener.start()
+    try:
+        record_indicator_detail(tmp_path, message)
+        report_metric_set(
+            tmp_path, {"metric_set_id": "abc", "engine_root": "_engine/sets"}
+        )
+    finally:
+        listener.stop()
+        handler.close()
+    captured = capsys.readouterr()
+    assert "Logging error" not in captured.err
+    assert "UnicodeEncodeError" not in captured.err
+    assert r"\u2192" in native_log.read_text(encoding="cp1252")
+    assert r"\u6c34" in native_log.read_text(encoding="cp1252")
+    assert message in (tmp_path / "logs/wf4_indicators.log").read_text(encoding="utf-8")
+
+
+def test_unwritable_detail_log_uses_encoding_safe_console_fallback(
+    tmp_path, monkeypatch
+):
+    (tmp_path / "logs").write_text("blocks log directory", encoding="utf-8")
+    data = io.BytesIO()
+    live = io.TextIOWrapper(data, encoding="cp1252")
+    with monkeypatch.context() as context:
+        context.setattr(sys, "stdout", live)
+        record_indicator_detail(tmp_path, "Manifest → café/水/metrics.json")
+        live.flush()
+    assert b"Indicator details: Manifest -> caf\xe9/" in data.getvalue()
 
 
 def test_metric_summary_counts_actual_finite_and_missing_estimates(tmp_path, capsys):

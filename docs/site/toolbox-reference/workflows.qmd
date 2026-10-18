@@ -13,4 +13,4 @@ The workflows share a project configuration but have distinct products. The usua
 | [WF3 — Generate scenarios](workflow-generate-scenarios.qmd) | Generate and perturb stochastic weather | Ready, reusable scenario collection |
 | [WF4 — Simulate system](workflow-simulate-system.qmd) | Simulate selected series and derive indicators | Retained responses and metric sets |
 
-Each page describes the rule sequence, configuration, inputs, and outputs. See [Configuration](../guide/configuration.qmd) for path resolution and the [Running guide](../guide/running.qmd) for commands. All products are written below the configured `project_dir`.
+Each page describes the rule sequence, configuration, inputs, and outputs. See [Configuration](../guide/configuration.md) for path resolution and the [Running guide](../guide/running.md) for commands. All products are written below the configured `project_dir`.

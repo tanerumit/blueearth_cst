@@ -5,6 +5,12 @@ instructions, scientific approach, and toolbox reference. Its render list is
 explicit in [`site/_quarto.yml`](site/_quarto.yml); other documents remain in
 the repository.
 
+The canonical user-guide sources are `site/guide/*.md`, editable in a Markdown
+editor. Quarto renders them directly; no generated `.qmd` copies are needed.
+Run `pixi run docs-preview` for a local preview or `pixi run docs-build` to build
+the site. Quarto callouts and the embedded diagram retain their site formatting;
+their appearance in other Markdown previews depends on the editor.
+
 | Location | Purpose |
 |---|---|
 | [`site/`](site/) | Published Quarto site: landing page, user guide, setup, scientific approach, toolbox reference, styles, and assets. |

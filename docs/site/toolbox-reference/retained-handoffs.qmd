@@ -36,6 +36,6 @@ Use the owned launchers: `scripts/run_workflows.py` for generation and
 `scripts/simulate_system.py` for simulation. The
 [WF3 workflow](workflow-generate-scenarios.qmd),
 [WF4 workflow](workflow-simulate-system.qmd), and
-[output guide](../guide/outputs.qmd) give the current controls, paths, and join
+[output guide](../guide/outputs.md) give the current controls, paths, and join
 keys. The [historical migration records](https://github.com/tanerumit/blueearth_cst/tree/main/dev/records/milestones)
 describe older layouts.

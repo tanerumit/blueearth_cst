@@ -278,7 +278,7 @@ Also stale before this work: the source notebook
 (`config/simulation.json`, `scenario_table.csv`, `stress_test_lookup.csv`),
 which v0.3.0 already does not write. Ported to the v2 records in `5d7887ba`.
 
-Correction: an earlier draft of this section said `docs/site/guide/outputs.qmd`
+Correction: an earlier draft of this section said `docs/site/guide/outputs.md`
 and `docs/site/scientific-approach/conventions-and-interpretation.qmd` still
 used the metric-set/1 vocabulary. They did not; both already describe
 `metric_run_lookup.csv` and `run_group_id`. Only the notebook was stale.

@@ -255,10 +255,10 @@ own `results/metric_sets/<set-id>/` folder without rerunning the model. The
 all-workflow runner does the same when the other four workflows are disabled.
 No `--target` is needed; the runner infers it. The legacy `operation:
 metrics-only` setting still works for one release with `--target
-simulations_and_indicators`. See [Reading the outputs](outputs.qmd) for the
+simulations_and_indicators`. See [Reading the outputs](outputs.md) for the
 result files.
 
 ## Next
 
-- [Reading the outputs](outputs.qmd) — what the run wrote, and how to tell
+- [Reading the outputs](outputs.md) — what the run wrote, and how to tell
   whether it is still current.

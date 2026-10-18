@@ -36,7 +36,7 @@ Keep identifiers such as `run_01` and `group_01` as text; their scope is their o
 Group summaries average realization-level metrics with equal weight and propagate an invalid member's NaN.
 Return levels retain pooled estimation from member-local annual blocks, including for singleton groups.
 The case with an empty `st_id` is the unperturbed reference.
-See [Reading the outputs](../guide/outputs.qmd) for the exact layout.
+See [Reading the outputs](../guide/outputs.md) for the exact layout.
 
 Return levels are GEV fits to groups of simulated years and should be used as screening indicators.
 The supplied benchmark covers limited synthetic conditions, offers no basin-specific guarantee, and does not provide uncertainty intervals.

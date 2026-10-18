@@ -277,12 +277,12 @@ pixi run python scripts/suggest_experiment_name.py <your project file> --name dr
 Plain execution selects the highest allocated number in the chosen family.
 Use `--new-experiment` on an execution runner to advance it. Changed collection,
 model, or scientific settings require a new experiment; omission of the flag
-refuses the request before producers run. See [running](running.qmd#select-resume-or-create-an-experiment).
+refuses the request before producers run. See [running](running.md#select-resume-or-create-an-experiment).
 
 ## Next
 
-- [Running the workflows](running.qmd) — run the whole project or selected workflows.
-- [Reading the outputs](outputs.qmd) — what the run wrote, and whether it is
+- [Running the workflows](running.md) — run the whole project or selected workflows.
+- [Reading the outputs](outputs.md) — what the run wrote, and whether it is
   still current.
 
 An older (pre-R14) project file is migrated with `scripts/migrate_project_config.py`

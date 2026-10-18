@@ -99,7 +99,7 @@ Find the hydrological indicators under
 `experiments/<name>/results/metric_sets/default/`, starting with its
 `indicators.csv` dictionary. Join each indicator to its
 temperature and precipitation change using the files described in
-[Reading the outputs](outputs.qmd).
+[Reading the outputs](outputs.md).
 
 ## When something goes wrong
 
@@ -114,6 +114,6 @@ temperature and precipitation change using the files described in
 
 ## Next
 
-- [Configuring a project](configuration.qmd) — point the toolbox at your own basin.
-- [Running the workflows](running.qmd) — the flags, the wrapper, and experiments.
-- [Reading the outputs](outputs.qmd) — what a run wrote, and whether it is current.
+- [Configuring a project](configuration.md) — point the toolbox at your own basin.
+- [Running the workflows](running.md) — the flags, the wrapper, and experiments.
+- [Reading the outputs](outputs.md) — what a run wrote, and whether it is current.

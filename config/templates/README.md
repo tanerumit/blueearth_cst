@@ -21,7 +21,7 @@ what it held; see `config/defaults/README.md`.
 The five YAML files are one set. Copy all five into your project folder and
 pass the project file to `--configfile`; its `config_path:` lines name the other
 four. A filled-in worked example is `test_case/project_config_rapid.yml` with
-its siblings; `docs/site/guide/configuration.qmd` walks through the layout.
+its siblings; `docs/site/guide/configuration.md` walks through the layout.
 
 The project template uses `config/catalogs/deltares_data_pdrive.yml`, backed
 by `P:/wflow_global/hydromt`. Mount the Deltares P-drive before running.

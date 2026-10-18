@@ -66,4 +66,4 @@ After successful generation or reuse, the wrapper mirrors the full hashed collec
 `scenarios/`, including lookup CSVs, `series/`, `config/`, and `weathergenr/`. Matching files are left untouched.
 `scenarios/_engine/current.json` identifies the exported collection; hashed collections remain immutable.
 
-The ready collection retains generated and perturbed climate series, a run/perturbation lookup, a collection inventory, and creator configuration. A ready marker signals publication; downstream consumers request explicit run IDs from a specific collection. Generation also writes logs and benchmarks. See [Reading the outputs](../guide/outputs.qmd) for the public collection layout and joins.
+The ready collection retains generated and perturbed climate series, a run/perturbation lookup, a collection inventory, and creator configuration. A ready marker signals publication; downstream consumers request explicit run IDs from a specific collection. Generation also writes logs and benchmarks. See [Reading the outputs](../guide/outputs.md) for the public collection layout and joins.

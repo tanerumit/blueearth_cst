@@ -74,7 +74,7 @@ An experiment retains native Wflow response CSVs and a response inventory. New i
 `metric-set/5`, under `_engine/metric_sets/<id>/`. They retain `metrics.json`, indicator tables, group
 membership, declarations, return-level evidence, per-series block coverage and the execution context.
 Each selected set has a readable view at `results/metric_sets/<set-id>/`: run and group tables, group
-lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.qmd).
+lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.md).
 
 ## Local calculation sets
 

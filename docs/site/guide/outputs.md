@@ -261,5 +261,5 @@ For a reproducible comparison, keep the whole project output directory, not
 only the indicator CSVs. The model build settings used by HydroMT are recorded
 in `models/hydrology/wflow/hydromt_build_config.yml`.
 
-See [Running the workflows](running.qmd) to calculate different indicators
+See [Running the workflows](running.md) to calculate different indicators
 from retained responses.

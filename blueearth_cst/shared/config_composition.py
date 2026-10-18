@@ -173,8 +173,27 @@ GENERATION_KEYS = frozenset(
     }
 )
 SIMULATION_KEYS = frozenset(
-    {"experiment_name", "scenario_collection", "operation", "compute", "metrics"}
+    {"experiment_name", "scenario_collection", "operation", "compute", "indicators"}
 )
+
+
+def normalize_indicator_settings(settings: dict) -> dict:
+    """Accept pre-rename WF4 inputs while exposing only indicator terminology."""
+    settings = dict(settings)
+    if "metrics" in settings:
+        if "indicators" in settings:
+            raise ValueError(
+                "use only indicators; both old and new selection keys were supplied"
+            )
+        settings["indicators"] = settings.pop("metrics")
+    aliases = {
+        "simulate-and-metrics": "simulate-and-indicators",
+        "metrics-only": "indicators-only",
+    }
+    if settings.get("operation") in aliases:
+        settings["operation"] = aliases[settings["operation"]]
+    return settings
+
 
 #: Names that belong to T1 whether or not the current T1 declares them —
 #: **derived**, never edited (D-10.3). Both the section names and every leaf
@@ -839,7 +858,12 @@ def _probe_t2(
             {},
             type(loaded).__name__,
         )
-    return _Probe(name, os.fspath(raw), resolved, "ok", dict(loaded), "")
+    loaded = (
+        normalize_indicator_settings(loaded)
+        if name == "simulate_system"
+        else dict(loaded)
+    )
+    return _Probe(name, os.fspath(raw), resolved, "ok", loaded, "")
 
 
 def _raise_for_probe(probe: _Probe, t1_dir: str) -> None:

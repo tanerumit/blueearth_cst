@@ -563,9 +563,9 @@ def test_hm5_synthetic_fail():
     assert ic.validate_hm5(df) != []
 
 
-def _hm7_row(metric, unit, location="101", value=1.0):
+def _hm7_row(indicator, unit, location="101", value=1.0):
     return {
-        "metric": metric,
+        "indicator": indicator,
         "location": location,
         "unit_id": str(unit).zfill(2),
         "value": value,
@@ -575,7 +575,7 @@ def _hm7_row(metric, unit, location="101", value=1.0):
 def _hm7_contract():
     from dataclasses import asdict
 
-    from blueearth_cst.experiment.metric_registry import declarations
+    from blueearth_cst.experiment.indicator_registry import declarations
     from blueearth_cst.experiment.response_inventory import make_response_request
 
     scenarios = pd.DataFrame(
@@ -595,9 +595,9 @@ def _hm7_contract():
     )
     registry = [asdict(item) for item in declarations(["q"])]
     rows = [
-        _hm7_row(metric["name"], unit)
-        for metric in registry
-        for unit in (["04", "05"] if metric["grain"] == "bundle" else ["01", "02"])
+        _hm7_row(indicator["name"], unit)
+        for indicator in registry
+        for unit in (["04", "05"] if indicator["grain"] == "bundle" else ["01", "02"])
     ]
     response = make_response_request(
         ["run_01", "run_02"],
@@ -628,7 +628,7 @@ def _hm7_contract():
 
 def test_legacy_hm7_contract_is_refused_with_run_and_bundle_grains():
     tables, contract = _hm7_contract()
-    assert "legacy metric-set/1" in ic.validate_hm7(tables, **contract)[0]
+    assert "legacy indicator-set/1" in ic.validate_hm7(tables, **contract)[0]
 
 
 @pytest.mark.parametrize(
@@ -650,7 +650,7 @@ def test_legacy_hm7_contract_is_refused_with_run_and_bundle_grains():
         "capacity",
         "wrong_grain",
         "missing_location",
-        "unknown_metric",
+        "unknown_indicator",
         "wrong_token",
         "missing_baseline",
         "missing_lookup_member",
@@ -709,8 +709,8 @@ def test_hm7_successor_refuses_independent_contract_divergence(mutation):
         table.loc[0, "unit_id"] = "04"
     elif mutation == "missing_location":
         contract["locations"]["q"].append("102")
-    elif mutation == "unknown_metric":
-        table.loc[0, "metric"] = "q_made_up"
+    elif mutation == "unknown_indicator":
+        table.loc[0, "indicator"] = "q_made_up"
     elif mutation == "wrong_token":
         tables["aet"] = tables.pop("q")
     elif mutation == "missing_baseline":
@@ -721,7 +721,7 @@ def test_hm7_successor_refuses_independent_contract_divergence(mutation):
         table.loc[0, "value"] = float("inf")
     elif mutation == "bundle_nan":
         table.loc[table.unit_id == "04", "value"] = float("nan")
-    assert "legacy metric-set/1" in ic.validate_hm7(tables, **contract)[0]
+    assert "legacy indicator-set/1" in ic.validate_hm7(tables, **contract)[0]
 
 
 def test_legacy_hm7_contract_is_refused_even_with_native_nan():
@@ -743,7 +743,7 @@ def test_legacy_hm7_contract_is_refused_even_with_native_nan():
 def test_hm7_checks_retained_response_physical_basis(field, value):
     tables, contract = _hm7_contract()
     contract["response_request"]["variables"][0][field] = value
-    assert "legacy metric-set/1" in ic.validate_hm7(tables, **contract)[0]
+    assert "legacy indicator-set/1" in ic.validate_hm7(tables, **contract)[0]
 
 
 def _gauge_identity_good():
@@ -905,7 +905,7 @@ def test_hm6b_synthetic_fail():
 #
 # Each case opens a persisted fixture artifact and asserts the validator's
 # report is empty. The 11 continuously-verified checks: 9 per-artifact
-# (WG-1,2,3,5; HM-1,2,3,4,5; HM-7 skips on a metric-set/2 tree) + 2 relational (gauge-identity — parametrized
+# (WG-1,2,3,5; HM-1,2,3,4,5; HM-7 skips on an indicator-set/2 tree) + 2 relational (gauge-identity — parametrized
 # over the 12 (toml, output_rlz) pairs; catalog-grid).
 
 
@@ -1088,7 +1088,7 @@ def test_hm5_integration_wf1():
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_hm7_integration():
-    """HM-7 against every ready metric-set/2 on the real tree.
+    """HM-7 against every ready indicator-set/2 on the real tree.
 
     Goes through `_successor_artifacts`, so a tree that predates the v2 records
     skips by NAME rather than failing on a missing file (t2609171637).
@@ -1096,8 +1096,8 @@ def test_hm7_integration():
     import json
 
     root, _, _, scenarios = _successor_artifacts()
-    markers = sorted((root / "_engine" / "metric_sets").glob("*/metrics.json"))
-    assert markers, "no metric-set/3 marker under _engine/metric_sets"
+    markers = sorted((root / "_engine" / "indicator_sets").glob("*/indicators.json"))
+    assert markers, "no indicator-set/3 marker under _engine/indicator_sets"
     inventory = json.loads(
         (root / "_engine" / "response_inventory.json").read_text(encoding="utf-8")
     )
@@ -1129,19 +1129,19 @@ def test_gauge_identity_integration():
     import tomllib
     from pathlib import Path
 
-    from blueearth_cst.experiment.metric_plan import read_metric_set
+    from blueearth_cst.experiment.indicator_plan import read_indicator_set
     from blueearth_cst.shared.native_locations import native_location_labels
 
     root, *_ = _successor_artifacts()
-    # Find the q table through each ready metric-set/2 marker, not by globbing
+    # Find the q table through each ready indicator-set/2 marker, not by globbing
     # the results tree: `file.path` is relative to the experiment root.
     tables = [
         root / item["file"]["path"]
-        for marker in (root / "_engine/metric_sets").glob("*/metrics.json")
-        for item in read_metric_set(root, marker)["tables"]
+        for marker in (root / "_engine/indicator_sets").glob("*/indicators.json")
+        for item in read_indicator_set(root, marker)["tables"]
         if item["token"] == "q"
     ]
-    assert tables, "no ready metric set carries a q table"
+    assert tables, "no ready indicator set carries a q table"
     for run in _evaluated_runs():
         toml = Path(_RUN_SETTINGS) / f"{run}.toml"
         output = Path(_RUNS_DIR) / "output" / f"{run}.csv"

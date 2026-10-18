@@ -807,7 +807,7 @@ total                               24
 # two batches, then reduced. Driven by `scripts/simulate_system.py`, and the
 # only workflow that passes TWO details to the header (`experiment` and
 # `operation`) -- which is what makes the `PATHS` naming question concrete.
-# It also has no `rule all`: `4.07 responses` and `4.10 metrics` are its
+# It also has no `rule all`: `4.07 responses` and `4.10 indicators` are its
 # target aggregators, and they carry ordinary rule banners.
 # ==========================================================================
 
@@ -816,9 +816,9 @@ WF4 = Workflow(
     project=PROJECT,
     config="test_case/project_config_rapid.yml",
     elapsed=487,
-    # `operation` is a config setting -- `simulate-and-metrics` or
-    # `metrics-only` (simulation_runner.py:29) -- not the `--target` value.
-    details={"experiment": "experiment_rapid", "operation": "simulate-and-metrics"},
+    # `operation` is a config setting -- `simulate-and-indicators` or
+    # `indicators-only` (simulation_runner.py:29) -- not the `--target` value.
+    details={"experiment": "experiment_rapid", "operation": "simulate-and-indicators"},
     rules=[
         Rule("4.01", "write_model_fingerprint"),
         Rule("4.02", "check_model_unchanged"),
@@ -850,12 +850,14 @@ WF4 = Workflow(
             "publish_wflow_outputs",
             summary="inventory the retained native runs",
         ),
-        Rule("4.07", "prepare_indicator_plan", "metric_request {metric_request_id}"),
+        Rule(
+            "4.07", "prepare_indicator_plan", "indicator_request {indicator_request_id}"
+        ),
         Rule(
             "4.08",
             "derive_system_indicators",
-            "metric_set {metric_set_id}",
-            "reduce the retained responses to the immutable metric set",
+            "indicator_set {indicator_set_id}",
+            "reduce the retained responses to the immutable indicator set",
         ),
         Rule("4.09", "gather_logs"),
         Rule("4.10", "gather_benchmarks"),
@@ -929,28 +931,28 @@ total                              20
             ),
         ),
         Job("simulations_only", seconds=1),
-        # metric_plan.py:431
+        # indicator_plan.py:431
         Job(
             "prepare_indicator_plan",
             seconds=3,
-            wildcards={"metric_request_id": "3ad81f5c2e70"},
+            wildcards={"indicator_request_id": "3ad81f5c2e70"},
             body=(
                 (
-                    "metrics",
-                    "Metric plan 9f41c7d0b6a2: 4 declaration(s) over 12 result key(s)",
+                    "indicators",
+                    "Indicator plan 9f41c7d0b6a2: 4 declaration(s) over 12 result key(s)",
                     2,
                 ),
             ),
         ),
-        # metric_plan.py:718
+        # indicator_plan.py:718
         Job(
             "derive_system_indicators",
             seconds=19,
-            wildcards={"metric_set_id": "9f41c7d0b6a2"},
+            wildcards={"indicator_set_id": "9f41c7d0b6a2"},
             body=(
                 (
-                    "metrics",
-                    "Published metric set 9f41c7d0b6a2: q_mean (240 rows), "
+                    "indicators",
+                    "Published indicator set 9f41c7d0b6a2: q_mean (240 rows), "
                     "q_p10 (240 rows), q_p90 (240 rows)",
                     12,
                 ),

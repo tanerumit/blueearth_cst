@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Discharge performance metrics and the basin-average output figures.
+"""Discharge performance indicators and the basin-average output figures.
 
 Created 2021-07-14 (@author: bouaziz).
 
@@ -11,8 +11,8 @@ this module's own private copy of those settings (``_FIG_WIDTH_MM``,
 helpers that served the subcatchment climate plots ADR 0006 retired. All of it
 was reachable from nowhere.
 
-What is left is the part that is not about drawing: ``compute_metrics``, which
-writes ``performance_metrics.csv`` and which the performance sheet RENDERS
+What is left is the part that is not about drawing: ``compute_indicators``, which
+writes ``performance_indicators.csv`` and which the performance sheet RENDERS
 rather than recomputes, and ``plot_basavg``, whose figures are a separate,
 config-derivable family with their own declared outputs.
 """
@@ -46,17 +46,17 @@ def rsquared(x, y):
     return r_value**2
 
 
-def compute_metrics(
+def compute_indicators(
     qsim: xr.DataArray,
     qobs: xr.DataArray,
     station_name: str = "station",
 ) -> pd.DataFrame:
     """
-    Compute metrics on concurrent finite, nonnegative discharge pairs.
+    Compute indicators on concurrent finite, nonnegative discharge pairs.
 
     Monthly values are available-day means of the same daily pairs, without
     infilling or a completeness threshold. Undefined denominators yield NaN.
-    Calculated metrics for daily and monthly timeseries are:
+    Calculated indicators for daily and monthly timeseries are:
     - Nash-Sutcliffe efficiency (NSE)
     - Nash-Sutcliffe efficiency on log-transformed data (NSElog)
     - Kling-Gupta efficiency (KGE)
@@ -83,16 +83,16 @@ def compute_metrics(
     Returns
     -------
     pd.DataFrame
-        Dataframe with performance metrics for this station.
+        Dataframe with performance indicators for this station.
     """
     from blueearth_cst.shared.plot_evaluation import _performance_pairs
 
     pairs, support = _performance_pairs(qsim, qobs)
-    metrics = ["KGE", "NSE", "NSElog", "RMSE", "MSE", "Pbias", "VE"]
+    indicators = ["KGE", "NSE", "NSElog", "RMSE", "MSE", "Pbias", "VE"]
     da_perf = xr.DataArray(
-        np.full((len(metrics), 2), np.nan),
-        coords=[metrics, ["daily", "monthly"]],
-        dims=["metrics", "time_type"],
+        np.full((len(indicators), 2), np.nan),
+        coords=[indicators, ["daily", "monthly"]],
+        dims=["indicators", "time_type"],
     )
     daily = pairs.dropna()
     monthly = pairs.resample("ME").mean().dropna() if len(pairs) else pairs
@@ -121,8 +121,8 @@ def compute_metrics(
             )
             if float(sim.std()) > 0:
                 scores["KGE"] = skills.kge(sim, obs)["kge"]
-        for metric, score in scores.items():
-            da_perf.loc[dict(metrics=metric, time_type=time_type)] = score
+        for indicator, score in scores.items():
+            da_perf.loc[dict(indicators=indicator, time_type=time_type)] = score
     result = da_perf.to_dataframe(name=station_name)
     result.attrs["comparison_support"] = support
     return result

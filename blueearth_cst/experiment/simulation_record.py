@@ -1,4 +1,4 @@
-"""Freeze simulation inputs independently of metric selection and completion."""
+"""Freeze simulation inputs independently of indicator selection and completion."""
 
 import hashlib
 import os
@@ -18,7 +18,7 @@ class SimulationFrozenError(ValueError):
     """An experiment cannot reuse changed immutable simulation inputs."""
 
 
-class MetricsOnlySimulationUnavailable(ValueError):
+class IndicatorsOnlySimulationUnavailable(ValueError):
     """The selected experiment has no complete retained simulation."""
 
 
@@ -599,33 +599,33 @@ def read_simulation_v2(experiment_root):
         or marker["canonicalization_id"] != "collection-canon/1"
         or marker["status"] != "ready"
     ):
-        raise MetricsOnlySimulationUnavailable("unsupported simulation marker")
+        raise IndicatorsOnlySimulationUnavailable("unsupported simulation marker")
     intent_path = resolve_file_reference(marker["intent"], {"project_root": project})
     if intent_path != _simulation_path(root, "_engine/simulation_intent.json"):
-        raise MetricsOnlySimulationUnavailable(
+        raise IndicatorsOnlySimulationUnavailable(
             "simulation marker points to another intent"
         )
     intent = read_simulation_intent_v2(root)
     if marker["simulation_id"] != intent["simulation_id"]:
-        raise MetricsOnlySimulationUnavailable("simulation marker identity differs")
+        raise IndicatorsOnlySimulationUnavailable("simulation marker identity differs")
     archive_path = resolve_file_reference(marker["archive"], {"project_root": project})
     if archive_path != _simulation_path(root, "config/run_record.yml"):
-        raise MetricsOnlySimulationUnavailable(
+        raise IndicatorsOnlySimulationUnavailable(
             "simulation marker points to another archive"
         )
     archive = validate_archive(archive_path.parent)
     if archive["owner"] != {"kind": "experiment", "id": intent["simulation_id"]}:
-        raise MetricsOnlySimulationUnavailable("simulation creator archive differs")
+        raise IndicatorsOnlySimulationUnavailable("simulation creator archive differs")
     inventory_path = resolve_file_reference(
         marker["response_inventory"], {"project_root": project}
     )
     if inventory_path != _simulation_path(root, "_engine/response_inventory.json"):
-        raise MetricsOnlySimulationUnavailable(
+        raise IndicatorsOnlySimulationUnavailable(
             "simulation marker points to another inventory"
         )
     inventory = read_response_inventory_v2(root)
     if inventory["simulation_id"] != intent["simulation_id"]:
-        raise MetricsOnlySimulationUnavailable("response inventory identity differs")
+        raise IndicatorsOnlySimulationUnavailable("response inventory identity differs")
     return marker
 
 

@@ -1,5 +1,5 @@
 # =============================================================================
-#  simulate_system (wf4) -- simulations and metrics from a ready collection
+#  simulate_system (wf4) -- simulations and indicators from a ready collection
 # =============================================================================
 #
 # Runs the model on a ready climate collection and reduces its responses.
@@ -25,7 +25,7 @@ operations: [simulations, indicators]
 #  INDICATOR SETS
 # -----------------------------------------------------------------------------
 
-# Named sets, each published to results/metric_sets/<set-id>/ with an
+# Named sets, each published to results/indicator_sets/<set-id>/ with an
 # indicators.csv dictionary. `default` is bundled; omitted means [default].
 indicator_sets: [default]
 
@@ -33,7 +33,7 @@ indicator_sets: [default]
 # file; absolute paths are allowed. Copy config/templates/indicator_set.template.yml.
 #indicator_set_definitions: {example_subset: {config_path: indicator_sets/example_subset.yml}}
 
-# The scalar `operation:` and `metrics:` keys are the legacy interface,
+# The scalar `operation:` and `indicators:` keys are the legacy interface,
 # accepted for one feature release; they cannot be mixed with the keys above.
 
 

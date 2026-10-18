@@ -47,11 +47,12 @@ def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None):
         "resolve_selected_collection",
         lambda *args: (selection, manifest),
     )
-    monkeypatch.setenv("CST_SIMULATION_OPERATION", "simulate-and-metrics")
+    monkeypatch.setenv("CST_SIMULATION_OPERATION", "simulate-and-indicators")
     monkeypatch.setenv("CST_SIMULATION_INVOCATION_ID", uuid.uuid4().hex)
     settings = tmp_path / "simulation.yml"
     settings.write_text(
-        "experiment_name: fixture\noperation: simulate-and-metrics\n", encoding="utf-8"
+        "experiment_name: fixture\noperation: simulate-and-indicators\n",
+        encoding="utf-8",
     )
     document = config or {
         "schema_version": 2,

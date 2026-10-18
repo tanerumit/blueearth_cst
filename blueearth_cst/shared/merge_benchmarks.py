@@ -52,7 +52,7 @@ memory columns, since peak usage in different rules does not happen at once.
 | `mean_load` | average CPU load (%), 100 ≈ one core busy | >100 ⇒ used multiple cores; well under 100 ⇒ waited on IO |
 | `cpu_time` | total CPU seconds (user + system) | vs `s`: cpu_time ≫ s ⇒ parallel, ≈ s ⇒ single-threaded |
 
-Metrics come from Snakemake's `benchmark:` sampler. On Windows `max_pss` mirrors
+Indicators come from Snakemake's `benchmark:` sampler. On Windows `max_pss` mirrors
 `max_uss` and the `io_*` columns can under-report (psutil limitation).
 """
 

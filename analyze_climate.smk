@@ -30,7 +30,7 @@ from blueearth_cst.shared.map_reference import historical_map_reference_rule, re
 # inventory is covered by declared `directory()` outputs when enabled.
 SUBBASIN_PLOT_DIRNAME = "subbasins"
 
-# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+# Windows: make Snakemake's benchmark memory/IO/CPU indicators work (else all NA).
 patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so
@@ -403,7 +403,7 @@ rule delineate_subbasins_and_rivers:
 # spec instead.
 #
 # Not a new mechanism: WF4 declares its batch fan-out the same way
-# (`simulate_and_metrics.smk`, `run_wflow_simulations_batch_<b>`).
+# (`simulate_and_indicators.smk`, `run_wflow_simulations_batch_<b>`).
 #
 # For `shared.clim_historical` the generated 0.03 is the shared producer
 # contract with a different rule NAME -- same script, inputs, params, outputs.

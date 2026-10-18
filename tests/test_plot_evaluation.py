@@ -208,7 +208,7 @@ def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
 
     simulated = _plottable()
     observed = simulated * 1.1
-    metrics = pd.DataFrame(
+    indicators = pd.DataFrame(
         {"daily": [0.9] * 7, "monthly": [0.8] * 7},
         index=["KGE", "NSE", "NSElog", "RMSE", "MSE", "Pbias", "VE"],
     )
@@ -217,7 +217,7 @@ def test_every_sheet_is_named_after_the_wflow_id(tmp_path):
         observed=observed,
         station=Station(1010, 101, "auto_01"),
         plot_dir=str(tmp_path),
-        metrics=metrics,
+        indicators=indicators,
         signatures=True,
         caveat="Synthetic observations for demonstration.",
         log=lambda m: None,
@@ -319,7 +319,7 @@ def test_observed_is_blue_and_simulated_is_red():
     assert plot_evaluation.COLOR_SIMULATED == "#CC593D"
 
 
-def test_every_metric_the_table_can_show_declares_an_ideal_and_a_format():
+def test_every_indicator_the_table_can_show_declares_an_ideal_and_a_format():
     """A reader should not have to remember whether Pbias wants 0 or 1."""
-    grouped = {name for _, names in plot_evaluation.METRIC_GROUPS for name in names}
-    assert grouped == set(plot_evaluation.METRIC_FORMAT)
+    grouped = {name for _, names in plot_evaluation.INDICATOR_GROUPS for name in names}
+    assert grouped == set(plot_evaluation.INDICATOR_FORMAT)

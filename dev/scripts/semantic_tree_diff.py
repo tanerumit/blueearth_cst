@@ -562,7 +562,7 @@ def build_project_tree_rules(
     # The caller supplies verified retained owners; apply the same closed leaf inventory.
     for e in sorted({experiment_name, *retained_experiment_names}):
         exp = re.escape(e)
-        # Simulation identities are frozen separately from metric-set identities.
+        # Simulation identities are frozen separately from indicator-set identities.
         same(f"experiments/{e}/experiment.yml")
         same(f"experiments/{e}/.model_reference_ok")
         for leaf in (
@@ -577,38 +577,40 @@ def build_project_tree_rules(
         same(f"experiments/{e}/config/sources/")
         same_rx(rf"experiments/{exp}/config/(?:catalogs/)?[^/]+")
         same(f"experiments/{e}/_engine/response_inventory.json")
-        same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
-        metric_set = rf"experiments/{exp}/(?:results/metric_sets/{digest}|_engine/metric_sets/{digest}/data)"
+        same_rx(rf"experiments/{exp}/_engine/indicator_requests/{digest}\.json")
+        indicator_set = rf"experiments/{exp}/(?:results/indicator_sets/{digest}|_engine/indicator_sets/{digest}/data)"
         # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
         # copied into every set so a reader can validate it without the installed
         # asset or the estimator dependency. It is a leaf of the set like the rest.
         for leaf in (
-            "metrics.json",
-            "metric_environment.json",
+            "indicators.json",
+            "indicator_environment.json",
             "return_level_benchmark.json",
             "return_level_evidence.json",
             "coverage_evidence.json",
         ):
             same_rx(
-                rf"experiments/{exp}/_engine/metric_sets/{digest}/{re.escape(leaf)}"
+                rf"experiments/{exp}/_engine/indicator_sets/{digest}/{re.escape(leaf)}"
             )
-        same_rx(rf"{metric_set}/group_(members|metadata)\.csv")
-        same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_(run|group)_indicators\.csv")
-        # Named per-set exports (metric-set/4) and their committed pointers.
+        same_rx(rf"{indicator_set}/group_(members|metadata)\.csv")
+        same_rx(rf"{indicator_set}/[a-z][a-z0-9_]*_(run|group)_indicators\.csv")
+        # Named per-set exports (indicator-set/4) and their committed pointers.
         named = r"[a-z][a-z0-9_]{0,63}"
         same_rx(
-            rf"experiments/{exp}/results/metric_sets/{named}/"
+            rf"experiments/{exp}/results/indicator_sets/{named}/"
             r"(?:group_(?:members|metadata)|indicators|[a-z][a-z0-9_]*_(?:run|group)_indicators)\.csv"
         )
-        names = rf"experiments/{exp}/_engine/metric_sets/names/{named}"
+        names = rf"experiments/{exp}/_engine/indicator_sets/names/{named}"
         same_rx(rf"{names}/current\.json")
         same_rx(rf"{names}/definitions/[0-9a-f]{{64}}\.yml")
         same_rx(rf"{names}/publications/[0-9a-f]{{64}}\.json")
         # The retired flat export stays readable evidence in older trees.
-        same(f"experiments/{e}/_engine/metric_sets/current.json")
-        same_rx(rf"experiments/{exp}/results/metric_sets/group_(members|metadata)\.csv")
+        same(f"experiments/{e}/_engine/indicator_sets/current.json")
         same_rx(
-            rf"experiments/{exp}/results/metric_sets/[a-z][a-z0-9_]*_(run|group)_indicators\.csv"
+            rf"experiments/{exp}/results/indicator_sets/group_(members|metadata)\.csv"
+        )
+        same_rx(
+            rf"experiments/{exp}/results/indicator_sets/[a-z][a-z0-9_]*_(run|group)_indicators\.csv"
         )
         native = rf"experiments/{exp}/hydrology/wflow"
         same_rx(rf"{native}/run_settings/run_[0-9]+\.(toml|yml|temporal\.json)")

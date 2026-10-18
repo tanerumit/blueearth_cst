@@ -10,19 +10,19 @@ silently producing a result set missing a variable the config asked for.
 import pytest
 
 from blueearth_cst.shared.indicator_tables import (
-    BASIN_METRIC_SUFFIXES,
+    BASIN_INDICATOR_SUFFIXES,
     MIGRATION_NOTE,
-    Q_METRIC_SUFFIXES,
+    Q_INDICATOR_SUFFIXES,
     RETIRED_EXPERIMENT_KEYS,
     VARIABLE_TOKENS,
     RetiredConfigKeyError,
     UnknownOutputVariableError,
-    basin_metric_name,
+    basin_indicator_name,
     basin_reduction,
     indicator_table_filename,
     indicator_tables,
     output_code,
-    q_metric_name,
+    q_indicator_name,
     refuse_retired_experiment_keys,
     variable_token,
 )
@@ -76,7 +76,7 @@ def test_tokens_are_distinct_so_two_variables_cannot_share_a_table():
     assert len(set(VARIABLE_TOKENS.values())) == len(VARIABLE_TOKENS)
 
 
-# --- the metric vocabulary ----------------------------------------------------
+# --- the indicator vocabulary ----------------------------------------------------
 # A published contract: these names leave the project tree inside result files,
 # so a silent change to one breaks a consumer that cannot see this repo.
 
@@ -84,52 +84,52 @@ def test_tokens_are_distinct_so_two_variables_cannot_share_a_table():
 def test_the_return_levels_carry_their_return_period():
     """Tpeak/Tlow appeared in no column and no name before R11, so two runs with
     different settings produced identical-looking rows meaning different things."""
-    assert q_metric_name("return_level_max") == "q_return_level_10yr_max"
-    assert q_metric_name("return_level_7day_min") == "q_return_level_2yr_7day_min"
+    assert q_indicator_name("return_level_max") == "q_return_level_10yr_max"
+    assert q_indicator_name("return_level_7day_min") == "q_return_level_2yr_7day_min"
 
 
 def test_q95_is_named_p95_because_the_conventional_name_means_the_opposite():
     """Ours is the mean annual 95th percentile, a HIGH flow. Conventional Q95 is
     the flow exceeded 95% of the time — a LOW-flow drought index."""
-    assert q_metric_name("q95") == "q_mean_annual_p95"
+    assert q_indicator_name("q95") == "q_mean_annual_p95"
 
 
 @pytest.mark.parametrize(
-    "statistic", [s for s, (_, cls) in Q_METRIC_SUFFIXES.items() if cls == "A"]
+    "statistic", [s for s, (_, cls) in Q_INDICATOR_SUFFIXES.items() if cls == "A"]
 )
-def test_class_a_metrics_are_the_ones_linear_in_years(statistic):
+def test_class_a_indicators_are_the_ones_linear_in_years(statistic):
     """Class A is per-realization precisely because these average back to the
     pooled value exactly; nothing is lost by emitting the finer grain."""
-    assert Q_METRIC_SUFFIXES[statistic][1] == "A"
+    assert Q_INDICATOR_SUFFIXES[statistic][1] == "A"
 
 
 def test_the_two_gev_fits_are_pooled_only():
     """A per-realization GEV fit over a short record is ill-conditioned."""
     for statistic in ("return_level_max", "return_level_7day_min"):
-        assert Q_METRIC_SUFFIXES[statistic][1] == "B"
+        assert Q_INDICATOR_SUFFIXES[statistic][1] == "B"
 
 
-def test_the_month_selecting_metrics_are_pooled_only():
+def test_the_month_selecting_indicators_are_pooled_only():
     """`idxmax()` picks ONE month, so different realizations can pick different
     ones; the month is chosen once from the pooled record."""
     for statistic in ("wetmonth_mean", "drymonth_mean"):
-        assert Q_METRIC_SUFFIXES[statistic][1] == "C"
+        assert Q_INDICATOR_SUFFIXES[statistic][1] == "C"
 
 
-def test_every_metric_name_starts_with_its_variable_token():
+def test_every_indicator_name_starts_with_its_variable_token():
     """The invariant `validate_hm7` asserts, since composing the variable into
-    the metric is what normalisation would have given for free."""
-    for statistic in Q_METRIC_SUFFIXES:
-        assert q_metric_name(statistic).startswith("q_")
-    for token in BASIN_METRIC_SUFFIXES:
-        assert basin_metric_name(token).startswith(f"{token}_")
+    the indicator is what normalisation would have given for free."""
+    for statistic in Q_INDICATOR_SUFFIXES:
+        assert q_indicator_name(statistic).startswith("q_")
+    for token in BASIN_INDICATOR_SUFFIXES:
+        assert basin_indicator_name(token).startswith(f"{token}_")
 
 
 def test_overland_flow_reduces_with_a_mean_not_a_sum():
     """Q10: it is a volume flow rate, so summing daily values yields a quantity
     in no useful unit. The odd one out, and the defect that ruling fixed."""
     assert basin_reduction("overland_flow") == "mean"
-    assert basin_metric_name("overland_flow") == "overland_flow_annual_mean"
+    assert basin_indicator_name("overland_flow") == "overland_flow_annual_mean"
 
 
 @pytest.mark.parametrize("token", ["aet", "gwr", "precip"])
@@ -138,7 +138,7 @@ def test_fluxes_keep_their_annual_total_in_mm_per_year(token):
     2026-08-08 as scoped to overland flow, so these are deliberately NOT
     rescaled to per-timestep units."""
     assert basin_reduction(token) == "sum"
-    assert basin_metric_name(token) == f"{token}_annual_total"
+    assert basin_indicator_name(token) == f"{token}_annual_total"
 
 
 @pytest.mark.parametrize(
@@ -162,12 +162,12 @@ def test_groundwater_recharge_borrows_the_code_it_already_had():
     `recharge` was the violation -- `gwr` is what `wflow_outputs.CODES` already
     writes into the TOML and therefore into every run csv header, so the token
     was a spelling the repo did not need. Renamed 2026-08-11; the table is
-    `gwr_run_indicators.csv` and the metric `gwr_annual_total`.
+    `gwr_run_indicators.csv` and the indicator `gwr_annual_total`.
     """
     assert variable_token("groundwater recharge") == "gwr"
     assert output_code("gwr") == "gwr"
     assert indicator_table_filename("groundwater recharge") == "gwr_run_indicators.csv"
-    assert basin_metric_name("gwr") == "gwr_annual_total"
+    assert basin_indicator_name("gwr") == "gwr_annual_total"
 
 
 # --- retired config keys (Q7) -------------------------------------------------

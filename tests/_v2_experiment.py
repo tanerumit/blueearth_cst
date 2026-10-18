@@ -4,7 +4,7 @@ Every record here is written by the production v2 producer and is read back
 through the production readers with nothing stubbed: `read_collection_v2`,
 `read_simulation_intent_v2`, `read_response_inventory_v2` and
 `read_simulation_v2`. Only probes outside the record contract are replaced --
-the stage environment (a synthetic package set, as the metric tests have
+the stage environment (a synthetic package set, as the indicator tests have
 always used) and HydroMT's elevation payload resolution, which would otherwise
 read a real data catalog.
 
@@ -28,11 +28,11 @@ import pytest
 import xarray as xr
 import yaml
 
-#: The stage environment metric planning and reduction observe (see
-#: `metric_plan.resolve_metric_environment`).
+#: The stage environment indicator planning and reduction observe (see
+#: `indicator_plan.resolve_indicator_environment`).
 FIXTURE_ENVIRONMENT = {"packages": {"numpy": "fixture"}}
 
-EXPERIMENT = "metric_experiment"
+EXPERIMENT = "indicator_experiment"
 RUN_IDS = ("run_1", "run_2")
 INVOCATION_ID = "f" * 32
 CLIMATE_SOURCE = "era5"
@@ -106,7 +106,7 @@ class V2Experiment:
 def collection_intent_v2(capacity: int = 2) -> dict:
     """One complete two-member scientific intent, assembled without a producer.
 
-    ``capacity`` is the run-group id space; a bundle-grain metric needs one id
+    ``capacity`` is the run-group id space; a bundle-grain indicator needs one id
     per run plus one per bundle.
     """
     from blueearth_cst.experiment.content_identity import (
@@ -273,8 +273,8 @@ def _write_configs(base: Path, project: Path) -> Path:
         yaml.safe_dump(
             {
                 "experiment_name": EXPERIMENT,
-                "operation": "metrics-only",
-                "metrics": ["gwr"],
+                "operation": "indicators-only",
+                "indicators": ["gwr"],
             }
         ),
         encoding="utf-8",

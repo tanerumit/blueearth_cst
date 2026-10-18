@@ -124,7 +124,7 @@ configuration archives. Shared execution inputs, archive locks and invocation hi
 remain beside the project, outside these generated archives.
 
 `experiments/_engine/{allocation.json,transactions/}` owns project-wide numbering and creation
-recovery. Each `experiments/<name>/_engine/` owns that experiment's reservation, simulation and metric
+recovery. Each `experiments/<name>/_engine/` owns that experiment's reservation, simulation and indicator
 records. Discovery skips the reserved collection-level `_engine/` directory. These paths replace
 `config/experiments/` for new projects; existing output trees are not migrated.
 

@@ -1343,7 +1343,7 @@ def _run_owned(
 
                     _, settings = simulation_settings(config_path)
                     workflow["operation"] = settings["operation"]
-                    if settings["operation"] == "simulate-and-metrics":
+                    if settings["operation"] == "simulate-and-indicators":
                         _check_wf1_leaves(flags, project_dir, config_path)
                     cmd, environment = simulation_command(
                         config_path,
@@ -1357,10 +1357,10 @@ def _run_owned(
                     if reservation_context is not None:
                         if not manifest["dry_run"]:
                             from blueearth_cst.experiment.simulation_runner import (
-                                validate_retained_metric_sets,
+                                validate_retained_indicator_sets,
                             )
 
-                            validate_retained_metric_sets(
+                            validate_retained_indicator_sets(
                                 project_dir / "experiments" / reservation_context.name,
                                 cmd,
                             )
@@ -1381,7 +1381,7 @@ def _run_owned(
                     _link_child(history_path, history, child_path, name, child_id)
                     if (
                         not manifest["dry_run"]
-                        and settings["operation"] == "simulate-and-metrics"
+                        and settings["operation"] == "simulate-and-indicators"
                     ):
                         capture = capture_simulation_sources_v2(
                             config_path, project_dir, child_id
@@ -1419,12 +1419,12 @@ def _run_owned(
                         and current_targets(list(simulation_targets))
                         != ["simulations_only"]
                     ):
-                        from blueearth_cst.experiment.indicator_sets import (
-                            read_selection_snapshot,
-                        )
-                        from blueearth_cst.experiment.metric_export import (
+                        from blueearth_cst.experiment.indicator_export import (
                             publish_selected_sets,
                             report_publication,
+                        )
+                        from blueearth_cst.experiment.indicator_sets import (
+                            read_selection_snapshot,
                         )
 
                         selection = read_selection_snapshot(snapshot)
@@ -1957,8 +1957,8 @@ def main(argv: list[str] | None = None) -> int:
         "--simulation-target",
         nargs="+",
         default=["all"],
-        help="explicit WF4 targets for a legacy operation config (metrics-only requires "
-        "metrics or one selected metric-set file); operations/indicator_sets infer the target",
+        help="explicit WF4 targets for a legacy operation config (indicators-only requires "
+        "indicators or one selected indicator-set file); operations/indicator_sets infer the target",
     )
     ap.add_argument(
         "extra",

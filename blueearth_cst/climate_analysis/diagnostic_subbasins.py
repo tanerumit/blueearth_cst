@@ -90,7 +90,7 @@ def render_subbasins(sm, settings, sources):
                 "clim": read("precip_climatology").set_index("calendar_month"),
                 "tclim": temp if len(temp) else None,
                 "annual": annual,
-                "trends": read("trends").set_index("metric").to_dict(orient="index"),
+                "trends": read("trends").set_index("indicator").to_dict(orient="index"),
             }
         view = artists.View(
             sources,

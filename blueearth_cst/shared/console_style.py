@@ -1178,7 +1178,7 @@ def _console_wildcard_key(key):
 
     ``_id`` joined them in 2026-09-16's WF3/WF4 console restoration, and it is
     the suffix with the most wildcards behind it: ``collection_id``, ``run_id``,
-    ``metric_request_id`` and ``metric_set_id`` are every fan-out wildcard the
+    ``indicator_request_id`` and ``indicator_set_id`` are every fan-out wildcard the
     two R12 workflows have. WF4's 4.04 banner already wrote
     ``run {wildcards.run_id}`` against a finish line reading ``[run_id 07]``, so
     this was a live defect before those workflows had banners to mismatch.

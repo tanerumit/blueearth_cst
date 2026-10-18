@@ -19,7 +19,7 @@ from blueearth_cst.shared.model_digest import model_digest_from_entries
 def test_preparse_wf4_sources_refuse_comment_mutation(tmp_path):
     config = tmp_path / "project_config.yml"
     workflow = tmp_path / "simulate_system.yml"
-    workflow.write_text("operation: simulate-and-metrics\n", encoding="utf-8")
+    workflow.write_text("operation: simulate-and-indicators\n", encoding="utf-8")
     config.write_text(
         yaml.safe_dump(
             {

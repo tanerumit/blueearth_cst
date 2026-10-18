@@ -87,7 +87,7 @@ def test_controls_are_present_and_tracked():
 
 
 def test_interface_takes_only_a_sample_and_probabilities():
-    """No metric, run id, truth, RNG or configuration may enter the adapter."""
+    """No indicator, run id, truth, RNG or configuration may enter the adapter."""
     import inspect
 
     assert list(inspect.signature(gev.fit_case).parameters) == [
@@ -648,7 +648,7 @@ def test_repeated_fits_are_deterministic():
 
 
 def test_module_imports_without_the_estimator_dependency():
-    """D6: the static import in metric_registry must not demand lmoments3."""
+    """D6: the static import in indicator_registry must not demand lmoments3."""
     import ast
 
     tree = ast.parse(

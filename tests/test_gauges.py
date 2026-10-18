@@ -5,7 +5,7 @@ renames the gauges basename ``output_locations`` -> ``output-locations``
 (``wflow_base.py``, ``.replace("_", "-")``), three readers derived the name from
 the FILENAME instead, and because every lookup was a membership test used as a
 guard the user's four gauges vanished in silence — absent from the basin map, no
-gauge hydrographs, no signature plots, and an EMPTY performance_metrics.csv,
+gauge hydrographs, no signature plots, and an EMPTY performance_indicators.csv,
 while wflow's own output.csv carried all four correctly.
 """
 

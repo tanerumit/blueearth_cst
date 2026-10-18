@@ -29,7 +29,7 @@ from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError
 from blueearth_cst.projections import projection_figures
 from blueearth_cst.projections.get_change_climate_proj import analysis_windows
 
-# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+# Windows: make Snakemake's benchmark memory/IO/CPU indicators work (else all NA).
 patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so

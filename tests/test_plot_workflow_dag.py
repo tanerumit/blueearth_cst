@@ -48,7 +48,7 @@ def _write_r01_cfg(path, project_dir, experiment=None):
     if experiment is not None:
         settings = path.parent / f"{path.stem}_simulate_system.yml"
         settings.write_text(
-            f"experiment_name: {experiment}\noperation: simulate-and-metrics\n",
+            f"experiment_name: {experiment}\noperation: simulate-and-indicators\n",
             encoding="utf-8",
         )
         text += (

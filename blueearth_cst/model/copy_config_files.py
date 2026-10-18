@@ -623,7 +623,7 @@ if __name__ == "__main__":
         # OPTIONAL basin data inputs live outside the repository AND outside
         # project_dir, referenced by absolute path (R07 O-01), so without this
         # the finished project cannot say what it was evaluated against -- the
-        # metrics table would cite gauges and observations that exist only on
+        # indicators table would cite gauges and observations that exist only on
         # the machine that ran it. Same provenance role as config/catalogs/,
         # hence the same home. The name is BASIN DATA, not `observations`,
         # because only one of the two files is an observation: the other

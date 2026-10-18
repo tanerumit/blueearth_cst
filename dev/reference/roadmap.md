@@ -119,7 +119,7 @@ under the "intentional drift, document deltas" policy. Artifacts:
 ### M02c — Test coverage (sealed 2026-05-08; tag `m02c-tests`)
 
 Added unit-test coverage for four small, stable `src/` modules
-(`metrics_definition`, `setup_time_horizon`,
+(`indicators_definition`, `setup_time_horizon`,
 `prepare_climate_data_catalog`, `extract_historical_climate`) with two
 strict xfails for documented bugs. Established the
 `sys.modules.setdefault` mocking pattern that R3-R5 inherit. Suite
@@ -1413,10 +1413,10 @@ it — every gate was unit tests, dry-runs and greps. Running it found three
 defects, and they share one shape: **something that should have been checked was
 not being checked, and nothing said so.**
 
-1. **Two of eleven metrics vanished silently.** The seed config set
+1. **Two of eleven indicators vanished silently.** The seed config set
    `run_historical: false`, so `ST_START = 1`, so the `st_0` baseline never ran —
    and because Q5 fixes the class-C month *from* that baseline, both month
-   metrics were skipped entirely. 180 rows gone, no warning, every gate green.
+   indicators were skipped entirely. 180 rows gone, no warning, every gate green.
    `validate_hm7` checked results→design and never design→results, so a member
    that produced no rows was unreachable by every assertion it had.
 2. **The design table recorded perturbations nobody applied.** Fixing (1) meant
@@ -1435,15 +1435,15 @@ not being checked, and nothing said so.**
 attribution rather than cost — P3's one run is the phase's entire evidence, and a
 cross-workflow change folded into it gives every failure two candidate causes.
 **Q8's comparator**: `q_indicators.csv` moves off a byte hash onto a new
-`indicator` target kind with a per-`(metric, location)` tolerance, because P1
+`indicator` target kind with a per-`(indicator, location)` tolerance, because P1
 dropped the rounding that had been an accidental drift buffer.
 **`stress_test_design.csv`** stays out of the manifest. **`[R10-12]`**: the
 operator accepted the rebuilt model, on hashes showing `staticmaps.nc` and
 `wflow_sbm.toml` byte-identical and only the forcing NC moved.
 
-**The delta gate held where it was falsifiable.** Eight of eleven metrics
+**The delta gate held where it was falsifiable.** Eight of eleven indicators
 reconstruct at the old file's own 2-dp precision; `q_wettest_month_mean` moved as
-pre-registered under Q5. Three upper-tail metrics moved <1% downward, explained
+pre-registered under Q5. Three upper-tail indicators moved <1% downward, explained
 by the butt-splice P1 removed — an explanation recorded explicitly as *post-hoc,
 not predicted*.
 
@@ -1480,7 +1480,7 @@ estimator replacement followed as a four-stage production integration. The
 implementation record is `t2609100916`; the gate-by-gate position is
 [validation-map.md](../records/milestones/r12/implementation/validation-map.md).
 
-**What the seal covers.** Two runnable entry points with metrics-only
+**What the seal covers.** Two runnable entry points with indicators-only
 recomputation, the successor project layout, and the L-moment GEV return-level
 estimator `gf15-lmoments-c/1` under **bounded Windows acceptance for operational
 screening only**. The standing baseline was re-established from the tracked seed
@@ -1515,8 +1515,8 @@ preserve the scope rulings, original findings and their dispositions.
 
 **Accepted destination.** Two independently runnable entry points:
 `generate_scenarios.smk` produces durable forcing; `simulate_system.smk`
-consumes it and exposes metrics-only recomputation from retained responses.
-The three logical stages are generation, simulation and metrics. Stochastic
+consumes it and exposes indicators-only recomputation from retained responses.
+The three logical stages are generation, simulation and indicators. Stochastic
 weather generation and Wflow remain the production bindings; CMIP projections
 remain a terminal plausibility overlay. Routine users work with experiment names,
 scientific/model settings, `run_id` and `unit_id`; collection and simulation

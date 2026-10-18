@@ -1,7 +1,7 @@
 """Consumer-local external leaves shared by runners and scheduling fixtures.
 
 WF3 generation declares its own source producers. WF4 simulation consumes a
-validated ready collection and WF1 model files; metrics-only consumes retained
+validated ready collection and WF1 model files; indicators-only consumes retained
 simulation and response records. Typed readers verify content beyond existence.
 """
 
@@ -25,7 +25,7 @@ LEAF_PRODUCER = "build_model"
 
 
 def consumer_leaves(
-    consumer, *, operation="simulate-and-metrics", experiment_name=None
+    consumer, *, operation="simulate-and-indicators", experiment_name=None
 ):
     """Return static external leaves for the selected consumer and operation.
 
@@ -41,11 +41,11 @@ def consumer_leaves(
         return ()
     if consumer != "simulate_system":
         raise ValueError(f"unknown workflow consumer: {consumer}")
-    if operation == "simulate-and-metrics":
+    if operation == "simulate-and-indicators":
         return LEAVES
-    if operation == "metrics-only":
+    if operation == "indicators-only":
         if not experiment_name:
-            raise ValueError("metrics-only leaves require experiment_name")
+            raise ValueError("indicators-only leaves require experiment_name")
         return (
             f"experiments/{experiment_name}/_engine/simulation.json",
             f"experiments/{experiment_name}/_engine/response_inventory.json",

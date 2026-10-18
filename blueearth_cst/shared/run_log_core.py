@@ -84,13 +84,13 @@ def _presentation_message(module: str, message: str) -> str:
         if match:
             path, rows, points = match.groups()
             return f"Perturbation lookup written → {path} ({rows} monthly rows; {plural(int(points), 'perturbation point')})"
-    if module == "metrics":
+    if module == "indicators":
         match = re.fullmatch(
             r"(\S+): (\d+) declarations? over (\d+) result keys?", message
         )
         if match:
             identity, declarations, keys = match.groups()
-            return f"Metric set {identity} planned: {plural(int(declarations), 'metric declaration')}; {plural(int(keys), 'expected result key')}"
+            return f"Indicator set {identity} planned: {plural(int(declarations), 'indicator declaration')}; {plural(int(keys), 'expected result key')}"
     if module == "responses" and message.startswith(
         "Duplicate series on one model point, kept once: "
     ):
@@ -168,7 +168,7 @@ def _compact_log_line(text):
     match = _HYDROMT_LOG_RE.match(core)
     if not match:
         own = re.fullmatch(
-            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment|metrics|responses|wflow) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
+            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment|indicators|responses|wflow) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
             core,
         )
         if own:

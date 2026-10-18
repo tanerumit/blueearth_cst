@@ -80,7 +80,7 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
         "blueearth_cst/climate_analysis/prepare_climate_data_catalog.py",
         "blueearth_cst/experiment/downscale_climate_forcing.py",
         "blueearth_cst/experiment/simulation_record.py",
-        "blueearth_cst/experiment/metric_groups.py",
+        "blueearth_cst/experiment/indicator_groups.py",
         "blueearth_cst/experiment/wf4_ancillary_descriptor.py",
         "blueearth_cst/shared/snake_utils.py",
     }

@@ -1,4 +1,4 @@
-"""Validated neutral response series consumed by metric implementations."""
+"""Validated neutral response series consumed by indicator implementations."""
 
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass

@@ -196,49 +196,53 @@ def _legacy_selection(monkeypatch, operation):
 def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
     from blueearth_cst.experiment import indicator_sets
 
-    _legacy_selection(monkeypatch, "simulate-and-metrics")
+    _legacy_selection(monkeypatch, "simulate-and-indicators")
     assert (
-        simulation_runner.validate_targets("unused", ["all"]) == "simulate-and-metrics"
+        simulation_runner.validate_targets("unused", ["all"])
+        == "simulate-and-indicators"
     )
     # `responses` is the retired spelling, accepted for one release.
     for target in ("simulations_only", "responses"):
         assert (
             simulation_runner.validate_targets("unused", [target])
-            == "simulate-and-metrics"
+            == "simulate-and-indicators"
         )
-    for target in ("simulations_and_indicators", "metrics"):
+    for target in ("simulations_and_indicators", "indicators"):
         with pytest.raises(ValueError, match="UnsupportedOperationTarget"):
             simulation_runner.validate_targets("unused", [target])
 
-    selected = tmp_path / "_engine/metric_sets/abc123/metrics.json"
-    _legacy_selection(monkeypatch, "metrics-only")
+    selected = tmp_path / "_engine/indicator_sets/abc123/indicators.json"
+    _legacy_selection(monkeypatch, "indicators-only")
     default = indicator_sets.resolve_set(
-        indicator_sets.legacy_selection({"operation": "metrics-only"}).sets[0], ["gwr"]
+        indicator_sets.legacy_selection({"operation": "indicators-only"}).sets[0],
+        ["gwr"],
     )
     monkeypatch.setattr(
-        "blueearth_cst.experiment.metric_plan.metrics_only_configuration",
+        "blueearth_cst.experiment.indicator_plan.indicators_only_configuration",
         lambda _: (tmp_path, (default,), "YE-DEC"),
     )
     monkeypatch.setattr(
-        "blueearth_cst.experiment.metric_plan.current_metric_request",
+        "blueearth_cst.experiment.indicator_plan.current_indicator_request",
         lambda *_: {"request": "v2"},
     )
     monkeypatch.setattr(
-        "blueearth_cst.experiment.metric_plan.build_metric_plan",
+        "blueearth_cst.experiment.indicator_plan.build_indicator_plan",
         lambda *_: {"targets": {"manifest": selected.as_posix()}, "tables": {}},
     )
-    for target in ("simulations_and_indicators", "metrics"):
-        assert simulation_runner.validate_targets("unused", [target]) == "metrics-only"
+    for target in ("simulations_and_indicators", "indicators"):
+        assert (
+            simulation_runner.validate_targets("unused", [target]) == "indicators-only"
+        )
     assert (
         simulation_runner.validate_targets("unused", [selected.as_posix()])
-        == "metrics-only"
+        == "indicators-only"
     )
     monkeypatch.setattr(
-        "blueearth_cst.experiment.metric_plan.build_metric_plan",
+        "blueearth_cst.experiment.indicator_plan.build_indicator_plan",
         lambda *_: {
             "targets": {
                 "manifest": (
-                    tmp_path / "_engine/metric_sets/other/metrics.json"
+                    tmp_path / "_engine/indicator_sets/other/indicators.json"
                 ).as_posix()
             },
             "tables": {},
@@ -248,8 +252,10 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
         simulation_runner.validate_targets("unused", [selected.as_posix()])
 
 
-def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monkeypatch):
-    from blueearth_cst.experiment import metric_plan, reservation_context
+def test_indicators_only_reads_v2_collection_from_simulation_intent(
+    tmp_path, monkeypatch
+):
+    from blueearth_cst.experiment import indicator_plan, reservation_context
 
     # This projection unit uses a synthetic marker; admission/integrity are
     # exercised with real retained records by the reservation integration tests.
@@ -261,9 +267,9 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
     root = project / "experiments/experiment_rapid"
     (root / "_engine").mkdir(parents=True)
     (root / "_engine/simulation.json").write_bytes(b"{}\n")
-    workflow = tmp_path / "metrics.yml"
+    workflow = tmp_path / "indicators.yml"
     workflow.write_text(
-        "experiment_name: experiment_rapid\noperation: metrics-only\n",
+        "experiment_name: experiment_rapid\noperation: indicators-only\n",
         encoding="utf-8",
     )
     config = tmp_path / "project.yml"
@@ -273,7 +279,7 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
         "workflows:\n"
         "  simulate_system:\n"
         "    enabled: true\n"
-        "    config_path: metrics.yml\n",
+        "    config_path: indicators.yml\n",
         encoding="utf-8",
     )
     intent = {
@@ -285,13 +291,15 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
         "documents": {"response_request": {"variables": [{"variable": "q"}]}},
     }
     monkeypatch.setattr(
-        metric_plan,
+        indicator_plan,
         "read_simulation_v2",
         lambda path: {"schema_version": "simulation/3"},
     )
-    monkeypatch.setattr(metric_plan, "read_simulation_intent_v2", lambda path: intent)
+    monkeypatch.setattr(
+        indicator_plan, "read_simulation_intent_v2", lambda path: intent
+    )
 
-    actual_root, sets, anchor = metric_plan.metrics_only_configuration(config)
+    actual_root, sets, anchor = indicator_plan.indicators_only_configuration(config)
 
     assert actual_root == root
     assert {
@@ -301,7 +309,7 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
 
 
 def test_retired_target_names_reach_snakemake_as_current_rule_names():
-    assert simulation_runner.current_targets(["responses", "metrics", "all"]) == [
+    assert simulation_runner.current_targets(["responses", "indicators", "all"]) == [
         "simulations_only",
         "simulations_and_indicators",
         "all",
@@ -313,9 +321,9 @@ def _named_selection(monkeypatch, tmp_path, settings, project=None):
 
     selection = indicator_sets.parse_selection(settings, tmp_path / "wf4.yml")
     operation = (
-        "metrics-only"
+        "indicators-only"
         if selection.operations == ("indicators",)
-        else "simulate-and-metrics"
+        else "simulate-and-indicators"
     )
     monkeypatch.setattr(
         simulation_runner,
@@ -337,7 +345,7 @@ def test_named_operations_infer_their_target(
 ):
     _named_selection(monkeypatch, tmp_path, {"operations": operations})
     assert simulation_runner.resolve_targets("unused", ["all"]) == (
-        "simulate-and-metrics",
+        "simulate-and-indicators",
         expected,
     )
     with pytest.raises(ValueError, match="omit --target"):

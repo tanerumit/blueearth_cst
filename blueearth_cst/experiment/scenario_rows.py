@@ -113,7 +113,7 @@ def enumerate_stochastic(
 
     Args:
         generation_spec: Composed workflow settings; requested seed is not resolved.
-        unit_id_capacity: Explicit generation-only capacity, independent of metrics.
+        unit_id_capacity: Explicit generation-only capacity, independent of indicators.
 
     Returns:
         Immutable rows ordered by realization, then root, then design point.

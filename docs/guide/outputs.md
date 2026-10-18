@@ -35,19 +35,19 @@ use a directory outside the toolbox checkout.
   experiments/<name>/
     _engine/simulation.json      simulation settings used
     hydrology/wflow/output/      retained model responses
-    _engine/metric_sets/<id>/
-      metrics.json              indicator definitions and source records
+    _engine/indicator_sets/<id>/
+      indicators.json              indicator definitions and source records
       return_level_benchmark.json  scope of return-level checks
       coverage_evidence.json    per-series water-year block coverage
-    _engine/metric_sets/<id>/data/   immutable tables (same files as below)
-    _engine/metric_sets/names/<set-id>/
+    _engine/indicator_sets/<id>/data/   immutable tables (same files as below)
+    _engine/indicator_sets/names/<set-id>/
       current.json              committed publication of this set
-    results/metric_sets/<set-id>/    readable view of one indicator set
+    results/indicator_sets/<set-id>/    readable view of one indicator set
       indicators.csv            dictionary: units, method, policies, coverage
       group_members.csv         group_id,run_id (including singleton groups)
       group_metadata.csv        group_id,st_id,is_reference
-      <token>_run_indicators.csv    metric,location,run_id,value
-      <token>_group_indicators.csv  metric,location,group_id,value
+      <token>_run_indicators.csv    indicator,location,run_id,value
+      <token>_group_indicators.csv  indicator,location,group_id,value
   logs/
   benchmarks/
 ```
@@ -65,12 +65,38 @@ the archived `sources/` files preserve what an execution used. WF3 and WF4 retai
 inside the owning collection or experiment. The shared `experiments/_engine/` directory is reserved
 for allocation and creation recovery; it is not an experiment.
 
-Fresh collections and metric sets keep their immutable data under `_engine/`. Readers still accept
-completed legacy data at `scenarios/<id>/` and `results/metric_sets/<id>/`; their manifests retain those
-paths. The stable scenario export remains at `scenarios/`. Indicator sets publish one folder each at
-`experiments/<name>/results/metric_sets/<set-id>/`; a set id never takes over a legacy
-`results/metric_sets/<id>/` root. Older flat exports directly under `results/metric_sets/` with
-`_engine/metric_sets/current.json` are preserved but no longer refreshed.
+Fresh collections and indicator sets keep their immutable data under `_engine/`. Readers still accept
+completed legacy data at `scenarios/<id>/`; their manifests retain those paths.
+The stable scenario export remains at `scenarios/`. Indicator sets publish one folder each at
+`experiments/<name>/results/indicator_sets/<set-id>/`; a set id never takes over a legacy
+`results/indicator_sets/<id>/` root.
+
+### Indicator terminology migration
+
+The toolbox now uses **indicator** consistently in configuration, Python APIs, logs and outputs.
+New publications use `results/indicator_sets/<set-id>/`, immutable records under
+`_engine/indicator_sets/<id>/indicators.json`, and an `indicator` column in result tables.
+The calculation package is `blueearth_cst.indicators`; the inspection command is
+`pixi run python scripts/inspect_indicators.py`.
+WF1 model-evaluation tables are now named `performance_indicators.csv` and use an `indicators` index.
+
+Existing `_engine/metric_sets/<id>/metrics.json` publications and named exports at
+`results/metric_sets/<set-id>/` remain readable. Their original hashes and table schemas are checked
+before their fields are translated in memory. Saved files are never renamed or rewritten.
+`inspect_indicators.py --experiment <experiment> --list` discovers both layouts.
+Fresh numerical rechecking of an old publication is unavailable because it names the old execution
+sources; saved integrity checks and historical receipts remain available.
+
+Rerun WF4 with `operations: [indicators]` to calculate and publish the new layout from retained
+simulation responses, without running Wflow again. Calculation identities change with the renamed
+source files and contracts, so old and new publications have different identifiers. Update downstream
+scripts to the new paths, `indicator` column and manifest fields such as `indicator_set_id`.
+The reviewed vocabulary-only change to the native reader's docstring is accepted when reopening
+retained simulations. Saved reader identities remain unchanged; other reader changes and altered
+native files still fail the existing integrity checks.
+Old scalar `operation: metrics-only` / `simulate-and-metrics`, the `metrics` selection key and the
+`--target metrics` alias remain accepted as inputs for compatibility; maintained examples use
+indicator terminology. Older flat exports are preserved and no longer refreshed.
 
 New projects use this layout from October 2026: the former `config/runs/` contents now sit directly
 under `config/`, and former `config/experiments/` state sits under `experiments/_engine/`.
@@ -100,7 +126,7 @@ records the time and resource use of individual steps.
 
 `<plan_key>` matches the name of the corresponding directory under
 `scenarios/_engine/requests/`. An incomplete run can leave logs and partial files.
-Check `collection.json` or `metrics.json` in the corresponding `_engine/`
+Check `collection.json` or `indicators.json` in the corresponding `_engine/`
 metadata directory before treating a collection or
 indicator set as complete.
 
@@ -151,20 +177,20 @@ remains with its data products in `summary/`.
 The former `plots/overview/` and `plots/windows/` figure paths are retired. Existing
 files at those paths are not current suite outputs and are not deleted automatically.
 
-## Reading a metric set
+## Reading an indicator set
 
-For post-processing, read CSVs from `experiments/<name>/results/metric_sets/<set-id>/`, one folder per
+For post-processing, read CSVs from `experiments/<name>/results/indicator_sets/<set-id>/`, one folder per
 selected indicator set (`default` unless the WF4 file names others). Start with `indicators.csv`: one row
-per metric with its title, variable, input and output units, quantity, method and parameters, grain and
+per indicator with its title, variable, input and output units, quantity, method and parameters, grain and
 group policy, water-year start and block assignment, partial-block, missingness and validity policies,
 references, and `block_coverage`. Coverage lists every contributing run/location pair with its blocks
 (observed/expected days and missing values); it discloses coverage, not sample adequacy. An authored
 indicator shows its registered counterpart in `equivalent_definition`; its numbers equal that
-definition's, under its own metric key.
+definition's, under its own indicator key.
 
 Every successful WF4 invocation requesting indicators refreshes each selected set's folder, including
-reuse of an existing set. `_engine/metric_sets/names/<set-id>/current.json` records the committed
-publication: the immutable metric set, the captured set definition, the dictionary metadata and every
+reuse of an existing set. `_engine/indicator_sets/names/<set-id>/current.json` records the committed
+publication: the immutable indicator set, the captured set definition, the dictionary metadata and every
 exported file's checksum. Sets publish independently: a failed set keeps its previous folder (the run
 summary names such mixed-age exports) and the command exits nonzero. Editing only titles, descriptions
 or authored citations refreshes `indicators.csv` without recomputing values.
@@ -172,7 +198,7 @@ or authored citations refreshes `indicators.csv` without recomputing values.
 Wait for workflow completion before reading an export: replacement is atomic per file, not across the
 folder. Ordinary export I/O failures roll back the replaced files. Dry-runs and `simulations_only` do not
 refresh exports. A folder is refreshed only when this set's committed publication owns it; an existing
-folder with unknown files, or one claimed by a legacy metric set, is refused and left untouched. A
+folder with unknown files, or one claimed by a legacy indicator set, is refused and left untouched. A
 rerun restores managed files edited by hand; keep custom tables elsewhere.
 
 Annual-total indicators (`aet`, `gwr`, `precip`) report **mm**: daily depths summed within each
@@ -180,19 +206,19 @@ water-year block and averaged with equal block weight. Partial first and last bl
 duration normalization and missing days contribute zero, so the value equals mean annual depth (mm/yr)
 only when every block is complete and nonmissing; `block_coverage` shows whether it is.
 
-Read `experiments/<name>/_engine/metric_sets/<id>/metrics.json` before
+Read `experiments/<name>/_engine/indicator_sets/<id>/indicators.json` before
 its tables. It identifies the
 indicators, the model responses they came from, and the files in the set.
 
-Run tables contain one value per simulation for run-level metrics. Group tables contain one value
-per design point for those metrics and pooled return levels. Both tables are written for every selected
-variable; a scope without applicable metrics has a header-only table. Group membership remains explicit
+Run tables contain one value per simulation for run-level indicators. Group tables contain one value
+per design point for those indicators and pooled return levels. Both tables are written for every selected
+variable; a scope without applicable indicators has a header-only table. Group membership remains explicit
 even for one-member groups and selections without return levels.
 
 Each run-level group summary is an equal-weight mean of the realization-level values, including annual
 mean, extrema, quantiles, seven-day extrema, baseflow index, basin reductions and wet/dry-month means.
 Unequal record lengths do not change realization weights. A NaN member propagates to the group summary;
-infinite values are refused. Existing per-run reduction rules remain in force. Wet- and dry-month metrics
+infinite values are refused. Existing per-run reduction rules remain in force. Wet- and dry-month indicators
 use the same month selected from the unperturbed reference and first native discharge location.
 Their new group means can differ from the former pooled-month carrier when records or missingness differ.
 
@@ -201,12 +227,12 @@ and estimator validity rules. A singleton group uses those same rules, not a sub
 The set records the members and reference location. Values are stored to four significant digits;
 retain the underlying model responses for more detailed analysis.
 
-### Opening a metric table in Excel
+### Opening an indicator table in Excel
 
 Run IDs such as `run_01` and group IDs such as `group_01` are prefixed strings, so ordinary CSV opening
 preserves them as text. Their suffix padding is consistent within the owning namespace. Groups are
-numbered independently of run count and selected metrics. Matching labels in different collections or
-metric sets do not establish matching inputs or membership.
+numbered independently of run count and selected indicators. Matching labels in different collections or
+indicator sets do not establish matching inputs or membership.
 
 When reading in pandas, preserve identifiers explicitly with `dtype=str` on lookup tables and
 `keep_default_na=False` to retain the empty reference `st_id`. Indicator `value` columns remain numeric.
@@ -214,10 +240,10 @@ Perturbation `st_id` values still require text-preserving import in Excel and co
 
 ### Migrating existing outputs
 
-The prefixed collection and split metric contracts use new schema revisions. Numeric-ID collections
-and mixed `<token>_indicators.csv` / `metric_run_lookup.csv` products are not silently reinterpreted.
+The prefixed collection and split indicator contracts use new schema revisions. Numeric-ID collections
+and mixed `<token>_indicators.csv` / `indicator_run_lookup.csv` products are not silently reinterpreted.
 Keep old output roots for provenance; regenerate scenarios, then simulate under a new experiment name
-to produce the new contract. Existing files are not migrated in place. `metrics-only` is for responses
+to produce the new contract. Existing files are not migrated in place. `indicators-only` is for responses
 whose retained collection and simulation records already satisfy the new contract.
 Automatic weather seeds include provider-code identity, so regeneration after this update may resolve
 a different seed. Use the same explicit seed and matched inputs when comparing generated samples.
@@ -225,7 +251,7 @@ a different seed. Use the same explicit seed and matched inputs when comparing g
 ## Return levels and their limits
 
 Return levels are fitted from groups of simulated years with a GEV distribution.
-Read `return_level_validation` in `metrics.json` before using them. It identifies
+Read `return_level_validation` in `indicators.json` before using them. It identifies
 the return periods and conditions assessed by the supplied benchmark;
 `return_level_benchmark.json` holds that assessment. The benchmark covers a
 limited set of synthetic cases. It does not establish accuracy for your basin,
@@ -240,7 +266,7 @@ that range has not been assessed by this benchmark. Small departures are not
 strong evidence on their own because shape estimates from short records are
 uncertain.
 
-Keep a metric table together with its `metrics.json` and
+Keep an indicator table together with its `indicators.json` and
 `return_level_benchmark.json` when sharing or comparing return levels. The CSV
 alone does not identify the estimator or its assessment.
 
@@ -254,8 +280,8 @@ simulation settings file.
 
 The `_engine/simulation.json` record ties an experiment to its collection,
 model, and simulation settings. Use a new experiment name when those inputs
-change. If you change only the indicators, `operation: metrics-only` creates a
-new metric set from retained model responses without rerunning simulation.
+change. If you change only the indicators, `operation: indicators-only` creates a
+new indicator set from retained model responses without rerunning simulation.
 
 For a reproducible comparison, keep the whole project output directory, not
 only the indicator CSVs. The model build settings used by HydroMT are recorded

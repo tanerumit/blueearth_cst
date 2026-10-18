@@ -110,13 +110,13 @@ def main(argv=None):
             )
             if not preview:
                 from blueearth_cst.experiment.simulation_runner import (
-                    validate_retained_metric_sets,
+                    validate_retained_indicator_sets,
                 )
 
-                validate_retained_metric_sets(
+                validate_retained_indicator_sets(
                     root / "experiments" / context.name, command
                 )
-            if not preview and settings["operation"] == "simulate-and-metrics":
+            if not preview and settings["operation"] == "simulate-and-indicators":
                 context.bind_selection()
                 capture = capture_simulation_sources_v2(
                     args.config, root, record["invocation_id"]
@@ -140,7 +140,7 @@ def main(argv=None):
                 and selection.indicators
                 and current_targets(args.target) != ["simulations_only"]
             ):
-                from blueearth_cst.experiment.metric_export import (
+                from blueearth_cst.experiment.indicator_export import (
                     publish_selected_sets,
                     report_publication,
                 )

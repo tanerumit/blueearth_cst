@@ -1090,9 +1090,9 @@ def patch_psutil_windows_benchmark():
     Snakemake's benchmark monitor reads ``psutil.memory_full_info().pss`` on
     every sample, but on Windows psutil's ``pfullmem`` has ``uss`` and **no**
     ``pss`` — the resulting ``AttributeError`` aborts every sample before the
-    record is marked collected, so ALL metrics (rss/vms/uss/io/load/cpu_time,
+    record is marked collected, so ALL indicators (rss/vms/uss/io/load/cpu_time,
     not just pss) come out ``NA``. This shim exposes ``pss`` (= ``uss`` as a
-    Windows proxy) so the sampler succeeds and the real metrics populate.
+    Windows proxy) so the sampler succeeds and the real indicators populate.
 
     No-op off Windows, when psutil is absent, or when ``pss`` already exists.
     Called at the top of each Snakefile so it is active in the Snakemake process

@@ -98,7 +98,7 @@ test_case/test_rapid/
 ```
 
 Find the hydrological indicators under
-`experiments/<name>/results/metric_sets/default/`, starting with its
+`experiments/<name>/results/indicator_sets/default/`, starting with its
 `indicators.csv` dictionary. Join each indicator to its
 temperature and precipitation change using the files described in
 [Reading the outputs](outputs.md).

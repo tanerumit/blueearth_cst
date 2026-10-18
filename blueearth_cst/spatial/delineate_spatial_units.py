@@ -8,7 +8,7 @@ identically in all three workflows (``1.01c`` / ``2.03c`` / ``3.01f``) from
 
 Before this split the layers were by-products of rule 1.01, whose real product
 is ``spatial_maps.nc`` and the thematic raster stack behind it. WF2 and WF3
-want basin and subbasin boundaries for figures and metrics; declaring the
+want basin and subbasin boundaries for figures and indicators; declaring the
 unsplit rule would have made a projections-only run resample ``vito``,
 ``modis_lai`` and ``soilgrids`` to draw a subbasin outline — the same trade
 ADR 0003 exists to have removed, one level down. Measured 2026-08-06, the split

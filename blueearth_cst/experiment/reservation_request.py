@@ -244,7 +244,7 @@ def capture_request(
         "experiment_name",
         "operation",
         "scenario_collection",
-        "metrics",
+        "indicators",
         "compute",
         # Analysis intent, never simulation identity.
         "operations",

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import yaml
 
-from blueearth_cst.experiment import metric_registry as registry
+from blueearth_cst.experiment import indicator_registry as registry
 
 OPERATIONS = ("simulations", "indicators")
 DEFAULT_SET = "default"
@@ -131,12 +131,12 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
     declares them; bundled names resolve against :data:`BUNDLED_ROOT`. With
     simulations alone, structure is validated but no set file is opened.
     """
-    for key in ("operation", "metrics"):
+    for key in ("operation", "indicators"):
         if key in settings:
             raise IndicatorSetError(
                 f"simulate_system.{key} is the legacy interface and cannot be mixed "
                 "with operations/indicator_sets; replace operation with "
-                "operations: [simulations, indicators] and metrics with an explicit "
+                "operations: [simulations, indicators] and indicators with an explicit "
                 "indicator set"
             )
     operations = settings.get("operations", list(OPERATIONS))
@@ -201,10 +201,10 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
 def legacy_selection(settings: dict) -> Selection:
     """Map the scalar ``operation`` interface onto operations and the default set."""
     operation = settings.get("operation")
-    if operation == "simulate-and-metrics":
+    if operation == "simulate-and-indicators":
         operations = ("simulations", "indicators")
-    elif operation in ("metrics-only", None):
-        # Absent only in metrics-only projections that never read it.
+    elif operation in ("indicators-only", None):
+        # Absent only in indicators-only projections that never read it.
         operations = ("indicators",)
     else:
         raise IndicatorSetError(f"unsupported legacy operation {operation!r}")
@@ -220,7 +220,7 @@ def legacy_selection(settings: dict) -> Selection:
 class ResolvedIndicator:
     """One selected indicator: numerical declaration plus presentation."""
 
-    declaration: registry.MetricDeclaration
+    declaration: registry.IndicatorDeclaration
     definition: str
     method: str
     parameters: dict
@@ -232,7 +232,7 @@ class ResolvedIndicator:
     calculation_set: str | None = None
 
     @property
-    def metric(self) -> str:
+    def indicator(self) -> str:
         return self.declaration.name
 
 
@@ -247,7 +247,7 @@ class ResolvedSet:
     indicators: tuple[ResolvedIndicator, ...]
 
     @property
-    def declarations(self) -> tuple[registry.MetricDeclaration, ...]:
+    def declarations(self) -> tuple[registry.IndicatorDeclaration, ...]:
         return tuple(item.declaration for item in self.indicators)
 
 
@@ -274,10 +274,10 @@ def _authored(entry: dict, label: str, set_id: str = DEFAULT_SET) -> ResolvedInd
             f"{label}: an authored entry has exactly {sorted(expected)}; "
             f"got {sorted(entry)}"
         )
-    metric = validate_id(entry["id"], f"{label} id")
-    if metric in registry.DEFINITIONS:
+    indicator = validate_id(entry["id"], f"{label} id")
+    if indicator in registry.DEFINITIONS:
         raise IndicatorSetError(
-            f"{label}: authored id {metric!r} equals a registered definition; "
+            f"{label}: authored id {indicator!r} equals a registered definition; "
             "select it with {definition: ...} instead"
         )
     for field in ("title", "description"):
@@ -299,10 +299,10 @@ def _authored(entry: dict, label: str, set_id: str = DEFAULT_SET) -> ResolvedInd
         {"set", "method", "parameters"},
     ):
         raise IndicatorSetError(
-            f"{label}/{metric}: calculation requires method, parameters; optional set"
+            f"{label}/{indicator}: calculation requires method, parameters; optional set"
         )
     if "set" in calculation:
-        from blueearth_cst.metrics import loader
+        from blueearth_cst.indicators import loader
 
         owner = calculation["set"]
         try:
@@ -310,13 +310,13 @@ def _authored(entry: dict, label: str, set_id: str = DEFAULT_SET) -> ResolvedInd
                 owner,
                 calculation["method"],
                 calculation["parameters"],
-                metric_name=metric,
+                indicator_name=indicator,
             )
         except ValueError as exc:
-            raise IndicatorSetError(f"{set_id}/{metric}: {exc}") from exc
+            raise IndicatorSetError(f"{set_id}/{indicator}: {exc}") from exc
         return ResolvedIndicator(
             declaration=declaration,
-            definition=f"{owner}:{metric}",
+            definition=f"{owner}:{indicator}",
             method=calculation["method"],
             parameters=dict(calculation["parameters"]),
             title=entry["title"],
@@ -331,9 +331,9 @@ def _authored(entry: dict, label: str, set_id: str = DEFAULT_SET) -> ResolvedInd
             calculation["method"], calculation["parameters"]
         )
     except ValueError as exc:
-        raise IndicatorSetError(f"{set_id}/{metric} ({label}): {exc}") from exc
+        raise IndicatorSetError(f"{set_id}/{indicator} ({label}): {exc}") from exc
     return ResolvedIndicator(
-        declaration=replace(registry.declaration_for(definition), name=metric),
+        declaration=replace(registry.declaration_for(definition), name=indicator),
         definition=definition,
         method=calculation["method"],
         parameters=parameters,
@@ -352,7 +352,7 @@ def resolve_set(
 
     ``default_tokens`` are the response variables the ``current_default``
     preset expands; they are required only by a set using the preset. Legacy
-    mode keeps the old ``metrics: []`` behaviour of an empty selection.
+    mode keeps the old ``indicators: []`` behaviour of an empty selection.
     """
     label = f"indicator set {source.set_id!r} ({source.path.as_posix()})"
     try:
@@ -399,14 +399,14 @@ def resolve_set(
             _registered(item.name) for item in registry.declarations(default_tokens)
         ]
     elif kind == "registry":
-        from blueearth_cst.metrics import loader
+        from blueearth_cst.indicators import loader
 
         try:
             local = loader.declarations(value)
             module = loader.load_set(value)
         except ValueError as exc:
             raise IndicatorSetError(f"{label}: {exc}") from exc
-        descriptions = {item.id: item.description for item in module.METRICS}
+        descriptions = {item.id: item.description for item in module.INDICATORS}
         indicators = [
             ResolvedIndicator(
                 declaration=item,
@@ -444,17 +444,17 @@ def resolve_set(
                 indicators.append(_authored(entry, entry_label, source.set_id))
     else:
         raise IndicatorSetError(f"{label}: unknown selection kind {kind!r}")
-    metrics, contracts = {}, {}
+    by_name, contracts = {}, {}
     for item in indicators:
-        if item.metric in metrics:
-            raise IndicatorSetError(f"{label}: repeats metric {item.metric!r}")
-        metrics[item.metric] = item
+        if item.indicator in by_name:
+            raise IndicatorSetError(f"{label}: repeats indicator {item.indicator!r}")
+        by_name[item.indicator] = item
         if item.definition in contracts:
             raise IndicatorSetError(
-                f"{label}: {contracts[item.definition]!r} and {item.metric!r} share one "
+                f"{label}: {contracts[item.definition]!r} and {item.indicator!r} share one "
                 f"calculation contract ({item.definition})"
             )
-        contracts[item.definition] = item.metric
+        contracts[item.definition] = item.indicator
     return ResolvedSet(
         source.set_id,
         document["title"],
@@ -494,11 +494,11 @@ def default_tokens(
 def legacy_tokens(
     project: dict, settings: dict, context: str, retained_variables
 ) -> list[str]:
-    """Legacy ``metrics``/``outvars`` precedence, preserved per observed branch.
+    """Legacy ``indicators``/``outvars`` precedence, preserved per observed branch.
 
     The three pre-named-set branches disagree on null/absent values; each
     expression is kept verbatim rather than normalized (design v3, P3/O5).
-    ``context`` is ``simulation_rule``, ``metrics_only`` or ``export``.
+    ``context`` is ``simulation_rule``, ``indicators_only`` or ``export``.
     """
     from blueearth_cst.shared.indicator_tables import indicator_tables
     from blueearth_cst.shared.snake_utils import DEFAULT_WFLOW_OUTVARS
@@ -507,19 +507,20 @@ def legacy_tokens(
     if context == "simulation_rule":
         return list(
             settings.get(
-                "metrics", indicator_tables(model.get("outvars", DEFAULT_WFLOW_OUTVARS))
+                "indicators",
+                indicator_tables(model.get("outvars", DEFAULT_WFLOW_OUTVARS)),
             )
         )
-    tokens = settings.get("metrics")
+    tokens = settings.get("indicators")
     if tokens is not None:
         return list(tokens)
     outvars = model.get("outvars")
-    if context == "metrics_only":
+    if context == "indicators_only":
         if outvars is not None:
             return list(indicator_tables(outvars))
         return list(retained_variables())
     if context == "export":
-        if outvars is not None or settings["operation"] == "simulate-and-metrics":
+        if outvars is not None or settings["operation"] == "simulate-and-indicators":
             return list(
                 indicator_tables(DEFAULT_WFLOW_OUTVARS if outvars is None else outvars)
             )
@@ -617,16 +618,16 @@ def selected_sets(
 
 
 def calculation_records(indicators) -> list[dict]:
-    """Identity-relevant calculation records, canonically sorted by metric key.
+    """Identity-relevant calculation records, canonically sorted by indicator key.
 
     Presentation (titles, descriptions, citations), set id, source path and
-    selection order are excluded; the metric key, method, normalized parameters
+    selection order are excluded; the indicator key, method, normalized parameters
     and resolved registered calculation are retained by value.
     """
     return sorted(
         (
             {
-                "metric": item.metric,
+                "indicator": item.indicator,
                 "definition": item.definition,
                 "method": item.method,
                 "parameters": dict(sorted(item.parameters.items())),
@@ -634,7 +635,7 @@ def calculation_records(indicators) -> list[dict]:
             }
             for item in indicators
         ),
-        key=lambda record: record["metric"],
+        key=lambda record: record["indicator"],
     )
 
 
@@ -645,7 +646,7 @@ def default_calculations(tokens) -> list[dict]:
     )
 
 
-def declarations_for_calculations(records) -> tuple[registry.MetricDeclaration, ...]:
+def declarations_for_calculations(records) -> tuple[registry.IndicatorDeclaration, ...]:
     """Re-derive declarations from retained calculation records against live code.
 
     Each record's method and parameters are re-validated, so a changed
@@ -654,33 +655,41 @@ def declarations_for_calculations(records) -> tuple[registry.MetricDeclaration, 
     result = []
     for record in records:
         if "set" in record:
-            from blueearth_cst.metrics import loader
+            from blueearth_cst.indicators import loader
 
-            if set(record) != {"set", "metric", "definition", "method", "parameters"}:
+            if set(record) != {
+                "set",
+                "indicator",
+                "definition",
+                "method",
+                "parameters",
+            }:
                 raise IndicatorSetError(f"invalid local calculation record {record!r}")
-            if record["definition"] != f"{record['set']}:{record['metric']}":
-                raise IndicatorSetError(f"{record['metric']}: local identity differs")
+            if record["definition"] != f"{record['set']}:{record['indicator']}":
+                raise IndicatorSetError(
+                    f"{record['indicator']}: local identity differs"
+                )
             result.append(
                 loader.resolve(
                     record["set"],
                     record["method"],
                     record["parameters"],
-                    metric_name=record["metric"],
+                    indicator_name=record["indicator"],
                 )
             )
             continue
-        if set(record) != {"metric", "definition", "method", "parameters"}:
+        if set(record) != {"indicator", "definition", "method", "parameters"}:
             raise IndicatorSetError(f"invalid calculation record {record!r}")
         definition, _ = registry.validate_calculation(
             record["method"], record["parameters"]
         )
         if definition != record["definition"]:
             raise IndicatorSetError(
-                f"{record['metric']}: calculation now resolves to {definition!r}, "
+                f"{record['indicator']}: calculation now resolves to {definition!r}, "
                 f"not the recorded {record['definition']!r}"
             )
         result.append(
-            replace(registry.declaration_for(definition), name=record["metric"])
+            replace(registry.declaration_for(definition), name=record["indicator"])
         )
     return tuple(result)
 

@@ -132,7 +132,7 @@ def test_local_config_catalogs_have_only_the_bundle_root(tmp_path):
 def _run_and_assert_all_five(
     project: Path, config: Path, log: Path, *, local_inputs: bool = False
 ) -> None:
-    from blueearth_cst.experiment.metric_plan import read_metric_set
+    from blueearth_cst.experiment.indicator_plan import read_indicator_set
     from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
     from blueearth_cst.experiment.simulation_record import read_simulation_v2
 
@@ -183,12 +183,12 @@ def _run_and_assert_all_five(
     # WF3: one ready scenario collection, read back by the production reader.
     marker = _one(project.glob("scenarios/_engine/collections/*/collection.json"))
     assert read_collection_v2(marker)["status"] == "ready"
-    # WF4: a ready simulation and one published, readable metric set.
+    # WF4: a ready simulation and one published, readable indicator set.
     # The rapid config chooses a family; a fresh root gets its first number.
     experiment = project / "experiments" / "experiment_rapid_01"
     assert read_simulation_v2(experiment)["status"] == "ready"
-    metrics = _one(experiment.glob("_engine/metric_sets/*/metrics.json"))
-    manifest = read_metric_set(experiment, metrics)
+    indicators = _one(experiment.glob("_engine/indicator_sets/*/indicators.json"))
+    manifest = read_indicator_set(experiment, indicators)
     tables = [experiment / item["file"]["path"] for item in manifest["tables"]]
     assert tables and all(path.stat().st_size > 0 for path in tables)
 

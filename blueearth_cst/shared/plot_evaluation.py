@@ -11,7 +11,7 @@ One station, four figures, split by the question a reader is asking:
 * ``signatures_lows_<wflow_id>`` — the dry end, in the same three places, so the
   two sheets read against each other without re-learning the layout.
 * ``performance_<wflow_id>`` — goodness of fit: the daily scatter, the
-  cumulative volume that shows WHEN a bias accrues, and the metrics table.
+  cumulative volume that shows WHEN a bias accrues, and the indicators table.
 
 This replaces ``func_plot_signature.plot_hydro`` (five stacked panels) and
 ``plot_signatures`` (ten untitled ones). What changed beyond the layout:
@@ -103,11 +103,11 @@ _PLOTTING_POSITION_A = 0.3
 #: this, so one 1e-9 cell cannot set the range for the whole curve.
 _LOG_FDC_FLOOR = 1e-3
 
-#: Metric rows on the performance table: the ideal value a reader should compare
+#: Indicator rows on the performance table: the ideal value a reader should compare
 #: against, and how many decimals the number is worth. Grouped because "higher
 #: is better" and "zero is better" are different readings and a reader should
 #: not have to remember which is which per row.
-METRIC_FORMAT = {
+INDICATOR_FORMAT = {
     "KGE": ("1", "{:.3f}"),
     "NSE": ("1", "{:.3f}"),
     "NSElog": ("1", "{:.3f}"),
@@ -116,7 +116,7 @@ METRIC_FORMAT = {
     "MSE": ("0", "{:.2f}"),
     "Pbias": ("0 %", "{:+.1f} %"),
 }
-METRIC_GROUPS = (
+INDICATOR_GROUPS = (
     ("Efficiency", ("KGE", "NSE", "NSElog", "VE")),
     ("Error", ("RMSE", "MSE", "Pbias")),
 )
@@ -1047,8 +1047,8 @@ def _extremes_caption(simulated, station, plot_dir, kind, year, caveat):
     return inventory["figures"][f"signatures_{kind}_{station.wflow_id}.png"]
 
 
-#: Row positions of the metrics table, in axes fractions: the group band, the
-#: metric names, then daily / monthly / ideal.
+#: Row positions of the indicators table, in axes fractions: the group band, the
+#: indicator names, then daily / monthly / ideal.
 _TABLE_ROWS = {
     "group": 0.92,
     "header": 0.68,
@@ -1056,19 +1056,19 @@ _TABLE_ROWS = {
     "monthly": 0.25,
     "ideal": 0.06,
 }
-#: Where the row labels sit, and where the metric columns start.
+#: Where the row labels sit, and where the indicator columns start.
 _TABLE_LABEL_X = 0.0
 _TABLE_FIRST_X = 0.135
 
 
-def _draw_metrics_table(ax, metrics):
+def _draw_indicators_table(ax, indicators):
     """The goodness-of-fit table, laid out as text on a blank axes.
 
     A blank axes rather than ``ax.table``: matplotlib's table sizes its cells to
     the axes and ignores the figure's type scale, so it comes out at a different
     size from every other label on the page.
 
-    METRICS ACROSS, aggregations down. The first version had it the other way —
+    INDICATORS ACROSS, aggregations down. The first version had it the other way —
     seven rows in a narrow column — which was right while the table shared a row
     with the scatter. It sits on a FULL-WIDTH band now, and seven rows of four
     narrow columns across 180 mm is mostly whitespace. Transposed, the same
@@ -1083,7 +1083,10 @@ def _draw_metrics_table(ax, metrics):
 
     ax.axis("off")
     names = [
-        name for _, group in METRIC_GROUPS for name in group if name in metrics.index
+        name
+        for _, group in INDICATOR_GROUPS
+        for name in group
+        if name in indicators.index
     ]
     if not names:
         return
@@ -1094,7 +1097,7 @@ def _draw_metrics_table(ax, metrics):
     }
 
     # Group band: which columns are read "higher is better" and which "zero is".
-    for group, members in METRIC_GROUPS:
+    for group, members in INDICATOR_GROUPS:
         present = [name for name in members if name in centres]
         if not present:
             continue
@@ -1155,14 +1158,14 @@ def _draw_metrics_table(ax, metrics):
             fontweight="normal" if muted else "bold",
         )
         for name in names:
-            ideal, template = METRIC_FORMAT[name]
+            ideal, template = INDICATOR_FORMAT[name]
             ax.text(
                 centres[name],
                 _TABLE_ROWS[row],
                 ideal
                 if muted
-                else template.format(metrics.loc[name, row])
-                if np.isfinite(metrics.loc[name, row])
+                else template.format(indicators.loc[name, row])
+                if np.isfinite(indicators.loc[name, row])
                 else "—",
                 transform=ax.transAxes,
                 ha="center",
@@ -1247,9 +1250,16 @@ def _performance_r_squared(pairs):
 
 
 def plot_performance(
-    simulated, observed, station, plot_dir, metrics, caveat=None, *, annotation="none"
+    simulated,
+    observed,
+    station,
+    plot_dir,
+    indicators,
+    caveat=None,
+    *,
+    annotation="none",
 ):
-    """Paired-day scatter and cumulative volume, with the supplied CSV metrics."""
+    """Paired-day scatter and cumulative volume, with the supplied CSV indicators."""
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
     import numpy as np
@@ -1376,7 +1386,7 @@ def plot_performance(
                     fontsize=artists.FS_NOTE,
                     color=artists.MUTED,
                 )
-        _draw_metrics_table(ax_table, metrics)
+        _draw_indicators_table(ax_table, indicators)
         for text in ax_table.texts:
             text.set_fontsize(
                 artists.FS_TICK
@@ -1485,7 +1495,7 @@ def plot_station_evaluation(
     station,
     plot_dir,
     observed=None,
-    metrics=None,
+    indicators=None,
     signatures=False,
     caveat=None,
     log=print,
@@ -1511,14 +1521,14 @@ def plot_station_evaluation(
             f"wflow_id {station.wflow_id}: simulation hydrograph written; observation-based evaluation omitted because no observations are available"
         )
         return written
-    if metrics is not None:
+    if indicators is not None:
         written.append(
             plot_performance(
                 simulated,
                 observed,
                 station,
                 plot_dir,
-                metrics,
+                indicators,
                 caveat,
                 annotation=annotation,
             )

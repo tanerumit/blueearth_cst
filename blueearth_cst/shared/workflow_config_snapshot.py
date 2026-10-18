@@ -12,7 +12,7 @@ second collection is generated.
 ``collection_id`` hash digests and never path strings, and neither
 ``simulation.json`` nor ``collection.json`` carries a directory listing -- so a
 file the identity documents do not name changes no identity and invalidates no
-retained metric set. Recording these fields INSIDE ``collection_intent.json``
+retained indicator set. Recording these fields INSIDE ``collection_intent.json``
 or ``simulation.json`` would have been the tidier shape, and would have
 rewritten every existing experiment's identity to buy provenance. It would also
 fail closed rather than silently: ``read_simulation_intent_v2`` compares the

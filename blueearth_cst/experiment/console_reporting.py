@@ -50,8 +50,8 @@ class _PlanStream:
 
     def write(self, text):
         if re.fullmatch(
-            r"\d{2}:\d{2}:\d{2} - metrics - Metric set \w+ planned: "
-            r"\d+ metric declarations?; \d+ expected result keys?\n",
+            r"\d{2}:\d{2}:\d{2} - indicators - Indicator set \w+ planned: "
+            r"\d+ indicator declarations?; \d+ expected result keys?\n",
             text,
         ):
             record_indicator_detail(self.root, text.rstrip())
@@ -61,10 +61,10 @@ class _PlanStream:
 
 def prepare_indicator_plan(root, request, sets):
     """Keep numerical planning unchanged and present its outcome by set name."""
-    from blueearth_cst.experiment.metric_plan import write_metric_plan
+    from blueearth_cst.experiment.indicator_plan import write_indicator_plan
 
     with redirect_stdout(_PlanStream(sys.stdout, root)):
-        plan = write_metric_plan(root, request)
+        plan = write_indicator_plan(root, request)
     for item in matching_sets(sets, request["calculations"]):
         log_row(
             f"{item.set_id}: ready to calculate {plural(len(item.indicators), 'indicator')}",
@@ -89,12 +89,12 @@ def result_counts(root: Path, manifest: dict) -> tuple[int, int]:
     return finite, nonfinite
 
 
-def report_metric_set(root: Path, manifest: dict, sets=(), *, reused=False) -> None:
+def report_indicator_set(root: Path, manifest: dict, sets=(), *, reused=False) -> None:
     """Report completed calculation work using selected indicator-set names."""
     record_indicator_detail(
         root,
-        f"Metric set {manifest['metric_set_id']}; "
-        f"manifest → {root / manifest['engine_root'] / 'metrics.json'}",
+        f"Indicator set {manifest['indicator_set_id']}; "
+        f"manifest → {root / manifest['engine_root'] / 'indicators.json'}",
     )
     for item in matching_sets(sets, manifest.get("calculations", [])):
         action = "reusing calculated results" if reused else "calculations complete"

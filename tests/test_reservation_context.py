@@ -82,7 +82,7 @@ def configuration(base, *, retained=None):
     generated["n_realizations"] = 1
     write_yaml(generation, generated)
     simulation = base / "simulate_system.yml"
-    settings = {"operation": "simulate-and-metrics"}
+    settings = {"operation": "simulate-and-indicators"}
     if retained:
         settings["scenario_collection"] = {
             "manifest_path": str(retained.collection_marker)
@@ -417,7 +417,7 @@ def test_changed_request_refuses_public_runner_before_producers(
 
 
 @pytest.mark.parametrize("owner", ["legacy", "reserved"])
-def test_metrics_only_uses_retained_readiness_without_new_input_reads(
+def test_indicators_only_uses_retained_readiness_without_new_input_reads(
     retained, monkeypatch, owner
 ):
     name = helper.EXPERIMENT
@@ -444,8 +444,8 @@ def test_metrics_only_uses_retained_readiness_without_new_input_reads(
             publish_simulation_v2(root, response_inventory)
     settings = {
         "experiment_name": name,
-        "operation": "metrics-only",
-        "metrics": ["gwr"],
+        "operation": "indicators-only",
+        "indicators": ["gwr"],
     }
     write_yaml(retained.simulation, settings)
     retained.generation.unlink()
@@ -455,15 +455,15 @@ def test_metrics_only_uses_retained_readiness_without_new_input_reads(
     monkeypatch.setattr(
         reservation_context,
         "capture_request",
-        lambda *args, **kwargs: pytest.fail("metrics-only captured a new Request"),
+        lambda *args, **kwargs: pytest.fail("indicators-only captured a new Request"),
     )
     monkeypatch.setattr(
         reservation_context,
         "resolve_selected_collection",
-        lambda *args, **kwargs: pytest.fail("metrics-only read generation inputs"),
+        lambda *args, **kwargs: pytest.fail("indicators-only read generation inputs"),
     )
     before = durable_inventory(retained)
-    with pytest.raises(ValueError, match="metrics-only"):
+    with pytest.raises(ValueError, match="indicators-only"):
         admit(retained, new_experiment=True)
     assert durable_inventory(retained) == before
     context = admit(retained)

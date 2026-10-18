@@ -1,10 +1,10 @@
-"""Readable per-set exports of immutable metric sets, with committed pointers.
+"""Readable per-set exports of immutable indicator sets, with committed pointers.
 
-Each selected set publishes ``results/metric_sets/<set-id>/``: its scoped run
+Each selected set publishes ``results/indicator_sets/<set-id>/``: its scoped run
 and group tables, group membership and metadata, and a derived
 ``indicators.csv`` dictionary. Immutable objects stay authoritative; the
 export is a replaceable view whose committed inventory lives under
-``_engine/metric_sets/names/<set-id>/``. Machine records never appear in the
+``_engine/indicator_sets/names/<set-id>/``. Machine records never appear in the
 readable folder.
 """
 
@@ -20,23 +20,24 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from blueearth_cst.experiment import metric_registry as registry
+from blueearth_cst.experiment import indicator_registry as registry
 from blueearth_cst.experiment.content_identity import (
     atomic_record,
     content_sha256,
     read_canonical_json,
 )
-from blueearth_cst.experiment.metric_plan import (
+from blueearth_cst.experiment.indicator_plan import (
     COVERAGE_EVIDENCE_SCHEMA,
-    read_metric_set,
+    read_indicator_set,
 )
+from blueearth_cst.experiment.legacy_indicator_names import indicator_names
 from blueearth_cst.shared.provenance import file_sha256
 
-PUBLICATION_SCHEMA = "named-metric-export/1"
-CURRENT_SCHEMA = "named-metric-current/1"
+PUBLICATION_SCHEMA = "named-indicator-export/1"
+CURRENT_SCHEMA = "named-indicator-current/1"
 DICTIONARY_NAME = "indicators.csv"
 DICTIONARY_COLUMNS = (
-    "metric",
+    "indicator",
     "set_id",
     "set_title",
     "set_description",
@@ -83,7 +84,7 @@ def _confined(root: Path, relative: str) -> Path:
 
 
 def _names_root(root: Path, set_id: str) -> Path:
-    return root / "_engine/metric_sets/names" / set_id
+    return root / "_engine/indicator_sets/names" / set_id
 
 
 def _csv(rows, fields) -> bytes:
@@ -174,7 +175,7 @@ def _parameters_text(parameters) -> str:
 
 
 def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[dict]:
-    """One readable dictionary row per metric, resolved from immutable sources."""
+    """One readable dictionary row per indicator, resolved from immutable sources."""
     anchor = manifest["identity_projection"]["water_year_anchor"]
     reference = manifest["identity_projection"].get("reference") or {}
     series = {
@@ -182,18 +183,21 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
     }
     declared = {item["name"]: item for item in manifest["declarations"]}
     rows = []
-    for indicator in sorted(resolved_set.indicators, key=lambda item: item.metric):
+    for indicator in sorted(resolved_set.indicators, key=lambda item: item.indicator):
         declaration = indicator.declaration
-        if declared.get(indicator.metric, {}).get("statistic") != declaration.statistic:
+        if (
+            declared.get(indicator.indicator, {}).get("statistic")
+            != declaration.statistic
+        ):
             raise NamedExportError(
-                f"{resolved_set.set_id}: {indicator.metric} differs from its immutable declaration"
+                f"{resolved_set.set_id}: {indicator.indicator} differs from its immutable declaration"
             )
         variable = declaration.required_responses.variable
         contract = registry.METHODS.get(indicator.method)
         if indicator.calculation_set:
             from types import SimpleNamespace
 
-            from blueearth_cst.metrics import loader
+            from blueearth_cst.indicators import loader
 
             assumptions = loader.load_set(indicator.calculation_set).ASSUMPTIONS
             contract = SimpleNamespace(
@@ -217,7 +221,7 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
         cover = [item for item in evidence if item["variable"] == variable]
         rows.append(
             {
-                "metric": indicator.metric,
+                "indicator": indicator.indicator,
                 "set_id": resolved_set.set_id,
                 "set_title": resolved_set.title,
                 "set_description": resolved_set.description,
@@ -254,12 +258,12 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
 
 # -------------------------------------------------------------- publication
 def legacy_claims(root: Path) -> dict[str, str]:
-    """Readable result roots claimed by read-only metric-set/3 manifests."""
+    """Readable result roots claimed by read-only indicator-set/3 manifests."""
     claims = {}
-    for marker in sorted((root / "_engine/metric_sets").glob("*/metrics.json")):
+    for marker in sorted((root / "_engine/indicator_sets").glob("*/indicators.json")):
         manifest = read_canonical_json(marker)
         result = str(manifest.get("result_root", ""))
-        if result.startswith("results/metric_sets/"):
+        if result.startswith("results/indicator_sets/"):
             claims[result.split("/")[2]] = marker.parent.name
     return claims
 
@@ -270,9 +274,13 @@ def read_current_publication(
     """The committed publication of one named set, verified end to end."""
     root = Path(root).resolve()
     names = _names_root(root, set_id)
+    legacy = not (names / "current.json").exists()
+    if legacy:
+        names = root / "_engine/metric_sets/names" / set_id
     current = read_canonical_json(names / "current.json")
     if set(current) != {"schema_version", "publication_id", "publication"} or (
-        current["schema_version"] != CURRENT_SCHEMA
+        current["schema_version"]
+        != ("named-metric-current/1" if legacy else CURRENT_SCHEMA)
     ):
         raise NamedExportError(f"{set_id}: unsupported current pointer")
     path = _confined(root, current["publication"]["path"])
@@ -282,15 +290,19 @@ def read_current_publication(
     expected = {
         "schema_version",
         "set_id",
-        "metric_set_id",
-        "metric_manifest",
+        "indicator_set_id",
+        "indicator_manifest",
         "definition_source",
         "resolved_metadata",
         "files",
         "publication_id",
         "created_at",
     }
-    if set(record) != expected or record["schema_version"] != PUBLICATION_SCHEMA:
+    normalized = indicator_names(record) if legacy else record
+    if (
+        set(normalized) != expected
+        or normalized["schema_version"] != PUBLICATION_SCHEMA
+    ):
         raise NamedExportError(f"{set_id}: unsupported publication record")
     semantic = {
         k: v for k, v in record.items() if k not in {"publication_id", "created_at"}
@@ -301,11 +313,16 @@ def read_current_publication(
         or record["publication_id"] != current["publication_id"]
     ):
         raise NamedExportError(f"{set_id}: publication identity differs")
-    for reference in (record["metric_manifest"], record["definition_source"]):
+    record = normalized
+    for reference in (record["indicator_manifest"], record["definition_source"]):
         if file_sha256(_confined(root, reference["path"])) != reference["sha256"]:
             raise NamedExportError(f"{set_id}: {reference['path']} differs")
     if verify_export:
-        destination = root / "results/metric_sets" / set_id
+        destination = (
+            root
+            / ("results/metric_sets" if legacy else "results/indicator_sets")
+            / set_id
+        )
         present = (
             {p.name for p in destination.iterdir()} if destination.is_dir() else set()
         )
@@ -314,7 +331,7 @@ def read_current_publication(
             for name, digest in record["files"].items()
         ):
             raise NamedExportError(
-                f"{set_id}: results/metric_sets/{set_id} differs from its committed "
+                f"{set_id}: results/indicator_sets/{set_id} differs from its committed "
                 "inventory; rerun to restore it"
             )
     return record
@@ -343,9 +360,9 @@ def publish_named_set(
     """
     root = Path(root).resolve()
     set_id = resolved_set.set_id
-    manifest = read_metric_set(root, Path(manifest_path))
-    if manifest["schema_version"] not in ("metric-set/4", "metric-set/5"):
-        raise NamedExportError(f"{set_id}: named exports require metric-set/4 or /5")
+    manifest = read_indicator_set(root, Path(manifest_path))
+    if manifest["schema_version"] not in ("indicator-set/4", "indicator-set/5"):
+        raise NamedExportError(f"{set_id}: named exports require indicator-set/4 or /5")
     engine = root / manifest["engine_root"]
     evidence = read_canonical_json(engine / manifest["coverage_evidence"]["path"])
     if evidence.get("schema_version") != COVERAGE_EVIDENCE_SCHEMA:
@@ -366,27 +383,27 @@ def publish_named_set(
         raise NamedExportError(f"{set_id}: invalid export filename")
 
     names = _names_root(root, set_id)
-    destination = root / "results/metric_sets" / set_id
-    for path in (root / "results/metric_sets", destination, names):
+    destination = root / "results/indicator_sets" / set_id
+    for path in (root / "results/indicator_sets", destination, names):
         if path.is_symlink() or (path.exists() and path.resolve() != path):
             raise NamedExportError(f"{set_id}: {path} is aliased")
     claims = legacy_claims(root)
     if set_id in claims:
         raise NamedExportError(
-            f"{set_id}: results/metric_sets/{set_id} is the result root of legacy "
-            f"metric set {claims[set_id]}; choose another set id (contents preserved)"
+            f"{set_id}: results/indicator_sets/{set_id} is the result root of legacy "
+            f"indicator set {claims[set_id]}; choose another set id (contents preserved)"
         )
     owned = _owned_names(root, set_id)
     if destination.exists():
         if owned is None:
             raise NamedExportError(
-                f"{set_id}: results/metric_sets/{set_id} exists but no committed "
+                f"{set_id}: results/indicator_sets/{set_id} exists but no committed "
                 "publication of this set owns it (contents preserved)"
             )
         unknown = sorted(p.name for p in destination.iterdir() if p.name not in owned)
         if unknown or any(not p.is_file() for p in destination.iterdir()):
             raise NamedExportError(
-                f"{set_id}: results/metric_sets/{set_id} holds files this set does not "
+                f"{set_id}: results/indicator_sets/{set_id} holds files this set does not "
                 f"own: {unknown} (contents preserved)"
             )
 
@@ -396,10 +413,10 @@ def publish_named_set(
     record = {
         "schema_version": PUBLICATION_SCHEMA,
         "set_id": set_id,
-        "metric_set_id": manifest["metric_set_id"],
-        "metric_manifest": {
-            "path": _relative(root, engine / "metrics.json"),
-            "sha256": file_sha256(engine / "metrics.json"),
+        "indicator_set_id": manifest["indicator_set_id"],
+        "indicator_manifest": {
+            "path": _relative(root, engine / "indicators.json"),
+            "sha256": file_sha256(engine / "indicators.json"),
         },
         "definition_source": {
             "path": _relative(root, definition),
@@ -498,11 +515,12 @@ def atomic_bytes(path: Path, payload: bytes) -> None:
 def legacy_flat_export(root: Path) -> list[str]:
     """Paths of a pre-named flat export, reported for migration and preserved."""
     root = Path(root)
-    tracking = root / "_engine/metric_sets/current.json"
+    tracking = root / "_engine/indicator_sets/current.json"
     if not tracking.is_file():
         return []
     record = read_canonical_json(tracking)
     files = record.get("files") if isinstance(record, dict) else None
     return [tracking.as_posix()] + [
-        (root / "results/metric_sets" / name).as_posix() for name in sorted(files or {})
+        (root / "results/indicator_sets" / name).as_posix()
+        for name in sorted(files or {})
     ]

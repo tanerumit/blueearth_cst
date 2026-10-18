@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dev" / "scripts"))
 import check_baseline as cb  # noqa: E402
 
 
-def _write_metric_plan_fixture(project_dir):
+def _write_indicator_plan_fixture(project_dir):
     """Synthetic ready-plan linkage; numeric target payloads are written separately."""
     from blueearth_cst.experiment.content_identity import (
         canonical_json_bytes,
@@ -40,39 +40,39 @@ def _write_metric_plan_fixture(project_dir):
     )
 
     root = Path(project_dir) / "experiments" / cb.EXPERIMENT_NAME / "results"
-    request = {"fixture": "metric request"}
+    request = {"fixture": "indicator request"}
     request_id = content_sha256(request)
     set_id = "a" * 64
     plan = {
-        "schema_version": "metric-request/3",
+        "schema_version": "indicator-request/3",
         "request": request,
-        "metric_request_id": request_id,
-        "metric_set_id": set_id,
+        "indicator_request_id": request_id,
+        "indicator_set_id": set_id,
         "response_inventory_sha256": "b" * 64,
     }
     plan["request_sha256"] = content_sha256(plan)
     path = (
         root.parent
         / "_engine"
-        / "metric_requests"
-        / f"{identity_segment(request_id, 'metric_request_id')}.json"
+        / "indicator_requests"
+        / f"{identity_segment(request_id, 'indicator_request_id')}.json"
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_json_bytes(plan))
     marker = {
-        "schema_version": "metric-set/3",
+        "schema_version": "indicator-set/3",
         "status": "ready",
-        "metric_set_id": set_id,
+        "indicator_set_id": set_id,
         "response_inventory": {"sha256": "b" * 64},
-        "result_root": f"results/metric_sets/{set_id[:12]}",
+        "result_root": f"results/indicator_sets/{set_id[:12]}",
     }
-    marker["metrics_manifest_sha256"] = content_sha256(marker)
+    marker["indicators_manifest_sha256"] = content_sha256(marker)
     target = (
         root.parent
         / "_engine"
-        / "metric_sets"
-        / identity_segment(set_id, "metric_set_id")
-        / "metrics.json"
+        / "indicator_sets"
+        / identity_segment(set_id, "indicator_set_id")
+        / "indicators.json"
     )
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(canonical_json_bytes(marker))
@@ -102,10 +102,10 @@ def _write_target(path: str, kind: str) -> None:
         # has something to group by; the comparator's own cases live in
         # tests/test_check_baseline_indicator.py.
         scope = "run" if p.name.endswith("_run_indicators.csv") else "group"
-        rows = [f"metric,location,{scope}_id,value"]
-        for metric, base in (("q_mean", 10.0), ("q_low", 0.5)):
+        rows = [f"indicator,location,{scope}_id,value"]
+        for indicator, base in (("q_mean", 10.0), ("q_low", 0.5)):
             rows += [
-                f"{metric},101,{scope}_{i + 1:02d},{base * (1.0 + 0.1 * i)!r}"
+                f"{indicator},101,{scope}_{i + 1:02d},{base * (1.0 + 0.1 * i)!r}"
                 for i in range(5)
             ]
         p.write_text("\n".join(rows) + "\n")
@@ -113,21 +113,21 @@ def _write_target(path: str, kind: str) -> None:
         raise ValueError(f"unhandled kind: {kind}")
 
 
-def test_baseline_metric_plan_refuses_legacy_fallback_and_ambiguity(tmp_path):
+def test_baseline_indicator_plan_refuses_legacy_fallback_and_ambiguity(tmp_path):
     legacy = tmp_path / "experiments" / cb.EXPERIMENT_NAME / "results/q_indicators.csv"
     legacy.parent.mkdir(parents=True)
-    legacy.write_text("metric,location,st_id,rlz_id,value\n", encoding="utf-8")
-    with pytest.raises(ValueError, match="exactly one retained metric plan"):
-        cb.resolve_metric_set_dir(str(tmp_path))
-    plan, marker = _write_metric_plan_fixture(str(tmp_path))
+    legacy.write_text("indicator,location,st_id,rlz_id,value\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="exactly one retained indicator plan"):
+        cb.resolve_indicator_set_dir(str(tmp_path))
+    plan, marker = _write_indicator_plan_fixture(str(tmp_path))
     # The marker is in the engine bin; the gate compares the paired tables.
     experiment = marker.parents[3]
-    tables = experiment / "results" / "metric_sets" / marker.parent.name
-    assert cb.resolve_metric_set_dir(str(tmp_path)) == tables.as_posix()
+    tables = experiment / "results" / "indicator_sets" / marker.parent.name
+    assert cb.resolve_indicator_set_dir(str(tmp_path)) == tables.as_posix()
     another = plan.parent / ("c" * 12 + ".json")
     another.write_bytes(plan.read_bytes())
     with pytest.raises(ValueError, match="found 2"):
-        cb.resolve_metric_set_dir(str(tmp_path))
+        cb.resolve_indicator_set_dir(str(tmp_path))
 
 
 @pytest.mark.parametrize("artifact", ["plan", "marker"])
@@ -139,44 +139,46 @@ def test_baseline_reader_refuses_legacy_schema_even_with_valid_digest(
         content_sha256,
     )
 
-    plan, marker = _write_metric_plan_fixture(str(tmp_path))
+    plan, marker = _write_indicator_plan_fixture(str(tmp_path))
     path = plan if artifact == "plan" else marker
     document = json.loads(path.read_text(encoding="utf-8"))
     document["schema_version"] = (
-        "metric-request/2" if artifact == "plan" else "metric-set/2"
+        "indicator-request/2" if artifact == "plan" else "indicator-set/2"
     )
-    digest_key = "request_sha256" if artifact == "plan" else "metrics_manifest_sha256"
+    digest_key = (
+        "request_sha256" if artifact == "plan" else "indicators_manifest_sha256"
+    )
     document[digest_key] = content_sha256(
         {k: v for k, v in document.items() if k != digest_key}
     )
     path.write_bytes(canonical_json_bytes(document))
     with pytest.raises(cb.BaselineFixtureError, match="regenerate the legacy fixture"):
-        cb.resolve_metric_set_dir(str(tmp_path))
+        cb.resolve_indicator_set_dir(str(tmp_path))
 
 
-def test_baseline_metric_plan_refuses_a_filename_that_is_not_its_identity(tmp_path):
+def test_baseline_indicator_plan_refuses_a_filename_that_is_not_its_identity(tmp_path):
     """The identity assertion survived flattening as a STEM check, not a path one.
 
     Before t2609152104 the directory name carried the identity and was compared
-    against the `metric_request_id` inside the file. Flattened, the stem carries
+    against the `indicator_request_id` inside the file. Flattened, the stem carries
     it. Dropping that comparison rather than rewriting it would have left a
     discovered file with nothing tying it to the identity it claims.
     """
-    plan, _ = _write_metric_plan_fixture(str(tmp_path))
+    plan, _ = _write_indicator_plan_fixture(str(tmp_path))
     plan.rename(plan.with_name("0" * 12 + ".json"))
     with pytest.raises(ValueError, match="digest or request identity differs"):
-        cb.resolve_metric_set_dir(str(tmp_path))
+        cb.resolve_indicator_set_dir(str(tmp_path))
 
 
-def test_baseline_metric_plan_refuses_changed_ready_marker(tmp_path):
-    _, marker = _write_metric_plan_fixture(str(tmp_path))
+def test_baseline_indicator_plan_refuses_changed_ready_marker(tmp_path):
+    _, marker = _write_indicator_plan_fixture(str(tmp_path))
     doc = json.loads(marker.read_text())
     doc["response_inventory"]["sha256"] = "c" * 64
     from blueearth_cst.experiment.content_identity import canonical_json_bytes
 
     marker.write_bytes(canonical_json_bytes(doc))
     with pytest.raises(ValueError, match="marker differs"):
-        cb.resolve_metric_set_dir(str(tmp_path))
+        cb.resolve_indicator_set_dir(str(tmp_path))
 
 
 def _record_ns(project_dir, manifest_path, workflow=None, include_figures=False):
@@ -209,7 +211,7 @@ def project(tmp_path):
     Returns (project_dir, manifest_path). Both point under tmp_path.
     """
     project_dir = str(tmp_path)
-    _write_metric_plan_fixture(project_dir)
+    _write_indicator_plan_fixture(project_dir)
     for _workflow, kind, template in cb.TARGETS:
         _write_target(cb.resolve(template, project_dir), kind)
 
@@ -229,7 +231,7 @@ def test_targets_tagged_with_expected_cardinality():
     now, so no per-station figure has a config-invariant NAME and none can be a
     template target. Its `png` kind is still exercised by `elevation_basin.png` and
     `forcing_precip_map.png`, and the run's NUMBERS are covered by `output.csv`
-    and `performance_metrics.csv`, which the baseline does track.
+    and `performance_indicators.csv`, which the baseline does track.
     Historically, `simulate_system` dropped from 3 to 2 at R11 CR-2: `basin_indicators.csv`
     no longer exists, and the seed config declares only `river discharge`, so it
     emits one indicator table. A project configuring more output variables gets
@@ -310,7 +312,7 @@ def test_unselected_missing_target_ignored(project, capsys):
     """An unselected (workflow-3) target missing on disk is ignored by a scoped
     check -> returns 0, count stays nine."""
     project_dir, manifest_path = project
-    victim = cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
+    victim = cb.resolve("{indicator_set_dir}/q_group_indicators.csv", project_dir)
     Path(victim).unlink()
 
     rc = cb.cmd_check(
@@ -344,7 +346,7 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
         "{clim_project_dir}/summary/{clim_project}_change_factors_annual.csv",
         project_dir,
     )
-    exp_path = cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
+    exp_path = cb.resolve("{indicator_set_dir}/q_group_indicators.csv", project_dir)
     cp_before, exp_before = before[cp_path], before[exp_path]
 
     # Mutate a wf1 target AND a wf2 target on disk; then merge-record only wf1.
@@ -550,7 +552,7 @@ def test_a_populated_scope_still_passes_at_zero(project, capsys):
     assert "NOT CHECKED" not in out
 
 
-def test_an_unusable_metric_fixture_raises_a_typed_error(project, tmp_path):
+def test_an_unusable_indicator_fixture_raises_a_typed_error(project, tmp_path):
     """`resolve` fails while RESOLVING, before any comparison runs.
 
     Typed so `main` can turn it into a diagnosis; a `ValueError` subclass so a
@@ -558,11 +560,11 @@ def test_an_unusable_metric_fixture_raises_a_typed_error(project, tmp_path):
     """
     project_dir, _manifest_path = project
     plans = Path(project_dir) / "experiments" / cb.EXPERIMENT_NAME / "_engine"
-    for plan in (plans / "metric_requests").glob("*.json"):
+    for plan in (plans / "indicator_requests").glob("*.json"):
         plan.unlink()
 
     with pytest.raises(cb.BaselineFixtureError):
-        cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
+        cb.resolve("{indicator_set_dir}/q_group_indicators.csv", project_dir)
 
     assert issubclass(cb.BaselineFixtureError, ValueError)
 
@@ -588,7 +590,7 @@ def test_the_three_exit_codes_are_distinct():
 # which is a silent cap, not a filter.
 
 
-def _orphan_the_metric_row(manifest_path, keep_template=False):
+def _orphan_the_indicator_row(manifest_path, keep_template=False):
     """Re-key the recorded indicator row under a longer digest segment.
 
     Mirrors the real defect exactly: same template, same directory, a segment of
@@ -621,7 +623,7 @@ def test_a_renamed_identity_is_followed_not_orphaned(project, capsys):
     the comparison happens. No orphan, no re-record, no manual repointing.
     """
     project_dir, manifest_path = project
-    orphan = _orphan_the_metric_row(manifest_path, keep_template=True)
+    orphan = _orphan_the_indicator_row(manifest_path, keep_template=True)
 
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
@@ -637,19 +639,19 @@ def test_a_renamed_identity_is_followed_not_orphaned(project, capsys):
 def test_the_template_key_wins_over_the_literal_key(project):
     """Precedence is pinned, not emergent: `template` decides, the key is ignored."""
     project_dir, manifest_path = project
-    _orphan_the_metric_row(manifest_path, keep_template=True)
+    _orphan_the_indicator_row(manifest_path, keep_template=True)
 
     recorded = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
     rekeyed = cb.rekey_by_template(recorded["targets"], project_dir)
 
-    resolved = cb.resolve("{metric_set_dir}/q_group_indicators.csv", project_dir)
+    resolved = cb.resolve("{indicator_set_dir}/q_group_indicators.csv", project_dir)
     assert resolved in rekeyed
     assert not [k for k in rekeyed if "a" * 64 in k]
 
 
 def test_an_orphaned_row_fails_instead_of_vanishing(project, capsys):
     project_dir, manifest_path = project
-    orphan = _orphan_the_metric_row(manifest_path)
+    orphan = _orphan_the_indicator_row(manifest_path)
 
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
@@ -665,7 +667,7 @@ def test_an_orphaned_row_fails_instead_of_vanishing(project, capsys):
 def test_an_orphaned_row_is_never_reported_as_a_pass(project, capsys):
     """The whole point: absence must not read as agreement."""
     project_dir, manifest_path = project
-    _orphan_the_metric_row(manifest_path)
+    _orphan_the_indicator_row(manifest_path)
 
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
@@ -683,7 +685,7 @@ def test_other_scopes_are_not_disturbed_by_an_orphan(project, capsys):
     regardless of scope would fail every scoped run on another scope's staleness.
     """
     project_dir, manifest_path = project
-    _orphan_the_metric_row(manifest_path)
+    _orphan_the_indicator_row(manifest_path)
 
     rc = cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=["build_model"]))
 
@@ -694,38 +696,44 @@ def test_other_scopes_are_not_disturbed_by_an_orphan(project, capsys):
 def test_a_pattern_accepts_any_segment_length(project):
     """The matcher must recognise the OLD length, which is the case it exists for."""
     project_dir, _ = project
-    pattern = cb.target_pattern("{metric_set_dir}/q_group_indicators.csv", project_dir)
+    pattern = cb.target_pattern(
+        "{indicator_set_dir}/q_group_indicators.csv", project_dir
+    )
     # Posix-normalised, as the matcher normalises both sides -- on Windows the
     # recorded keys mix separators (see `target_pattern`).
     root = cb._posix(project_dir)
-    base = f"{root}/experiments/{cb.EXPERIMENT_NAME}/results/metric_sets"
+    base = f"{root}/experiments/{cb.EXPERIMENT_NAME}/results/indicator_sets"
 
     assert pattern.match(f"{base}/{'a' * 64}/q_group_indicators.csv")
     assert pattern.match(f"{base}/{'a' * 12}/q_group_indicators.csv")
     assert not pattern.match(f"{base}/{'a' * 12}/other.csv")
-    internal = f"{root}/experiments/{cb.EXPERIMENT_NAME}/_engine/metric_sets"
+    internal = f"{root}/experiments/{cb.EXPERIMENT_NAME}/_engine/indicator_sets"
     assert pattern.match(f"{internal}/{'a' * 12}/data/q_group_indicators.csv")
     assert not pattern.match(f"{internal}/{'a' * 12}/q_group_indicators.csv")
 
 
-def test_baseline_resolves_internal_metric_payloads(tmp_path):
+def test_baseline_resolves_internal_indicator_payloads(tmp_path):
     from blueearth_cst.experiment.content_identity import (
         canonical_json_bytes,
         content_sha256,
     )
 
-    _, path = _write_metric_plan_fixture(str(tmp_path))
+    _, path = _write_indicator_plan_fixture(str(tmp_path))
     marker = json.loads(path.read_bytes())
-    marker["result_root"] = f"_engine/metric_sets/{marker['metric_set_id'][:12]}/data"
-    marker["metrics_manifest_sha256"] = content_sha256(
+    marker["result_root"] = (
+        f"_engine/indicator_sets/{marker['indicator_set_id'][:12]}/data"
+    )
+    marker["indicators_manifest_sha256"] = content_sha256(
         {
             key: value
             for key, value in marker.items()
-            if key != "metrics_manifest_sha256"
+            if key != "indicators_manifest_sha256"
         }
     )
     path.write_bytes(canonical_json_bytes(marker))
-    assert cb.resolve_metric_set_dir(str(tmp_path)) == (path.parent / "data").as_posix()
+    assert (
+        cb.resolve_indicator_set_dir(str(tmp_path)) == (path.parent / "data").as_posix()
+    )
 
 
 def test_a_scoped_record_does_not_clear_an_orphan(project, capsys):
@@ -738,7 +746,7 @@ def test_a_scoped_record_does_not_clear_an_orphan(project, capsys):
     UNSCOPED record (which overwrites `targets` wholesale) clears an orphan.
     """
     project_dir, manifest_path = project
-    orphan = _orphan_the_metric_row(manifest_path)
+    orphan = _orphan_the_indicator_row(manifest_path)
 
     rc = cb.cmd_record(
         _record_ns(project_dir, manifest_path, workflow=["simulate_system"])
@@ -763,7 +771,7 @@ def test_a_scoped_record_does_not_clear_an_orphan(project, capsys):
 def test_an_unscoped_record_clears_an_orphan(project, capsys):
     """The counterpart: a full record overwrites `targets`, so the row is gone."""
     project_dir, manifest_path = project
-    orphan = _orphan_the_metric_row(manifest_path)
+    orphan = _orphan_the_indicator_row(manifest_path)
 
     assert cb.cmd_record(_record_ns(project_dir, manifest_path)) == 0
 

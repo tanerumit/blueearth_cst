@@ -217,7 +217,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   in the file name, so one member is one filename in three flat directories (`run_settings/`, `forcing/`,
   `output/`). This is the inverse of R07 B5.
 - **producer:** rule 1.13 `run_historical_simulation` / rule 4.05 `run_wflow_simulations`.
-- **consumers:** wf1 rule 1.15 plots; WF4 response inventory, then retained metric reduction.
+- **consumers:** wf1 rule 1.15 plots; WF4 response inventory, then retained indicator reduction.
 - **pinned surface — column identity is config-driven, NOT a literal list:** a
   `time` index (ISO-8601, daily) + **one column per `[output.csv].column`
   entry**, named `<header>_<mapid>`. Fixture: `time,Q_130000086` (one gauge).
@@ -248,7 +248,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   a "no rows" check that would have caught this, but is never invoked at run time.
 - **temp() lifecycle:** SPLIT between wf1 and wf4. wf1 `output.csv` **is** `temp()`
   (rule 1.13): it is an intermediate feeding rule 1.14's derived per-variable
-  tables and rule 1.15's metrics, and Snakemake drops it once both have run. A
+  tables and rule 1.15's indicators, and Snakemake drops it once both have run. A
   swapper must therefore treat the wf1 artifact as existing only *within* the
   run — `--notemp` is what materialises it, and the baseline procedure uses that
   flag for exactly this reason. The wf4 `output_rlz_*` CSVs still persist.
@@ -284,38 +284,38 @@ initialization or the simulation CSV. No cross-member state chaining exists.
 `validate_hm6b` remains available for older captured state files, with its
 synthetic schema checks. `--notemp` does not recreate this retired output.
 
-## HM-7 — retained metric-set interchange
+## HM-7 — retained indicator-set interchange
 
-- **Path:** `<exp>/_engine/metric_sets/<short id>/data/<token>_run_indicators.csv`,
+- **Path:** `<exp>/_engine/indicator_sets/<short id>/data/<token>_run_indicators.csv`,
   `<token>_group_indicators.csv`, `group_members.csv` and `group_metadata.csv`; the ready marker is
-  `<exp>/_engine/metric_sets/<short id>/metrics.json` (`metric-set/3`), written
-  last. The selected CSVs are exported directly to `<exp>/results/metric_sets/`.
-  Existing `metric-set/3` sets at `results/metric_sets/<short id>/` remain readable and reusable
+  `<exp>/_engine/indicator_sets/<short id>/indicators.json` (`indicator-set/3`), written
+  last. The selected CSVs are exported directly to `<exp>/results/indicator_sets/`.
+  Existing `indicator-set/3` sets at `results/indicator_sets/<short id>/` remain readable and reusable
   without relocation.
 - **Producer:** `prepare_indicator_plan` resolves response-dependent declarations,
   units and references; `derive_system_indicators` publishes complete results.
 - **Consumer:** terminal reporting, CST-API and notebooks. Readers validate
-  `metrics.json` and its inventory before consuming tables
-  (`metric_plan.read_metric_set`).
-- **Header:** run tables use `metric,location,run_id,value`; group tables use
-  `metric,location,group_id,value`. Membership uses `group_id,run_id`; metadata uses
-  `group_id,st_id,is_reference`. `(metric, location, ID)` keys are unique per table.
+  `indicators.json` and its inventory before consuming tables
+  (`indicator_plan.read_indicator_set`).
+- **Header:** run tables use `indicator,location,run_id,value`; group tables use
+  `indicator,location,group_id,value`. Membership uses `group_id,run_id`; metadata uses
+  `group_id,st_id,is_reference`. `(indicator, location, ID)` keys are unique per table.
 - **Membership:** `group_members.csv` equals the marker's declared group memberships, including singleton
   groups. Every member is an evaluated collection run. Prefixed `group_01` IDs are allocated independently
-  of run count and selected metrics, in sorted declared-group-key order. IDs are scoped to their owner.
+  of run count and selected indicators, in sorted declared-group-key order. IDs are scoped to their owner.
 - **Coverage:** a table's locations equal the response inventory's locations
-  for that variable. Run-grain metrics cover every evaluated run and every group; pooled return-level
-  metrics cover every group. Both scopes are written per selected variable, with header-only tables
-  for scopes without applicable metrics. Expected result keys pin complete coverage.
-- **Values:** numeric; existing metric vocabulary, location spelling and
+  for that variable. Run-grain indicators cover every evaluated run and every group; pooled return-level
+  indicators cover every group. Both scopes are written per selected variable, with header-only tables
+  for scopes without applicable indicators. Expected result keys pin complete coverage.
+- **Values:** numeric; existing indicator vocabulary, location spelling and
   publication precision stand. See [indicator glossary](../indicator-glossary.md).
-- **Lifecycle:** immutable; `metrics.json` is published last. A changed metric
+- **Lifecycle:** immutable; `indicators.json` is published last. A changed indicator
   request selects a new set without modifying native responses or prior sets.
-  Numeric-ID collections and old mixed-ID metric sets are refused; regenerate under new schema identities.
+  Numeric-ID collections and old mixed-ID indicator sets are refused; regenerate under new schema identities.
 
 `validate_hm7_v2` takes the marker, parsed tables keyed by `<token>_<run|group>`, parsed group membership,
 the response inventory's `series` and the collection's run IDs. `validate_hm7` explicitly refuses the
-retired `metric-set/1` surface (`unit_index.csv`, `unit_id`); use the current validator for new products.
+retired `indicator-set/1` surface (`unit_index.csv`, `unit_id`); use the current validator for new products.
 
 ## HM-4 → HM-5 → HM-7 gauge-column identity
 
@@ -325,7 +325,7 @@ inventory; result tables cannot define their own expected locations. Native
 header order determines the current first-gauge reference, and persisted ordinals
 preserve it under reversed artifact or series enumeration. Empty response
 families are refused. `validate_hm_gauge_column_identity` checks TOML/native
-consistency; the response reader and metric-set validation carry it forward.
+consistency; the response reader and indicator-set validation carry it forward.
 
 ## HM-6 lifecycle
 
@@ -339,7 +339,7 @@ the R12 migration, as documented in the accepted P1/P2 evidence.
 
 A replacement simulator consumes a ready collection, implements its preparation
 adapter, freezes model/settings/environment identity, and emits the declared
-neutral responses with their retained inventory. Metrics-only reaches responses
+neutral responses with their retained inventory. Indicators-only reaches responses
 through that inventory and cannot schedule the model or preparation code.
 HydroMT/Wflow physics, schemas and parameter names remain upstream-owned.
 
@@ -352,6 +352,6 @@ means the on-disk check is unavailable, not successful.
 python scripts/simulate_system.py --config <project-config.yml> --target all --cores 3 -- --notemp
 ```
 
-For retained-only reduction use `operation: metrics-only` and `--target simulations_and_indicators`.
+For retained-only reduction use `operation: indicators-only` and `--target simulations_and_indicators`.
 Scientific preservation evidence and its source-branch limits are recorded in
 [P2 acceptance](../../records/milestones/r12/implementation/evidence/p2/acceptance.md).

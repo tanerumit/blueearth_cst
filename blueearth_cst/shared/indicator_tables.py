@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Which indicator tables a WF4 metric set emits, derived from ``wflow_outvars``.
+"""Which indicator tables a WF4 indicator set emits, derived from ``wflow_outvars``.
 
-Metric-set/3 emits paired **run and group tables per output variable**.
+Indicator-set/3 emits paired **run and group tables per output variable**.
 The set is therefore config-dependent, and four places need to
 agree on it before any of them can run:
 
-- ``simulate_system.smk`` — selected metric-set targets at DAG construction;
-- ``blueearth_cst/experiment/metric_plan.py`` — what it writes, and the
-  ``variable`` half of each composite ``metric``;
+- ``simulate_system.smk`` — selected indicator-set targets at DAG construction;
+- ``blueearth_cst/experiment/indicator_plan.py`` — what it writes, and the
+  ``variable`` half of each composite ``indicator``;
 - ``blueearth_cst/shared/interchange_contracts.py`` — HM-7's per-table checks;
 - ``dev/scripts/check_baseline.py`` and ``semantic_tree_diff.py`` — the target
   list and the path map.
@@ -19,7 +19,7 @@ needs the output paths *before* any rule has produced a CSV to inspect.
 
 **The tokens are a third spelling, and that is the accepted cost.** Alongside the
 CSDMS names (``river_water__volume_flow_rate``) and the Tier 2 display labels,
-these short tokens exist because a composite metric built from snake-cased
+these short tokens exist because a composite indicator built from snake-cased
 semantic names would read ``actual_evapotranspiration_annual_total`` — which
 undercuts the readability that motivated composing the name at all. CR-2 places
 this mapping in the seam contract for that reason: it is a contract, not an
@@ -54,7 +54,7 @@ from __future__ import annotations
 from blueearth_cst.shared.wflow_outputs import CODES as _WFLOW_CODES
 
 #: Semantic name (as it appears in ``workflows.build_model.wflow_outvars``)
-#: → short token used in filenames and in the composite ``metric``.
+#: → short token used in filenames and in the composite ``indicator``.
 #:
 #: Authoritative source for the semantic names: the ``WFLOW_VARS`` map in
 #: ``dev/reference/workflows/model_creation.md``. **Six entries, not five** —
@@ -74,7 +74,7 @@ VARIABLE_TOKENS = {
 #: **A fourth spelling, and unlike the other three it is not ours to choose.** The
 #: code is `wflow_outputs.CODES`, which reaches the csv header via the TOML the
 #: model build writes (``gwr_101``, ``aet_101``); the token is what this file
-#: mints for filenames and metric names. Three of the five still differ —
+#: mints for filenames and indicator names. Three of the five still differ —
 #: ``precip`` is ``p``, ``snow`` is ``swe``, ``overland_flow`` is ``qof`` — so a
 #: reducer that reuses the token as the column prefix reads exactly the two where
 #: they coincide (``aet``, ``gwr``) and silently finds nothing for the rest.
@@ -106,7 +106,7 @@ _TABLE_SUFFIX = "_indicators.csv"
 #: which is the specific failure this pairing exists to prevent.
 #:
 #: **Ordered identifier-first, owner ruling 2026-08-11.** The columns read *what*
-#: (``metric``, ``location``), then *which member* (``st_id``, ``rlz_id``), then
+#: (``indicator``, ``location``), then *which member* (``st_id``, ``rlz_id``), then
 #: the number. ``realization_id`` became ``rlz_id`` in the same ruling, matching
 #: the ``rlz_`` member token already carried by the run filenames
 #: (``rlz_1_st_0.csv``) and by ``RLZ_NUM``.
@@ -120,7 +120,7 @@ _TABLE_SUFFIX = "_indicators.csv"
 #: DERIVED at reporting time from ``stress_test_lookup.csv``; the specification is
 #: HM-7 and the reference implementation is ``shared/surface_axes.py``.
 INDICATOR_COLUMNS = (
-    "metric",
+    "indicator",
     "location",
     "st_id",
     "rlz_id",
@@ -140,7 +140,7 @@ INDICATOR_COLUMNS = (
 BASIN_LOCATION = "basin"
 
 
-#: Discharge metrics: internal statistic key → (metric suffix, grain class).
+#: Discharge indicators: internal statistic key → (indicator suffix, grain class).
 #:
 #: The suffix is composed systematically rather than borrowed from conventional
 #: hydrological shorthand, because two of ours differ from the established
@@ -155,7 +155,7 @@ BASIN_LOCATION = "basin"
 #: **"Return level", not "return interval" or "return period" — the distinction is
 #: real, not pedantry.** The *return period* is the input ``T`` (years); the
 #: *return level* is what comes back, a discharge magnitude, which is what this
-#: row's ``value`` holds. Naming the metric after the period would name the wrong
+#: row's ``value`` holds. Naming the indicator after the period would name the wrong
 #: quantity. "Return interval" is additionally non-standard: the established
 #: synonyms are *return period* (engineering, extreme-value theory) and
 #: *recurrence interval* (USGS usage) — the two the knowledge base's
@@ -188,8 +188,8 @@ RETURN_PERIOD_LOW_YR = 2
 #: Classes: **A** and **C** have run values plus equal-weight group summaries;
 #: **C** additionally resolves one reference month. **B** (return levels) has
 #: pooled group fits only. Grain and group policy are owned by
-#: ``experiment/metric_registry.declarations``, not by these letters.
-Q_METRIC_SUFFIXES = {
+#: ``experiment/indicator_registry.declarations``, not by these letters.
+Q_INDICATOR_SUFFIXES = {
     "mean": ("annual_mean", "A"),
     "max": ("mean_annual_max", "A"),
     "min": ("mean_annual_min", "A"),
@@ -206,9 +206,9 @@ Q_METRIC_SUFFIXES = {
     "drymonth_mean": ("driest_month_mean", "C"),
 }
 
-#: Basin-scalar variables: token → (metric suffix, annual reduction).
+#: Basin-scalar variables: token → (indicator suffix, annual reduction).
 #:
-#: Ruled 2026-08-08 (Q10 scope + metric naming). Two things worth reading
+#: Ruled 2026-08-08 (Q10 scope + indicator naming). Two things worth reading
 #: together, because they are why this table is not uniform:
 #:
 #: 1. **Overland flow reduces with a MEAN, not a sum.** It is a volume flow rate
@@ -229,7 +229,7 @@ Q_METRIC_SUFFIXES = {
 #:    a bug:** ``q_mean_annual_max`` and ``snow_annual_max`` describe the same
 #:    reduction shape — annual statistic, then mean over years — spelled two
 #:    ways. The q vocabulary makes the mean-over-years step visible; these do not.
-BASIN_METRIC_SUFFIXES = {
+BASIN_INDICATOR_SUFFIXES = {
     "aet": ("annual_total", "sum"),
     "gwr": ("annual_total", "sum"),
     "precip": ("annual_total", "sum"),
@@ -238,19 +238,19 @@ BASIN_METRIC_SUFFIXES = {
 }
 
 
-def q_metric_name(statistic: str) -> str:
-    """Composite metric name for one discharge statistic.
+def q_indicator_name(statistic: str) -> str:
+    """Composite indicator name for one discharge statistic.
 
     Took ``tpeak``/``tlow`` arguments until 2026-08-12, when the return periods
     stopped being config values; the names they produced are unchanged.
     """
-    suffix, _ = Q_METRIC_SUFFIXES[statistic]
+    suffix, _ = Q_INDICATOR_SUFFIXES[statistic]
     return f"q_{suffix}"
 
 
-def basin_metric_name(token: str) -> str:
-    """Composite metric name for one basin-scalar variable."""
-    suffix, _ = BASIN_METRIC_SUFFIXES[token]
+def basin_indicator_name(token: str) -> str:
+    """Composite indicator name for one basin-scalar variable."""
+    suffix, _ = BASIN_INDICATOR_SUFFIXES[token]
     return f"{token}_{suffix}"
 
 
@@ -261,7 +261,7 @@ def output_code(token: str) -> str:
 
 def basin_reduction(token: str) -> str:
     """The annual reduction a basin-scalar variable uses (``sum``/``max``/``mean``)."""
-    return BASIN_METRIC_SUFFIXES[token][1]
+    return BASIN_INDICATOR_SUFFIXES[token][1]
 
 
 #: Config keys ``workflows.generate_scenarios`` no longer has, and what to tell
@@ -313,8 +313,8 @@ RETIRED_EXPERIMENT_KEYS = {
         "why": (
             "In the long table shape 'aggregated' is no longer a SHAPE choice, "
             "which is the only reason this flag existed. Every table now carries "
-            "the finest grain available -- metrics linear in years per "
-            "realization, the GEV fits and month-selecting metrics pooled -- and "
+            "the finest grain available -- indicators linear in years per "
+            "realization, the GEV fits and month-selecting indicators pooled -- and "
             "downstream aggregates as it likes. Delete the line; nothing "
             "replaces it."
         ),
@@ -440,7 +440,7 @@ def indicator_tables(wflow_outvars) -> dict[str, str]:
 
     Keyed by token rather than by semantic name because the token is what every
     consumer downstream carries: it is in the filename, in the composite
-    ``metric``, and in the Snakemake output key. Keying by the semantic name would
+    ``indicator``, and in the Snakemake output key. Keying by the semantic name would
     make ``"river discharge"`` a dict key with a space in it, which then has to be
     translated at every use site.
 

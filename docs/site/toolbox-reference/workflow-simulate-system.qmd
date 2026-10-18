@@ -8,7 +8,7 @@ title: "WF4 — Simulate system"
 
 | Rule | Operation |
 |---|---|
-| `all` (target) | Collect the selected metric set and records. |
+| `all` (target) | Collect the selected indicator set and records. |
 | 4.01 `write_model_fingerprint` | Record the model reference. |
 | 4.02 `check_model_unchanged` | Verify the live model against its reference. |
 | 4.03 `snapshot_simulation_inputs` | Freeze collection, model, settings, and environment identity. |
@@ -16,13 +16,13 @@ title: "WF4 — Simulate system"
 | 4.05 `run_wflow_simulations_batch_<batch>` | Run Wflow in batches, retaining native responses. |
 | 4.06 `publish_wflow_outputs` | Publish the response inventory. |
 | `simulations_only` (target) | Collect simulation outputs without indicators. |
-| 4.07 `prepare_indicator_plan` | Resolve each distinct metric request's identity and targets. |
-| 4.08 `derive_system_indicators` | Produce each immutable metric set: tables, coverage evidence and marker. |
+| 4.07 `prepare_indicator_plan` | Resolve each distinct indicator request's identity and targets. |
+| 4.08 `derive_system_indicators` | Produce each immutable indicator set: tables, coverage evidence and marker. |
 | 4.09 `gather_logs` | Merge experiment logs. |
 | 4.10 `gather_benchmarks` | Merge experiment benchmarks. |
-| `simulations_and_indicators` (target) | Collect the selected metric set. |
+| `simulations_and_indicators` (target) | Collect the selected indicator set. |
 
-The runner infers its target from `operations`: both operations run `all`, simulations alone stop at `simulations_only`, and indicators alone read completed responses without rerunning Wflow. Sets with identical numerical requests share one plan and one immutable metric set. After Snakemake, the runner publishes each set separately; a failed set keeps its previous publication, and the command exits nonzero unless every set is current. With several sets, Snakemake runs with `--keep-going`, which also lets independent Wflow batches continue after one fails.
+The runner infers its target from `operations`: both operations run `all`, simulations alone stop at `simulations_only`, and indicators alone read completed responses without rerunning Wflow. Sets with identical numerical requests share one plan and one immutable indicator set. After Snakemake, the runner publishes each set separately; a failed set keeps its previous publication, and the command exits nonzero unless every set is current. With several sets, Snakemake runs with `--keep-going`, which also lets independent Wflow batches continue after one fails.
 
 ## Rule flow
 
@@ -32,7 +32,7 @@ flowchart LR
   B --> C["4.05 Run Wflow batches"]
   C --> D["4.06 Publish responses"]
   D --> E["4.07 Plan indicators"]
-  E --> F["4.08 Derive metric set"]
+  E --> F["4.08 Derive indicator set"]
   D --> G["simulations_only target"]
   F --> H["simulations_and_indicators target"]
   D --> I["4.09–4.10 Records"]
@@ -56,9 +56,9 @@ indicator_set_definitions:
 
 `operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter. `indicator_sets` lists set ids (`[a-z][a-z0-9_]*`, at most 64 characters); omitted means `[default]`. `default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for `model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file that declares it. Selected set files are read once per invocation. Copy `config/templates/indicator_set.template.yml` for a custom set: it selects registered definitions, or names one registered calculation under an authored id. A set never defines arithmetic, units, calendars, missingness or grain.
 
-Selected indicators must be available: before simulating, their variables are checked against `model.outvars`; when indicators run alone, against the retained responses. A missing variable fails with the set, metric, method and variable; it never schedules a simulation.
+Selected indicators must be available: before simulating, their variables are checked against `model.outvars`; when indicators run alone, against the retained responses. A missing variable fails with the set, indicator, method and variable; it never schedules a simulation.
 
-The scalar `operation: simulate-and-metrics | metrics-only` and `metrics:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
+The scalar `operation: simulate-and-indicators | indicators-only` and `indicators:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
 
 ## Inputs
 
@@ -70,16 +70,16 @@ WF4 requires the completed WF1 model and an explicitly selected ready WF3 collec
 
 ## Outputs
 
-An experiment retains native Wflow response CSVs and a response inventory. New immutable metric sets use
-`metric-set/5`, under `_engine/metric_sets/<id>/`. They retain `metrics.json`, indicator tables, group
+An experiment retains native Wflow response CSVs and a response inventory. New immutable indicator sets use
+`indicator-set/5`, under `_engine/indicator_sets/<id>/`. They retain `indicators.json`, indicator tables, group
 membership, declarations, return-level evidence, per-series block coverage and the execution context.
-Each selected set has a readable view at `results/metric_sets/<set-id>/`: run and group tables, group
+Each selected set has a readable view at `results/indicator_sets/<set-id>/`: run and group tables, group
 lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.md).
 
 ## Local calculation sets
 
-`blueearth_cst/metrics/` provides a plain Python interface independent of WF4 files and Snakemake.
-Its [authoring guide](../../../blueearth_cst/metrics/README.md) documents contracts, dependencies,
+`blueearth_cst/indicators/` provides a plain Python interface independent of WF4 files and Snakemake.
+Its [authoring guide](../../../blueearth_cst/indicators/README.md) documents contracts, dependencies,
 parameters, independent checks and extension examples. Trusted installed sets own formulas in
 `calculations.py`, registrations and fixed `ASSUMPTIONS` in `registry.py`, independent numerical
 checks in `checks.py`, and local guidance in `README.md`. Assumptions describe implemented choices;
@@ -112,16 +112,16 @@ selection:
 `selection: {registry: flow_regime}` selects all registrations of that trusted module. An authored
 entry's optional `calculation.set` selects a trusted local callable. YAML cannot import a file path or
 execute Python. Legacy definitions and authored aliases retain their existing spelling and behavior.
-New local calculations have explicit set/metric identities and need no `equivalent_definition`.
+New local calculations have explicit set/indicator identities and need no `equivalent_definition`.
 
 ## Integrity and numerical rechecking
 
-Discover metric sets on demand with:
+Discover indicator sets on demand with:
 
 ```powershell
-pixi run python scripts/inspect_metrics.py --experiment <experiment-root> --list
-pixi run python scripts/inspect_metrics.py --experiment <experiment-root> --manifest <metrics.json>
-pixi run python scripts/inspect_metrics.py --experiment <experiment-root> --manifest <metrics.json> --recheck
+pixi run python scripts/inspect_indicators.py --experiment <experiment-root> --list
+pixi run python scripts/inspect_indicators.py --experiment <experiment-root> --manifest <indicators.json>
+pixi run python scripts/inspect_indicators.py --experiment <experiment-root> --manifest <indicators.json> --recheck
 ```
 
 The default command checks saved hashes, completion identity and artifact structure. It imports no

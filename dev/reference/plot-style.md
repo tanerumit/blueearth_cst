@@ -60,7 +60,7 @@ preserves named colormaps used by the legacy map adapter. Colour defaults do not
 normalization, data, or scientific configuration identity.
 WF0–WF2 plotting rules track a digest of both YAML files in renderer params, so an edit schedules
 plotting jobs.
-WF1 evaluation also refreshes metrics written by its combined evaluation/plotting job. R/weathergenr
+WF1 evaluation also refreshes indicators written by its combined evaluation/plotting job. R/weathergenr
 figures retain their own settings.
 The historical map-reference producer also tracks the YAML as a display dependency so cached map colours
 refresh consistently across WF0 and WF1. This does not change the extracted climate data or simulation identity.
@@ -199,17 +199,17 @@ valid dates; the daily panel retains the available series for context. Flow-dura
 valid values and positions `rank / (n + 1)`. Retain zeros on the linear panel, omit them from the log
 axis without changing exceedance positions, and report their frequency. The log range includes all
 positive values from both series, without percentile clipping. These choices affect hydrograph
-summaries only; performance metrics and other evaluation sheets retain their own methods.
+summaries only; performance indicators and other evaluation sheets retain their own methods.
 
 WF1 performance sheets use the same finite, nonnegative paired daily support for the scatter, sample
-count, cumulative volumes and exported metrics. Align dates before pairing and retain gaps in the
+count, cumulative volumes and exported indicators. Align dates before pairing and retain gaps in the
 cumulative curves. These volumes integrate paired days only and do not estimate missing-day flow.
-Monthly metrics compare means over the same paired days within each month; hydrograph calendar
-completeness thresholds do not gate metric rows. Undefined scores remain unavailable.
+Monthly indicators compare means over the same paired days within each month; hydrograph calendar
+completeness thresholds do not gate indicator rows. Undefined scores remain unavailable.
 Keep squared Pearson correlation and sample counts in JSON metadata, without displaying them on the
 performance plot. Label the scatter `a)` and cumulative volume `b)`, with the stacked observed/simulated
 line legend inside the upper-left of the scatter, below its panel label. Keep table values identical to
-`performance_metrics.csv`. Use common typography, soft frames/grids and a concise publication caption
+`performance_indicators.csv`. Use common typography, soft frames/grids and a concise publication caption
 that explains each labelled panel, without displayed titles or figure footers.
 
 WF1 peaks and lows signature sheets use the same typography, soft frames, horizontal grids and
@@ -282,7 +282,7 @@ Use the reviewed change-strip box, point and horizontal legend style, with a ref
 Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
 them or significance fills in this figure.
 
-The annual member-ratio comparison shows all three metrics together. Its boxes, medians and capped
+The annual member-ratio comparison shows all three indicators together. Its boxes, medians and capped
 ranges summarize model ratios after geometric averaging of members within each model, with equal model
 weight. Faint points retain individual members; their density does not set the weight of the summary.
 Captions distinguish descriptive model spread from confidence intervals and note member dependence.
@@ -379,7 +379,7 @@ in this visual review.
   applicable plots, and render all affected callers when a shared figure helper changes.
 - Keep figure-specific tests and plotting-only probes temporary under `dev/tasks/<id>/.tmp/`, outside the
   persistent test suite. Verify figure changes by rendering and visual inspection. Retain tests for
-  exported numerical metrics and workflow contracts separately from figure review checks.
+  exported numerical indicators and workflow contracts separately from figure review checks.
 - During an explicitly deferred-check visual session, do not run tests or gates at each revision. Run
   appropriate checks at the end of the session. Commit once the user approves a figure style/type, rather
   than after each incremental revision. Do not land or push without separate authorization.

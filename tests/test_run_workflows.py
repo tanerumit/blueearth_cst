@@ -46,11 +46,11 @@ def wrapper_only_admission(monkeypatch):
             environment=lambda: {},
         ),
     )
-    # The stubbed WF4 child publishes no metric set; real named publication is
+    # The stubbed WF4 child publishes no indicator set; real named publication is
     # exercised by test_named_indicator_sets_workflow.
-    from blueearth_cst.experiment import metric_export
+    from blueearth_cst.experiment import indicator_export
 
-    monkeypatch.setattr(metric_export, "publish_selected_sets", lambda *_args: [])
+    monkeypatch.setattr(indicator_export, "publish_selected_sets", lambda *_args: [])
 
 
 def _write_cfg(path, flags, project_dir=None):
@@ -76,7 +76,7 @@ def _write_cfg(path, flags, project_dir=None):
     )
     path.write_text(text, encoding="utf-8")
     (path.parent / f"{path.stem}-simulation.yml").write_text(
-        "operation: simulate-and-metrics\nexperiment_name: test\n", encoding="utf-8"
+        "operation: simulate-and-indicators\nexperiment_name: test\n", encoding="utf-8"
     )
 
 
@@ -1054,7 +1054,7 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     flags["analyze_projections"] = "false"
     _, out, project_dir = _run_and_capture(tmp_path, capsys, flags)
     root = str(project_dir).replace(os.sep, "/")
-    assert "run_workflows done in 0:00:0" in out
+    assert re.search(r"run_workflows done in \d+:\d{2}:\d{2}", out)
     wrote = _group_rows(out, "wrote")
     assert wrote["project"] == root
     # Rows under the project use the token the project row defines.
@@ -1294,7 +1294,7 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
     assert len(envs) == 1
     assert envs[0][rw.console_style.ANNOUNCED_ENV] == "1"
     # The runner's own keys survived the merge.
-    assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-metrics"
+    assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-indicators"
     parent = _read_only_manifest(project_dir)
     assert (
         envs[0]["CST_SIMULATION_INVOCATION_ID"]

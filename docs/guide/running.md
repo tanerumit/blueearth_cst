@@ -129,7 +129,7 @@ WF1 evaluation also needs `<model>/run_default/output.csv`; a missing file can r
 historical simulation. Use `--notemp` on the original model run to retain it.
 
 Currently, WF0 comparison recomputes its statistics from retained daily series, WF1 forcing recomputes
-plotting summaries, and WF1 evaluation recomputes metrics. These are combined calculation/rendering
+plotting summaries, and WF1 evaluation recomputes indicators. These are combined calculation/rendering
 steps. Other listed targets reuse prepared products. Title and caption inventories are refreshed with
 the figures. Set project-level `plotting.annotation` to `none`, `caption` or `title` to choose
 the annotation at the existing plot paths; changing this parameter schedules the plotting jobs.
@@ -261,10 +261,10 @@ python scripts/simulate_system.py --config <config> --cores 3
 ```
 
 This reads the retained model responses and publishes each selected set to its
-own `results/metric_sets/<set-id>/` folder without rerunning the model. The
+own `results/indicator_sets/<set-id>/` folder without rerunning the model. The
 all-workflow runner does the same when the other four workflows are disabled.
 No `--target` is needed; the runner infers it. The legacy `operation:
-metrics-only` setting still works for one release with `--target
+indicators-only` setting still works for one release with `--target
 simulations_and_indicators`. See [Reading the outputs](outputs.md) for the
 result files.
 

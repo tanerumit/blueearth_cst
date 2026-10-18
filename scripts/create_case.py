@@ -253,14 +253,14 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         "| `data/climate/projections/` | GCM change-factor tables under `summary/` and figures under `plots/` (WF2) |\n"
         "| `scenarios/` | Full current collection: lookups, `series/`, `config/`, `weathergenr/`; immutable copies under `_engine/data/<collection_id>/` (WF3) |\n"
         "| `experiments/<name>/hydrology/wflow/output/` | Retained model responses to the climate scenarios (WF4) |\n"
-        "| `experiments/<name>/results/metric_sets/<set-id>/` | One folder per indicator set: run/group tables, group lookups and the `indicators.csv` dictionary; immutable copies under the experiment's `_engine/metric_sets/<id>/data/` (WF4) |\n"
+        "| `experiments/<name>/results/indicator_sets/<set-id>/` | One folder per indicator set: run/group tables, group lookups and the `indicators.csv` dictionary; immutable copies under the experiment's `_engine/indicator_sets/<id>/data/` (WF4) |\n"
         "| `logs/` | Workflow messages and failure details |\n"
         "| `benchmarks/` | Step timings and resource use |\n\n"
         "Collection inventories are in `scenarios/_engine/collections/<collection_id>/collection.json`. "
         "The current scenario export is tracked by `scenarios/_engine/current.json`. "
         "Indicator definitions and source records are in "
-        "`experiments/<name>/_engine/metric_sets/<id>/metrics.json`. "
-        "Each set's current export is tracked by `_engine/metric_sets/names/<set-id>/current.json` within the experiment. "
+        "`experiments/<name>/_engine/indicator_sets/<id>/indicators.json`. "
+        "Each set's current export is tracked by `_engine/indicator_sets/names/<set-id>/current.json` within the experiment. "
         "Check these records before treating results from an interrupted run as complete.\n"
     ).encode("utf-8")
     files[Path("notes.md")] = (

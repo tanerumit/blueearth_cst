@@ -2,6 +2,7 @@
 
 import csv
 import io
+import shutil
 import textwrap
 from pathlib import Path
 
@@ -14,10 +15,10 @@ from blueearth_cst.experiment.content_identity import (
     identity_segment,
     read_canonical_json,
 )
-from blueearth_cst.experiment.metric_plan import (
-    current_metric_request,
-    publish_metric_set,
-    write_metric_plan,
+from blueearth_cst.experiment.indicator_plan import (
+    current_indicator_request,
+    publish_indicator_set,
+    write_indicator_plan,
 )
 from blueearth_cst.experiment.named_export import NamedExportError
 from tests._v2_experiment import (
@@ -44,15 +45,15 @@ selection:
 
 
 def _live(monkeypatch):
-    from blueearth_cst.experiment import metric_plan
+    from blueearth_cst.experiment import indicator_plan
 
     monkeypatch.setattr(
-        metric_plan, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+        indicator_plan, "resolve_indicator_environment", lambda: FIXTURE_ENVIRONMENT
     )
 
 
 def _default():
-    source = indicator_sets.legacy_selection({"operation": "metrics-only"}).sets[0]
+    source = indicator_sets.legacy_selection({"operation": "indicators-only"}).sets[0]
     return indicator_sets.resolve_set(source, ["gwr"])
 
 
@@ -63,11 +64,11 @@ def _alias(text=ALIAS):
 
 
 def _manifest(root, resolved):
-    request = current_metric_request(
+    request = current_indicator_request(
         root, indicator_sets.calculation_records(resolved.indicators), "YE-DEC"
     )
-    plan = write_metric_plan(root, request)
-    publish_metric_set(root, plan)
+    plan = write_indicator_plan(root, request)
+    publish_indicator_set(root, plan)
     return Path(plan["targets"]["manifest"])
 
 
@@ -75,10 +76,10 @@ def _manifest(root, resolved):
 def _published_once(tmp_path_factory):
     experiment = build_v2_experiment(tmp_path_factory.mktemp("named"))
     with pytest.MonkeyPatch.context() as patch:
-        from blueearth_cst.experiment import metric_plan
+        from blueearth_cst.experiment import indicator_plan
 
         patch.setattr(
-            metric_plan, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+            indicator_plan, "resolve_indicator_environment", lambda: FIXTURE_ENVIRONMENT
         )
         default = _manifest(experiment.root, _default())
         alias = _manifest(experiment.root, _alias())
@@ -104,16 +105,61 @@ def _publish(root, resolved, manifest):
 
 
 def _dictionary(root, set_id):
-    text = (root / "results/metric_sets" / set_id / "indicators.csv").read_text(
+    text = (root / "results/indicator_sets" / set_id / "indicators.csv").read_text(
         encoding="utf-8"
     )
     return list(csv.DictReader(io.StringIO(text)))
 
 
+def test_pre_rename_named_publication_remains_readable(ready):
+    root, default, _ = ready
+    current = _publish(root, _default(), default)
+    legacy = dict(current)
+    legacy["schema_version"] = "named-metric-export/1"
+    legacy["metric_set_id"] = legacy.pop("indicator_set_id")
+    legacy["metric_manifest"] = legacy.pop("indicator_manifest")
+    legacy["publication_id"] = content_sha256(
+        {k: v for k, v in legacy.items() if k not in {"publication_id", "created_at"}}
+    )
+    from blueearth_cst.experiment.content_identity import atomic_record
+    from blueearth_cst.shared.provenance import file_sha256
+
+    names = root / "_engine/metric_sets/names/default"
+    names.mkdir(parents=True)
+    record_path = names / "publication.json"
+    atomic_record(record_path, legacy)
+    atomic_record(
+        names / "current.json",
+        {
+            "schema_version": "named-metric-current/1",
+            "publication_id": legacy["publication_id"],
+            "publication": {
+                "path": record_path.relative_to(root).as_posix(),
+                "sha256": file_sha256(record_path),
+            },
+        },
+    )
+    shutil.copytree(
+        root / "results/indicator_sets/default", root / "results/metric_sets/default"
+    )
+    # Keep all referenced immutable objects but remove the new current pointer,
+    # as in a project which has only published the old layout.
+    (root / "_engine/indicator_sets/names/default/current.json").unlink()
+    before = {p: p.read_bytes() for p in names.rglob("*") if p.is_file()}
+    loaded = named_export.read_current_publication(root, "default")
+    assert loaded["indicator_set_id"] == current["indicator_set_id"]
+    assert loaded["publication_id"] == legacy["publication_id"]
+    assert before == {p: p.read_bytes() for p in names.rglob("*") if p.is_file()}
+    export = root / "results/metric_sets/default/indicators.csv"
+    export.write_bytes(export.read_bytes() + b"x")
+    with pytest.raises(NamedExportError, match="differs from its committed inventory"):
+        named_export.read_current_publication(root, "default")
+
+
 def test_publication_layout_dictionary_and_no_machine_leakage(ready):
     root, default, _ = ready
     record = _publish(root, _default(), default)
-    folder = root / "results/metric_sets/default"
+    folder = root / "results/indicator_sets/default"
     names = {p.name for p in folder.iterdir()}
     assert names == {
         "gwr_run_indicators.csv",
@@ -126,7 +172,7 @@ def test_publication_layout_dictionary_and_no_machine_leakage(ready):
     rows = _dictionary(root, "default")
     assert list(rows[0]) == list(named_export.DICTIONARY_COLUMNS)
     (row,) = rows
-    assert row["metric"] == "gwr_annual_total"
+    assert row["indicator"] == "gwr_annual_total"
     assert row["output_units"] == "mm" and row["input_units"] == "mm dt-1"
     assert "not a duration-normalized rate" in row["quantity"]
     assert row["equivalent_definition"] == "" and row["authored_references"] == ""
@@ -134,11 +180,11 @@ def test_publication_layout_dictionary_and_no_machine_leakage(ready):
     assert row["block_assignment"].startswith("YE-DEC (right-closed, right-labelled")
     assert "min_count=0" in row["missingness"]
     text = folder.joinpath("indicators.csv").read_text(encoding="utf-8")
-    for leak in (record["metric_set_id"], record["publication_id"], "{", "sha256"):
+    for leak in (record["indicator_set_id"], record["publication_id"], "{", "sha256"):
         assert leak not in text
     current = named_export.read_current_publication(root, "default")
     assert current == record
-    engine = root / "_engine/metric_sets/names/default"
+    engine = root / "_engine/indicator_sets/names/default"
     assert {p.name for p in engine.iterdir()} == {
         "current.json",
         "definitions",
@@ -152,15 +198,15 @@ def test_shared_definition_rows_are_identical_and_alias_differs_only_by_key(read
     _publish(root, _alias(), alias)
     for scope in ("run", "group"):
         name = f"gwr_{scope}_indicators.csv"
-        registered = (root / "results/metric_sets/default" / name).read_text(
+        registered = (root / "results/indicator_sets/default" / name).read_text(
             encoding="utf-8"
         )
-        authored = (root / "results/metric_sets/depth_alias" / name).read_text(
+        authored = (root / "results/indicator_sets/depth_alias" / name).read_text(
             encoding="utf-8"
         )
         assert authored.replace("recharge_depth", "gwr_annual_total") == registered
     (row,) = _dictionary(root, "depth_alias")
-    assert row["metric"] == "recharge_depth"
+    assert row["indicator"] == "recharge_depth"
     assert row["equivalent_definition"] == "gwr_annual_total"
     assert row["authored_references"] == "Example citation" and row["references"] == ""
 
@@ -174,7 +220,7 @@ def test_identical_requests_reuse_numbers_and_presentation_edits_refresh_visibly
     calculations = indicator_sets.calculation_records(edited.indicators)
     assert calculations == indicator_sets.calculation_records(_alias().indicators)
     refreshed = _publish(root, edited, alias)
-    assert refreshed["metric_set_id"] == first["metric_set_id"]
+    assert refreshed["indicator_set_id"] == first["indicator_set_id"]
     assert refreshed["publication_id"] != first["publication_id"]
     assert _dictionary(root, "depth_alias")[0]["title"] == "Edited title"
 
@@ -251,7 +297,7 @@ def test_series_coverage_keeps_window_and_mask_with_their_run_and_location():
     import numpy as np
     import pandas as pd
 
-    from blueearth_cst.experiment.metric_registry import series_coverage
+    from blueearth_cst.experiment.indicator_registry import series_coverage
     from blueearth_cst.experiment.response_series import ResponseSeries
 
     def series(run, location, start, end, missing_days=0):
@@ -301,7 +347,7 @@ def test_series_coverage_keeps_window_and_mask_with_their_run_and_location():
 
 def test_unowned_and_legacy_claimed_folders_are_refused_with_bytes_preserved(ready):
     root, default, _ = ready
-    folder = root / "results/metric_sets/default"
+    folder = root / "results/indicator_sets/default"
     folder.mkdir(parents=True)
     with pytest.raises(NamedExportError, match="no committed publication"):
         _publish(root, _default(), default)
@@ -311,20 +357,20 @@ def test_unowned_and_legacy_claimed_folders_are_refused_with_bytes_preserved(rea
     assert (folder / "notes.csv").read_bytes() == b"user"
     folder.joinpath("notes.csv").unlink()
     folder.rmdir()
-    # A read-only /3 set claiming results/metric_sets/<id> blocks that set id.
-    claimed = root / "_engine/metric_sets/aaaaaaaaaaaa"
+    # A read-only /3 set claiming results/indicator_sets/<id> blocks that set id.
+    claimed = root / "_engine/indicator_sets/aaaaaaaaaaaa"
     claimed.mkdir(parents=True)
-    claimed.joinpath("metrics.json").write_bytes(
-        canonical_json_bytes({"result_root": "results/metric_sets/default"})
+    claimed.joinpath("indicators.json").write_bytes(
+        canonical_json_bytes({"result_root": "results/indicator_sets/default"})
     )
-    with pytest.raises(NamedExportError, match="legacy metric set aaaaaaaaaaaa"):
+    with pytest.raises(NamedExportError, match="legacy indicator set aaaaaaaaaaaa"):
         _publish(root, _default(), default)
 
 
 def test_refresh_refuses_unknown_files_but_restores_owned_bytes(ready):
     root, default, _ = ready
     record = _publish(root, _default(), default)
-    folder = root / "results/metric_sets/default"
+    folder = root / "results/indicator_sets/default"
     (folder / "gwr_run_indicators.csv").write_bytes(b"user edit")
     with pytest.raises(NamedExportError, match="differs from its committed"):
         named_export.read_current_publication(root, "default")
@@ -340,7 +386,7 @@ def test_refresh_refuses_unknown_files_but_restores_owned_bytes(ready):
 def test_failed_refresh_rolls_back_to_the_committed_export(ready, monkeypatch, failure):
     root, default, _ = ready
     first = _publish(root, _default(), default)
-    folder = root / "results/metric_sets/default"
+    folder = root / "results/indicator_sets/default"
     before = {p.name: p.read_bytes() for p in folder.iterdir()}
     edited = indicator_sets.resolve_set(
         indicator_sets.SetSource(
@@ -392,7 +438,7 @@ def test_publication_record_is_closed_and_digest_bound(ready):
     root, default, _ = ready
     record = _publish(root, _default(), default)
     current = read_canonical_json(
-        root / "_engine/metric_sets/names/default/current.json"
+        root / "_engine/indicator_sets/names/default/current.json"
     )
     path = root / current["publication"]["path"]
     tampered = dict(record, resolved_metadata=[])
@@ -404,8 +450,8 @@ def test_publication_record_is_closed_and_digest_bound(ready):
     }
     assert record["publication_id"] == content_sha256(semantic)
     assert (
-        identity_segment(record["metric_set_id"], "metric_set_id")
-        in record["metric_manifest"]["path"]
+        identity_segment(record["indicator_set_id"], "indicator_set_id")
+        in record["indicator_manifest"]["path"]
     )
     assert textwrap.dedent(record["definition_source"]["path"]).endswith(".yml")
 
@@ -413,7 +459,7 @@ def test_publication_record_is_closed_and_digest_bound(ready):
 def test_sets_complete_independently_and_failures_keep_prior_publications(
     ready, capsys
 ):
-    from blueearth_cst.experiment import metric_export
+    from blueearth_cst.experiment import indicator_export
 
     root, default, _ = ready
     q_only = indicator_sets.SetSource(
@@ -424,32 +470,34 @@ def test_sets_complete_independently_and_failures_keep_prior_publications(
         "selection:\n  indicators:\n    - definition: q_annual_mean\n",
     )
     default_source = indicator_sets.legacy_selection(
-        {"operation": "metrics-only"}
+        {"operation": "indicators-only"}
     ).sets[0]
     selection = indicator_sets.Selection(
         ("indicators",), (default_source, q_only), legacy=False
     )
     project = {"model": {}}
-    settings = {"operation": "metrics-only"}
-    outcomes = metric_export.publish_selected_sets(root, project, settings, selection)
+    settings = {"operation": "indicators-only"}
+    outcomes = indicator_export.publish_selected_sets(
+        root, project, settings, selection
+    )
     assert [(o["set_id"], o["status"]) for o in outcomes] == [
         ("default", "current"),
         ("q_only", "failed"),
     ]
     assert outcomes[1]["prior_publication_id"] is None
-    assert not (root / "results/metric_sets/q_only").exists()
-    assert metric_export.report_publication(root, outcomes) is False
+    assert not (root / "results/indicator_sets/q_only").exists()
+    assert indicator_export.report_publication(root, outcomes) is False
     first = outcomes[0]["publication_id"]
     # A later failure of the same set keeps its committed export (mixed age).
-    folder = root / "results/metric_sets/default"
+    folder = root / "results/indicator_sets/default"
     before = {p.name: p.read_bytes() for p in folder.iterdir()}
-    for plan in (root / "_engine/metric_requests").glob("*.json"):
+    for plan in (root / "_engine/indicator_requests").glob("*.json"):
         plan.unlink()
-    again = metric_export.publish_selected_sets(root, project, settings, selection)
+    again = indicator_export.publish_selected_sets(root, project, settings, selection)
     assert again[0]["status"] == "failed"
     assert again[0]["prior_publication_id"] == first
     assert {p.name: p.read_bytes() for p in folder.iterdir()} == before
-    metric_export.report_publication(root, again)
+    indicator_export.report_publication(root, again)
     assert (
         "previous results kept; they have not been updated" in capsys.readouterr().out
     )
@@ -467,7 +515,7 @@ def test_a_failed_rollback_keeps_backups_and_reports_them(ready, monkeypatch):
             raise OSError("injected rollback failure")
         if (
             Path(target).parent.name == "default"
-            and Path(target).parent.parent.name == "metric_sets"
+            and Path(target).parent.parent.name == "indicator_sets"
         ):
             calls.append(target)
             if len(calls) >= 2:
@@ -487,6 +535,6 @@ def test_a_failed_rollback_keeps_backups_and_reports_them(ready, monkeypatch):
     with pytest.raises(NamedExportError, match="rollback failed; backups kept"):
         _publish(root, renamed, default)
     monkeypatch.undo()
-    stages = list((root / "_engine/metric_sets/names/default").glob(".stage-*"))
+    stages = list((root / "_engine/indicator_sets/names/default").glob(".stage-*"))
     assert len(stages) == 1
     assert any(p.name.endswith(".previous") for p in stages[0].iterdir())

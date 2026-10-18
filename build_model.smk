@@ -29,7 +29,7 @@ from blueearth_cst.shared.gauges import is_unset
 from blueearth_cst.shared.wflow_outputs import CODES as WFLOW_OUTPUT_CODES
 from blueearth_cst.shared.wflow_outputs import BASAVG_FIGURE_STEMS, SUBBASIN_PLOT_DIRNAME
 
-# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+# Windows: make Snakemake's benchmark memory/IO/CPU indicators work (else all NA).
 patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so
@@ -218,7 +218,7 @@ if _unconsumed_observations:
 # trigger compares the value, so editing the FILE changed nothing it could see:
 # renumbering the gauge-point file left rule 1.08's model gauges on the old ids
 # while the observations moved to the new ones, the join then matched nothing,
-# and performance_metrics.csv emptied without a word. As `input:` the content
+# and performance_indicators.csv emptied without a word. As `input:` the content
 # mtime-triggers 1.08 (which writes the ids into the model) and 1.15 (which
 # reads them back), so the rebuild happens by itself.
 #
@@ -514,12 +514,12 @@ GATHER_LOGS = RULES.banner_only("1.18", "gather_logs", summary="merge rule logs"
 # independently of the build and needs no gather waiting on it) and the two
 # gather outputs themselves.
 WF1_TERMINALS = [
-    # The evaluation rule's terminal is its METRICS TABLE, not one of its
+    # The evaluation rule's terminal is its INDICATORS TABLE, not one of its
     # figures: since 2026-08-10 the figures are keyed by wflow_id and none of
     # their names is knowable at parse time. The table is written by the same
     # rule and is config-invariant, so the gather rules wait on exactly what
     # they waited on before.
-    f"{basin_dir}/evaluation/performance_metrics.csv",
+    f"{basin_dir}/evaluation/performance_indicators.csv",
     # The Excel-ready tables (1.14). A product of the workflow rather than an
     # incidental by-product, so they are rule-`all` members like the figures —
     # nothing downstream consumes them, so without this they never build.
@@ -535,7 +535,7 @@ WF1_TERMINALS = [
     # multi-output rule and makes both gather rules wait for its log/benchmark.
     f"{spatial_dir}/spatial_catalog.yml",
     # The staleness sidecar (1.16). A terminal in its own right: it consumes
-    # the metrics table and nothing consumes it, and listing it here is what
+    # the indicators table and nothing consumes it, and listing it here is what
     # schedules it at all -- no rule reads a sidecar, so without this it would
     # never build.
     f"{basin_dir}/run_metadata.json",
@@ -836,7 +836,7 @@ rule run_historical_simulation:
         # temp() since 2026-08-10 (owner ruling). Wflow's raw csv is an
         # INTERMEDIATE, not a deliverable: rule 1.14 derives the readable
         # per-variable tables from it and rule 1.15 reads it for the evaluation
-        # metrics, but nothing downstream of those wants it and it left
+        # indicators, but nothing downstream of those wants it and it left
         # `run_default/` showing a 0.9 MB file at 21-character precision beside
         # the 0.5 MB table meant to be read. Snakemake drops it once BOTH
         # consumers have run, which is the ordering the ask describes ("removed
@@ -1060,7 +1060,7 @@ rule plot_model_evaluation:
        location_registry = f"{spatial_dir}/location_registry.csv",
        script = "blueearth_cst/model/plot_results.py"
    # R07 B10 + O-24. The artifacts move into the engine subtree, split by KIND
-   # (P1): figures and captions under evaluation/plots/, the metrics table one
+   # (P1): figures and captions under evaluation/plots/, the indicators table one
    # level up in evaluation/.
    #
    # O-24, restated 2026-08-01 after checking what is actually derivable.
@@ -1103,10 +1103,10 @@ rule plot_model_evaluation:
    # the model build, so it is not knowable at parse time. `hydro_wflow_1.png`
    # only worked as a declared output because plot_results.py forced the first
    # outlet's label to that literal, which is the naming inconsistency the
-   # rename removes. The metrics table is this rule's config-invariant artifact
+   # rename removes. The indicators table is this rule's config-invariant artifact
    # and takes over as its terminal.
    output:
-       metrics_csv = f"{basin_dir}/evaluation/performance_metrics.csv",
+       indicators_csv = f"{basin_dir}/evaluation/performance_indicators.csv",
        basavg_pngs = _basavg_pngs,
        basavg_captions = _basavg_captions,
        subbasin_figures = (
@@ -1138,15 +1138,15 @@ rule plot_model_evaluation:
 # naming.md` §9 forbids renumbering to insert a rule. Placed BEFORE the two
 # gather rules so its log part -- if it ever grows one -- is still gathered.
 #
-# It takes the metrics table as input rather than writing into it: that table
+# It takes the indicators table as input rather than writing into it: that table
 # and WF3's indicator CSV are baseline-fingerprinted, so embedding the digests
 # in either would falsify the design's no-baseline-re-record claim.
 rule write_run_metadata:
     message: WRITE_RUN_METADATA.banner()
     input:
-        metrics_csv = f"{basin_dir}/evaluation/performance_metrics.csv",
+        indicators_csv = f"{basin_dir}/evaluation/performance_indicators.csv",
         # ADR 0004: a rule reading under the model root waits on the terminal
-        # marker, because rule 1.07 rewrites the whole directory. The metrics
+        # marker, because rule 1.07 rewrites the whole directory. The indicators
         # table already orders this rule after 1.15, so the marker adds no edge
         # in practice -- it is declared because the convention is mechanical,
         # and a reader exempted by an argument is how the next one gets missed.

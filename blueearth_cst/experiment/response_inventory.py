@@ -1,5 +1,6 @@
 """Complete retained native response coverage without a live model or generation."""
 
+import hashlib
 import tomllib
 from pathlib import Path
 
@@ -29,9 +30,9 @@ class ResponseReaderUnavailable(ValueError):
 def _reader_changed(experiment_root, recorded):
     """The refusal for a frozen experiment read with a different reader.
 
-    Not an installation fault, though the class name says "unavailable": the
-    reader's revision is a hash of its own source, so any toolbox change to it
-    retires every experiment simulated before, and the way out is a new name.
+    Not an installation fault, though the class name says "unavailable".
+    Reader source changes require a new experiment, apart from the explicitly
+    reviewed vocabulary-only revision accepted when reopening retained state.
     """
     return ResponseReaderUnavailable(
         f"experiment {Path(experiment_root).name!r} was simulated with response "
@@ -56,6 +57,42 @@ def response_reader_revision():
             )
         ]
     )
+
+
+def _terminology_reader_matches(recorded, current_revision):
+    """Accept only the reviewed pre-indicator docstring revision for reads.
+
+    Pin the complete neutral implementation, retain the other source hashes,
+    and account for the LF/CRLF bytes used by previous installations. Neither
+    saved records nor the current writer's revision are changed.
+    """
+    if set(recorded) != {"name", "revision"} or recorded["name"] != "wflow-csv":
+        return False
+    directory = Path(__file__).parent
+    source = (directory / "response_series.py").read_bytes().replace(b"\r\n", b"\n")
+    if hashlib.sha256(source).hexdigest() != (
+        "991cdf04d7191c77ff3c1fadbcd3800b0e8dc47be1e5e24c4ba7c22848cf37bb"
+    ):
+        return False
+    rows = [
+        {"path": name, "sha256": file_sha256(directory / name)}
+        for name in (
+            "response_series.py",
+            "wflow_response_reader.py",
+            "../shared/native_locations.py",
+        )
+    ]
+    if content_sha256(rows) != current_revision:
+        return False
+    for historical in (
+        "148f4f51059adbaa902f0b53b7e4cbed65e9758384fa3c9f2bab67faab2788e9",
+        "6902702887ad3f454b99c57ccddce26e0ed703f2a12631e269c1486d9874def3",
+    ):
+        if recorded["revision"] == content_sha256(
+            [{**rows[0], "sha256": historical}, *rows[1:]]
+        ):
+            return True
+    return False
 
 
 def make_response_request(run_ids, variables):
@@ -280,10 +317,14 @@ def build_response_inventory_v2(
     intent = read_simulation_intent_v2(root)
     request = intent["documents"]["response_request"]
     validate_response_request(request)
-    if request["reader"] != {
+    current_reader = {
         "name": "wflow-csv",
         "revision": response_reader_revision(),
-    }:
+    }
+    if request["reader"] != current_reader and not (
+        _retained
+        and _terminology_reader_matches(request["reader"], current_reader["revision"])
+    ):
         raise _reader_changed(experiment_root, request["reader"])
     if set(native_runs) != set(request["run_ids"]):
         raise MissingResponseRequirement(

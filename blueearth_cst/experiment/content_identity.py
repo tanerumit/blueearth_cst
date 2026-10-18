@@ -347,7 +347,7 @@ def identity_segment(value: Any, field: str) -> str:
     refusing anything shorter. This is the *path* form, and only the path form:
     sixty-four hex characters per directory is what makes a project tree read as
     machine output. ``SHORT_DIGEST_CHARS`` is imported rather than restated so
-    that the scenario trees, the metric trees and the config-snapshot bundles
+    that the scenario trees, the indicator trees and the config-snapshot bundles
     that already use it cannot drift to different lengths.
 
     Truncation costs one property, and it is worth naming: a discovered

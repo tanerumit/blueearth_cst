@@ -215,7 +215,7 @@ Output locations, **comma**-separated:
 | Column | Meaning |
 | --- | --- |
 | `wflow_id` | optional integer station id; when supplied it must exactly match the deterministic ID generated from the resolved basin/subbasin hierarchy |
-| `station_name` | free-text label used in figure titles and metric tables |
+| `station_name` | free-text label used in figure titles and indicator tables |
 | `x`, `y` | longitude, latitude in EPSG:4326 |
 | `location_role` | optional role: `control` (default) defines a subbasin; `observation` is tracked without controlling delineation |
 
@@ -280,5 +280,5 @@ local, basin-scoped tabular inputs — not for observations alone: only one of t
 two files is an observation, the other declares where the model reports. They are
 referenced by **absolute path** from wherever you keep them, so without that
 copy a finished project could not say what it was evaluated against — the
-metrics table would cite gauges and observations that exist only on the machine
+indicators table would cite gauges and observations that exist only on the machine
 that ran it.

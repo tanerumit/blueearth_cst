@@ -47,7 +47,7 @@ rlz_input <- weathergenr::read_netcdf(rlz_path, keep_leap_day = FALSE)
 # its twelve rows are synthesized at zero change. The baseline then takes the
 # SAME path as every grid member: apply_climate_perturbations quantile-maps
 # precipitation unconditionally, so a baseline that skipped it differed from
-# the grid's own identity member by a processing step (low-flow metrics moved
+# the grid's own identity member by a processing step (low-flow indicators moved
 # by -70% to +128%), not only by a perturbation.
 if (identical(st_id_token, "identity")) {
   cst_data <- identity_member_grid()

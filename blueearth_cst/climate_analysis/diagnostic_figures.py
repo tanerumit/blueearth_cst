@@ -740,33 +740,33 @@ EXTREME_LABELS = {
 }
 
 
-def extremes(metric: str) -> Callable[[View], Figure]:
+def extremes(indicator: str) -> Callable[[View], Figure]:
     def chart(v: View) -> Figure:
         fig, axs = new_fig(H_SINGLE)
         ax = axs[0, 0]
         for s in v.sources:
-            y = v.results[s]["extremes"][metric].reindex(v.years)
+            y = v.results[s]["extremes"][indicator].reindex(v.years)
             ax.plot(
                 v.years, y, color=v.color(s), lw=LW_LINE, marker=v.marker(s), ms=MS_LINE
             )  # NaN breaks the line
-        ax.set_ylabel(EXTREME_LABELS[metric])
+        ax.set_ylabel(EXTREME_LABELS[indicator])
         ax.margins(y=0.08)
-        trend_key = {"SDII": "sdii", "Wet days": "wet_days"}.get(metric, metric)
+        trend_key = {"SDII": "sdii", "Wet days": "wet_days"}.get(indicator, indicator)
         unit = (
             "mm d⁻¹ decade⁻¹"
-            if metric == "SDII"
+            if indicator == "SDII"
             else UNITS["days_decade"]
-            if metric == "Wet days"
+            if indicator == "Wet days"
             else UNITS["mm_decade"]
         )
         _annual_trends(
             ax,
             v,
             "extremes",
-            metric,
+            indicator,
             trend_key,
             unit,
-            digits=2 if metric == "SDII" else 1,
+            digits=2 if indicator == "SDII" else 1,
         )
         year_ticks(ax, v.years)
         ygrid(ax)
@@ -867,7 +867,7 @@ def acf(v: View) -> Figure:
     return fig
 
 
-TREND_METRICS = (
+TREND_INDICATORS = (
     ("total", "Annual precipitation", UNITS["mm_decade"]),
     ("wet_days", "Wet days", UNITS["days_decade"]),
     ("Rx1day", "Rx1day", UNITS["mm_decade"]),
@@ -878,7 +878,7 @@ def slopes(v: View) -> Figure:
     n = len(v.sources)
     fig, axs = new_fig(48 + 8 * max(0, n - 2), 1, 3, width_mm=W_FULL)
     fig.get_layout_engine().set(w_pad=1.5 * MM, wspace=0.02)
-    for i, (ax, (key, title, unit)) in enumerate(zip(axs[0], TREND_METRICS)):
+    for i, (ax, (key, title, unit)) in enumerate(zip(axs[0], TREND_INDICATORS)):
         span = 0.0
         for k, s in enumerate(v.sources):
             t = v.results[s]["trends"][key]
@@ -982,7 +982,7 @@ def _prepared_trends(
     v: View,
     table: str,
     column: str,
-    metric: str,
+    indicator: str,
     unit: str,
     digits: int,
 ) -> list[pc.TrendSegment]:
@@ -990,7 +990,7 @@ def _prepared_trends(
     segments = []
     for s in v.sources:
         y = v.results[s][table][column].reindex(v.years)
-        t = v.results[s]["trends"][metric]
+        t = v.results[s]["trends"][indicator]
         ok = y.dropna().index.to_numpy()
         if np.isfinite(t["slope"]) and ok.size:
             span = np.array([ok[0], ok[-1]], dtype=float)
@@ -1011,14 +1011,14 @@ def _annual_trends(
     v: View,
     table: str,
     column: str,
-    metric: str,
+    indicator: str,
     unit: str,
     digits: int = 0,
 ) -> None:
     """Draw retained Sen estimates with separated, source-colored slope labels."""
     pc.draw_annual_trends(
         ax,
-        _prepared_trends(v, table, column, metric, unit, digits),
+        _prepared_trends(v, table, column, indicator, unit, digits),
         label_x=v.years[-1] - 0.4,
     )
 

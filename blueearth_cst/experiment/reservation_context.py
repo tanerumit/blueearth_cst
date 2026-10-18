@@ -158,20 +158,20 @@ def admit_context_owned(
 ) -> ReservationContext:
     """Select before any producer; callers already hold project-execution ownership."""
     _, settings = simulation_settings(config_path)
-    metrics = settings["operation"] == "metrics-only"
+    indicators = settings["operation"] == "indicators-only"
     selected = preview_experiment(
         root,
         settings.get("experiment_name"),
         new_experiment=new_experiment,
         note=note,
-        metrics_only=metrics,
+        indicators_only=indicators,
         recover=recover,
     )
     if selected.action in {"refuse", "missing"}:
         raise ValueError(selected.reason)
     request, captures = (
         (None, [])
-        if metrics
+        if indicators
         else capture_request(
             config_path,
             repository,
@@ -179,7 +179,7 @@ def admit_context_owned(
             execute_model=execute_model,
         )
     )
-    if not metrics and not execute_generation:
+    if not indicators and not execute_generation:
         # Standalone simulation cannot reserve an unresolved generation request.
         resolve_selected_collection(config_path, repository)
     context = ReservationContext(
@@ -201,19 +201,19 @@ def admit_context_owned(
             creator_invocation_id=invocation_id,
             new_experiment=new_experiment,
             note=note,
-            metrics_only=metrics,
+            indicators_only=indicators,
             recover=recover,
             request_comparator=context.compare,
         )
         context.name = selected.name
         context.reservation_id = selected.reservation_id
-    elif selected.action == "continue" and selected.reservation_id and not metrics:
-        # Metrics-only never captures a request; admission compares none either.
+    elif selected.action == "continue" and selected.reservation_id and not indicators:
+        # Indicators-only never captures a request; admission compares none either.
         context.compare(read_reservation(root, selected.name)["request"], request)
     recipe = (
         context.root / "experiments" / context.name / "_engine/simulation-freeze.json"
     )
-    if not preview and not metrics and recipe.exists() and context.reservation_id:
+    if not preview and not indicators and recipe.exists() and context.reservation_id:
         from blueearth_cst.experiment.reservation_freeze import finish_freeze_owned
 
         finish_freeze_owned(recipe.parent.parent, recover=recover)

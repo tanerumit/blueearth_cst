@@ -2,7 +2,7 @@
 
 import sys
 
-from blueearth_cst.metrics import gev_lmoments as _implementation
+from blueearth_cst.indicators import gev_lmoments as _implementation
 
 # Preserve one module object for existing instrumentation and monkeypatch users.
 sys.modules[__name__] = _implementation

@@ -5,7 +5,7 @@ hydromt_wflow 1.x labels outlets with basin-derived subcatchment IDs (e.g.
 for plots and manifest paths (see dev/reference/workflows/model_creation.md). This rule
 emits an unconditional, machine-readable mapping between the two, derived
 directly from outlets.geojson and populated on **every** run — unlike
-performance_metrics.csv, which is empty without observations.
+performance_indicators.csv, which is empty without observations.
 """
 
 import os

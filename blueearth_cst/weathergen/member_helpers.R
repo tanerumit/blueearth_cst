@@ -80,7 +80,7 @@ subset_basin_cells <- function(ncdata, basin_cells, source_label = "the store") 
 #' The baseline has NO lookup row -- st_0 is absent from the parameter grid on
 #' purpose -- so its rows are synthesized here and it then takes the SAME
 #' perturbation path as every grid member (t2608151154): skipping it moved
-#' low-flow metrics by -70% to +128% through a processing step alone.
+#' low-flow indicators by -70% to +128% through a processing step alone.
 identity_member_grid <- function() {
   data.frame(
     month = 1:12, temp_change = 0, precip_change = 0,

@@ -7,9 +7,21 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from blueearth_cst.experiment import indicator_registry as registry
 from blueearth_cst.experiment import indicator_sets as sets
-from blueearth_cst.experiment import metric_registry as registry
 from blueearth_cst.experiment.indicator_sets import IndicatorSetError
+from blueearth_cst.shared.config_composition import normalize_indicator_settings
+
+
+def test_old_scalar_settings_are_input_aliases_only():
+    original = {"operation": "metrics-only", "metrics": ["gwr"]}
+    assert normalize_indicator_settings(original) == {
+        "operation": "indicators-only",
+        "indicators": ["gwr"],
+    }
+    assert original == {"operation": "metrics-only", "metrics": ["gwr"]}
+    with pytest.raises(ValueError, match="both old and new"):
+        normalize_indicator_settings({"metrics": [], "indicators": []})
 
 
 def _source(text, set_id="example_subset", bundled=False):
@@ -64,7 +76,7 @@ def test_optional_definitions_stay_out_of_the_default_preset():
     source = sets.SetSource("default", path, True, path.read_text(encoding="utf-8"))
     resolved = sets.resolve_set(source, ["q"])
     optional = {item.name for item in registry.optional_declarations()}
-    assert not {item.metric for item in resolved.indicators} & optional
+    assert not {item.indicator for item in resolved.indicators} & optional
 
 
 def test_optional_reductions_match_hand_computed_values():
@@ -136,7 +148,7 @@ def test_preset_is_reserved_for_the_bundled_default():
 
 def test_definition_selectors_reference_registered_declarations():
     resolved = sets.resolve_set(_source(EXAMPLE))
-    assert [item.metric for item in resolved.indicators] == [
+    assert [item.indicator for item in resolved.indicators] == [
         "q_annual_mean",
         "q_mean_annual_7day_min",
     ]
@@ -144,10 +156,10 @@ def test_definition_selectors_reference_registered_declarations():
     assert resolved.indicators[0].authored_references == ()
 
 
-def test_authored_entry_keeps_registered_calculation_under_its_own_metric_key():
+def test_authored_entry_keeps_registered_calculation_under_its_own_indicator_key():
     item = sets.resolve_set(_source(AUTHORED)).indicators[0]
     registered = registry.declaration_for("q_mean_annual_p95")
-    assert item.metric == "high_flow"
+    assert item.indicator == "high_flow"
     assert item.equivalent_definition == "q_mean_annual_p95"
     assert item.authored_references == ("Author 2020",)
     assert item.references == ()
@@ -175,7 +187,7 @@ def test_within_set_duplicate_calculation_contracts_are_refused():
     with pytest.raises(IndicatorSetError, match="share one calculation contract"):
         sets.resolve_set(_source(duplicate))
     repeated = EXAMPLE.rstrip(" ") + "        - definition: q_annual_mean\n"
-    with pytest.raises(IndicatorSetError, match="repeats metric"):
+    with pytest.raises(IndicatorSetError, match="repeats indicator"):
         sets.resolve_set(_source(repeated))
 
 
@@ -275,10 +287,10 @@ def test_simulations_only_validates_structure_without_opening_sets(tmp_path):
         ({"indicator_set_definitions": {"x": {"config_path": ""}}}, "exactly"),
         ({"indicator_set_definitions": {"x": {"config_path": "a", "y": 1}}}, "exactly"),
         (
-            {"operations": ["indicators"], "operation": "metrics-only"},
+            {"operations": ["indicators"], "operation": "indicators-only"},
             "legacy interface",
         ),
-        ({"indicator_sets": ["default"], "metrics": ["q"]}, "legacy interface"),
+        ({"indicator_sets": ["default"], "indicators": ["q"]}, "legacy interface"),
     ],
 )
 def test_parse_selection_refusals(tmp_path, settings, match):
@@ -287,8 +299,8 @@ def test_parse_selection_refusals(tmp_path, settings, match):
 
 
 def test_legacy_operation_maps_to_default_set():
-    both = sets.legacy_selection({"operation": "simulate-and-metrics"})
-    only = sets.legacy_selection({"operation": "metrics-only"})
+    both = sets.legacy_selection({"operation": "simulate-and-indicators"})
+    only = sets.legacy_selection({"operation": "indicators-only"})
     assert both.operations == ("simulations", "indicators") and both.legacy
     assert only.operations == ("indicators",)
     assert [s.set_id for s in only.sets] == ["default"]
@@ -319,7 +331,7 @@ def test_the_shipped_indicator_set_template_resolves():
         "example_subset", path, False, path.read_text(encoding="utf-8")
     )
     resolved = sets.resolve_set(source)
-    assert [item.metric for item in resolved.indicators] == [
+    assert [item.indicator for item in resolved.indicators] == [
         "q_annual_mean",
         "q_mean_annual_7day_min",
     ]

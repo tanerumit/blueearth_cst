@@ -304,7 +304,7 @@ This paragraph claimed "~2.6× less wflow time and ~1.7× less weather generatio
 
 To change the generated-series length, change the END of `simulation_window` rather than its start: `compute_nr_years` anchors the series at the end of `climate.window`, so it spans that year → `simulation_window.end` (plus a two-year pad). (`C-67` folded the former `horizontime_climate` + `run_length`/2 into that one declared year.) Whatever you set must stay inside a `future_windows` entry in the analyze_projections file — the alignment is computed independently of both keys, so a missed edit misaligns silently.
 
-Rapid is cheap, not narrow. It gets `st_0`, which is what the two class-C month indicators derive from — and since `C-69` every config does, so this is no longer a way a config can quietly give up 2 of 11 `q` metrics — and it keeps two CMIP6 models, since a one-model config never runs the ensemble reduction. A config that gives up coverage must say which, as `wf2_fast` does.
+Rapid is cheap, not narrow. It gets `st_0`, which is what the two class-C month indicators derive from — and since `C-69` every config does, so this is no longer a way a config can quietly give up 2 of 11 `q` indicators — and it keeps two CMIP6 models, since a one-model config never runs the ensemble reduction. A config that gives up coverage must say which, as `wf2_fast` does.
 
 Record the baseline from `project_config_baseline.yml` and nothing else; never point `check_baseline.py` at the rapid tree.
 

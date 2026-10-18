@@ -26,10 +26,10 @@ import pytest
 
 from blueearth_cst.model.setup_gauges_and_outputs import WFLOW_VARS
 from blueearth_cst.shared.indicator_tables import (
-    BASIN_METRIC_SUFFIXES,
-    Q_METRIC_SUFFIXES,
+    BASIN_INDICATOR_SUFFIXES,
+    Q_INDICATOR_SUFFIXES,
     VARIABLE_TOKENS,
-    basin_metric_name,
+    basin_indicator_name,
     indicator_table_filename,
 )
 from blueearth_cst.shared.wflow_outputs import CODES, PLOT_META
@@ -117,9 +117,9 @@ def test_discharge_is_the_one_row_whose_code_is_not_in_codes():
 
 
 @pytest.mark.parametrize("label", sorted(set(WFLOW_VARS) - {"river discharge"}))
-def test_the_basin_scalar_metric_column_is_the_composed_name(label):
+def test_the_basin_scalar_indicator_column_is_the_composed_name(label):
     token = VARIABLE_TOKENS[label]
-    assert _code(_variable_rows()[label][5]) == basin_metric_name(token)
+    assert _code(_variable_rows()[label][5]) == basin_indicator_name(token)
 
 
 # --- §1's figure table, keyed by CODE not by label ----------------------------
@@ -137,35 +137,35 @@ def test_the_legend_table_agrees_with_plot_meta():
     assert documented == {code: meta["resample"] for code, meta in PLOT_META.items()}
 
 
-# --- §2, the metric vocabulary ------------------------------------------------
+# --- §2, the indicator vocabulary ------------------------------------------------
 
 
-def test_every_discharge_metric_is_documented_with_its_grain():
+def test_every_discharge_indicator_is_documented_with_its_grain():
     """Including the two return levels, whose period is part of the name.
 
     The glossary carried a braced `{Tpeak}` form while the period was a config
     key; since 2026-08-12 it is a toolbox constant, so the documented name is
-    literal and must match what `Q_METRIC_SUFFIXES` emits exactly."""
+    literal and must match what `Q_INDICATOR_SUFFIXES` emits exactly."""
     rows = _rows(_text(), "`q_annual_mean`")
     header, *body = rows
-    assert header == ["metric", "statistic", "grain"]
+    assert header == ["indicator", "statistic", "grain"]
     documented = {_code(r[0]): r[2] for r in body}
     expected = {
         f"q_{suffix}": ("per-realization" if cls == "A" else "pooled (`rlz_id = 0`)")
-        for suffix, cls in Q_METRIC_SUFFIXES.values()
+        for suffix, cls in Q_INDICATOR_SUFFIXES.values()
     }
     assert documented == expected
 
 
-def test_the_metric_column_of_the_variable_table_covers_every_basin_scalar():
-    """The §1 metric column and `BASIN_METRIC_SUFFIXES` are the same set, so a
-    new basin-scalar variable cannot land with no documented metric."""
+def test_the_indicator_column_of_the_variable_table_covers_every_basin_scalar():
+    """The §1 indicator column and `BASIN_INDICATOR_SUFFIXES` are the same set, so a
+    new basin-scalar variable cannot land with no documented indicator."""
     documented = {
         _code(row[5])
         for label, row in _variable_rows().items()
         if label != "river discharge"
     }
-    assert documented == {basin_metric_name(t) for t in BASIN_METRIC_SUFFIXES}
+    assert documented == {basin_indicator_name(t) for t in BASIN_INDICATOR_SUFFIXES}
 
 
 # --- the claims the glossary makes about itself -------------------------------
@@ -179,8 +179,8 @@ def test_the_glossary_names_the_dicts_it_is_derived_from():
         "setup_gauges_and_outputs.py::WFLOW_VARS",
         "wflow_outputs.py::CODES",
         "indicator_tables.py::VARIABLE_TOKENS",
-        "indicator_tables.py::Q_METRIC_SUFFIXES",
-        "indicator_tables.py::BASIN_METRIC_SUFFIXES",
+        "indicator_tables.py::Q_INDICATOR_SUFFIXES",
+        "indicator_tables.py::BASIN_INDICATOR_SUFFIXES",
         "indicator_tables.py::INDICATOR_COLUMNS",
         "wflow_outputs.py::PLOT_META",
     ):

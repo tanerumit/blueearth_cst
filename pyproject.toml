@@ -46,7 +46,7 @@ markers = [
     # Tiering runs on ONE scheme: test-fast deselects the two markers above.
     # A `slow` label (>=2 s, label only) was retired 2026-10-04 (t2610041227)
     # rather than wired into test-fast: deselecting it would drop the real-v2
-    # metric tests from the local gate, so they would first run after a push.
+    # indicator tests from the local gate, so they would first run after a push.
 ]
 
 # -ra shows the reason for every non-passing outcome, skips included. CI already

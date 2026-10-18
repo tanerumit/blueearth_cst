@@ -35,7 +35,7 @@ path_forcing = "forcing/inmaps_historical.nc"
 
 SNAKEFILE = (
     Path(__file__).resolve().parents[1]
-    / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+    / "blueearth_cst/experiment/rules/simulate_and_indicators.smk"
 )
 
 

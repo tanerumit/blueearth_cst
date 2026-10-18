@@ -1,8 +1,8 @@
-"""Named indicator sets through the real runner and metric checkpoint.
+"""Named indicator sets through the real runner and indicator checkpoint.
 
 Indicators-only over a retained v2 simulation: several sets plan in one
 invocation, identical numerical requests share one immutable set, and an
-authored alias publishes the registered calculation under its own metric key.
+authored alias publishes the registered calculation under its own indicator key.
 """
 
 import csv
@@ -82,7 +82,9 @@ def _simulate(experiment, *extra):
         env=environment,
         capture_output=True,
         text=True,
-        timeout=600,
+        # Several requests import and fingerprint their execution environment
+        # in separate workers; allow cold Windows runs without a speed claim.
+        timeout=1200,
     )
     return result.returncode, result.stdout + result.stderr
 
@@ -104,13 +106,13 @@ def test_named_sets_dry_run_plans_each_distinct_request(tmp_path):
     assert code == 0, output
     # default (outvars absent -> retained gwr) and same_numbers are one request.
     assert re.search(r"prepare_indicator_plan\s+2", output), output
-    assert not (experiment.root / "_engine/metric_requests").exists()
+    assert not (experiment.root / "_engine/indicator_requests").exists()
 
 
 def test_named_sets_refuse_an_explicit_target(tmp_path):
     experiment = build_v2_experiment(tmp_path)
     _named(experiment, SETTINGS)
-    code, output = _simulate(experiment, "--target", "metrics", "--dry-run")
+    code, output = _simulate(experiment, "--target", "indicators", "--dry-run")
     assert code != 0
     assert "omit --target" in output, output
 
@@ -125,13 +127,13 @@ def test_named_sets_publish_independent_immutable_sets(tmp_path):
     _named(experiment, SETTINGS)
     code, output = _simulate(experiment)
     assert code == 0, output
-    markers = sorted((root / "_engine/metric_sets").glob("*/metrics.json"))
+    markers = sorted((root / "_engine/indicator_sets").glob("*/indicators.json"))
     assert len(markers) == 2, markers
     manifests = [read_canonical_json(marker) for marker in markers]
-    assert {m["schema_version"] for m in manifests} == {"metric-set/5"}
-    by_metric = {m["calculations"][0]["metric"]: m for m in manifests}
-    assert set(by_metric) == {"gwr_annual_total", "recharge_depth"}
-    alias = by_metric["recharge_depth"]["calculations"][0]
+    assert {m["schema_version"] for m in manifests} == {"indicator-set/5"}
+    by_indicator = {m["calculations"][0]["indicator"]: m for m in manifests}
+    assert set(by_indicator) == {"gwr_annual_total", "recharge_depth"}
+    alias = by_indicator["recharge_depth"]["calculations"][0]
     assert alias["definition"] == "gwr_annual_total"
 
     def rows(manifest, scope):
@@ -144,11 +146,13 @@ def test_named_sets_publish_independent_immutable_sets(tmp_path):
             return list(csv.DictReader(handle))
 
     for scope in ("run", "group"):
-        registered = rows(by_metric["gwr_annual_total"], scope)
-        authored = rows(by_metric["recharge_depth"], scope)
+        registered = rows(by_indicator["gwr_annual_total"], scope)
+        authored = rows(by_indicator["recharge_depth"], scope)
         assert registered and len(registered) == len(authored)
-        # Only the metric key differs; values and keys match exactly.
-        assert [{**row, "metric": "gwr_annual_total"} for row in authored] == registered
+        # Only the indicator key differs; values and keys match exactly.
+        assert [
+            {**row, "indicator": "gwr_annual_total"} for row in authored
+        ] == registered
 
 
 @pytest.mark.skipif(
@@ -167,15 +171,17 @@ def test_named_sets_export_one_readable_folder_per_set(tmp_path):
         set_id: read_current_publication(root, set_id)
         for set_id in ("default", "depth_alias", "same_numbers")
     }
-    # Identical normalized requests reuse one immutable metric set across names.
+    # Identical normalized requests reuse one immutable indicator set across names.
     assert (
-        records["default"]["metric_set_id"] == records["same_numbers"]["metric_set_id"]
+        records["default"]["indicator_set_id"]
+        == records["same_numbers"]["indicator_set_id"]
     )
     assert (
-        records["default"]["metric_set_id"] != records["depth_alias"]["metric_set_id"]
+        records["default"]["indicator_set_id"]
+        != records["depth_alias"]["indicator_set_id"]
     )
     for set_id in records:
-        assert (root / "results/metric_sets" / set_id / "indicators.csv").is_file()
+        assert (root / "results/indicator_sets" / set_id / "indicators.csv").is_file()
     assert "depth_alias: results saved" in output, output
     assert "[default, same_numbers]" in output, output
     assert "ready to calculate 1 indicator" in output, output
@@ -193,8 +199,8 @@ def test_named_sets_export_one_readable_folder_per_set(tmp_path):
     assert code == 0, output
     refreshed = read_current_publication(root, "depth_alias")
     assert "default: results unchanged; reusing saved results" in output, output
-    assert refreshed["metric_set_id"] == records["depth_alias"]["metric_set_id"]
+    assert refreshed["indicator_set_id"] == records["depth_alias"]["indicator_set_id"]
     assert refreshed["publication_id"] != records["depth_alias"]["publication_id"]
     assert "Renamed" in (
-        root / "results/metric_sets/depth_alias/indicators.csv"
+        root / "results/indicator_sets/depth_alias/indicators.csv"
     ).read_text(encoding="utf-8")

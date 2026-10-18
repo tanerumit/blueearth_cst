@@ -8,7 +8,7 @@
 # calendars, missingness or grain. This example illustrates reuse only; it is
 # not an approved second scientific set.
 # Trusted local calculations additionally accept calculation.set; see the
-# authoring contract in blueearth_cst/metrics/README.md. YAML cannot load Python.
+# authoring contract in blueearth_cst/indicators/README.md. YAML cannot load Python.
 
 schema_version: 1
 id: example_subset
@@ -19,7 +19,7 @@ selection:
     # A registered definition id (see dev/reference/indicator-glossary.md).
     - definition: q_annual_mean
     - definition: q_mean_annual_7day_min
-    # An authored entry names one registered calculation under its own metric
+    # An authored entry names one registered calculation under its own indicator
     # key; its numbers equal that definition's (shown as equivalent_definition).
     #- id: high_flow_p95
     #  title: Mean annual 95th-percentile discharge

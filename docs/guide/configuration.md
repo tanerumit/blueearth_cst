@@ -213,7 +213,7 @@ separate title and caption inventories remain available in every mode.
 
 The setting is optional and defaults to `none`. It belongs in the project file, not a workflow file.
 Changing it schedules affected plotting jobs without changing scenario or simulation identity.
-WF1 evaluation also refreshes the metrics written by its combined evaluation/plotting job.
+WF1 evaluation also refreshes the indicators written by its combined evaluation/plotting job.
 
 The former WF0 `diagnostics.captioned_figures` and WF2 `captioned_figures` settings are retired.
 Remove them and set `plotting.annotation: caption` in the project file to embed captions at the
@@ -239,7 +239,7 @@ See `config/plotting/README.md` for ownership and editing conventions.
 
 Palette edits schedule WF0–WF2 plotting jobs without changing scenario or simulation identity.
 The historical display-reference record also refreshes so cached map colours remain consistent.
-WF1 evaluation also refreshes the metrics written by its combined evaluation/plotting job.
+WF1 evaluation also refreshes the indicators written by its combined evaluation/plotting job.
 R/weathergenr figures keep their own palette. Colormap edits change colours only; classification,
 normalization and missing-value handling remain defined by the plotting code.
 

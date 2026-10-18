@@ -13,7 +13,7 @@ def simulation_settings(config_path):
 
     The named interface (``operations``/``indicator_sets``) is validated and
     normalized to the internal ``operation`` the Snakemake branches select on:
-    ``metrics-only`` for indicators alone, otherwise ``simulate-and-metrics``.
+    ``indicators-only`` for indicators alone, otherwise ``simulate-and-indicators``.
     """
     project, settings, _ = simulation_selection(config_path)
     return project, settings
@@ -45,17 +45,20 @@ def simulation_selection(config_path):
         )
     workflow_path = path.parent / stanza["config_path"]
     settings = yaml.safe_load(workflow_path.read_text(encoding="utf-8")) or {}
+    from blueearth_cst.shared.config_composition import normalize_indicator_settings
+
+    settings = normalize_indicator_settings(settings)
     if indicator_sets.uses_named_selection(settings):
         selection = indicator_sets.workflow_selection(settings, workflow_path)
         operation = (
-            "metrics-only"
+            "indicators-only"
             if selection.operations == ("indicators",)
-            else "simulate-and-metrics"
+            else "simulate-and-indicators"
         )
         return project, {**settings, "operation": operation}, selection
-    if settings.get("operation") not in {"simulate-and-metrics", "metrics-only"}:
+    if settings.get("operation") not in {"simulate-and-indicators", "indicators-only"}:
         raise ValueError(
-            "simulate_system.operation must be simulate-and-metrics or metrics-only; "
+            "simulate_system.operation must be simulate-and-indicators or indicators-only; "
             "or use operations: [simulations, indicators]"
         )
     return project, settings, indicator_sets.workflow_selection(settings, workflow_path)
@@ -65,6 +68,7 @@ def simulation_selection(config_path):
 #: the current rule name before Snakemake sees them.
 LEGACY_TARGETS = {
     "responses": "simulations_only",
+    "indicators": "simulations_and_indicators",
     "metrics": "simulations_and_indicators",
 }
 
@@ -77,10 +81,10 @@ def current_targets(targets):
 def check_required_variables(sets, available, where):
     """Refuse a selection whose response variables are not available.
 
-    Names the set, metric, method and variable; never schedules a simulation.
+    Names the set, indicator, method and variable; never schedules a simulation.
     """
     missing = [
-        f"{item.set_id}:{indicator.metric} ({indicator.method}) needs "
+        f"{item.set_id}:{indicator.indicator} ({indicator.method}) needs "
         f"{indicator.declaration.required_responses.variable}"
         for item in sets
         for indicator in item.indicators
@@ -134,14 +138,14 @@ def resolve_targets(config_path, targets):
             if selection.simulations:
                 simulation_indicator_sets(project, settings, selection)
             else:
-                from blueearth_cst.experiment.metric_plan import (
-                    metrics_only_configuration,
+                from blueearth_cst.experiment.indicator_plan import (
+                    indicators_only_configuration,
                 )
                 from blueearth_cst.experiment.simulation_record import (
                     read_simulation_intent_v2,
                 )
 
-                root, sets, _ = metrics_only_configuration(config_path)
+                root, sets, _ = indicators_only_configuration(config_path)
                 request = read_simulation_intent_v2(root)["documents"][
                     "response_request"
                 ]
@@ -152,13 +156,13 @@ def resolve_targets(config_path, targets):
                 )
         return operation, ["all" if selection.indicators else "simulations_only"]
     supported = (
-        "simulate-and-metrics + all/simulations_only; "
-        "metrics-only + simulations_and_indicators or one selected metric output"
+        "simulate-and-indicators + all/simulations_only; "
+        "indicators-only + simulations_and_indicators or one selected indicator output"
     )
     if len(targets) != 1:
         raise ValueError(f"UnsupportedOperationTarget: {supported}")
     target = current_targets(targets)[0]
-    if operation == "simulate-and-metrics":
+    if operation == "simulate-and-indicators":
         allowed = target in {"all", "simulations_only"}
     else:
         allowed = target == "simulations_and_indicators" or (
@@ -170,20 +174,22 @@ def resolve_targets(config_path, targets):
 
 
 def selected_output_paths(config_path):
-    """Every file a metrics-only invocation's selected plans name."""
-    from blueearth_cst.experiment.indicator_sets import calculation_records
-    from blueearth_cst.experiment.metric_plan import (
-        build_metric_plan,
-        current_metric_request,
-        metrics_only_configuration,
+    """Every file an indicators-only invocation's selected plans name."""
+    from blueearth_cst.experiment.indicator_plan import (
+        build_indicator_plan,
+        current_indicator_request,
+        indicators_only_configuration,
     )
+    from blueearth_cst.experiment.indicator_sets import calculation_records
 
-    root, sets, anchor = metrics_only_configuration(config_path)
+    root, sets, anchor = indicators_only_configuration(config_path)
     paths = set()
     for item in sets:
-        plan = build_metric_plan(
+        plan = build_indicator_plan(
             root,
-            current_metric_request(root, calculation_records(item.indicators), anchor),
+            current_indicator_request(
+                root, calculation_records(item.indicators), anchor
+            ),
         )
         paths |= {*plan["targets"].values(), *plan["tables"].values()}
     return paths
@@ -422,8 +428,8 @@ def verify_selected_collection_source(project, selection, marker):
 FORCE_OPTIONS = ("--forceall", "-F", "--forcerun", "-R", "--forcetargets", "-f")
 
 
-def validate_retained_metric_sets(experiment_root, extra):
-    """Before a forced run, refuse if any retained metric set is not intact.
+def validate_retained_indicator_sets(experiment_root, extra):
+    """Before a forced run, refuse if any retained indicator set is not intact.
 
     A valid set's producer returns it unchanged, so it cannot fail and trigger
     Snakemake's failed-job cleanup of its declared outputs; an invalid one is
@@ -431,8 +437,9 @@ def validate_retained_metric_sets(experiment_root, extra):
     """
     if not any(option in FORCE_OPTIONS for option in extra):
         return
-    from blueearth_cst.experiment.metric_plan import read_metric_set
+    from blueearth_cst.experiment.indicator_plan import read_indicator_set
+    from blueearth_cst.experiment.legacy_indicator_names import saved_set_markers
 
     root = Path(experiment_root)
-    for marker in sorted((root / "_engine/metric_sets").glob("*/metrics.json")):
-        read_metric_set(root, marker)
+    for marker in saved_set_markers(root):
+        read_indicator_set(root, marker)

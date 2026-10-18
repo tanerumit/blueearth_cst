@@ -5,17 +5,22 @@ Every case starts from a real v2 experiment frozen by the production producers
 published -- the state rule 4.06 publishes from.
 """
 
+import hashlib
 from dataclasses import replace
+from pathlib import Path
 from shutil import copyfile
 
 import pytest
 
+from blueearth_cst.experiment import response_inventory
 from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
     content_sha256,
+    read_canonical_json,
 )
 from blueearth_cst.experiment.response_inventory import (
     MissingResponseRequirement,
+    ResponseReaderUnavailable,
     publish_response_inventory_v2,
     read_response_inventory_v2,
 )
@@ -42,6 +47,107 @@ def v2(unpublished, tmp_path):
     root = copy_v2_experiment(unpublished, tmp_path).root
     assert not (root / "_engine/response_inventory.json").exists()
     return root, native_runs(root), dict(TEMPORAL)
+
+
+@pytest.fixture(scope="module", params=["LF", "CRLF"])
+def legacy_reader_experiment(tmp_path_factory, request):
+    """Freeze the actual pre-rename reader contract, independently of its alias."""
+    directory = Path(response_inventory.__file__).parent
+    source = (directory / "response_series.py").read_bytes().replace(b"\r\n", b"\n")
+    historical = source.replace(
+        b"indicator implementations", b"metric implementations", 1
+    )
+    # Pinned from the pre-rename module, not imported from compatibility code.
+    assert hashlib.sha256(historical).hexdigest() == (
+        "148f4f51059adbaa902f0b53b7e4cbed65e9758384fa3c9f2bab67faab2788e9"
+    )
+    if request.param == "CRLF":
+        historical = historical.replace(b"\n", b"\r\n")
+    names = (
+        "response_series.py",
+        "wflow_response_reader.py",
+        "../shared/native_locations.py",
+    )
+    revision = content_sha256(
+        [
+            {
+                "path": name,
+                "sha256": hashlib.sha256(
+                    historical if name == names[0] else (directory / name).read_bytes()
+                ).hexdigest(),
+            }
+            for name in names
+        ]
+    )
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(response_inventory, "response_reader_revision", lambda: revision)
+        return build_v2_experiment(tmp_path_factory.mktemp("legacy-reader"))
+
+
+@pytest.fixture
+def legacy_reader(legacy_reader_experiment, tmp_path):
+    return copy_v2_experiment(legacy_reader_experiment, tmp_path).root
+
+
+def test_vocabulary_only_reader_revision_reuses_retained_responses(legacy_reader):
+    from blueearth_cst.experiment.simulation_record import read_simulation_v2
+
+    root = legacy_reader
+    before = {
+        p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()
+    }
+    expected = read_canonical_json(root / "_engine/response_inventory.json")
+    assert read_response_inventory_v2(root) == expected
+    assert read_simulation_v2(root)["status"] == "ready"
+    assert before == {
+        p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()
+    }
+
+
+@pytest.mark.parametrize(
+    "changed", ["response_series.py", "wflow_response_reader.py", "native_locations.py"]
+)
+def test_legacy_reader_alias_refuses_unreviewed_source(
+    legacy_reader, tmp_path, monkeypatch, changed
+):
+    directory = Path(response_inventory.__file__).parent
+    copied = tmp_path / "reader/experiment"
+    copied.mkdir(parents=True)
+    (copied.parent / "shared").mkdir()
+    for name in (
+        "response_series.py",
+        "wflow_response_reader.py",
+        "../shared/native_locations.py",
+    ):
+        copyfile(directory / name, copied / name)
+    # The copied, unchanged implementation must accept the same legacy contract.
+    monkeypatch.setattr(
+        response_inventory, "__file__", str(copied / "response_inventory.py")
+    )
+    read_response_inventory_v2(legacy_reader)
+    path = (
+        (copied.parent / "shared" / changed)
+        if changed == "native_locations.py"
+        else copied / changed
+    )
+    path.write_bytes(path.read_bytes() + b"\nUNREVIEWED_READER_CHANGE = True\n")
+    with pytest.raises(ResponseReaderUnavailable):
+        read_response_inventory_v2(legacy_reader)
+
+
+def test_legacy_reader_alias_is_read_only(legacy_reader):
+    with pytest.raises(ResponseReaderUnavailable):
+        response_inventory.build_response_inventory_v2(
+            legacy_reader, native_runs(legacy_reader), dict(TEMPORAL)
+        )
+
+
+def test_legacy_reader_alias_still_checks_native_bytes(legacy_reader):
+    read_response_inventory_v2(legacy_reader)
+    csv = native_runs(legacy_reader)[FIRST].csv_path
+    csv.write_bytes(csv.read_bytes().replace(b",3\n", b",4\n"))
+    with pytest.raises(MissingResponseRequirement):
+        read_response_inventory_v2(legacy_reader)
 
 
 def test_common_temporal_and_path_neutral_scientific_projection(v2):

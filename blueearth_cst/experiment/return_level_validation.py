@@ -6,7 +6,7 @@ that carries the package and its asset. It never consults `dev/`, an absolute
 source path, session scratch or the network.
 
 Nothing here imports the estimator or its numerical dependencies: a reader of a
-retained metric set must not need `lmoments3` installed (D6), and the declaration
+retained indicator set must not need `lmoments3` installed (D6), and the declaration
 is pure data.
 """
 
@@ -24,13 +24,13 @@ REPORT_SCHEMA_VERSION = "gf15-benchmark-report/1"
 ESTIMATOR_ID = "gf15-lmoments-c/1"
 POLICY_ID = "gf15-accuracy-8x-v1"
 
-#: Name the copied report takes inside a published metric set.
+#: Name the copied report takes inside a published indicator set.
 REPORT_FILENAME = "return_level_benchmark.json"
 
 #: Name of the packaged asset within `blueearth_cst.experiment.data`.
 REPORT_RESOURCE = "gf15-accuracy-8x-v1.json"
 
-#: The exact retained validation record of every pre-C metric set. D6 dispatches
+#: The exact retained validation record of every pre-C indicator set. D6 dispatches
 #: on this value and it must never be written into a new request.
 LEGACY_VALIDATION = {"status": "provisional_operational", "benchmark": "not assessed"}
 
@@ -70,8 +70,8 @@ _DOMAIN_FIELDS = (
 class ReturnLevelValidationError(ValueError):
     """The shipped report or a declaration built from it is missing or altered.
 
-    Callers at a metric-set boundary translate this into `ImmutableMetricSetError`;
-    it is raised separately here so this module stays independent of `metric_plan`.
+    Callers at an indicator-set boundary translate this into `ImmutableIndicatorSetError`;
+    it is raised separately here so this module stays independent of `indicator_plan`.
     """
 
 
@@ -153,7 +153,7 @@ def build_declaration(data: bytes | None = None) -> dict[str, Any]:
     """Build the closed `return-level-validation/1` record from shipped evidence.
 
     The declaration is derived from the report, never from user annotation. Pass
-    `data` to declare against specific bytes (the copy inside a metric set);
+    `data` to declare against specific bytes (the copy inside an indicator set);
     omit it to declare against the installed asset.
     """
     payload = load_report_bytes() if data is None else data
@@ -185,7 +185,7 @@ def build_declaration(data: bytes | None = None) -> dict[str, Any]:
         "screening_policy_validated": False,
         "fit_uncertainty": "point_estimates_only",
     }
-    # Fail here rather than at a metric-set boundary if the closed set drifts.
+    # Fail here rather than at an indicator-set boundary if the closed set drifts.
     canonical_json_bytes(declaration)
     if set(declaration) != DECLARATION_FIELDS:
         raise ReturnLevelValidationError(

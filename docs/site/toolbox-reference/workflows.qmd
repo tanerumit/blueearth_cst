@@ -11,6 +11,6 @@ The workflows share a project configuration but have distinct products. The usua
 | [WF1 — Build model](workflow-build-model.qmd) | Build Wflow-SBM and run its historical reference | Model, historical responses, evaluation |
 | [WF2 — Analyze projections](workflow-analyze-projections.qmd) | Summarize CMIP6 change relative to a reference period | Monthly basin change factors and figures |
 | [WF3 — Generate scenarios](workflow-generate-scenarios.qmd) | Generate and perturb stochastic weather | Ready, reusable scenario collection |
-| [WF4 — Simulate system](workflow-simulate-system.qmd) | Simulate selected series and derive indicators | Retained responses and metric sets |
+| [WF4 — Simulate system](workflow-simulate-system.qmd) | Simulate selected series and derive indicators | Retained responses and indicator sets |
 
 Each page describes the rule sequence, configuration, inputs, and outputs. See [Configuration](../guide/configuration.md) for path resolution and the [Running guide](../guide/running.md) for commands. All products are written below the configured `project_dir`.

@@ -28,17 +28,17 @@ Use the historical evaluation, where observations exist, when judging how much c
 
 ## Traceability and limits
 
-The scenario collection identifies generated runs and perturbation settings; a simulation experiment records the selected collection and model; a metric set records definitions and source responses.
+The scenario collection identifies generated runs and perturbation settings; a simulation experiment records the selected collection and model; an indicator set records definitions and source responses.
 Join group indicators by `group_id` to `group_metadata.csv`, then by `st_id` to
 the collection's `perturbation_lookup.csv`. `group_members.csv` records the runs contributing to each group.
 Run indicators join by `run_id` to `scenario_run_lookup.csv`.
-Keep identifiers such as `run_01` and `group_01` as text; their scope is their owning collection or metric set.
-Group summaries average realization-level metrics with equal weight and propagate an invalid member's NaN.
+Keep identifiers such as `run_01` and `group_01` as text; their scope is their owning collection or indicator set.
+Group summaries average realization-level indicators with equal weight and propagate an invalid member's NaN.
 Return levels retain pooled estimation from member-local annual blocks, including for singleton groups.
 The case with an empty `st_id` is the unperturbed reference.
 See [Reading the outputs](../guide/outputs.md) for the exact layout.
 
 Return levels are GEV fits to groups of simulated years and should be used as screening indicators.
 The supplied benchmark covers limited synthetic conditions, offers no basin-specific guarantee, and does not provide uncertainty intervals.
-Read `return_level_validation` in `metrics.json` and the corresponding `return_level_benchmark.json` before interpretation.
+Read `return_level_validation` in `indicators.json` and the corresponding `return_level_benchmark.json` before interpretation.
 Short example runs are useful for execution checks, not return-period inference or engineering design.

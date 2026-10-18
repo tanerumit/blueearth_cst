@@ -2,7 +2,7 @@
 
 * ``test_delete_all_output_removes_the_declared_plot_outputs`` — O-24. Before
   R07, rule 1.13 wrote three PNGs and declared one, and rule 1.11 wrote
-  ``performance_metrics.csv`` and declared
+  ``performance_indicators.csv`` and declared
   none of them; undeclared outputs survive ``--delete-all-output`` and are
   invisible to the baseline.
 
@@ -62,8 +62,8 @@ CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 DECLARED_PLOT_OUTPUTS = (
     # No per-station FIGURE is declared: they are keyed by wflow_id, which is
     # a product of the model build and so unknowable at parse time. The
-    # metrics table is rule 1.15's config-invariant artifact.
-    "models/hydrology/wflow/evaluation/performance_metrics.csv",
+    # indicators table is rule 1.15's config-invariant artifact.
+    "models/hydrology/wflow/evaluation/performance_indicators.csv",
     # Rule 1.12's basin map. PNG only since 2026-08-10; the vector deliverable
     # was dropped because nothing read it.
     "data/spatial/plots/elevation_basin.png",

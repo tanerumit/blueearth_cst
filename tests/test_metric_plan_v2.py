@@ -16,6 +16,7 @@ import pandas as pd
 import pytest
 import yaml
 
+from blueearth_cst.experiment import indicator_sets
 from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
     content_sha256,
@@ -175,6 +176,64 @@ def test_a_v2_metric_set_publishes_once_and_is_reused_byte_for_byte(experiment):
     assert read_metric_set(root, marker) == manifest
     assert publish_metric_set(root, _plan(root)) == manifest
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
+
+
+def test_flow_regime_group_diagnostics_publish_as_json_without_changing_values(
+    experiment,
+):
+    """The bundled recharge alias retains tuple membership metadata in memory."""
+    root = experiment.root
+    baseline_plan = _plan(root)
+    publish_metric_set(root, baseline_plan)
+    baseline_files = {
+        path: path.read_bytes()
+        for path in _engine(root, baseline_plan).rglob("*")
+        if path.is_file()
+    }
+    selection = indicator_sets.parse_selection(
+        {"operations": ["indicators"], "indicator_sets": ["flow_regime"]},
+        experiment.config,
+    )
+    resolved = indicator_sets.resolve_set(selection.sets[0])
+    calculations = indicator_sets.calculation_records(
+        [item for item in resolved.indicators if item.metric == "recharge_depth"]
+    )
+    assert len(calculations) == 1
+    plan = build_metric_plan(root, current_metric_request(root, calculations, "YS-JAN"))
+
+    manifest = publish_metric_set(root, plan)
+
+    engine = _engine(root, plan)
+    diagnostics_path = engine / "metric_diagnostics.json"
+    diagnostics = read_canonical_json(diagnostics_path)
+    assert canonical_json_bytes(diagnostics) == diagnostics_path.read_bytes()
+    grouped = [
+        item for item in diagnostics["results"] if item["unit"].startswith("group_")
+    ]
+    assert len(grouped) == 2
+    for item in grouped:
+        expected = [
+            row["run_id"]
+            for row in plan["units"]
+            if row["run_group_id"] == item["unit"]
+        ]
+        assert item["metadata"]["member_run_ids"] == expected
+    for table in manifest["tables"]:
+        with (root / table["file"]["path"]).open(
+            encoding="utf-8", newline=""
+        ) as stream:
+            rows = list(csv.DictReader(stream))
+        assert rows
+        assert all(
+            float(row["value"]) == 9.0 for row in rows
+        )  # 3 + 6 daily recharge depths
+    assert read_metric_set(root, engine / "metrics.json") == manifest
+    before = {path: path.read_bytes() for path in engine.rglob("*") if path.is_file()}
+    assert publish_metric_set(root, plan) == manifest
+    assert before == {
+        path: path.read_bytes() for path in engine.rglob("*") if path.is_file()
+    }
+    assert baseline_files == {path: path.read_bytes() for path in baseline_files}
 
 
 def _relocate_to_legacy_root(root, marker, result, schema):

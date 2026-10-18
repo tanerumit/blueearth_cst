@@ -971,7 +971,7 @@ def _publish_metric_set_v2(experiment_root, plan):
     diagnostics_payload = canonical_json_bytes(
         {
             "schema_version": "metric-diagnostics/1",
-            "results": diagnostics,
+            "results": _plain(diagnostics),
         }
     )
     report = return_level_validation.load_report_bytes()

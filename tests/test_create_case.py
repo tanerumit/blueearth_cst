@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.create_case import main
+from scripts.create_case import _WORKFLOW_LABELS, main
 
 
 @pytest.fixture
@@ -85,7 +85,27 @@ def test_create_preserves_template_and_leaves_inventory(
     assert not (application / "README.md").exists()
     instructions = (application / "INSTRUCTIONS.md").read_text(encoding="utf-8")
     created = next(line for line in instructions.splitlines() if "| Created |" in line)
-    datetime.strptime(created.split("|")[2].strip(), "%Y-%m-%d %H:%M:%S")
+    timestamp = created.split("|")[2].strip()
+    assert datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S %z").utcoffset() is not None
+    for name, title, workflow in (
+        (
+            "project_config.yml",
+            "Project configuration",
+            "All workflows — shared settings and workflow enablement",
+        ),
+        (
+            "project_config_build_model.yml",
+            "Model building configuration",
+            "WF1 — Model building (build_model)",
+        ),
+    ):
+        text = (application / name).read_text(encoding="utf-8")
+        assert text.splitlines()[1:5] == [
+            f"# {title} — {name}",
+            f"# Created: {timestamp}",
+            "# Project: new-basin",
+            f"# Workflow: {workflow}",
+        ]
     assert "| Status |" not in instructions
     assert f'$projectDir = "{cases.as_posix()}/runs/new-basin"' in instructions
     assert instructions.rsplit("\n## ", 1)[1].startswith("Output folder and results")
@@ -117,6 +137,40 @@ def test_create_preserves_existing_output_tree(cases: Path, dry_run: bool) -> No
         if item.is_file()
     }
     assert after == before
+
+
+@pytest.mark.parametrize("workflow", _WORKFLOW_LABELS)
+def test_headers_follow_custom_paths_and_replace_inherited_metadata(
+    cases: Path, workflow: str
+) -> None:
+    template = cases / "templates/example-basin"
+    project = template / "project_config.yml"
+    config = yaml.safe_load(project.read_text(encoding="utf-8"))
+    config["workflows"] = {
+        workflow: {
+            "enabled": workflow == "analyze_climate",
+            "config_path": "custom.yaml",
+        }
+    }
+    project.write_text(yaml.safe_dump(config), encoding="utf-8")
+    border = "# " + "-" * 77
+    body = "# Keep this explanation\nsettings: {}\n"
+    (template / "custom.yaml").write_text(
+        f"{border}\n# Old configuration — custom.yaml\n"
+        "# Created: 2020-01-01 00:00:00 +00:00\n# Project: old-basin\n"
+        f"# Workflow: old\n{border}\n\n{body}",
+        encoding="utf-8",
+    )
+
+    assert main(args(cases)) == 0
+
+    text = (cases / "applications/new-basin/custom.yaml").read_text(encoding="utf-8")
+    code, label = _WORKFLOW_LABELS[workflow]
+    assert f"# Workflow: {code} — {label} ({workflow})\n" in text
+    assert text.count("# Created:") == 1
+    assert "old-basin" not in text
+    assert text.endswith(body)
+    assert yaml.safe_load(text) == {"settings": {}}
 
 
 @pytest.mark.parametrize("relative", ["runs", "runs/new-basin"])

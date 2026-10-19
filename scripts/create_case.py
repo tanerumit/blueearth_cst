@@ -18,6 +18,49 @@ from pathlib import Path
 
 import yaml
 
+_WORKFLOW_LABELS = {
+    "analyze_climate": ("WF0", "Historical climate analysis"),
+    "build_model": ("WF1", "Model building"),
+    "analyze_projections": ("WF2", "Climate projection analysis"),
+    "generate_scenarios": ("WF3", "Scenario generation"),
+    "simulate_system": ("WF4", "System simulation"),
+}
+
+
+def _config_header(
+    text: str, path: Path, project: str, created: str, owners: list[str]
+) -> str:
+    """Stamp a scaffold YAML without replacing its settings or explanatory comments."""
+    border = "# " + "-" * 77
+    # Only replace our exact header shape, never an arbitrary leading comment block.
+    text = re.sub(
+        rf"\A{re.escape(border)}\r?\n# [^\r\n]+\r?\n# Created: [^\r\n]+\r?\n"
+        rf"# Project: [^\r\n]+\r?\n# Workflow: [^\r\n]+\r?\n"
+        rf"{re.escape(border)}\r?\n\r?\n",
+        "",
+        text,
+        count=1,
+    )
+    title = "Project configuration"
+    workflow = "All workflows — shared settings and workflow enablement"
+    if path != Path("project_config.yml"):
+        title = "Supporting configuration"
+        workflow = "Supporting settings — no direct workflow assignment"
+        if owners:
+            title = "Shared workflow configuration"
+            if len(owners) == 1:
+                title = _WORKFLOW_LABELS.get(owners[0], ("", owners[0]))[1]
+                title += " configuration"
+            workflow = "; ".join(
+                f"{code} — {label} ({name})" if code else name
+                for name in owners
+                for code, label in [_WORKFLOW_LABELS.get(name, ("", name))]
+            )
+    return (
+        f"{border}\n# {title} — {path.name}\n# Created: {created}\n"
+        f"# Project: {project}\n# Workflow: {workflow}\n{border}\n\n{text}"
+    )
+
 
 def _replace(text: str, keys: tuple[str, ...], value: object) -> str:
     """Replace one YAML scalar using parser offsets, preserving comments."""
@@ -118,6 +161,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     workflows = config.get("workflows")
     if not isinstance(workflows, dict) or not workflows:
         raise ValueError("Template requires workflow stanzas")
+    config_owners: dict[Path, list[str]] = {}
     for name, stanza in workflows.items():
         if not isinstance(stanza, dict) or stanza.get("enabled") is not (
             name == "analyze_climate"
@@ -129,6 +173,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             target = Path(stanza["config_path"])
             if target.is_absolute() or ".." in target.parts or target not in files:
                 raise ValueError(f"Workflow config must be inside template: {target}")
+            config_owners.setdefault(target, []).append(name)
     text = _replace(text, ("project", "project_dir"), outputs.as_posix())
     text = _replace(
         text,
@@ -162,6 +207,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     if yaml.safe_load(text) != expected:
         raise ValueError("Template aliases affect fields outside the case identity")
     files[config_path] = text.encode("utf-8")
+    created = datetime.now().astimezone().isoformat(sep=" ", timespec="seconds")
+    created = f"{created[:-6]} {created[-6:]}"
     for relative, content in list(files.items()):
         if relative.suffix not in {".yml", ".yaml"}:
             continue
@@ -190,7 +237,9 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
                 ("observations", variable),
                 (destination / sidecar).as_posix(),
             )
-        files[relative] = yaml_text.encode("utf-8")
+        files[relative] = _config_header(
+            yaml_text, relative, slug, created, config_owners.get(relative, [])
+        ).encode("utf-8")
     outlet = Path("data/output_locations.csv")
     rows = list(csv.reader(io.StringIO(files[outlet].decode("utf-8"))))
     if len(rows) != 2 or rows[0] != ["station_name", "x", "y"] or len(rows[1]) != 3:
@@ -207,7 +256,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         f"# {slug}: run instructions\n\n"
         "Use this guide to review your settings, run the assessment, and find its results.\n\n"
         "| Field | Value |\n|---|---|\n"
-        f"| Project | {slug} |\n| Created | {datetime.now():%Y-%m-%d %H:%M:%S} |\n"
+        f"| Project | {slug} |\n| Created | {created} |\n"
         f"| Coordinates (longitude, latitude) | {args.longitude}, {args.latitude} |\n"
         "\n"
         "## Setup\n\nOpen PowerShell in the toolbox root and set these paths:\n\n"

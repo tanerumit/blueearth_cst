@@ -61,6 +61,12 @@ The scaffold uses `runs/my-basin/` as its output root. Choose another path in
 `project.project_dir` or with `--project-dir` when retaining a separate assessment.
 Existing paths, including `active/` folders, remain valid and are not moved or archived.
 
+Each scaffolded YAML file starts with a commented title, filename, project name,
+creation timestamp (local time with UTC offset), and controlling workflow ID and name.
+The project file identifies shared settings and workflow enablement. Workflow labels
+follow `workflows.*.config_path`, including custom filenames. All files and
+`INSTRUCTIONS.md` share one creation timestamp; existing case files are not updated.
+
 Read the generated `INSTRUCTIONS.md` for preview and execution commands and
 a guide to the output folders. After
 selecting forcing, disable historical climate analysis before enabling downstream

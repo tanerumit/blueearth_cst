@@ -27,10 +27,13 @@ row(body) = println("$(Dates.format(now(), "HH:MM:SS")) - wflow - $(body)")
 
 if abspath(PROGRAM_FILE) == @__FILE__
     batch_id, members = parse_batch(ARGS)
+    include(joinpath(@__DIR__, "..", "shared", "resource_timing.jl"))
     include(joinpath(@__DIR__, "..", "shared", "wflow_progress.jl"))
     using .WflowProgress: open_frame, run_with_progress
     open_frame(first(members).run_id; position = "[1/$(length(members))]")
-    using Wflow
+    with_resource_timing("wflow_load", batch_id) do
+        @eval using Wflow
+    end
 
     exitcode = 0
     total = length(members)
@@ -41,7 +44,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
         try
             # The member's finished bar row, stamped and carrying `[k/N]`, is
             # its record; only a failure prints a row of its own.
-            run_with_progress(Wflow, member.toml_path; label=tag, position="[$(k)/$(total)]")
+            with_resource_timing("member", batch_id, tag) do
+                run_with_progress(Wflow, member.toml_path; label=tag, position="[$(k)/$(total)]")
+            end
             isfile(member.native_output_path) ||
                 error("Missing native output $(member.native_output_path)")
             if !isempty(staging)

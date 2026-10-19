@@ -25,7 +25,7 @@ from typing import Any
 
 import yaml
 
-from blueearth_cst.shared import invocation_history
+from blueearth_cst.shared import execution_outputs, invocation_history
 from blueearth_cst.shared.config_composition import (
     capture_configuration_sources,
     compose_captured_config,
@@ -574,6 +574,7 @@ def captured_projection(
     )
 
 
+@execution_outputs.capture_launch
 def run_workflow(
     workflow: str,
     project_config: Path,
@@ -663,7 +664,10 @@ def _run_workflow_started(
             from blueearth_cst.shared.windows_job import run_project_child
 
             result = run_project_child(
-                command, cwd=Path.cwd(), env=os.environ, writing=False
+                command,
+                cwd=Path.cwd(),
+                env={**os.environ, **execution_outputs.environment(path, record)},
+                writing=False,
             )
             invocation_history.finish(path, record, exit_code=result)
             return result
@@ -692,6 +696,7 @@ def _run_workflow_started(
         invocation_history.update(path, record)
         command[command.index("--configfile") + 1] = str(execution)
         environment = os.environ.copy()
+        environment.update(execution_outputs.environment(path, record))
         environment[CONTEXT_ENV] = str(context)
         from blueearth_cst.shared.windows_job import run_project_child
 

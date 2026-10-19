@@ -13,7 +13,8 @@ from blueearth_cst.shared.windows_job import run_owned_child
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows job objects only")
-def test_owned_child_exit_and_hard_parent_termination(tmp_path):
+@pytest.mark.parametrize("capture", [False, True])
+def test_owned_child_exit_and_hard_parent_termination(tmp_path, capture):
     marker = tmp_path / "child.txt"
     assert (
         run_owned_child(
@@ -23,7 +24,10 @@ def test_owned_child_exit_and_hard_parent_termination(tmp_path):
                 "from pathlib import Path; Path(r'%s').write_text('ok')" % marker,
             ],
             cwd=tmp_path,
-            env=os.environ,
+            env={
+                **os.environ,
+                **({"CST_EXECUTION_DIRECTORY": str(tmp_path)} if capture else {}),
+            },
         )
         == 0
     )
@@ -44,6 +48,8 @@ def test_owned_child_exit_and_hard_parent_termination(tmp_path):
         encoding="utf-8",
     )
     parent_env = {**os.environ, "PYTHONPATH": str(Path.cwd())}
+    if capture:
+        parent_env["CST_EXECUTION_DIRECTORY"] = str(tmp_path)
     parent = subprocess.Popen(
         [sys.executable, str(script)], cwd=Path.cwd(), env=parent_env
     )

@@ -281,7 +281,7 @@ def render_suite(
     )
     (root / "figure_captions.md").write_text("\n".join(markdown), encoding="utf-8")
     log_row(
-        f"Wrote {plural(len(manifest), 'figure')}; skipped {len(skipped)} (eligibility reasons → figure_captions.md)",
+        f"Wrote {plural(len(manifest), 'figure')}; {len(skipped)} skipped; reasons → figure_captions.md",
         module="projection_plots",
     )
     return manifest, skipped

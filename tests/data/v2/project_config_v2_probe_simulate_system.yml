@@ -12,4 +12,4 @@ compute:
   batch_size_max: 8
 
 # `run_historical` is absent: C-69 DELETED it and `st_0` is always produced.
-operation: simulate-and-metrics
+operation: simulate-and-indicators

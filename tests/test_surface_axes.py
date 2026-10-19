@@ -542,16 +542,16 @@ def test_duplicate_surface_ids_are_refused():
 # ---------------------------------------------------------------------------
 
 
-def _indicators(st_ids, metrics=("q_annual_mean",)):
+def _indicators(st_ids, indicators=("q_annual_mean",)):
     rows = [
         {
-            "metric": metric,
+            "indicator": indicator,
             "location": "101",
             "group_id": f"group_{number:02d}",
             "value": 1.0,
         }
         for number, st_id in enumerate(st_ids, 1)
-        for metric in metrics
+        for indicator in indicators
     ]
     frame = pd.DataFrame(rows)
     frame.attrs["group_metadata"] = pd.DataFrame(
@@ -598,7 +598,7 @@ def test_group_axis_joins_metadata_without_expanding_result_rows():
         indicators.to_dict("records")
         + [
             {
-                "metric": "q_return_level_10yr_max",
+                "indicator": "q_return_level_10yr_max",
                 "location": "101",
                 "group_id": "group_90",
                 "value": 2.0,
@@ -622,7 +622,7 @@ def test_indicator_reader_preserves_group_id_text(tmp_path):
 
     path = tmp_path / "q_group_indicators.csv"
     path.write_text(
-        "metric,location,group_id,value\nq_annual_mean,101,group_001,2.0\n",
+        "indicator,location,group_id,value\nq_annual_mean,101,group_001,2.0\n",
         encoding="utf-8",
     )
     assert read_indicators(path).iloc[0]["group_id"] == "group_001"
@@ -634,7 +634,7 @@ def test_surface_reader_refuses_other_result_scopes(tmp_path, id_column):
 
     path = tmp_path / "old_indicators.csv"
     path.write_text(
-        f"metric,location,{id_column},value\nq_annual_mean,101,01,2.0\n",
+        f"indicator,location,{id_column},value\nq_annual_mean,101,01,2.0\n",
         encoding="utf-8",
     )
     with pytest.raises(SurfaceMemberMismatchError, match="group_id"):

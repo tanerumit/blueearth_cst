@@ -1,4 +1,4 @@
-"""Freeze simulation inputs independently of metric selection and completion."""
+"""Freeze simulation inputs independently of indicator selection and completion."""
 
 import hashlib
 import os
@@ -18,7 +18,7 @@ class SimulationFrozenError(ValueError):
     """An experiment cannot reuse changed immutable simulation inputs."""
 
 
-class MetricsOnlySimulationUnavailable(ValueError):
+class IndicatorsOnlySimulationUnavailable(ValueError):
     """The selected experiment has no complete retained simulation."""
 
 
@@ -143,7 +143,15 @@ def simulation_intent_v2(
     _v2_digest(simulator["revision"], "simulator revision")
     _v2_fields(documents, _V2_DOCUMENTS, "simulation documents")
     _v2_model_reference(documents["model_reference"])
-    settings = _v2_fields(documents["settings"], {"simulation_window"}, "settings")
+    settings = documents["settings"]
+    from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+    include_unperturbed(settings)
+    _v2_fields(
+        {key: value for key, value in settings.items() if key != "include_unperturbed"},
+        {"simulation_window"},
+        "settings",
+    )
     window = _v2_fields(settings["simulation_window"], {"start", "end"}, "window")
     if (
         type(window["start"]) is not int
@@ -236,10 +244,19 @@ def read_simulation_intent_v2(experiment_root):
     if intent["collection"]["manifest"]["path_base"] != "project_root":
         raise SimulationFrozenError("collection marker must bind project root")
     marker = read_collection_v2(marker_path)
+    from blueearth_cst.experiment.simulation_runs import (
+        include_unperturbed,
+        selected_run_ids,
+    )
+
     if (
         marker["collection_id"] != intent["collection"]["collection_id"]
         or marker["collection_revision"] != intent["collection"]["collection_revision"]
-        or [item["run_id"] for item in marker["series"]]
+        or selected_run_ids(
+            marker,
+            marker_path,
+            include=include_unperturbed(intent["documents"]["settings"]),
+        )
         != intent["collection"]["run_ids"]
     ):
         raise SimulationFrozenError("selected collection differs from intent")
@@ -369,6 +386,7 @@ def live_simulation_inputs_v2(
     simulation_window,
     julia_command,
     header_path,
+    include_unperturbed=True,
 ):
     """Resolve all current scientific WF4 inputs into an immutable intent."""
     import tomllib
@@ -397,7 +415,9 @@ def live_simulation_inputs_v2(
     with (model / reference["model_toml"]).open("rb") as handle:
         model_config = tomllib.load(handle)
     first, last = forcing_window(simulation_window["start"], simulation_window["end"])
-    run_ids = [item["run_id"] for item in collection["series"]]
+    from blueearth_cst.experiment.simulation_runs import selected_run_ids
+
+    run_ids = selected_run_ids(collection, collection_path, include=include_unperturbed)
     request = plan_native_response_request(
         model / reference["model_toml"],
         run_ids,
@@ -416,6 +436,7 @@ def live_simulation_inputs_v2(
             "blueearth_cst/experiment/downscale_climate_forcing.py",
             "blueearth_cst/experiment/run_wflow_batch.jl",
             "blueearth_cst/shared/wflow_progress.jl",
+            "blueearth_cst/shared/resource_timing.jl",
             "blueearth_cst/shared/run_logged.py",
         ],
     )
@@ -432,6 +453,8 @@ def live_simulation_inputs_v2(
         "response_request": request,
         "preparation": preparation,
     }
+    if not include_unperturbed:
+        documents["settings"]["include_unperturbed"] = False
     selection = {
         "resolution_mode": resolution_mode,
         "manifest": file_reference(collection_path, "project_root", project),
@@ -599,33 +622,33 @@ def read_simulation_v2(experiment_root):
         or marker["canonicalization_id"] != "collection-canon/1"
         or marker["status"] != "ready"
     ):
-        raise MetricsOnlySimulationUnavailable("unsupported simulation marker")
+        raise IndicatorsOnlySimulationUnavailable("unsupported simulation marker")
     intent_path = resolve_file_reference(marker["intent"], {"project_root": project})
     if intent_path != _simulation_path(root, "_engine/simulation_intent.json"):
-        raise MetricsOnlySimulationUnavailable(
+        raise IndicatorsOnlySimulationUnavailable(
             "simulation marker points to another intent"
         )
     intent = read_simulation_intent_v2(root)
     if marker["simulation_id"] != intent["simulation_id"]:
-        raise MetricsOnlySimulationUnavailable("simulation marker identity differs")
+        raise IndicatorsOnlySimulationUnavailable("simulation marker identity differs")
     archive_path = resolve_file_reference(marker["archive"], {"project_root": project})
     if archive_path != _simulation_path(root, "config/run_record.yml"):
-        raise MetricsOnlySimulationUnavailable(
+        raise IndicatorsOnlySimulationUnavailable(
             "simulation marker points to another archive"
         )
     archive = validate_archive(archive_path.parent)
     if archive["owner"] != {"kind": "experiment", "id": intent["simulation_id"]}:
-        raise MetricsOnlySimulationUnavailable("simulation creator archive differs")
+        raise IndicatorsOnlySimulationUnavailable("simulation creator archive differs")
     inventory_path = resolve_file_reference(
         marker["response_inventory"], {"project_root": project}
     )
     if inventory_path != _simulation_path(root, "_engine/response_inventory.json"):
-        raise MetricsOnlySimulationUnavailable(
+        raise IndicatorsOnlySimulationUnavailable(
             "simulation marker points to another inventory"
         )
     inventory = read_response_inventory_v2(root)
     if inventory["simulation_id"] != intent["simulation_id"]:
-        raise MetricsOnlySimulationUnavailable("response inventory identity differs")
+        raise IndicatorsOnlySimulationUnavailable("response inventory identity differs")
     return marker
 
 

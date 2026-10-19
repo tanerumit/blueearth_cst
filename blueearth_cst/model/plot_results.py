@@ -22,7 +22,7 @@ from blueearth_cst.model.observation_validation import (
     validate_observation_station_ids,
 )
 from blueearth_cst.shared.func_plot_signature import (
-    compute_metrics,
+    compute_indicators,
     plot_basavg,
 )
 from blueearth_cst.shared.gauges import gauges_layer_name, gauges_variable_name
@@ -230,8 +230,8 @@ def analyse_wflow_historical(
       are available.
     - basin-average annual series and seasonal cycles for configured zonal outputs;
       optionally the same two figures individually for each subbasin.
-    - compute performance metrics (daily and monthly KGE, NSE, NSElog, RMSE, MSE, Pbias,
-      VE) if observations are available and if wflow run is longer than a year. Metrics
+    - compute performance indicators (daily and monthly KGE, NSE, NSElog, RMSE, MSE, Pbias,
+      VE) if observations are available and if wflow run is longer than a year. Indicators
       are saved to a csv file.
 
     Parameters
@@ -261,7 +261,7 @@ def analyse_wflow_historical(
     # Create output folders. R07 B10: the project-level
     # plots/wflow_model_performance/ tree is retired; rule 1.10's artifacts
     # live inside the engine subtree, split by KIND (P1) — figures under
-    # evaluation/plots/, the metrics table one level up in evaluation/,
+    # evaluation/plots/, the indicators table one level up in evaluation/,
     # because plots/ holds figures only.
     model_dir = model_dir or f"{project_dir}/models/hydrology/wflow"
     Folder_eval = f"{model_dir}/evaluation"
@@ -326,7 +326,7 @@ def analyse_wflow_historical(
     # output_locations -> output-locations, so deriving them here found neither
     # the variable nor the layer, and the membership tests turned that into
     # silence -- no gauge hydrographs, no signatures, and an EMPTY
-    # performance_metrics.csv on a config that supplied observations
+    # performance_indicators.csv on a config that supplied observations
     # (2026-08-01). See blueearth_cst/shared/gauges.py.
     if gauges_locs is not None and os.path.exists(gauges_locs):
         gauges_var = gauges_variable_name(results, gauges_locs, "Q")
@@ -398,7 +398,7 @@ def analyse_wflow_historical(
             "Basin-average figures omitted: no basin-average output variables are configured"
         )
 
-    ### 6. Plot hydrographs and compute performance metrics ###
+    ### 6. Plot hydrographs and compute performance indicators ###
     # Initialise the output performance table
     df_perf_all = pd.DataFrame()
     # Flag for plot signatures
@@ -447,19 +447,19 @@ def analyse_wflow_historical(
         if has_observations and station.wflow_id in qobs.index.values:
             qobs_i = qobs.sel(index=station.wflow_id)
 
-        # The metrics table is computed BEFORE the figures because the
+        # The indicators table is computed BEFORE the figures because the
         # performance sheet renders it rather than recomputing it — the figure
-        # and performance_metrics.csv cannot disagree that way.
-        metrics = None
+        # and performance_indicators.csv cannot disagree that way.
+        indicators = None
         if do_signatures and qobs_i is not None:
-            df_perf = compute_metrics(
+            df_perf = compute_indicators(
                 qsim=qsim_i,
                 qobs=qobs_i,
                 # The CSV is keyed by wflow_id too, so a reader can join the
                 # table to a figure, to a map label, to an output.csv column.
                 station_name=str(station.wflow_id),
             )
-            metrics = df_perf[str(station.wflow_id)].unstack("time_type")
+            indicators = df_perf[str(station.wflow_id)].unstack("time_type")
             df_perf_all = df_perf if df_perf_all.empty else df_perf_all.join(df_perf)
 
         plot_station_evaluation(
@@ -467,22 +467,22 @@ def analyse_wflow_historical(
             observed=qobs_i,
             station=station,
             plot_dir=Folder_stations,
-            metrics=metrics,
+            indicators=indicators,
             signatures=do_signatures and qobs_i is not None,
             log=_log,
             annotation=annotation,
         )
         plt.close("all")
 
-    # Save performance metrics to csv (evaluation/, not evaluation/plots/ — P1)
-    df_perf_all.to_csv(os.path.join(Folder_eval, "performance_metrics.csv"))
+    # Save performance indicators to csv (evaluation/, not evaluation/plots/ — P1)
+    df_perf_all.to_csv(os.path.join(Folder_eval, "performance_indicators.csv"))
     _log(
         (
-            f"Performance metric table written for {plural(len(df_perf_all.columns), 'evaluated location')}"
+            f"Performance indicator table written for {plural(len(df_perf_all.columns), 'evaluated location')}"
             if len(df_perf_all.columns)
-            else "No observation-based performance metrics computed"
+            else "No observation-based performance indicators computed"
         )
-        + " → performance_metrics.csv"
+        + " → performance_indicators.csv"
     )
 
     ### End of the function ###

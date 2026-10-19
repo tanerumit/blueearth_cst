@@ -1,4 +1,4 @@
-"""The metric-set value formatter (`export_wflow_results._format_value`).
+"""The indicator-set value formatter (`export_wflow_results._format_value`).
 
 The predecessor reduction these tests once covered was removed (t2609151037);
 its perturbation-axis cases live in `tests/test_surface_axes.py`.
@@ -46,6 +46,8 @@ def test_the_cap_cannot_trip_the_baseline_gate():
     ref = pd.read_csv(
         root / "dev" / "baseline" / "indicator_ref" / "74ed83c06b2e7e6c.csv"
     )
+    # Preserve the recorded reference bytes; only translate its legacy header.
+    ref = ref.rename(columns={"metric": "indicator"})
     assert not ref.empty
 
     worst = 0.0

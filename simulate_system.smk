@@ -8,6 +8,7 @@ sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
 from blueearth_cst.experiment.simulation_runner import simulation_settings
 from blueearth_cst.shared.snake_utils import declare_warning_tally, patch_psutil_windows_benchmark, warning_count
+from blueearth_cst.shared.execution_outputs import declare_warning_tally
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, run_summary, target_banner
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
@@ -15,117 +16,161 @@ config_path = workflow.configfiles[0]
 _, _settings = simulation_settings(config_path)
 OPERATION = _settings["operation"]
 if os.environ.get("CST_SIMULATION_OPERATION") != OPERATION or not os.environ.get("CST_SIMULATION_INVOCATION_ID"):
-    raise ValueError("Use python scripts/simulate_system.py --config <project> --target all (or --target simulations_and_indicators for metrics-only); bare simulate_system.smk is unsupported")
-if OPERATION == "metrics-only":
-    include: "blueearth_cst/experiment/rules/metrics_only.smk"
+    raise ValueError("Use python scripts/simulate_system.py --config <project> (operations/indicator_sets infer the target; a legacy operation config takes --target all, or --target simulations_and_indicators for indicators-only); bare simulate_system.smk is unsupported")
+if OPERATION == "indicators-only":
+    include: "blueearth_cst/experiment/rules/indicators_only.smk"
 else:
-    include: "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+    include: "blueearth_cst/experiment/rules/simulate_and_indicators.smk"
 
-from blueearth_cst.experiment.metric_plan import metric_result_pattern
-METRIC_RESULT_PATTERN = metric_result_pattern(
-    exp_dir, METRIC_TOKENS, METRIC_ANCHOR, target=os.environ.get("CST_SIMULATION_TARGET")
-)
+from blueearth_cst.experiment.indicator_sets import calculation_records
+from blueearth_cst.experiment.console_reporting import matching_sets
+from blueearth_cst.shared.console_style import register_indicator_context
+
+# Both included modules define INDICATOR_SETS (resolved named sets) and
+# INDICATOR_ANCHOR. Sets with identical numerical requests share one plan and one
+# immutable indicator set; set ids never enter a request or a wildcard.
+INDICATOR_CALCULATIONS = []
+for _item in INDICATOR_SETS:
+    _records = calculation_records(_item.indicators)
+    if _records not in INDICATOR_CALCULATIONS:
+        INDICATOR_CALCULATIONS.append(_records)
 
 # RULES comes from whichever module was included above.
-# One metric request per invocation -> one plan -> one metric set, so each runs
-# one job once the simulation checkpoint resolves.
-PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=1, summary="check retained responses against the metric request")
-DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=1, summary="compute and publish the immutable metric set from retained responses")
+# One plan and one indicator set per distinct request once the simulation
+# checkpoint resolves.
+PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=max(len(INDICATOR_CALCULATIONS), 1), summary="check retained responses against each indicator request")
+DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=max(len(INDICATOR_CALCULATIONS), 1), summary="compute and publish each immutable indicator set from retained responses")
 
 
-def _current_metric_request(wc=None):
-    from blueearth_cst.experiment.metric_plan import current_metric_request
+_INDICATOR_REQUESTS = None
+_VERIFIED_INDICATOR_PLANS = {}
 
+
+def _current_indicator_requests(wc=None):
+    """Map each distinct request's short digest to the request itself."""
+    from blueearth_cst.experiment.indicator_plan import current_indicator_requests
+
+    global _INDICATOR_REQUESTS
+    # Always ask Snakemake first: an incomplete simulation checkpoint must defer
+    # expansion, and a failed resolution must never populate the scheduling cache.
     _frozen_simulation(wc)
-    return current_metric_request(exp_dir, METRIC_TOKENS, METRIC_ANCHOR)
+    if _INDICATOR_REQUESTS is not None:
+        return _INDICATOR_REQUESTS
+    resolved = current_indicator_requests(exp_dir, INDICATOR_CALCULATIONS, INDICATOR_ANCHOR)
+    requests = {}
+    for records, request in zip(INDICATOR_CALCULATIONS, resolved, strict=True):
+        identity = short_digest(content_sha256(request))
+        requests[identity] = request
+        register_indicator_context("indicator_request_id", identity, [item.set_id for item in matching_sets(INDICATOR_SETS, records)])
+    # Per-process scheduling only. Rule execution/publication retain their fresh
+    # code, response and environment checks; subsequent invocations start empty.
+    _INDICATOR_REQUESTS = requests
+    return _INDICATOR_REQUESTS
 
 
 # 4.07  prepare_indicator_plan
 checkpoint prepare_indicator_plan:
-    message: PREPARE_INDICATOR_PLAN.banner(context="metric_request {wildcards.metric_request_id}")
+    message: PREPARE_INDICATOR_PLAN.banner(context="indicator_request {wildcards.indicator_request_id}")
     input:
         simulation=_frozen_simulation,
         responses=f"{engine_dir}/response_inventory.json",
     output:
-        f"{engine_dir}/metric_requests/{{metric_request_id}}.json",
+        f"{engine_dir}/indicator_requests/{{indicator_request_id}}.json",
     wildcard_constraints:
-        metric_request_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
+        indicator_request_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     params:
-        request=_current_metric_request,
+        request=lambda wc: _current_indicator_requests(wc)[wc.indicator_request_id],
     run:
-        from blueearth_cst.experiment.metric_plan import write_metric_plan
-        if wildcards.metric_request_id != short_digest(content_sha256(params.request)):
-            raise ValueError("metric request differs from its exact checkpoint")
-        write_metric_plan(exp_dir, params.request)
+        from blueearth_cst.experiment.console_reporting import prepare_indicator_plan as report_plan
+        if wildcards.indicator_request_id != short_digest(content_sha256(params.request)):
+            raise ValueError("indicator request differs from its exact checkpoint")
+        report_plan(exp_dir, params.request, INDICATOR_SETS)
 
 
-def _selected_metric_outputs(wc):
-    request = _current_metric_request(wc)
-    path = checkpoints.prepare_indicator_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
-    from blueearth_cst.experiment.metric_plan import read_metric_set, verify_metric_plan
-    plan = verify_metric_plan(exp_dir, request)
-    if Path(plan["targets"]["manifest"]).exists():
-        read_metric_set(exp_dir, Path(plan["targets"]["manifest"]))
-    return list(plan["targets"].values())
+def _indicator_plan_paths(wc):
+    """Every selected plan as a plain input, so all checkpoint jobs are scheduled
+    together; ``_selected_indicator_outputs`` stops at the first incomplete one."""
+    return [f"{engine_dir}/indicator_requests/{identity}.json" for identity in _current_indicator_requests(wc)]
 
 
-def _metric_set_plan(wc):
-    request = _current_metric_request(wc)
-    path = checkpoints.prepare_indicator_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
-    plan = read_canonical_json(Path(path))
-    if wc.metric_set_id != short_digest(plan["metric_set_id"]):
-        raise ValueError("metric set differs from its exact selected plan")
-    return path
+def _selected_indicator_outputs(wc):
+    """Declared outputs of every selected plan; tables are not rule outputs."""
+    from blueearth_cst.experiment.indicator_plan import read_indicator_set, verify_indicator_plan
+    outputs = []
+    for identity, request in _current_indicator_requests(wc).items():
+        path = checkpoints.prepare_indicator_plan.get(indicator_request_id=identity).output[0]
+        # Rebuilt checkpoints invalidate validation even with preserved mtimes.
+        # Cache only completed, successfully verified plans for these exact bytes.
+        stored = read_canonical_json(Path(path))
+        key = (identity, content_sha256(stored))
+        if key not in _VERIFIED_INDICATOR_PLANS:
+            _VERIFIED_INDICATOR_PLANS[key] = verify_indicator_plan(exp_dir, request)
+        plan = _VERIFIED_INDICATOR_PLANS[key]
+        if Path(plan["targets"]["manifest"]).exists():
+            read_indicator_set(exp_dir, Path(plan["targets"]["manifest"]))
+        outputs.extend(plan["targets"].values())
+    return outputs
+
+
+def _indicator_set_plan(wc):
+    for identity in _current_indicator_requests(wc):
+        path = checkpoints.prepare_indicator_plan.get(indicator_request_id=identity).output[0]
+        plan = read_canonical_json(Path(path))
+        if short_digest(plan["indicator_set_id"]) == wc.indicator_set_id:
+            request = plan["request"]
+            register_indicator_context("indicator_set_id", wc.indicator_set_id, [item.set_id for item in matching_sets(INDICATOR_SETS, request["calculations"])])
+            return path
+    raise ValueError("indicator set is not produced by any selected plan")
 
 
 # 4.08  derive_system_indicators
 rule derive_system_indicators:
-    message: DERIVE_SYSTEM_INDICATORS.banner(context="metric_set {wildcards.metric_set_id}")
+    message: DERIVE_SYSTEM_INDICATORS.banner(context="indicator_set {wildcards.indicator_set_id}")
     input:
-        plan=_metric_set_plan,
+        plan=_indicator_set_plan,
     output:
-        manifest=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metrics.json"),
-        units=update(f"{METRIC_RESULT_PATTERN}/group_members.csv"),
-        group_metadata=update(f"{METRIC_RESULT_PATTERN}/group_metadata.csv"),
-        environment=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metric_environment.json"),
+        manifest=update(f"{engine_dir}/indicator_sets/{{indicator_set_id}}/indicators.json"),
+        units=update(f"{engine_dir}/indicator_sets/{{indicator_set_id}}/data/group_members.csv"),
+        group_metadata=update(f"{engine_dir}/indicator_sets/{{indicator_set_id}}/data/group_metadata.csv"),
+        environment=update(f"{engine_dir}/indicator_sets/{{indicator_set_id}}/indicator_environment.json"),
         # derive_system_indicators copies the checked benchmark report into the set so
         # a reader never needs the installed asset. Declared here because an
         # undeclared file is one Snakemake neither tracks nor cleans: a
         # --forcerun or partial clean would leave a manifest whose
         # return_level_benchmark.sha256 binds a file that is gone.
-        benchmark=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/return_level_benchmark.json"),
-        tables=[update(f"{METRIC_RESULT_PATTERN}/{token}_{scope}_indicators.csv") for token in METRIC_TOKENS for scope in ("run", "group")],
+        benchmark=update(f"{engine_dir}/indicator_sets/{{indicator_set_id}}/return_level_benchmark.json"),
+        # The per-variable tables vary with each set's selection, so they are
+        # written and inventoried by the job (staged, manifest last) rather
+        # than declared here; the runner validates retained sets before any
+        # forced producer runs.
     wildcard_constraints:
-        metric_set_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
+        indicator_set_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:
-        from blueearth_cst.experiment.metric_plan import publish_metric_set
-        from blueearth_cst.experiment.console_reporting import report_metric_set
-        manifest = publish_metric_set(exp_dir, read_canonical_json(Path(input.plan)))
-        report_metric_set(Path(exp_dir), manifest)
+        from blueearth_cst.experiment.indicator_plan import publish_indicator_set
+        from blueearth_cst.experiment.console_reporting import report_indicator_set
+        reused = Path(output.manifest).is_file()
+        manifest = publish_indicator_set(exp_dir, read_canonical_json(Path(input.plan)))
+        report_indicator_set(Path(exp_dir), manifest, INDICATOR_SETS, reused=reused)
 
 
 # simulations_and_indicators -- target (unnumbered)
 rule simulations_and_indicators:
-    # A `target_banner` with NO target list, unlike `simulations_only` and
-    # every `rule all`. `_selected_metric_outputs` is a checkpoint-dependent input function, so
-    # its targets do not exist at parse time and re-calling it from `params`
-    # to list them would evaluate that resolution twice, at two different
-    # moments, for a cosmetic gain. The metric sets are named by 4.08's own
-    # `Published <id>` row instead.
-    message: target_banner("simulations_and_indicators", [])
+    # The console counts resolved inputs after the indicator checkpoints.
+    message: target_banner("simulations_and_indicators", None, compact=True)
     input:
-        _selected_metric_outputs,
+        _indicator_plan_paths,
+        _selected_indicator_outputs,
 
 
 # --------------------------------------------------------------------------
 # Console: the run's own opening and closing block, and the Snakemake restyle.
 #
 # Defined HERE, once, rather than in either included module: `simulate_system.smk`
-# includes exactly one of `simulate_and_metrics.smk` and `metrics_only.smk`, so a
+# includes exactly one of `simulate_and_indicators.smk` and `indicators_only.smk`, so a
 # copy in each would be two definitions of the same three handlers to keep in
 # step. Both modules therefore define `project_dir`, `experiment`,
 # `LOG_PARTS_DIR`, `WORKFLOW_LOG_NAME` and `BENCHMARKS_NAME` -- see the note in
-# `metrics_only.smk`, which has no log or benchmark table to name.
+# `indicators_only.smk`, which has no log or benchmark table to name.
 #
 # Restored 2026-09-16. The R12 split (868c4b7c) carried the rule bodies out of
 # `run_stress_test.smk` but not the file scaffolding, so WF4 ran with no
@@ -193,16 +238,17 @@ def _header():
         # flush against Snakemake's preamble nor close flush against its
         # `Job stats:`. `open_run_header` owns that spacing.
         batching = globals().get("BATCH_PLAN_SUMMARY")
+        from blueearth_cst.shared.run_log_core import plural
+        details = {}
+        if OPERATION == "indicators-only":
+            details["responses"] = "Retained responses only; no generation, forcing preparation, or simulation"
+        else:
+            details["collection"] = f"{COLLECTION['collection_id']}; {plural(len(RUN_IDS), 'explicit run ID')}; resolution: {SELECTION['resolution_mode']}"
+            if globals().get("_simulation_complete"):
+                details["responses"] = f"Reusing simulation {stored['simulation_id']}; checking retained responses for requested indicators"
         open_run_header("wf4 simulate_system", project_dir, config_path,
                         experiment=experiment, operation=OPERATION,
-                        **({"batching": batching} if batching else {}))
-        from blueearth_cst.shared.run_log_core import log_row, plural
-        if OPERATION == "metrics-only":
-            log_row("Metrics-only: reading retained responses; no scenario generation, forcing preparation, or hydrological simulation will run", module="metrics")
-        else:
-            log_row(f"Selected scenario collection: {COLLECTION['collection_id']}; {plural(len(RUN_IDS), 'explicit run ID')}; resolution mode: {SELECTION['resolution_mode']}", module="experiment")
-            if globals().get("_simulation_complete"):
-                log_row(f"Reusing completed simulation {stored['simulation_id']}; retained native responses will be checked for the metric request", module="responses")
+                        **({"batching": batching} if batching else {}), **details)
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any
@@ -219,6 +265,10 @@ onstart:
     # stack does not exist yet then. Fail-open; see install_console_style.
     install_console_style()
     _header()
+    if globals().get("_batch_resource_decision") is not None:
+        from blueearth_cst.shared.resource_tracking import write_batch_decision
+        write_batch_decision("plan", _batch_resource_decision,
+            threads=int(_threads), run_ids=RUN_IDS)
 
 
 onsuccess:

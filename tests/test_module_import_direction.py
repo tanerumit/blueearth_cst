@@ -115,7 +115,7 @@ def test_console_style_is_absent_from_every_fingerprinted_closure():
     root = PKG.parent
     callers = (
         "blueearth_cst/experiment/generation_plan.py",
-        "blueearth_cst/experiment/metric_plan.py",
+        "blueearth_cst/experiment/indicator_plan.py",
         "blueearth_cst/experiment/simulation_record.py",
     )
     for src in callers:

@@ -231,7 +231,7 @@ def test_preview_rejects_invalid_names(api, tmp_path, name):
     [
         {"new_experiment": True, "requested_name": "x_37"},
         {"note": "no new"},
-        {"metrics_only": True, "new_experiment": True},
+        {"indicators_only": True, "new_experiment": True},
         {"recover": True, "new_experiment": True},
         {"wf4_enabled": False, "new_experiment": True},
         {"wf4_enabled": False, "recover": True},
@@ -887,12 +887,12 @@ def test_full_candidate_name_length_is_checked_without_truncation(api, tmp_path)
     assert api.preview_experiment(tmp_path, "x" * 61).name == "x" * 61 + "_01"
 
 
-def test_unready_legacy_metrics_only_refuses(api, helper, tmp_path):
+def test_unready_legacy_indicators_only_refuses(api, helper, tmp_path):
     fixture = helper.build_v2_experiment(tmp_path, publish=False)
     assert api.preview_experiment(fixture.project, helper.EXPERIMENT).action == "legacy"
     assert (
         api.preview_experiment(
-            fixture.project, helper.EXPERIMENT, metrics_only=True
+            fixture.project, helper.EXPERIMENT, indicators_only=True
         ).action
         == "refuse"
     )

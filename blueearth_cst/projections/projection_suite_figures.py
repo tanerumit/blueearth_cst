@@ -596,7 +596,7 @@ def ratio_strip(models, *, variable, statistic, bands=(), summary=None, scenario
         summary = summary.copy()
         summary["quantity"] = "ratio"
     name = "Temperature" if variable == "temp" else "Precipitation"
-    metric = "SD" if statistic == "std_detrended" else "CV"
+    indicator = "SD" if statistic == "std_detrended" else "CV"
     return dot_strip(
         data,
         summary,
@@ -605,13 +605,13 @@ def ratio_strip(models, *, variable, statistic, bands=(), summary=None, scenario
         statistic=statistic,
         scenarios=scenarios,
         baseline=1.0,
-        ylabel=f"{name} {metric} ratio",
+        ylabel=f"{name} {indicator} ratio",
     )
 
 
 def pooled_ratio_figure(members, summary, scenarios=None):
     """Member points with prepared geometric-member, equal-model summaries."""
-    metrics = (
+    indicators = (
         ("temp", "std_detrended", "Temp. SD"),
         ("precip", "std_detrended", "Precip. SD"),
         ("precip", "cv_detrended", "Precip. CV"),
@@ -632,7 +632,7 @@ def pooled_ratio_figure(members, summary, scenarios=None):
     low, high = values.min(), values.max()
     pad = 0.06 * (high - low or 1)
     for i, (ax, (variable, statistic, title)) in enumerate(
-        zip(axes.flat, metrics, strict=True)
+        zip(axes.flat, indicators, strict=True)
     ):
         ax.set_title(f"{chr(97 + i)}) {title}", loc="left")
         ax.set_ylim(low - pad, high + pad)

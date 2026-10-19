@@ -23,10 +23,10 @@ The page you asked for is not here. The likeliest reasons, in order:
 | Looking for | Go to |
 |---|---|
 | Installing the toolbox | [Setup guide](setup/install.md) |
-| Running the pipeline the first time | [Quick start](guide/quick-start.qmd) |
-| Pointing it at your own basin | [Configuring a project](guide/configuration.qmd) |
-| The workflows and their flags | [Running the workflows](guide/running.qmd) |
-| What a run wrote | [Reading the outputs](guide/outputs.qmd) |
+| Running the pipeline the first time | [Quick start](guide/quick-start.md) |
+| Pointing it at your own basin | [Configuring a project](guide/configuration.md) |
+| The workflows and their flags | [Running the workflows](guide/running.md) |
+| What a run wrote | [Reading the outputs](guide/outputs.md) |
 | Anything else | [the repository](https://github.com/tanerumit/blueearth_cst) |
 
 Or use the search box in the navigation bar.

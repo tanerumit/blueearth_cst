@@ -45,6 +45,7 @@ if str(_REPO_ROOT_PATH) not in sys.path:
 
 from blueearth_cst.shared import (  # noqa: E402
     console_style,
+    execution_outputs,
     invocation_history,
 )
 from blueearth_cst.shared.config_composition import (  # noqa: E402
@@ -950,12 +951,8 @@ def _closing_block(
     in one `not run` note instead. A group headed "ran" listing workflows that
     did not is worse than not printing them.
 
-    `logs` names the DIRECTORY rather than the per-workflow log files. Those
-    names are Snakefile constants (`wf4_simulate_system_<experiment>.log` is
-    built from a resolved experiment id), so reconstructing them here would put
-    a second definition of each in the one place that cannot notice when it
-    drifts -- and rule `all`'s own target list has already named each exact log
-    a few lines above.
+    `logs` names this execution's directory; workflow details are linked from
+    its summary rather than reconstructing individual filenames here.
     """
     root = os.fspath(project_dir).replace(os.sep, "/")
     verdict = "FAILED" if failed else "done"
@@ -1002,8 +999,14 @@ def _closing_block(
     # spelling the rule logs use (`run_log_core`).
     wrote: list[Any] = [("project", root)]
     if launched:
-        wrote.append(("logs", "<project>/logs/"))
+        directory = manifest.get("execution_directory", "logs")
+        wrote.append(("logs", f"<project>/{directory}/"))
     wrote.append(("invocation", _under_project(manifest_path, project_dir)))
+    from blueearth_cst.shared.invocation_summary import summary_path
+
+    run_summary_path = summary_path(manifest_path)
+    if run_summary_path.is_file():
+        wrote.append(("run summary", _under_project(run_summary_path, project_dir)))
     if manifest.get("command_receipt"):
         wrote.append(
             ("commands", _under_project(Path(manifest["command_receipt"]), project_dir))
@@ -1074,6 +1077,7 @@ def _project_name(cfg: Mapping[str, Any], project_dir: Path) -> str:
     return str(name) if name else project_dir.name
 
 
+@execution_outputs.capture_launch
 def run(
     config_path: str,
     cores: int,
@@ -1135,6 +1139,7 @@ def run(
         raise
 
 
+@execution_outputs.capture_launch
 def _run_owned(
     config_path: str,
     cores: int,
@@ -1175,6 +1180,11 @@ def _run_owned(
         requested_workflows=[name for name in WORKFLOW_ORDER if flags[name]],
     )
     manifest_path = history_path
+    manifest["execution_directory"] = history["execution_directory"]
+    history["workflow_selection"] = dict(flags)
+    history["workflow_order"] = list(WORKFLOW_ORDER)
+    history["requested_workflows"] = [name for name in WORKFLOW_ORDER if flags[name]]
+    invocation_history.update(history_path, history)
     reservation_context = None
     try:
         if not flags["simulate_system"]:
@@ -1336,19 +1346,34 @@ def _run_owned(
                         capture_simulation_sources_v2,
                     )
                     from blueearth_cst.experiment.simulation_runner import (
+                        current_targets,
                         simulation_command,
                         simulation_settings,
                     )
 
                     _, settings = simulation_settings(config_path)
                     workflow["operation"] = settings["operation"]
-                    if settings["operation"] == "simulate-and-metrics":
+                    if settings["operation"] == "simulate-and-indicators":
                         _check_wf1_leaves(flags, project_dir, config_path)
                     cmd, environment = simulation_command(
-                        config_path, list(simulation_targets), cores, extra
+                        config_path,
+                        list(simulation_targets),
+                        cores,
+                        extra,
+                        snapshot_path=history_path.with_name(
+                            f"{child_id}.indicator-selection"
+                        ),
                     )
                     if reservation_context is not None:
                         if not manifest["dry_run"]:
+                            from blueearth_cst.experiment.simulation_runner import (
+                                validate_retained_indicator_sets,
+                            )
+
+                            validate_retained_indicator_sets(
+                                project_dir / "experiments" / reservation_context.name,
+                                cmd,
+                            )
                             reservation_context.bind_selection()
                         environment.update(reservation_context.environment())
                     workflow["command"] = sanitize_argv(cmd)
@@ -1366,7 +1391,7 @@ def _run_owned(
                     _link_child(history_path, history, child_path, name, child_id)
                     if (
                         not manifest["dry_run"]
-                        and settings["operation"] == "simulate-and-metrics"
+                        and settings["operation"] == "simulate-and-indicators"
                     ):
                         capture = capture_simulation_sources_v2(
                             config_path, project_dir, child_id
@@ -1378,6 +1403,13 @@ def _run_owned(
                             "not_applicable"
                         )
                     invocation_history.update(child_path, child_record)
+                    from blueearth_cst.shared import resource_tracking
+
+                    if child_record.get("resources", {}).get("directory"):
+                        environment[resource_tracking.DIRECTORY_ENV] = child_record[
+                            "resources"
+                        ]["directory"]
+                    resource_tracking.phase(child_path, "snakemake")
                     # The simulation runner builds its own environment; the
                     # announcement rides on top of it rather than replacing it.
                     result = subprocess.CompletedProcess(
@@ -1388,6 +1420,9 @@ def _run_owned(
                             writing=not manifest["dry_run"],
                             env={
                                 **environment,
+                                **execution_outputs.environment(
+                                    child_path, child_record
+                                ),
                                 "CST_SIMULATION_INVOCATION_ID": child_id,
                                 console_style.ANNOUNCED_ENV: "1",
                                 invocation_history.PARENT_ENV: history["invocation_id"],
@@ -1396,6 +1431,39 @@ def _run_owned(
                             },
                         ),
                     )
+                    resource_tracking.phase(child_path, "finalization")
+                    snapshot = environment.get("CST_INDICATOR_SELECTION")
+                    if (
+                        not manifest["dry_run"]
+                        and snapshot
+                        and reservation_context is not None
+                        and current_targets(list(simulation_targets))
+                        != ["simulations_only"]
+                    ):
+                        from blueearth_cst.experiment.indicator_export import (
+                            publish_selected_sets,
+                            report_publication,
+                        )
+                        from blueearth_cst.experiment.indicator_sets import (
+                            read_selection_snapshot,
+                        )
+
+                        selection = read_selection_snapshot(snapshot)
+                        if selection.indicators:
+                            wf4_project, _ = simulation_settings(config_path)
+                            experiment_root = (
+                                project_dir / "experiments" / reservation_context.name
+                            )
+                            resource_tracking.phase(child_path, "indicator_exports")
+                            outcomes = publish_selected_sets(
+                                experiment_root, wf4_project, settings, selection
+                            )
+                            child_record["indicator_set_outcomes"] = outcomes
+                            if (
+                                not report_publication(experiment_root, outcomes)
+                                and result.returncode == 0
+                            ):
+                                result = subprocess.CompletedProcess(cmd, 1)
                 else:
                     env_for_child = {
                         **child_env,
@@ -1485,6 +1553,9 @@ def _run_owned(
                             ),
                         )
                     else:
+                        env_for_child.update(
+                            execution_outputs.environment(child_path, child_record)
+                        )
                         result = subprocess.CompletedProcess(
                             cmd,
                             run_project_child(
@@ -1497,7 +1568,11 @@ def _run_owned(
             except BaseException as exc:
                 if child_record is not None:
                     invocation_history.finish(
-                        child_path, child_record, exit_code=None, error=exc
+                        child_path,
+                        child_record,
+                        exit_code=None,
+                        error=exc,
+                        elapsed_seconds=time.monotonic() - workflow_started,
                     )
                     _link_child(history_path, history, child_path, name, child_id)
                 else:
@@ -1508,6 +1583,7 @@ def _run_owned(
                             "phase": "launch",
                             "error": {"type": type(exc).__name__, "message": str(exc)},
                             "exit_code": None,
+                            "elapsed_seconds": time.monotonic() - workflow_started,
                         }
                     )
                     invocation_history.update(history_path, history)
@@ -1538,8 +1614,12 @@ def _run_owned(
                     pass
             elapsed = format_elapsed(time.monotonic() - workflow_started)
             if child_record is not None:
+                child_record["warning_count"] = workflow["warning_count"]
                 invocation_history.finish(
-                    child_path, child_record, exit_code=result.returncode
+                    child_path,
+                    child_record,
+                    exit_code=result.returncode,
+                    elapsed_seconds=time.monotonic() - workflow_started,
                 )
             if child_path.exists():
                 _link_child(history_path, history, child_path, name, child_id)
@@ -1590,7 +1670,8 @@ def _run_owned(
             manifest_path=manifest_path,
             manifest=manifest,
             ran=ran,
-            elapsed_seconds=time.monotonic() - started,
+            elapsed_seconds=history.get("elapsed_seconds")
+            or time.monotonic() - started,
             failed=True,
         )
         raise
@@ -1606,7 +1687,7 @@ def _run_owned(
         manifest_path=manifest_path,
         manifest=manifest,
         ran=ran,
-        elapsed_seconds=time.monotonic() - started,
+        elapsed_seconds=history.get("elapsed_seconds") or time.monotonic() - started,
         failed=exit_code != 0,
     )
     return exit_code
@@ -1647,7 +1728,7 @@ def _link_child(
     item = {
         "invocation_id": child_id,
         "workflow": workflow,
-        "record": file_reference(child_path, "project_root", parent_path.parents[4]),
+        "record": file_reference(child_path, "project_root", parent_path.parents[3]),
     }
     children = parent["children"]
     for index, child in enumerate(children):
@@ -1911,7 +1992,8 @@ def main(argv: list[str] | None = None) -> int:
         "--simulation-target",
         nargs="+",
         default=["all"],
-        help="explicit WF4 targets; metrics-only requires metrics or one selected metric-set file",
+        help="explicit WF4 targets for a legacy operation config (indicators-only requires "
+        "indicators or one selected indicator-set file); operations/indicator_sets infer the target",
     )
     ap.add_argument(
         "extra",

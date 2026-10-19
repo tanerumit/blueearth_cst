@@ -154,7 +154,7 @@ do not. The magnitude witness is local CHIRPS evidence; tests cover the shared
 - **producer:** WF3 `prepare_perturbation_grid` and collection publication.
 - **consumer:** the stochastic provider reads the scenario row's explicit
   `st_id`; reporting derives axes from the retained lookup. Simulation and
-  metric identities never reconstruct membership from filenames.
+  indicator identities never reconstruct membership from filenames.
 - **shape:** a CSV with **header exactly**
   `st_id,month,temp_change,precip_change,precip_variance_change`, and
   **`12 × ST_NUM` rows** — twelve per member, `month ∈ 1..12`, members

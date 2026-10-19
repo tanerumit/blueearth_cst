@@ -62,7 +62,7 @@ findings:
       The doc targets are named loosely ("docs/ WF2 figure list", "the WF2 docs page"). No figure
       list exists. The live WF2 page is `docs/site/toolbox-reference/workflow-analyze-projections.qmd`,
       and its rule table (lines 11-17) and mermaid DAG (line 30) would lack 2.05b.
-      `docs/site/guide/outputs.qmd` describes run products and would lack `analysis/`. In the
+      `docs/guide/outputs.md` describes run products and would lack `analysis/`. In the
       rule-index the design cites only lines 881-908, but the numbering table at
       `dev/reference/workflows/rule-index.md:99-101` and the DAG at :782-799 ("2.06 reads 2.04's series,
       not 2.05") also describe 2.06's inputs, which this design changes.

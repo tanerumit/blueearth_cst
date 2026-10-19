@@ -6,7 +6,9 @@ from pathlib import Path
 import yaml
 
 
-def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None):
+def parse_simulation_workflow(
+    tmp_path, monkeypatch, *, config=None, dry_run=False, include_unperturbed=True
+):
     """Supply an already-validated collection to test scheduling declarations.
 
     Physical artifact validation is exercised by the collection/response suites;
@@ -42,16 +44,32 @@ def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None):
             for run in ("run_01", "run_02", "run_03")
         ]
     }
+    if not include_unperturbed:
+        from blueearth_cst.shared.workflow_config_snapshot import file_reference
+
+        lookup = collection / "scenario_run_lookup.csv"
+        lookup.write_text(
+            "run_id,st_id\nrun_01,\nrun_02,1\nrun_03,2\n", encoding="utf-8"
+        )
+        manifest["scenario_run_lookup"] = file_reference(
+            lookup, "record_directory", collection
+        )
     monkeypatch.setattr(
         simulation_runner,
         "resolve_selected_collection",
         lambda *args: (selection, manifest),
     )
-    monkeypatch.setenv("CST_SIMULATION_OPERATION", "simulate-and-metrics")
+    monkeypatch.setenv("CST_SIMULATION_OPERATION", "simulate-and-indicators")
     monkeypatch.setenv("CST_SIMULATION_INVOCATION_ID", uuid.uuid4().hex)
     settings = tmp_path / "simulation.yml"
     settings.write_text(
-        "experiment_name: fixture\noperation: simulate-and-metrics\n", encoding="utf-8"
+        "experiment_name: fixture\n"
+        + (
+            "operation: simulate-and-indicators\n"
+            if include_unperturbed
+            else "operations: [simulations]\ninclude_unperturbed: false\n"
+        ),
+        encoding="utf-8",
     )
     document = config or {
         "schema_version": 2,
@@ -74,4 +92,19 @@ def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None):
         )
         workflow = wf_api._workflow
         workflow.include(workflow.main_snakefile, overwrite_default_target=True)
+        if dry_run:
+            # Only external leaves are substituted. Snakemake builds the real
+            # simulation DAG and defers its uncompleted snapshot checkpoint.
+            Path(selection["manifest_path"]).touch()
+            for leaf in (".outputs_configured", "wflow_sbm.toml"):
+                path = project / "models/hydrology/wflow" / leaf
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+            for item in manifest["series"]:
+                path = project / item["file"]["path"]
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+            wf_api.dag(
+                dag_settings=api.DAGSettings(targets={"simulations_only"})
+            ).execute_workflow(executor="dryrun")
         return workflow

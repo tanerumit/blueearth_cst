@@ -88,7 +88,7 @@ def configs(tmp_path):
     source.write_text(yaml.safe_dump(PROJECT), encoding="utf-8")
     workflow = tmp_path / "project_config_rapid_simulate_system.yml"
     workflow.write_text(
-        "experiment_name: experiment_rapid\noperation: simulate-and-metrics\n",
+        "experiment_name: experiment_rapid\noperation: simulate-and-indicators\n",
         encoding="utf-8",
     )
     return source, workflow
@@ -121,7 +121,7 @@ def test_digests_track_an_edit_to_either_file(configs):
     source, workflow = configs
     before = snapshot_document("simulate_system", source, workflow, PROJECT)
     workflow.write_text(
-        "experiment_name: experiment_rapid\noperation: metrics-only\n",
+        "experiment_name: experiment_rapid\noperation: indicators-only\n",
         encoding="utf-8",
     )
     after = snapshot_document("simulate_system", source, workflow, PROJECT)
@@ -140,12 +140,12 @@ def test_absent_workflow_file_is_an_explicit_null(configs):
 def test_operation_survives_into_the_snapshot(configs):
     """`operation:` reached no record anywhere before this file existed."""
     source, workflow = configs
-    settings = {"experiment_name": "experiment_rapid", "operation": "metrics-only"}
+    settings = {"experiment_name": "experiment_rapid", "operation": "indicators-only"}
     composed = composed_workflow_section(PROJECT, "simulate_system", settings)
     document = snapshot_document("simulate_system", source, workflow, composed)
     assert (
         document["effective_config"]["workflows"]["simulate_system"]["operation"]
-        == "metrics-only"
+        == "indicators-only"
     )
 
 
@@ -155,7 +155,7 @@ def test_composed_section_matches_compose_config_shape():
     The WF0-WF2 snapshots drop it and keep `enabled`. WF4 does not go through
     `compose_config`, so this is the one place that shape can drift.
     """
-    settings = {"experiment_name": "experiment_rapid", "operation": "metrics-only"}
+    settings = {"experiment_name": "experiment_rapid", "operation": "indicators-only"}
     composed = composed_workflow_section(PROJECT, "simulate_system", settings)
     stanzas = composed["workflows"]
     assert set(stanzas) == {"generate_scenarios", "simulate_system"}
@@ -205,7 +205,7 @@ def test_snapshot_is_named_by_no_identity_document():
 
     `simulation_id` and `collection_id` hash digests, never path strings. If
     the snapshot were ever promoted into the simulation documents or into the
-    collection intent, every retained metric set's identity would move -- so the
+    collection intent, every retained indicator set's identity would move -- so the
     name must appear in neither module's document set nor in the id projection.
     """
     for module, pattern in (
@@ -236,29 +236,29 @@ def test_both_entry_points_publish_from_their_pinned_plan():
     wf3 = (REPO / "generate_scenarios.smk").read_text(encoding="utf-8")
     assert "read_pinned_plan(" in wf3
     assert 'os.environ["CST_GENERATION_PLAN_PATH"]' in wf3
-    wf4 = (REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk").read_text(
-        encoding="utf-8"
-    )
+    wf4 = (
+        REPO / "blueearth_cst/experiment/rules/simulate_and_indicators.smk"
+    ).read_text(encoding="utf-8")
     assert "freeze_simulation_v2(" in wf4
     assert "live_simulation_inputs_v2(" in wf4
 
 
-def test_simulate_and_metrics_all_targets_the_selected_metric_set():
+def test_simulate_and_indicators_all_targets_the_selected_indicator_set():
     """The default WF4 target must deliver both halves of its operation name."""
-    text = (REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk").read_text(
-        encoding="utf-8"
-    )
+    text = (
+        REPO / "blueearth_cst/experiment/rules/simulate_and_indicators.smk"
+    ).read_text(encoding="utf-8")
     rule_all = re.search(
         r"rule all:(.*?)(?:\nif not _simulation_complete:)", text, re.S
     )
     assert rule_all
-    assert "_selected_metric_outputs" in rule_all.group(1)
+    assert "_selected_indicator_outputs" in rule_all.group(1)
 
 
 def test_completed_simulation_validation_suppresses_successful_dependency_chatter():
     """WF4 parse-time validation must not bypass the styled console."""
     workflow = (
-        REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+        REPO / "blueearth_cst/experiment/rules/simulate_and_indicators.smk"
     ).read_text(encoding="utf-8")
     # Captured, and its warnings deferred to the run header (`defer_rows`).
     assert "with captured_output(replay=defer_rows):" in workflow

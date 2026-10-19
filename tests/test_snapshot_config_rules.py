@@ -112,7 +112,7 @@ def test_each_workflow_declares_its_consumed_key_projection(snakefile_name, expe
 def test_successors_use_typed_retained_records_instead_of_snapshot_guard():
     generation = (REPO / "generate_scenarios.smk").read_text(encoding="utf-8")
     simulation = (
-        REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+        REPO / "blueearth_cst/experiment/rules/simulate_and_indicators.smk"
     ).read_text(encoding="utf-8")
     assert "generation_configuration" in generation
     assert "read_pinned_plan" in generation

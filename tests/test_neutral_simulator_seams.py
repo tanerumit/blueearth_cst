@@ -1,13 +1,13 @@
 """A fixture without stochastic fields or Wflow output reaches the same reducer."""
 
-from blueearth_cst.experiment.metric_registry import declarations, reduce_run
+from blueearth_cst.experiment.indicator_registry import declarations, reduce_run
 from blueearth_cst.experiment.simulator_adapter import PreparationContext, RunForcing
 from blueearth_cst.experiment.wflow_response_reader import ResponseRequest
 from blueearth_cst.shared.provenance import file_sha256
 from tests._wf3_successor_fixtures import DummySimulator, SyntheticProvider
 
 
-def test_synthetic_provider_dummy_simulator_neutral_metric(tmp_path):
+def test_synthetic_provider_dummy_simulator_neutral_indicator(tmp_path):
     provider, simulator = SyntheticProvider(), DummySimulator()
     request = ResponseRequest(("q",))
     values = []

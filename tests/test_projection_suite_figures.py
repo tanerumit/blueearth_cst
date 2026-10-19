@@ -191,7 +191,7 @@ def test_manifest_bijection_unavailable_and_annotation_mode(
     console = capsys.readouterr().out
     assert "projection_plots - Rendering windows:" in console
     assert "; reference: " in console
-    assert "Wrote 1 figure; skipped 18" in console
+    assert "Wrote 1 figure; 18 skipped; reasons → figure_captions.md" in console
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }

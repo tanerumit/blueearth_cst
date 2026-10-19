@@ -16,7 +16,7 @@ from scripts import suggest_experiment_name
 @pytest.fixture
 def config(tmp_path):
     settings = tmp_path / "simulation.yml"
-    settings.write_text("operation: simulate-and-metrics\n", encoding="utf-8")
+    settings.write_text("operation: simulate-and-indicators\n", encoding="utf-8")
     path = tmp_path / "project.yml"
     path.write_text(
         yaml.safe_dump(

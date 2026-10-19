@@ -1406,10 +1406,24 @@ def test_a_basin_always_fits_inside_its_own_locator_window(restore_locator):
 # --- the whole figure, for a non-elevation quantity --------------------------
 
 
-def test_a_climate_style_renders_through_the_same_function():
+def test_a_climate_style_renders_through_the_same_function(monkeypatch, capsys):
     """The template's reason to exist: one figure function, four quantities."""
     import matplotlib.pyplot as plt
 
+    place_furniture = carto.place_furniture
+
+    def with_layout_notes(*args, **kwargs):
+        *placement, notes = place_furniture(*args, **kwargs)
+        return (
+            *placement,
+            notes
+            + [
+                "map extended 20% north to clear the locator inset",
+                "locator inset overlaps the basin; padding cap reached",
+            ],
+        )
+
+    monkeypatch.setattr(carto, "place_furniture", with_layout_notes)
     layers = _layers()
     fig, ax = plot_raster_map(
         layers["dem"],
@@ -1420,6 +1434,9 @@ def test_a_climate_style_renders_through_the_same_function():
     )
     try:
         assert _legend_labels(ax) == [_RIVER, _BASIN, _DIVIDES]
+        output = capsys.readouterr().out
+        assert "map extended" not in output
+        assert "locator inset overlaps the basin; padding cap reached" in output
     finally:
         plt.close(fig)
 

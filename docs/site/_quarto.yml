@@ -16,13 +16,15 @@
 project:
   type: website
   output-dir: _site
+  pre-render:
+    - "python ../../dev/scripts/stage_site_guides.py"
   resources:
     - "guide/assets/shape-of-a-run.html"
   render:
     # Globs, not directories. A bare `guide/` matches nothing and renders
     # nothing -- silently, with a successful exit and a smaller site.
     - "index.qmd"
-    - "guide/*.qmd"
+    - "guide/*.md"
     - "scientific-approach/*.qmd"
     - "toolbox-reference/*.qmd"
     # Explicit, like everything else here: quarto special-cases a 404.qmd only
@@ -41,7 +43,7 @@ website:
   navbar:
     left:
       - text: "User guide"
-        href: guide/quick-start.qmd
+        href: guide/quick-start.md
       - text: "Setup"
         href: setup/install.md
       - text: "Scientific approach"
@@ -59,12 +61,13 @@ website:
       contents:
         - section: "Getting started"
           contents:
-            - guide/quick-start.qmd
-            - guide/configuration.qmd
+            - guide/quick-start.md
+            - guide/configuration.md
         - section: "Running and results"
           contents:
-            - guide/running.qmd
-            - guide/outputs.qmd
+            - guide/running.md
+            - guide/benchmarking.md
+            - guide/outputs.md
     - title: "Setup"
       style: docked
       collapse-level: 3

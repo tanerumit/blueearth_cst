@@ -80,7 +80,7 @@ Domain identifiers carry different kinds of contract, so treat them in three tie
 
 **Tier 2 — established BlueEarth contracts. Grandfather; rename only with a migration note (§7).**
 
-- User-facing table labels: `BFI`, return-period tokens such as `10yr` / `2yr` inside a metric name.
+- User-facing table labels: `BFI`, return-period tokens such as `10yr` / `2yr` inside an indicator name.
 - HydroMT data-catalog *source names* (`era5`, `merit_hydro`, `cmip6_<model>_<scenario>_<member>`) — BlueEarth-minted lookup keys forming a catalog-lookup contract. Their schema is tier 1.
 - User-facing Wflow output *labels* mapped to CSDMS names in `setup_gauges_and_outputs.py` (`actual evapotranspiration`, `groundwater recharge`) — display names, not upstream IDs.
 - Cross-tool scientific variable names: `precip` and `temp` are the canonical stems, and every producer uses them.
@@ -205,7 +205,10 @@ Each rule in the five `*.smk` workflow definitions carries a `W.NN` reference nu
 It exists in exactly two places:
 
 - **A comment header above each rule** — `# 1.06  build_wflow_model — parameterize Wflow-SBM on the spatial foundation`.
-- **The `log:` / `benchmark:` filename prefix** — `logs/1.06_build_wflow_model.log`, `benchmarks/_parts/1.06_build_wflow_model.tsv`. For wildcard rules the prefix goes on the subdirectory (`logs/4.05_run_wflow_simulations/batch_{b}.log`). All workflows share `project_dir/logs`, so the `W` digit keeps their logs disambiguated and a single `ls logs/` sorts by workflow then step.
+- **The `log:` / `benchmark:` filename prefix** — `1.06_build_wflow_model.log` or `.tsv`.
+  Managed launches place parts under `logs/<execution>/_parts/wfN-<child-id>/{logs,benchmarks}/`.
+  For wildcard rules the prefix goes on the subdirectory (`4.05_run_wflow_simulations/batch_{b}.log`).
+  The `W` digit keeps rule labels disambiguated and sorts them by workflow then step within each namespace.
 
 Two properties hold:
 

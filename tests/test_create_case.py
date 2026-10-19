@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 import yaml
 
-from scripts.create_case import main
+from scripts.create_case import (
+    _WORKFLOW_LABELS,
+    _annotate_config,
+    _template_comments,
+    _yaml_parameters,
+    main,
+)
 
 
 @pytest.fixture
@@ -26,7 +32,10 @@ def cases(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     (template / "project_config_build_model.yml").write_text(
-        "observations:\n  river discharge: null\n", encoding="utf-8"
+        "observations:\n  river discharge: null\n"
+        "engine:\n  build_config: config/defaults/wflow_build_model.yml\n"
+        "simulation_window: {start: 2010, end: 2016}\n",
+        encoding="utf-8",
     )
     (template / "data" / "output_locations.csv").write_text(
         "station_name,x,y\noutlet,1,2\n", encoding="utf-8"
@@ -80,12 +89,47 @@ def test_create_preserves_template_and_leaves_inventory(
     assert config["climate"]["selected"] == "era5"
     assert config["workflows"]["build_model"]["enabled"] is False
     assert "# Keep scientific comments" in config_text
+    model_text = (application / "project_config_build_model.yml").read_text(
+        encoding="utf-8"
+    )
+    assert (
+        "# Configure initial model construction. Input: HydroMT YAML file path.\n"
+        "  build_config: config/defaults/wflow_build_model.yml"
+    ) in model_text
+    assert (
+        "# start: First simulation water year. Input: integer year, <= end."
+        in model_text
+    )
+    assert yaml.safe_load(model_text)["simulation_window"] == {
+        "start": 2010,
+        "end": 2016,
+    }
     assert "outlet,12.5,-3.0" in (application / "data/output_locations.csv").read_text()
     assert "configured; not run" in (application / "notes.md").read_text()
     assert not (application / "README.md").exists()
     instructions = (application / "INSTRUCTIONS.md").read_text(encoding="utf-8")
     created = next(line for line in instructions.splitlines() if "| Created |" in line)
-    datetime.strptime(created.split("|")[2].strip(), "%Y-%m-%d %H:%M:%S")
+    timestamp = created.split("|")[2].strip()
+    assert datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S %z").utcoffset() is not None
+    for name, title, workflow in (
+        (
+            "project_config.yml",
+            "Project configuration",
+            "All workflows — shared settings and workflow enablement",
+        ),
+        (
+            "project_config_build_model.yml",
+            "Model building configuration",
+            "WF1 — Model building (build_model)",
+        ),
+    ):
+        text = (application / name).read_text(encoding="utf-8")
+        assert text.splitlines()[1:5] == [
+            f"# {title} — {name}",
+            f"# Created: {timestamp}",
+            "# Project: new-basin",
+            f"# Workflow: {workflow}",
+        ]
     assert "| Status |" not in instructions
     assert f'$projectDir = "{cases.as_posix()}/runs/new-basin"' in instructions
     assert instructions.rsplit("\n## ", 1)[1].startswith("Output folder and results")
@@ -117,6 +161,108 @@ def test_create_preserves_existing_output_tree(cases: Path, dry_run: bool) -> No
         if item.is_file()
     }
     assert after == before
+
+
+@pytest.mark.parametrize("workflow", _WORKFLOW_LABELS)
+def test_headers_follow_custom_paths_and_replace_inherited_metadata(
+    cases: Path, workflow: str
+) -> None:
+    template = cases / "templates/example-basin"
+    project = template / "project_config.yml"
+    config = yaml.safe_load(project.read_text(encoding="utf-8"))
+    config["workflows"] = {
+        workflow: {
+            "enabled": workflow == "analyze_climate",
+            "config_path": "custom.yaml",
+        }
+    }
+    project.write_text(yaml.safe_dump(config), encoding="utf-8")
+    border = "# " + "-" * 77
+    body = "# Keep this explanation\nsettings: {}\n"
+    (template / "custom.yaml").write_text(
+        f"{border}\n# Old configuration — custom.yaml\n"
+        "# Created: 2020-01-01 00:00:00 +00:00\n# Project: old-basin\n"
+        f"# Workflow: old\n{border}\n\n{body}",
+        encoding="utf-8",
+    )
+
+    assert main(args(cases)) == 0
+
+    text = (cases / "applications/new-basin/custom.yaml").read_text(encoding="utf-8")
+    code, label = _WORKFLOW_LABELS[workflow]
+    assert f"# Workflow: {code} — {label} ({workflow})\n" in text
+    assert text.count("# Created:") == 1
+    assert "old-basin" not in text
+    assert "# Keep this explanation\n" in text
+    assert text.endswith("settings: {}\n")
+    assert yaml.safe_load(text) == {"settings": {}}
+
+
+def test_parameter_comments_preserve_flow_yaml_aliases_and_existing_help():
+    text = (
+        "# Existing explanation\n"
+        "window: &period {start: 2010, end: 2016}\n"
+        "copy: *period\n"
+        "description: |\n  Keep this multiline value.\n"
+    )
+    comments = {
+        ("window",): "# Select inclusive simulation years. Input: year mapping.",
+        ("window", "start"): "# First simulation year. Input: integer year.",
+        ("window", "end"): "# Last simulation year. Input: integer year.",
+    }
+    annotated = _annotate_config(text, comments)
+    assert yaml.safe_load(annotated) == yaml.safe_load(text)
+    assert "# Existing explanation\n" in annotated
+    assert "# start: First simulation year. Input: integer year.\n" in annotated
+    assert "# end: Last simulation year. Input: integer year.\n" in annotated
+    assert _annotate_config(annotated, comments) == annotated
+
+
+@pytest.mark.parametrize(
+    "workflow,text,expected",
+    [
+        (
+            "analyze_projections",
+            "variables:\n  custom_temperature:\n    source: temp\n",
+            "# Select the catalog's renamed variable. Input: post-rename variable name, such as temp.",
+        ),
+        (
+            "simulate_system",
+            "indicator_set_definitions:\n  hydrology:\n    config_path: hydrology.yml\n",
+            "# Locate the indicator set definition. Input: YAML path relative to this file or absolute.",
+        ),
+    ],
+)
+def test_parameter_comments_support_user_named_entries(workflow, text, expected):
+    template = (
+        Path(__file__).resolve().parents[1]
+        / "config/templates"
+        / f"project_config.{workflow}.template.yml"
+    )
+    annotated = _annotate_config(text, _template_comments(template))
+    assert expected in annotated
+    assert yaml.safe_load(annotated) == yaml.safe_load(text)
+
+
+@pytest.mark.parametrize(
+    "template",
+    sorted(
+        (Path(__file__).resolve().parents[1] / "config/templates").glob(
+            "*.template.yml"
+        )
+    ),
+    ids=lambda path: path.name,
+)
+def test_template_parameter_help_is_complete_and_concise(template: Path):
+    text = template.read_text(encoding="utf-8")
+    comments = _template_comments(template)
+    assert comments
+    annotated = _annotate_config(text, comments)
+    assert annotated == text, "Every active parameter must already carry template help"
+    for comment in comments.values():
+        definition = comment.split(". Input:")[0].split(". Options:")[0]
+        assert len(definition.removeprefix("# ").split()) <= 10, comment
+    assert list(_yaml_parameters(yaml.compose(text)))
 
 
 @pytest.mark.parametrize("relative", ["runs", "runs/new-basin"])

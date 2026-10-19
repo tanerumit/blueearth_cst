@@ -4,7 +4,7 @@ Every record here is written by the production v2 producer and is read back
 through the production readers with nothing stubbed: `read_collection_v2`,
 `read_simulation_intent_v2`, `read_response_inventory_v2` and
 `read_simulation_v2`. Only probes outside the record contract are replaced --
-the stage environment (a synthetic package set, as the metric tests have
+the stage environment (a synthetic package set, as the indicator tests have
 always used) and HydroMT's elevation payload resolution, which would otherwise
 read a real data catalog.
 
@@ -19,7 +19,7 @@ fixture from another (the coupling that made the v1 records hard to retire).
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha256
 from pathlib import Path
 
@@ -28,11 +28,11 @@ import pytest
 import xarray as xr
 import yaml
 
-#: The stage environment metric planning and reduction observe (see
-#: `metric_plan.resolve_metric_environment`).
+#: The stage environment indicator planning and reduction observe (see
+#: `indicator_plan.resolve_indicator_environment`).
 FIXTURE_ENVIRONMENT = {"packages": {"numpy": "fixture"}}
 
-EXPERIMENT = "metric_experiment"
+EXPERIMENT = "indicator_experiment"
 RUN_IDS = ("run_1", "run_2")
 INVOCATION_ID = "f" * 32
 CLIMATE_SOURCE = "era5"
@@ -106,7 +106,7 @@ class V2Experiment:
 def collection_intent_v2(capacity: int = 2) -> dict:
     """One complete two-member scientific intent, assembled without a producer.
 
-    ``capacity`` is the run-group id space; a bundle-grain metric needs one id
+    ``capacity`` is the run-group id space; a bundle-grain indicator needs one id
     per run plus one per bundle.
     """
     from blueearth_cst.experiment.content_identity import (
@@ -273,8 +273,8 @@ def _write_configs(base: Path, project: Path) -> Path:
         yaml.safe_dump(
             {
                 "experiment_name": EXPERIMENT,
-                "operation": "metrics-only",
-                "metrics": ["gwr"],
+                "operation": "indicators-only",
+                "indicators": ["gwr"],
             }
         ),
         encoding="utf-8",
@@ -528,7 +528,8 @@ def _freeze_simulation(project, config, root, marker_path, base, responses):
         model, project, root / "_engine/model_reference.yml"
     )
     collection = read_collection_v2(marker_path)
-    request = make_response_request(list(RUN_IDS), responses.variables)
+    run_ids = list(responses.csv)
+    request = make_response_request(run_ids, responses.variables)
     preparation = _preparation(project, root, base)
     environment = {"packages": {"julia:Wflow": "1.0.2:fixture"}, "locks": {}}
     documents = {
@@ -539,6 +540,8 @@ def _freeze_simulation(project, config, root, marker_path, base, responses):
         "response_request": request,
         "preparation": preparation,
     }
+    if run_ids != list(RUN_IDS):
+        documents["settings"]["include_unperturbed"] = False
     intent = simulation_intent_v2(
         root.name,
         {
@@ -546,7 +549,7 @@ def _freeze_simulation(project, config, root, marker_path, base, responses):
             "manifest": file_reference(marker_path, "project_root", project),
             "collection_id": collection["collection_id"],
             "collection_revision": collection["collection_revision"],
-            "run_ids": list(RUN_IDS),
+            "run_ids": run_ids,
         },
         {
             "name": "wflow",
@@ -565,7 +568,7 @@ def _freeze_simulation(project, config, root, marker_path, base, responses):
     )
 
 
-def native_runs(root: Path) -> dict:
+def native_runs(root: Path, run_ids=RUN_IDS) -> dict:
     """The retained native artifacts of every run, where rule 4.04/4.05 put them."""
     from blueearth_cst.experiment.wflow_response_reader import NativeRunArtifacts
 
@@ -576,7 +579,7 @@ def native_runs(root: Path) -> dict:
             wflow / f"run_settings/{run}.toml",
             wflow / f"run_settings/{run}.temporal.json",
         )
-        for run in RUN_IDS
+        for run in run_ids
     }
 
 
@@ -584,7 +587,7 @@ def _write_native_runs(root: Path, responses: Responses) -> dict:
     """Retain both native runs as Wflow and the forcing preparation leave them."""
     from blueearth_cst.experiment.content_identity import canonical_json_bytes
 
-    native = native_runs(root)
+    native = native_runs(root, responses.csv)
     for run, artifacts in native.items():
         artifacts.csv_path.parent.mkdir(parents=True, exist_ok=True)
         artifacts.toml_path.parent.mkdir(parents=True, exist_ok=True)
@@ -603,7 +606,7 @@ def _publish_responses(root: Path, responses: Responses) -> dict:
     from blueearth_cst.experiment.simulation_record import publish_simulation_v2
 
     inventory = publish_response_inventory_v2(
-        root, native_runs(root), responses.temporal
+        root, native_runs(root, responses.csv), responses.temporal
     )
     return publish_simulation_v2(root, inventory)
 
@@ -615,6 +618,7 @@ def build_v2_experiment(
     capacity: int = 2,
     publish: bool = True,
     legacy_storage: bool = False,
+    include_unperturbed: bool = True,
 ) -> V2Experiment:
     """Build one retained v2 experiment under ``base``.
 
@@ -630,6 +634,17 @@ def build_v2_experiment(
     marker = _publish_collection(
         project, config, capacity, legacy_storage=legacy_storage
     )
+    if not include_unperturbed:
+        from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
+        from blueearth_cst.experiment.simulation_runs import selected_run_ids
+
+        runs = selected_run_ids(read_collection_v2(marker), marker, include=False)
+        responses = replace(responses, csv={run: responses.csv[run] for run in runs})
+        workflow = config.parent / "simulate_system.yml"
+        workflow.write_text(
+            workflow.read_text(encoding="utf-8") + "\ninclude_unperturbed: false\n",
+            encoding="utf-8",
+        )
     _freeze_simulation(project, config, root, marker, base, responses)
     _write_native_runs(root, responses)
     if publish:

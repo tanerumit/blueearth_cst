@@ -264,7 +264,7 @@ an arbitrary number.
 
 Two things follow.
 
-**It stays simulated.** Two of the eleven `q` metrics are derived *from* `st_0`, so
+**It stays simulated.** Two of the eleven `q` indicators are derived *from* `st_0`, so
 `run_historical: true` is load-bearing; `false` drops them with nothing reporting
 it. Excluding it from the surface is a presentation filter (`st_id != 0`) and costs
 nothing structurally — the indicator tables already carry `st_id`.
@@ -276,7 +276,7 @@ nothing structurally — the indicator tables already carry `st_id`.
 > therefore differ by a **processing step**, not only by a perturbation, and
 > "reported as an annotated reference value beside the surface" compares two
 > differently-processed climates for most indicators. Measured `st_0` → identity
-> member: one of eleven `q` metrics preserved (`q_annual_mean`, +0.2%), five
+> member: one of eleven `q` indicators preserved (`q_annual_mean`, +0.2%), five
 > within 20%, and five moved by a *factor* — all five low-flow
 > (`q_mean_annual_min` −69.7%, `q_baseflow_index` −57.0%,
 > `q_return_level_2yr_7day_min` +127.9%). Admitted to the board as its own item
@@ -355,13 +355,13 @@ The two obligations this created, and what became of them:
      five a low-flow indicator, because the model amplifies the tail compression.
      Aliasing would have fabricated those.
    - **Why it hid, and why the mean looked fine.** `st_0` sits *inside* the member
-     envelope for every metric — the grid spans ±30% precip and +3 °C, far wider
+     envelope for every indicator — the grid spans ±30% precip and +3 °C, far wider
      than the artifact — so it never reads as an outlier; it is at the wrong place
      on the axis. And the discharge means differ by −1.5% (`rlz_1`) and +2.0%
      (`rlz_2`), opposite signs: sampling noise, exactly as monthly-mean
      preservation predicts.
    - **Magnitudes carry a caveat.** `test_case/test_local` predates the
-     2026-08-12 weathergenr 1.2.0 rename, so the per-metric table comes from the
+     2026-08-12 weathergenr 1.2.0 rename, so the per-indicator table comes from the
      older `imposeClimateChanges`. The 1.2.0 probe agrees in direction and
      forcing-side magnitude, so the qualitative result is version-independent —
      re-measure before quoting the numbers. Links `t2608121258`.
@@ -477,7 +477,7 @@ the precondition test the note itself demanded:
 
 | ruling | outcome |
 |---|---|
-| §5 — `st_0` is not a surface member, reported as an annotated reference | **STANDS, with a caveat.** The annotation compares two differently-processed climates for ten of eleven `q` metrics; admitted to the board on its own terms (`origin: R12`) |
+| §5 — `st_0` is not a surface member, reported as an annotated reference | **STANDS, with a caveat.** The annotation compares two differently-processed climates for ten of eleven `q` indicators; admitted to the board on its own terms (`origin: R12`) |
 | §5 — option A, alias the identity member onto `st_0` | **WITHDRAWN.** The premise is false: the perturbation is not the identity at unit factors, so there was never a duplicate to remove |
 
 Q2 gains a qualifier rather than a change (§3): the lookup determines the **axis**,

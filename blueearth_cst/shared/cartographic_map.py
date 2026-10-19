@@ -3739,7 +3739,8 @@ def _plot_raster_map(
         key_size_in=key_size_in,
     )
     for note in dict.fromkeys(notes):
-        print(f"note: {note}")
+        if not note.startswith("map extended "):
+            print(f"note: {note}")
     proj = ccrs.PlateCarree()
     centre_latitude = 0.5 * float(extent[2] + extent[3])
 

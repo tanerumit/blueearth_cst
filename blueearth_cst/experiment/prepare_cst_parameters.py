@@ -256,7 +256,7 @@ def prep_cst_parameters(
     # unperturbed baseline has no parameters. Rule 3.08 still runs for it, at
     # unit factors synthesized from the `identity` member token, so it takes
     # the same quantile-mapping path as the grid (t2608151154) -- before that it
-    # was the raw generated series, and five of eleven `q` metrics differed
+    # was the raw generated series, and five of eleven `q` indicators differed
     # from the grid's own identity member by a factor.
     #
     # Its absence stays LOAD-BEARING: the lookup is the grid a user configured,

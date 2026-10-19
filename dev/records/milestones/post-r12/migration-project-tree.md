@@ -1,7 +1,7 @@
 # Migration — the scenario tree moves, and digest directories get shorter
 
 > Historical post-R12 migration record. For current paths, use
-> [Reading the outputs](../../../../docs/site/guide/outputs.qmd).
+> [Reading the outputs](../../../../docs/guide/outputs.md).
 
 > Historical R12 migration guide. For a fresh output project, use the current
 > launcher commands in [README.md](../../../../README.md); WF0--WF2 now publish

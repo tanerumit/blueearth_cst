@@ -241,7 +241,7 @@ def test_a_third_stress_axis_refuses_naming_c28(tmp_path):
 #
 # The bound is on what the generator receives: `1 + p/100` must land within one
 # `float64` ulp of the `float32` grid level. It is NOT a bound on any indicator
-# -- between the multiplier and a metric sit a quantile mapping, wet-day
+# -- between the multiplier and an indicator sit a quantile mapping, wet-day
 # thresholds, caps and floors, and a distributed hydrological model, none of
 # which is Lipschitz in the forcing with a constant anyone has measured.
 

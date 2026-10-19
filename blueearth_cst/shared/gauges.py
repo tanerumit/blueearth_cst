@@ -16,7 +16,7 @@ Three readers derived those names from the FILENAME instead, missed the
 underscore-to-hyphen step, and — because each lookup was a membership test used
 as a guard (``if name in geoms:``) — dropped the user's gauges in SILENCE.
 Observed 2026-08-01 on a real basin: gauges absent from ``basin_area.png``, no
-gauge hydrographs, no signature plots, and an EMPTY ``performance_metrics.csv``,
+gauge hydrographs, no signature plots, and an EMPTY ``performance_indicators.csv``,
 while ``output.csv`` carried all four stations correctly because wflow reads the
 TOML rather than guessing.
 

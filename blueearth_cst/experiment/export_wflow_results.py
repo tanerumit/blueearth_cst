@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-"""The publication formatter for metric-set values.
+"""The publication formatter for indicator-set values.
 
 This module held the predecessor WF3 reduction (``analyze_wflow_results``,
 ``analyze_response_runs``) until 2026-09-25 (t2609151037). Nothing reached it
-after R12: rule 4.08 reduces through ``metric_plan`` and ``reduce_bundle``, and
+after R12: rule 4.08 reduces through ``indicator_plan`` and ``reduce_bundle``, and
 its return-level helper still fitted the retired MLE estimator, up to 3x apart
 from the L-moment one on the same statistic. It was removed rather than kept as
 a trap for whoever revived it.
 
-What remains is the one function ``metric_plan`` imports. It stays at this path
-because ``metric_plan.py`` is in the metric-plan code inventory: moving the
-import would change every metric-set id for no change in output.
+What remains is the one function ``indicator_plan`` imports. It stays at this path
+because ``indicator_plan.py`` is in the indicator-plan code inventory: moving the
+import would change every indicator-set id for no change in output.
 """
 
 import numpy as np

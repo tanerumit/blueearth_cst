@@ -23,6 +23,10 @@ other workflows.
 The `all` target collects the products. Extraction, computation and rendering fan out by source; comparison is
 conditional. The runner publishes a configuration archive before Snakemake parses the workflow.
 
+The console header lists candidate sources, selected forcing, extraction and reference periods, and
+the reporting-year start. The final target reports provided/requested counts, such as
+`Requested outputs: 15/15 provided`, instead of listing paths. A dry-run shows planned completion.
+
 ## Rule flow
 
 ```{mermaid}

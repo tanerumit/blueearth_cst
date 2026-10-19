@@ -148,7 +148,7 @@ def _version_string(value, where: str) -> str:
 def _positive_float(value, where: str) -> float:
     """A number > 0, with no upper bound.
 
-    Separate from ``_unit_fraction`` because a metric tolerance is not a share
+    Separate from ``_unit_fraction`` because a tolerance in physical units is not a share
     of anything: 10000.0 is a legitimate value and 1.0 is not an implicit
     ceiling. Accepts an int so ``10000`` need not be written ``10000.0``.
     """

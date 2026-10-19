@@ -163,7 +163,7 @@ def load_result(root, source):
     events = read("drought_events")
     events.start = pd.to_datetime(events.start)
     events.end = pd.to_datetime(events.end)
-    trends = read("trends").set_index("metric")
+    trends = read("trends").set_index("indicator")
     sensitivity = read("trend_sensitivity")
     temp = read("temp_climatology").set_index("calendar_month")
     pt = read("pt_anomalies")
@@ -177,10 +177,10 @@ def load_result(root, source):
     )
     _, reference_support = monthly_reference_diagnostics(monthly, reference)
     trend_records = trends.to_dict(orient="index")
-    # These plots also show trends for metrics absent from the retained trend table.
-    for metric in ("Rx5day", "sdii"):
-        if metric not in trend_records:
-            trend_records[metric] = sen_trend(indices[metric])
+    # These plots also show trends for indicators absent from the retained trend table.
+    for indicator in ("Rx5day", "sdii"):
+        if indicator not in trend_records:
+            trend_records[indicator] = sen_trend(indices[indicator])
     return {
         "coverage": coverage,
         "valid": valid.loc[valid.valid_precip, "reporting_year"].to_numpy(),
@@ -204,9 +204,9 @@ def load_result(root, source):
         "annual": indices,
         "trends": trend_records,
         "sensitivity": {
-            k: sensitivity[sensitivity.metric == k]
+            k: sensitivity[sensitivity.indicator == k]
             .set_index("start_year")
-            .drop(columns="metric")
+            .drop(columns="indicator")
             for k in ("total", "Rx1day")
         },
         "pt": pt if not pt.empty else None,
@@ -542,15 +542,14 @@ def render(
     log_row(
         f"Wrote {plural(len(records), 'diagnostic figure')} for {listed(sources)}; "
         f"{sum(unavailable.values())} with unavailable or unscaled estimates; "
-        "availability details → plots/_engine/figure_captions.json",
+        "details → plots/_engine/figure_captions.json",
         module="diagnostics",
     )
     for reason, count in unavailable.items():
         log_row(f"{plural(count, 'figure')}: {reason}", module="diagnostics")
     if len(sources) == 1 and not carries_temp(sources[0]):
         log_row(
-            f"{sources[0]}: temperature and precipitation–temperature figures not requested "
-            "because this source has no native temperature data",
+            f"{sources[0]}: no native temperature; temperature and precipitation–temperature figures not requested",
             module="diagnostics",
         )
     return records

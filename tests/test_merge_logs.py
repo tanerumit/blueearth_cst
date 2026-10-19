@@ -151,7 +151,7 @@ def test_rule_without_a_part_is_reported_not_skipped(tmp_path):
     merge_logs(["2.11_extract_climate_grid"], str(out), str(parts_dir))
     text = out.read_text(encoding="utf-8")
     assert "== 2.11  extract_climate_grid" in text
-    assert "no part from this run" in text
+    assert "no log part collected" in text
 
 
 def test_remove_parts_clears_the_parts_tree(tmp_path):

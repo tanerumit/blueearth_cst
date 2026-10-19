@@ -30,9 +30,9 @@ analysis principles. It enables end-users to:
 - Explore the range of hydro-climatic uncertainty in a chosen geographic area,
   including natural variability and climate-change signals.
 - Design and execute climate stress tests against user-defined thresholds and
-  metrics.
+  indicators.
 - Assess the plausibility of identified vulnerabilities using climate model
-  projections — i.e. estimate how sensitive a chosen metric is to climate
+  projections — i.e. estimate how sensitive a chosen indicator is to climate
   change.
 - Visualize results for non-specialist audiences.
 
@@ -175,7 +175,7 @@ local-data baseline and requires a new numerical baseline record.
 Generation owns realization count, simulation window, perturbations, generator
 settings, seed and unit capacity. Simulation owns `experiment_name`, the required
 `operation`, optional `scenario_collection: {manifest_path: ...}`, compute controls
-and metric selection. New `auto` seeds are independent of experiment names and
+and indicator selection. New `auto` seeds are independent of experiment names and
 identifier capacity. An older (pre-R14) project config is migrated with
 `scripts/migrate_project_config.py` from release `v0.3.0`, the last that ships it.
 
@@ -202,7 +202,7 @@ Preflights run immediately before their consumer, after preceding producers.
 Generation uses the owned all-workflow runner, which may be configured with only
 WF3 enabled. Simulation must use its dedicated runner or
 the all-workflow runner; bare `simulate_system.smk` invocation is unsupported.
-`--dry-run` shows a partial DAG until a missing source or metric checkpoint has
+`--dry-run` shows a partial DAG until a missing source or indicator checkpoint has
 resolved its content identity. Each workflow executes once per invocation.
 
 Snakemake flags go after a `--` sentinel and are appended verbatim to every
@@ -217,7 +217,7 @@ $ pixi run python scripts/run_workflows.py \
     -- --rerun-incomplete
 ```
 
-### Retained results and metrics-only
+### Retained results and indicators-only
 
 Immutable collection data live under `scenarios/_engine/data/<collection_id>/`, selected by the
 exact `scenarios/_engine/requests/<generation_request_id>/request.json` or an explicit manifest.
@@ -235,24 +235,24 @@ paths recorded in the manifest and source index. Execution and recovery roots st
 
 Each `experiments/<experiment_name>/` retains `_engine/simulation.json`, its native
 `hydrology/wflow/output/<run_id>.csv` responses and
-`_engine/response_inventory.json`. Metric sets live in
-`_engine/metric_sets/<metric_set_id>/data/`, with the selected tables exported directly to
-`results/metric_sets/`. Existing sets under `results/metric_sets/<metric_set_id>/` remain readable
+`_engine/response_inventory.json`. Indicator sets live in
+`_engine/indicator_sets/<indicator_set_id>/data/`, with the selected tables exported directly to
+`results/indicator_sets/`. Existing sets under `results/indicator_sets/<indicator_set_id>/` remain readable
 and reusable in place. Each variable has separate
-`<token>_run_indicators.csv` (`metric,location,run_id,value`) and
-`<token>_group_indicators.csv` (`metric,location,group_id,value`) tables.
+`<token>_run_indicators.csv` (`indicator,location,run_id,value`) and
+`<token>_group_indicators.csv` (`indicator,location,group_id,value`) tables.
 Text IDs such as `run_01` and `group_01` use independent namespaces.
 `group_members.csv` records every group member, including singleton groups;
 `group_metadata.csv` joins groups to `perturbation_lookup.csv` through `st_id`.
 Run tables join directly to the collection's `scenario_run_lookup.csv`.
-Group summaries give equal weight to each realization's run metric; return levels retain
-pooled-sample estimation. See [Reading the outputs](docs/site/guide/outputs.qmd) for validity and migration.
+Group summaries give equal weight to each realization's run indicator; return levels retain
+pooled-sample estimation. See [Reading the outputs](docs/guide/outputs.md) for validity and migration.
 Collection inventories live in `scenarios/_engine/collections/<collection_id>/`;
-metric metadata lives in the experiment's `_engine/metric_sets/<metric_set_id>/`.
+indicator metadata lives in the experiment's `_engine/indicator_sets/<indicator_set_id>/`.
 Model-grid forcing and per-run catalogs are temporary. Collection forcing and
 native responses are durable.
 
-To reduce existing responses, set `operation: metrics-only` and the existing
+To reduce existing responses, set `operation: indicators-only` and the existing
 `experiment_name` in the simulation settings file, then run:
 
 ```console
@@ -261,9 +261,9 @@ pixi run python scripts/simulate_system.py --config <project-config> --target si
 
 The all-workflow runner accepts `--simulation-target simulations_and_indicators` for this operation;
 disable other workflows when only retained reduction is wanted. Default target
-`all` never infers an operation from files. Metrics-only requires no live model,
+`all` never infers an operation from files. Indicators-only requires no live model,
 generation inputs or Julia. Changed simulation inputs require a new experiment;
-changed metrics select a new immutable metric set. See
+changed indicators select a new immutable indicator set. See
 [retained handoffs](docs/site/toolbox-reference/retained-handoffs.qmd).
 
 Without an explicit name, experiments start at `stress_test_01`. Plain reruns retain
@@ -273,15 +273,16 @@ A custom `experiment_name` base selects another family; an exact numbered name p
 that identity. Changed scientific inputs without the flag refuse before producers.
 The suggestion helper is now read-only and does not edit YAML or reserve a folder.
 Existing owned dated or unnumbered experiment names remain explicit legacy selections.
-See [experiment selection and recovery](docs/site/guide/running.qmd#select-resume-or-create-an-experiment).
+See [experiment selection and recovery](docs/guide/running.md#select-resume-or-create-an-experiment).
 
 ### Logs and DAGs
 
-WF0/WF1/WF2 retain their project-level logs and provenance records. Generation
-parts are scoped by generation request under `logs/_parts/generate_scenarios/`;
-simulation parts are scoped by experiment under `logs/_parts/simulate_system/`.
-Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflow
-runner retains an invocation record under `config/_engine/invocations/`.
+Each launcher attempt keeps its summary, console transcript, workflow logs and
+benchmark reports together under `logs/<timestamp>-<invocation-id>/`.
+Retries receive a new folder; an all-workflow run shares one folder with its children.
+Structured invocation records remain under `config/_engine/invocations/`.
+See [execution logs and benchmarks](docs/guide/running.md#execution-logs-and-benchmarks)
+for the layout and [benchmark interpretation](docs/guide/benchmarking.md).
 
 ```console
 # WF3's owned dry run shows the source-preparation DAG.

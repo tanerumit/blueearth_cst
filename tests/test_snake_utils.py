@@ -487,7 +487,7 @@ def test_log_row_prints_a_warning_with_its_level(capsys):
 
 def test_patch_psutil_exposes_pss():
     # Snakemake's benchmark sampler reads meminfo.pss; on Windows psutil omits it
-    # (only uss), which NAs every metric. The shim must expose pss (= uss proxy).
+    # (only uss), which NAs every indicator. The shim must expose pss (= uss proxy).
     if sys.platform != "win32":
         import pytest as _pytest
 
@@ -509,6 +509,18 @@ class _FakeTTY:
 
 
 # --- target_banner (rule `all` message) --------------------------------------
+
+
+def test_compact_target_banner_summarizes_requested_outputs(tmp_path):
+    present = tmp_path / "present.csv"
+    missing = tmp_path / "missing.csv"
+    present.touch()
+    targets = {"present": present, "missing": missing}
+    assert target_banner("all", targets.values(), compact=True) == (
+        "Requested outputs: 2/2 provided"
+    )
+    assert target_banner("all", [], compact=True) == ("Requested outputs: 0/0 provided")
+    assert target_banner("all", None, compact=True) == "Confirm requested outputs"
 
 
 def test_target_banner_puts_one_target_per_line(monkeypatch):
@@ -620,6 +632,14 @@ def test_log_path_parts_project_root_and_id(tmp_path):
     root2, log_id2 = _log_path_parts(str(lp2))
     assert root2 == os.path.normpath(str(tmp_path / "gabon"))
     assert log_id2 == "3.10_run_wflow/rlz_1_st_1.log"
+    managed = (
+        tmp_path
+        / "gabon/logs/20261019T120000Z-abcdef012345/_parts"
+        / "wf3-child/logs/3.10_run_wflow/rlz_1_st_1.log"
+    )
+    root3, log_id3 = _log_path_parts(managed)
+    assert root3 == root
+    assert log_id3 == log_id2
 
 
 def test_relativize_strips_project_root_both_separators():
@@ -2839,6 +2859,28 @@ def test_console_finish_line_uses_the_banner_wildcard_grammar():
     assert "[rlz 1 | st 0]" in out and "rlz=1" not in out
 
 
+def test_indicator_start_and_finish_show_set_names_instead_of_hashes(monkeypatch):
+    monkeypatch.setattr(cs, "_INDICATOR_CONTEXTS", {})
+    monkeypatch.setitem(cs._RULE_NUMBERS, "prepare_indicator_plan", "4.07")
+    cs.register_indicator_context(
+        "indicator_request_id", "opaque", ["default", "flow_regime"]
+    )
+    out = _emit(
+        _console_handler(),
+        _job_info(
+            1,
+            "prepare_indicator_plan",
+            "Rule 4.07: prepare_indicator_plan [indicator_request opaque]",
+            {"indicator_request_id": "opaque"},
+        ),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=1),
+    )
+    assert out.count("Check simulation outputs for indicators") == 2
+    assert out.count("[default, flow_regime]") == 2
+    assert "opaque" not in out
+
+
 def test_console_finish_line_drops_the_num_suffix_the_banner_drops():
     """`rlz_num` is the WILDCARD's name; `rlz` is the console's, on both lines.
 
@@ -2873,8 +2915,8 @@ def test_console_finish_line_drops_the_id_suffix_the_banner_drops():
     """`run_id` is the WILDCARD's name; `run` is the console's, on both lines.
 
     The `_num` defect two suffixes along, and the one with the most wildcards
-    behind it: `collection_id`, `run_id`, `metric_request_id` and
-    `metric_set_id` are every fan-out wildcard WF3 and WF4 have. WF4's 4.04
+    behind it: `collection_id`, `run_id`, `indicator_request_id` and
+    `indicator_set_id` are every fan-out wildcard WF3 and WF4 have. WF4's 4.04
     banner wrote `run {wildcards.run_id}` against a finish line reading
     `[run_id 07]` from the day it was written.
     """
@@ -2889,28 +2931,23 @@ def test_console_finish_line_drops_the_id_suffix_the_banner_drops():
     assert "run_id" not in out and "collection_id" not in out
 
 
-def test_console_start_line_leaves_a_multiline_banner_intact():
-    """`rule all` is a banner plus one target per line, and stays that way.
-
-    The counter used to be appended here and had to be steered onto the first
-    line, or it landed after the LAST target path where it read as part of the
-    path. With no counter on a start line there is nothing to steer.
-    """
+@pytest.mark.parametrize(
+    "name", ["all", "simulations_only", "simulations_and_indicators"]
+)
+def test_console_target_counts_resolved_inputs(name):
+    """Count actual job inputs, including targets resolved after checkpoints."""
     handler = _console_handler()
+    record = _job_info(1, name, "Confirm requested outputs")
+    record.input = ["a/x.csv", "logs/wf1.log"]
     out = _emit(
         handler,
         _console_record(event="progress", done=19, total=20),
-        _job_info(
-            1,
-            "all",
-            "Target: all - confirm requested outputs  [proj]\n    a/x.csv\n    logs/wf1.log",
-        ),
+        record,
     )
     lines = out.splitlines()
-    assert lines[0].endswith("Target: all - confirm requested outputs  [proj]"), lines[
-        0
-    ]
-    assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
+    assert len(lines) == 1
+    assert lines[0].endswith("Requested outputs: 2/2 provided")
+    assert "a/x.csv" not in out and "logs/wf1.log" not in out
 
 
 def test_console_finish_line_keeps_a_wildcard_actually_named_num():
@@ -4406,7 +4443,7 @@ def test_failure_outranks_warning_on_one_line():
 @pytest.mark.parametrize(
     "line",
     [
-        "13:42:17 - plot - wrote error_metrics.csv",
+        "13:42:17 - plot - wrote error_indicators.csv",
         "n_errors=0 n_warnings=0",
         "running compute_errors on 4 members",
         "13:42:17 - stats - MPI-ESM1-2-HR ssp585 deriving",

@@ -31,7 +31,7 @@ Do not embed private absolute paths, credentials, or an entire project archive i
   "summary": "What was done and what the reader can conclude.",
   "metadata": ["Example basin", "Historical period", "Data source"],
   "notice": {"label": "Draft", "text": "Interpretation awaits analyst review."},
-  "metrics": [{"value": "Value", "label": "Quantity", "basis": "Units and evidence source"}],
+  "indicators": [{"value": "Value", "label": "Quantity", "basis": "Units and evidence source"}],
   "findingsIntro": "Findings with links to their supporting outputs.",
   "findings": [{
     "title": "A specific finding", "status": "Draft interpretation",
@@ -88,7 +88,7 @@ The shell stays the same; content and evidence change with the workflow's actual
 | WF1 | Model construction and historical behavior | Build settings, forcing QA, hydrographs, performance |
 | WF2 | Projection plausibility | Model/scenario inventory, monthly changes, ensemble spread |
 | WF3 | Stochastic scenario collection | Perturbation grid, realizations, generator diagnostics |
-| WF4 | System response and vulnerability | Run IDs, retained responses, metrics, response surfaces |
+| WF4 | System response and vulnerability | Run IDs, retained responses, indicators, response surfaces |
 
 WF2 contextualizes projection plausibility; it does not drive WF3 scenario generation.
 WF3 and model construction are independent prerequisites for WF4. Do not imply all workflows were run

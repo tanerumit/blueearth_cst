@@ -31,7 +31,7 @@ def test_dispatches_owned_runner(monkeypatch, workflow):
         "--keep-going",
     ]
     if workflow == "simulate_system":
-        arguments += ["--target", "metrics"]
+        arguments += ["--target", "indicators"]
     arguments += ["--", "--rerun-incomplete"]
     assert run_workflow.main(arguments) == 7
     forwarded = calls[0]
@@ -44,7 +44,7 @@ def test_dispatches_owned_runner(monkeypatch, workflow):
         "2",
     ]
     if workflow == "simulate_system":
-        assert forwarded[6:8] == ["--target", "metrics"]
+        assert forwarded[6:8] == ["--target", "indicators"]
         assert forwarded[8:] == [
             "--dry-run",
             "--",
@@ -101,7 +101,7 @@ def test_generation_rejects_unsupported_target_before_dispatch(monkeypatch):
                 "--project-dir",
                 "case-output",
                 "--target",
-                "metrics",
+                "indicators",
             ]
         )
     assert error.value.code == 2

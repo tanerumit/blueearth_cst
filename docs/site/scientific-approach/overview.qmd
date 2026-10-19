@@ -8,7 +8,7 @@ format: html
 
 These pages are for water-resources modelers and climate-risk practitioners who need to understand what a BlueEarth CST assessment represents before using its results.
 They explain the scientific reasoning, models, and conventions needed to interpret a climate response surface.
-For the five-workflow implementation and its data sources, use the [Toolbox reference](../toolbox-reference/overview.qmd). For installation and commands, use [Setup](../setup/install.md) and the [User guide](../guide/quick-start.qmd).
+For the five-workflow implementation and its data sources, use the [Toolbox reference](../toolbox-reference/overview.qmd). For installation and commands, use [Setup](../setup/install.md) and the [User guide](../guide/quick-start.md).
 
 ## Assessment logic
 

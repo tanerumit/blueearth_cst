@@ -4,6 +4,9 @@ title: "WF2 — Analyze projections"
 
 `analyze_projections.smk` reduces CMIP6 projections to basin monthly temperature and precipitation change factors. These factors position the stress-test grid against projection space; they do not determine WF3 perturbations.
 
+Console summaries report resolved/requested ensemble coverage and available/skipped results. Skipped
+windows retain their source, dates, reason, and report location so coverage gaps can be investigated.
+
 ## Rules
 
 | Rule | Operation |

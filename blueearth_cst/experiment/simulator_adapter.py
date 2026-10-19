@@ -268,7 +268,7 @@ def plan_native_response_request(
     """Ask the installed Wflow reader for output order before any simulation.
 
     This uses Wflow's own map traversal/header code rather than reproducing its
-    grid ordering in Python. The resulting request is independent of metrics and
+    grid ordering in Python. The resulting request is independent of indicators and
     later CSV contents. The header is a declared planning artifact owned by the
     caller; no model file is changed and no simulation is executed.
     """
@@ -318,7 +318,7 @@ end
     if dropped:
         from blueearth_cst.shared.snake_utils import listed, log_row
 
-        # A WARNING, not an INFO row: a location leaving the metric set is a
+        # A WARNING, not an INFO row: a location leaving the indicator set is a
         # fact a reader must see, and planning runs inside `captured_output`,
         # which replays only warnings and errors on success.
         log_row(

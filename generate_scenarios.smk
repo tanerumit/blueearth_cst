@@ -60,6 +60,7 @@ _plan_key = Path(_scenario_request_path).parent.name
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{_plan_key}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{_plan_key}"
 WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
+from blueearth_cst.shared.execution_outputs import workflow_paths, declare_warning_tally
 
 # One tally per run, opened at parse time and published to every job process
 # through the environment: a rule prints its warnings from a process of its
@@ -67,6 +68,9 @@ WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
 # `snake_utils.declare_warning_tally`.
 declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
+_paths = workflow_paths(project_dir, "wf3", WORKFLOW_LOG_NAME, BENCHMARKS_NAME, LOG_PARTS_DIR, BENCH_PARTS_DIR)
+WORKFLOW_LOG_PATH, BENCHMARK_OUTPUT_PATH = _paths.log, _paths.benchmark
+LOG_PARTS_DIR, BENCH_PARTS_DIR = _paths.log_parts, _paths.benchmark_parts
 RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("3.01", "delineate_region", summary="delineate the basin boundary")
@@ -114,8 +118,6 @@ declare_path_tokens(
 )
 declare_project_root(project_dir)
 
-WF3_TARGETS = (["historical climate and stress-test lookup"] if SOURCE_ONLY else
-               ["selected scenario collection"])
 SOURCE_TARGETS = [f"{store_dir}/extract_historical.nc", f"{store_dir}/basin_cells.csv", lookup_path]
 V2_MARKER = (
     f"{project_dir}/{V2_PLAN['outputs']['record_root']}/collection.json"
@@ -125,16 +127,17 @@ V2_TARGET = (
     V2_MARKER if V2_MODE and V2_PLAN["decision"] == "create"
     else os.environ.get("CST_GENERATION_RECEIPT_PATH")
 )
+WF3_TARGETS = SOURCE_TARGETS if SOURCE_ONLY else [
+    V2_TARGET,
+    BENCHMARK_OUTPUT_PATH,
+    WORKFLOW_LOG_PATH,
+]
 
 # all
 rule all:
-    message: target_banner("all", WF3_TARGETS, project_dir)
+    message: target_banner("all", WF3_TARGETS, project_dir, compact=True)
     input:
-        SOURCE_TARGETS if SOURCE_ONLY else [
-            V2_TARGET,
-            f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
-            f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-        ],
+        WF3_TARGETS,
 
 # 3.01  delineate_region
 rule delineate_region:
@@ -324,7 +327,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             )
             if not row.derived_from:
                 from blueearth_cst.shared.run_log_core import log_row
-                log_row(f"{row.run_id}: produced the unperturbed baseline through the same climate-transformation path as perturbed runs", module="generation")
+                log_row(f"{row.run_id}: unperturbed baseline ready", module="generation")
 
     rule publish_scenario_collection:
         message: PUBLISH_SCENARIO_COLLECTION.banner()
@@ -345,7 +348,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 INVOCATION_ID,
             )
             from blueearth_cst.shared.run_log_core import log_row, plural
-            log_row(f"Scenario collection ready: {V2_PLAN['collection_id']}; {plural(len(V2_PLAN['rows']), 'retained run')} → {output[0]}", module="generation")
+            log_row(f"Scenario collection ready: {plural(len(V2_PLAN['rows']), 'run')}", module="generation")
 
 
 # 3.10 / 3.11 -- merge the run's benchmark and log parts, generation phase only:
@@ -363,7 +366,8 @@ if V2_MODE:
         input:
             GATHER_INPUTS,
         output:
-            f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+            BENCHMARK_OUTPUT_PATH,
+            BENCHMARK_OUTPUT_PATH.removesuffix(".md") + ".tsv",
         params:
             parts_dir = BENCH_PARTS_DIR,
             workflow_num = 3,
@@ -374,7 +378,7 @@ if V2_MODE:
         input:
             GATHER_INPUTS,
         output:
-            f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+            WORKFLOW_LOG_PATH,
         params:
             rules = LOG_RULES,
             parts_dir = LOG_PARTS_DIR,

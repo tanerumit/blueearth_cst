@@ -23,7 +23,7 @@ Git release tags remain authoritative.
 - Fresh immutable scenario data live under `scenarios/_engine/data/<id>/`; fresh metric tables live
   under `experiments/<name>/_engine/metric_sets/<id>/data/`. Readers preserve completed legacy layouts.
   Use the source manifests for immutable paths and the stable exports described in the
-  [output guide](docs/site/guide/outputs.qmd) for post-processing.
+  [output guide](docs/guide/outputs.md) for post-processing.
 - Generation, simulation and metric identities track imported code. These changes can invalidate
   reuse; create a new experiment when the runner refuses a changed simulation identity.
 - WF2 diagnostic tables now use complete water years within the configured reference and future
@@ -72,7 +72,7 @@ The authoritative version is established by the approved Git tag.
 - Scenario runs and perturbation groups now have separate, prefixed string IDs (`run_01`, `group_01`).
   Updated collection and metric schemas refuse predecessor numeric-ID collections. Regenerate these
   collections and simulations; update consumers using the
-  [output contract and migration guidance](docs/site/guide/outputs.qmd).
+  [output contract and migration guidance](docs/guide/outputs.md).
 - New cases use the case root directly as `project_dir`, without an `active/` suffix. Existing explicitly
   configured `active/` roots remain valid; changing scaffolds does not relocate retained outputs.
 - Scenario-collection, simulation and metric-set ids all change. Each identity
@@ -219,7 +219,7 @@ release; the authoritative version is established only by the approved Git tag.
   [current migration guide](docs/site/guide/migrating-project-config.qmd) for
   backup behavior and cases the migrator refuses.
 - Update workflow commands using [README.md](README.md), and update consumers
-  against the [current output structure](docs/site/guide/outputs.qmd).
+  against the [current output structure](docs/guide/outputs.md).
   Configuration migration alone does not migrate predecessor output trees;
   retain the old tree and regenerate into a separate project directory.
 - Recompute affected projections and scenario/simulation results under the

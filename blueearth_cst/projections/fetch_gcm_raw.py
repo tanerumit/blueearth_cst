@@ -870,7 +870,7 @@ def fetch_raw_slice(
         # named, while a glob is precisely the case where WHICH URI was used
         # is not derivable -- it is the pattern whose match set could change.
         log_row(
-            f"No unique store path recorded; resolving catalog pattern {entry_spec.get('uri', '')}",
+            f"Source version not pinned; searching {entry_spec.get('uri', '')}",
             module="fetch",
         )
         if ambiguous:
@@ -899,8 +899,7 @@ def fetch_raw_slice(
         # the row above names the entry. See `pin_tail` for where the full URI
         # still lives.
         log_row(
-            f"Using catalog-pinned store {pin_tail(str(entry_spec.get('uri', '')), pin_uri)}, "
-            "bucket listing not needed",
+            f"Using source version {pin_tail(str(entry_spec.get('uri', '')), pin_uri)}; no store search needed",
             module="fetch",
         )
     # --- the read, with the irregular-grid branch behind it ----------------
@@ -951,7 +950,7 @@ def fetch_raw_slice(
             # 175 characters of explanation on every one of ~27 affected models is
             # not.
             log_row(
-                f"Irregular source grid; applying the basin bounding box directly: {entry}",
+                f"Irregular grid: clipping directly to basin bounds ({entry})",
                 module="fetch",
                 level="WARNING",
             )

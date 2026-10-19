@@ -61,8 +61,8 @@ def run(sm):
         a = tables[left]["annual_indices"].set_index("reporting_year")
         b = tables[right]["annual_indices"].set_index("reporting_year")
         rows = []
-        for metric in ("total", "wet_days", "sdii", "Rx1day", "Rx5day"):
-            difference = (a[metric] - b[metric]).dropna()
+        for indicator in ("total", "wet_days", "sdii", "Rx1day", "Rx5day"):
+            difference = (a[indicator] - b[indicator]).dropna()
             for method, fn in (("pettitt", dg.pettitt), ("snht", dg.snht)):
                 good = len(difference) >= 3 and difference.std() > 0
                 values = (
@@ -80,7 +80,7 @@ def run(sm):
                     | {
                         "series_kind": "difference",
                         "source_pair": f"{left}-{right}",
-                        "metric": metric,
+                        "indicator": indicator,
                         "method": method,
                         "seed": 0,
                         "n_sim": 20000 if method == "snht" else 0,

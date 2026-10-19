@@ -397,13 +397,13 @@ def compute(daily, settings, m0, period, temperature=None, temperature_source=No
     tables["anomaly_acf"] = result["acf"].rename_axis("lag_months").reset_index()
     tables["trends"] = (
         pd.DataFrame.from_dict(result["trends"], orient="index")
-        .rename_axis("metric")
+        .rename_axis("indicator")
         .reset_index()
     )
     tables["trends"]["correction"] = "yue_wang"
     tables["trend_sensitivity"] = pd.concat(
         [
-            v.rename_axis("start_year").reset_index().assign(metric=k)
+            v.rename_axis("start_year").reset_index().assign(indicator=k)
             for k, v in result["sensitivity"].items()
         ],
         ignore_index=True,
@@ -418,8 +418,8 @@ def compute(daily, settings, m0, period, temperature=None, temperature_source=No
         temperature_source=temperature_source, season_year=tables["pt_anomalies"].year
     )
     rows = []
-    for metric in ("total", "wet_days", "sdii", "Rx1day", "Rx5day"):
-        series = tables["annual_indices"].set_index("reporting_year")[metric]
+    for indicator in ("total", "wet_days", "sdii", "Rx1day", "Rx5day"):
+        series = tables["annual_indices"].set_index("reporting_year")[indicator]
         good = series.dropna()
         for test, fn in (("pettitt", dg.pettitt), ("snht", dg.snht)):
             data = (
@@ -435,7 +435,7 @@ def compute(daily, settings, m0, period, temperature=None, temperature_source=No
             rows.append(
                 data
                 | {
-                    "metric": metric,
+                    "indicator": indicator,
                     "method": test,
                     "seed": 0,
                     "n_sim": 20000 if test == "snht" else 0,

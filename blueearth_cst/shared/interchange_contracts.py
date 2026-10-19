@@ -820,7 +820,7 @@ def validate_hm5(df: Any) -> list[str]:
 #: The five HM-7 columns, in order. Imported from the writer's own module rather
 #: than restated, so the producer and its validator cannot disagree about the
 #: header -- the failure mode this pairing exists to prevent.
-HM7_COLUMNS = ("metric", "location", "unit_id", "value")
+HM7_COLUMNS = ("indicator", "location", "unit_id", "value")
 
 
 def validate_hm7(
@@ -834,14 +834,14 @@ def validate_hm7(
     unit_id_capacity: int,
     response_request: Mapping,
 ) -> list[str]:
-    """Refuse the retired metric-set/1 surface with an explicit migration path."""
+    """Refuse the retired indicator-set/1 surface with an explicit migration path."""
     return [
-        "HM-7: legacy metric-set/1 artifacts are unsupported; regenerate the "
-        "collection, simulate under a new experiment name, and use metric-set/3"
+        "HM-7: legacy indicator-set/1 artifacts are unsupported; regenerate the "
+        "collection, simulate under a new experiment name, and use indicator-set/3"
     ]
 
 
-HM7_V2_COLUMNS = ("metric", "location", "run_id", "value")
+HM7_V2_COLUMNS = ("indicator", "location", "run_id", "value")
 HM7_V2_LOOKUP_COLUMNS = ("group_id", "run_id")
 
 
@@ -853,7 +853,7 @@ def validate_hm7_v2(
     series,
     collection_run_ids,
 ) -> list[str]:
-    """HM-7 for metric-set/3; table keys are ``<token>_<run|group>``.
+    """HM-7 for indicator-set/3 (read-only) and /4; table keys are ``<token>_<run|group>``.
 
     The historical function name remains for callers. Legacy /2 manifests are
     refused. Declarations, retained locations and collection runs independently
@@ -863,9 +863,13 @@ def validate_hm7_v2(
     import math
 
     label = "HM-7"
-    if manifest.get("schema_version") != "metric-set/3":
+    if manifest.get("schema_version") not in (
+        "indicator-set/3",
+        "indicator-set/4",
+        "indicator-set/5",
+    ):
         return [
-            f"{label}: expected metric-set/3; legacy mixed-ID sets must be recomputed"
+            f"{label}: expected indicator-set/3 or /4; legacy mixed-ID sets must be recomputed"
         ]
     if tuple(lookup.columns) != HM7_V2_LOOKUP_COLUMNS:
         return [f"{label}: lookup header is not group_id,run_id"]
@@ -909,7 +913,7 @@ def validate_hm7_v2(
         if table is None:
             continue
         if scope not in ("run", "group") or tuple(table.columns) != (
-            "metric",
+            "indicator",
             "location",
             f"{scope}_id",
             "value",
@@ -919,7 +923,7 @@ def validate_hm7_v2(
         keys = [
             (str(m), str(loc), str(unit))
             for m, loc, unit in zip(
-                table["metric"], table["location"], table[f"{scope}_id"]
+                table["indicator"], table["location"], table[f"{scope}_id"]
             )
         ]
         expected = {
@@ -934,17 +938,17 @@ def validate_hm7_v2(
             diffs.append(
                 f"{label}: {token}/{scope} keys differ from declarations, locations and membership"
             )
-        bundle_metrics = {d["name"] for d in declarations if d["grain"] == "bundle"}
-        for metric, value in zip(table["metric"], table["value"]):
+        bundle_indicators = {d["name"] for d in declarations if d["grain"] == "bundle"}
+        for indicator, value in zip(table["indicator"], table["value"]):
             try:
                 number = float(value) if value != "" else float("nan")
             except (TypeError, ValueError):
                 diffs.append(f"{label}: {token}/{scope} has a non-numeric value")
                 break
             if math.isinf(number) or (
-                metric in bundle_metrics and not math.isfinite(number)
+                indicator in bundle_indicators and not math.isfinite(number)
             ):
-                diffs.append(f"{label}: {token}/{scope} violates metric validity")
+                diffs.append(f"{label}: {token}/{scope} violates indicator validity")
                 break
     return diffs
 

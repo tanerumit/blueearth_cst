@@ -13,10 +13,153 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 
 import yaml
+
+_WORKFLOW_LABELS = {
+    "analyze_climate": ("WF0", "Historical climate analysis"),
+    "build_model": ("WF1", "Model building"),
+    "analyze_projections": ("WF2", "Climate projection analysis"),
+    "generate_scenarios": ("WF3", "Scenario generation"),
+    "simulate_system": ("WF4", "System simulation"),
+}
+
+
+def _yaml_parameters(
+    node: yaml.Node | None,
+    path: tuple[str, ...] = (),
+    seen: set[int] | None = None,
+) -> Iterator[tuple[tuple[str, ...], yaml.ScalarNode, yaml.Node]]:
+    """Walk physical mapping keys, including sequence items, without revisiting aliases."""
+    if seen is None:
+        seen = set()
+    if node is None or id(node) in seen:
+        return
+    seen.add(id(node))
+    if isinstance(node, yaml.MappingNode):
+        for key, value in node.value:
+            if isinstance(key, yaml.ScalarNode):
+                child = (*path, key.value)
+                yield child, key, value
+                yield from _yaml_parameters(value, child, seen)
+    elif isinstance(node, yaml.SequenceNode):
+        for item in node.value:
+            yield from _yaml_parameters(item, (*path, "*"), seen)
+
+
+def _template_comments(path: Path) -> dict[tuple[str, ...], str]:
+    """Read parameter help from the maintained template, including optional examples."""
+    text = path.read_text(encoding="utf-8")
+    # Optional YAML uses #key / #  key; prose uses '# ' and stays commented.
+    expanded = re.sub(
+        r"^(\s*)#(?=(?:  )*(?:(?:[\w][\w -]*|'[^']+'|\"[^\"]+\"):|- ))",
+        r"\1",
+        text,
+        flags=re.MULTILINE,
+    )
+    lines = expanded.splitlines()
+    comments = {}
+    for keys, key, _ in _yaml_parameters(yaml.compose(expanded)):
+        row = key.start_mark.line
+        if row:
+            previous = lines[row - 1].strip()
+            if previous.startswith("# ") and re.search(
+                r"\b(Input|Options): ", previous
+            ):
+                if len(keys) >= 2 and keys[0] in {
+                    "observations",
+                    "indicator_set_definitions",
+                }:
+                    keys = (keys[0], "*", *keys[2:])
+                elif len(keys) >= 3 and keys[:2] == ("members", "overrides"):
+                    keys = (*keys[:2], "*", *keys[3:])
+                elif keys[:2] == ("variables", "custom_variable"):
+                    keys = ("variables", "*", *keys[2:])
+                comments[keys] = previous
+    return comments
+
+
+def _annotate_config(text: str, comments: dict[tuple[str, ...], str]) -> str:
+    """Insert parameter help without reserializing YAML or losing existing comments."""
+    lines = text.splitlines(keepends=True)
+    additions: dict[int, list[str]] = {}
+    for keys, key, value in _yaml_parameters(yaml.compose(text)):
+        comment = comments.get(keys)
+        if comment is None:
+            # Custom mapping entries inherit help from a template wildcard.
+            for candidate, help_text in comments.items():
+                if len(candidate) == len(keys) and all(
+                    expected == actual or expected == "*"
+                    for expected, actual in zip(candidate, keys)
+                ):
+                    comment = help_text
+                    break
+        if comment is None:
+            kind = value.tag.rsplit(":", 1)[-1]
+            expected = {
+                "map": "mapping",
+                "seq": "list",
+                "str": "text",
+                "int": "integer",
+                "float": "number",
+                "bool": "true | false",
+                "null": "null or a configured value",
+            }.get(kind, "YAML value")
+            comment = f"# Configure {key.value.replace('_', ' ')}. Input: {expected}."
+        row = key.start_mark.line
+        indent = len(lines[row]) - len(lines[row].lstrip())
+        # Flow mappings share a line: label each parameter's help above that line.
+        prefix = lines[row][: key.start_mark.column].strip()
+        if prefix not in {"", "-"}:
+            comment = f"# {key.value}: {comment[2:]}"
+        existing = []
+        previous = row - 1
+        while previous >= 0 and lines[previous].lstrip().startswith("#"):
+            existing.append(lines[previous].strip())
+            previous -= 1
+        if comment not in existing:
+            additions.setdefault(row, []).append(" " * indent + comment + "\n")
+    return "".join(
+        "".join(additions.get(row, [])) + line for row, line in enumerate(lines)
+    )
+
+
+def _config_header(
+    text: str, path: Path, project: str, created: str, owners: list[str]
+) -> str:
+    """Stamp a scaffold YAML without replacing its settings or explanatory comments."""
+    border = "# " + "-" * 77
+    # Only replace our exact header shape, never an arbitrary leading comment block.
+    text = re.sub(
+        rf"\A{re.escape(border)}\r?\n# [^\r\n]+\r?\n# Created: [^\r\n]+\r?\n"
+        rf"# Project: [^\r\n]+\r?\n# Workflow: [^\r\n]+\r?\n"
+        rf"{re.escape(border)}\r?\n\r?\n",
+        "",
+        text,
+        count=1,
+    )
+    title = "Project configuration"
+    workflow = "All workflows — shared settings and workflow enablement"
+    if path != Path("project_config.yml"):
+        title = "Supporting configuration"
+        workflow = "Supporting settings — no direct workflow assignment"
+        if owners:
+            title = "Shared workflow configuration"
+            if len(owners) == 1:
+                title = _WORKFLOW_LABELS.get(owners[0], ("", owners[0]))[1]
+                title += " configuration"
+            workflow = "; ".join(
+                f"{code} — {label} ({name})" if code else name
+                for name in owners
+                for code, label in [_WORKFLOW_LABELS.get(name, ("", name))]
+            )
+    return (
+        f"{border}\n# {title} — {path.name}\n# Created: {created}\n"
+        f"# Project: {project}\n# Workflow: {workflow}\n{border}\n\n{text}"
+    )
 
 
 def _replace(text: str, keys: tuple[str, ...], value: object) -> str:
@@ -118,6 +261,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     workflows = config.get("workflows")
     if not isinstance(workflows, dict) or not workflows:
         raise ValueError("Template requires workflow stanzas")
+    config_owners: dict[Path, list[str]] = {}
     for name, stanza in workflows.items():
         if not isinstance(stanza, dict) or stanza.get("enabled") is not (
             name == "analyze_climate"
@@ -129,6 +273,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             target = Path(stanza["config_path"])
             if target.is_absolute() or ".." in target.parts or target not in files:
                 raise ValueError(f"Workflow config must be inside template: {target}")
+            config_owners.setdefault(target, []).append(name)
     text = _replace(text, ("project", "project_dir"), outputs.as_posix())
     text = _replace(
         text,
@@ -162,6 +307,9 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     if yaml.safe_load(text) != expected:
         raise ValueError("Template aliases affect fields outside the case identity")
     files[config_path] = text.encode("utf-8")
+    templates = Path(__file__).resolve().parents[1] / "config/templates"
+    created = datetime.now().astimezone().isoformat(sep=" ", timespec="seconds")
+    created = f"{created[:-6]} {created[-6:]}"
     for relative, content in list(files.items()):
         if relative.suffix not in {".yml", ".yaml"}:
             continue
@@ -190,7 +338,24 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
                 ("observations", variable),
                 (destination / sidecar).as_posix(),
             )
-        files[relative] = yaml_text.encode("utf-8")
+        comment_sources = (
+            [templates / "project_config.template.yml"]
+            if relative == config_path
+            else [
+                templates / f"project_config.{owner}.template.yml"
+                for owner in config_owners.get(relative, [])
+                if owner in _WORKFLOW_LABELS
+            ]
+        )
+        if "selection" in parsed and "id" in parsed:
+            comment_sources.append(templates / "indicator_set.template.yml")
+        comments = {}
+        for source in comment_sources:
+            comments.update(_template_comments(source))
+        yaml_text = _annotate_config(yaml_text, comments)
+        files[relative] = _config_header(
+            yaml_text, relative, slug, created, config_owners.get(relative, [])
+        ).encode("utf-8")
     outlet = Path("data/output_locations.csv")
     rows = list(csv.reader(io.StringIO(files[outlet].decode("utf-8"))))
     if len(rows) != 2 or rows[0] != ["station_name", "x", "y"] or len(rows[1]) != 3:
@@ -207,7 +372,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         f"# {slug}: run instructions\n\n"
         "Use this guide to review your settings, run the assessment, and find its results.\n\n"
         "| Field | Value |\n|---|---|\n"
-        f"| Project | {slug} |\n| Created | {datetime.now():%Y-%m-%d %H:%M:%S} |\n"
+        f"| Project | {slug} |\n| Created | {created} |\n"
         f"| Coordinates (longitude, latitude) | {args.longitude}, {args.latitude} |\n"
         "\n"
         "## Setup\n\nOpen PowerShell in the toolbox root and set these paths:\n\n"
@@ -253,14 +418,14 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
         "| `data/climate/projections/` | GCM change-factor tables under `summary/` and figures under `plots/` (WF2) |\n"
         "| `scenarios/` | Full current collection: lookups, `series/`, `config/`, `weathergenr/`; immutable copies under `_engine/data/<collection_id>/` (WF3) |\n"
         "| `experiments/<name>/hydrology/wflow/output/` | Retained model responses to the climate scenarios (WF4) |\n"
-        "| `experiments/<name>/results/metric_sets/` | Current run/group indicator tables and group lookups; immutable copies under the experiment's `_engine/metric_sets/<id>/data/` (WF4) |\n"
+        "| `experiments/<name>/results/indicator_sets/<set-id>/` | One folder per indicator set: run/group tables, group lookups and the `indicators.csv` dictionary; immutable copies under the experiment's `_engine/indicator_sets/<id>/data/` (WF4) |\n"
         "| `logs/` | Workflow messages and failure details |\n"
         "| `benchmarks/` | Step timings and resource use |\n\n"
         "Collection inventories are in `scenarios/_engine/collections/<collection_id>/collection.json`. "
         "The current scenario export is tracked by `scenarios/_engine/current.json`. "
         "Indicator definitions and source records are in "
-        "`experiments/<name>/_engine/metric_sets/<id>/metrics.json`. "
-        "The current CSV export is tracked by `_engine/metric_sets/current.json` within the experiment. "
+        "`experiments/<name>/_engine/indicator_sets/<id>/indicators.json`. "
+        "Each set's current export is tracked by `_engine/indicator_sets/names/<set-id>/current.json` within the experiment. "
         "Check these records before treating results from an interrupted run as complete.\n"
     ).encode("utf-8")
     files[Path("notes.md")] = (

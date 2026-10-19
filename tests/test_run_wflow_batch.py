@@ -16,6 +16,8 @@ them drifting out of the house format.
 
 from __future__ import annotations
 
+import csv
+import os
 import re
 import shutil
 import subprocess
@@ -133,7 +135,7 @@ def test_a_finished_member_is_staged_before_its_marker():
     assert 'get(ENV, "CST_BATCH_STAGING", "")' in code
 
 
-def test_explicit_batch_parser_in_julia():
+def test_explicit_batch_parser_in_julia(tmp_path):
     """The real stdlib-only parser preserves records and rejects bad ordering."""
     julia = shutil.which("julia")
     if julia is None:
@@ -149,9 +151,19 @@ batch, members = parse_batch(["b4", "run_007", "z.toml", "a.csv", "run_012", "q.
 @test_throws ErrorException parse_batch(["b4", "run_007", "z.toml"])
 @test_throws ErrorException parse_batch(["b4", "run_007", "z.toml", "a.csv", "run_007", "q.toml", "b.csv"])
 @test_throws ErrorException parse_batch(["b4", "007", "z.toml", "a.csv"])
+include(joinpath(dirname(ARGS[1]), "..", "shared", "resource_timing.jl"))
+ENV["CST_RESOURCE_DIRECTORY"] = ARGS[2]
+@test with_resource_timing(() -> sum(1:100), "member", "b4", "run_007") == 5050
+@test_throws ErrorException with_resource_timing(() -> error("expected"), "member", "b4", "run_012")
+rows = readlines(joinpath(ARGS[2], "julia-$(getpid()).tsv"))
+@test length(rows) == 3
+@test split(rows[1], '\\t')[6:10] == ["wall_s", "gc_s", "allocated_bytes", "compile_s", "recompile_s"]
+@test split(rows[2], '\\t')[3:5] == ["b4", "run_007", "ok"]
+@test parse(Float64, split(rows[2], '\\t')[6]) >= 0
+@test split(rows[3], '\\t')[5] == "failed"
 """
     result = subprocess.run(
-        [julia, "--startup-file=no", "-e", code, str(DRIVER)],
+        [julia, "--startup-file=no", "-e", code, str(DRIVER), str(tmp_path)],
         capture_output=True,
         text=True,
         # Budget for PRECOMPILATION, not for the parser. `using Test` costs
@@ -171,3 +183,66 @@ batch, members = parse_batch(["b4", "run_007", "z.toml", "a.csv", "run_012", "q.
         timeout=300,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_instrumented_driver_preserves_member_outputs_and_failure(tmp_path):
+    """Execute the real driver against a tiny simulator, including package loading."""
+    julia = shutil.which("julia")
+    if julia is None:
+        pytest.skip("Julia is not available for the instrumented driver check")
+    package = tmp_path / "packages/Wflow/src"
+    package.mkdir(parents=True)
+    (package / "Wflow.jl").write_text(
+        'module Wflow\nusing Logging\nconst VERSION = "test"\n'
+        "Config(path) = (logging=(silent=true,), fews_run__flag=false, path=path)\n"
+        "init_logger(config; silent) = (NullLogger(), IOBuffer())\n"
+        "function run(config)\n"
+        '  endswith(config.path, "fail.toml") && error("expected failure")\n'
+        '  write(read(config.path, String), "native response\\n")\nend\nend\n',
+        encoding="utf-8",
+    )
+    output = tmp_path / "run_01.csv"
+    settings = tmp_path / "ok.toml"
+    settings.write_text(str(output), encoding="utf-8")
+    diagnostics = tmp_path / "diagnostics"
+    env = {
+        **os.environ,
+        "JULIA_LOAD_PATH": os.pathsep.join([str(tmp_path / "packages"), "@stdlib"]),
+    }
+    env.pop("CST_BATCH_STAGING", None)
+    for enabled in (False, True):
+        if enabled:
+            env["CST_RESOURCE_DIRECTORY"] = str(diagnostics)
+        else:
+            env.pop("CST_RESOURCE_DIRECTORY", None)
+        result = subprocess.run(
+            [
+                julia,
+                "--startup-file=no",
+                "--compiled-modules=no",
+                str(DRIVER),
+                "0",
+                "run_01",
+                str(settings),
+                str(output),
+                "run_02",
+                str(tmp_path / "fail.toml"),
+                str(tmp_path / "run_02.csv"),
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        assert result.returncode == 1, result.stdout + result.stderr
+        assert "expected failure" in result.stdout + result.stderr
+        assert output.read_bytes() == b"native response\n"
+        assert not (tmp_path / "run_02.csv").exists()
+    (trace,) = diagnostics.glob("julia-*.tsv")
+    with trace.open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    assert [(row["phase"], row["run_id"], row["status"]) for row in rows] == [
+        ("wflow_load", "", "ok"),
+        ("member", "run_01", "ok"),
+        ("member", "run_02", "failed"),
+    ]

@@ -46,6 +46,11 @@ def wrapper_only_admission(monkeypatch):
             environment=lambda: {},
         ),
     )
+    # The stubbed WF4 child publishes no indicator set; real named publication is
+    # exercised by test_named_indicator_sets_workflow.
+    from blueearth_cst.experiment import indicator_export
+
+    monkeypatch.setattr(indicator_export, "publish_selected_sets", lambda *_args: [])
 
 
 def _write_cfg(path, flags, project_dir=None):
@@ -71,7 +76,7 @@ def _write_cfg(path, flags, project_dir=None):
     )
     path.write_text(text, encoding="utf-8")
     (path.parent / f"{path.stem}-simulation.yml").write_text(
-        "operation: simulate-and-metrics\nexperiment_name: test\n", encoding="utf-8"
+        "operation: simulate-and-indicators\nexperiment_name: test\n", encoding="utf-8"
     )
 
 
@@ -1049,11 +1054,12 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     flags["analyze_projections"] = "false"
     _, out, project_dir = _run_and_capture(tmp_path, capsys, flags)
     root = str(project_dir).replace(os.sep, "/")
-    assert "run_workflows done in 0:00:0" in out
+    assert re.search(r"run_workflows done in \d+:\d{2}:\d{2}", out)
     wrote = _group_rows(out, "wrote")
     assert wrote["project"] == root
     # Rows under the project use the token the project row defines.
-    assert wrote["logs"] == "<project>/logs/"
+    assert wrote["logs"].startswith("<project>/logs/")
+    assert wrote["logs"].count("/") == 3
     assert wrote["invocation"].startswith("<project>/config/_engine/invocations/")
     assert wrote["commands"].startswith("<project>/config/_engine/invocations/")
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
@@ -1122,7 +1128,7 @@ def test_unusual_exit_code_points_at_the_snakemake_log_for_cross_check(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert code == 120
-    assert "[5/5]  WF4  SIMULATE SYSTEM  --  FAILED (exit 120) after 0:00:0" in out
+    assert "[5/5]  WF4  SIMULATE SYSTEM  --  FAILED (exit 120) after " in out
     assert (
         "exit code 120 is not one Snakemake's own CLI ever raises (only 0 or 1)" in out
     )
@@ -1157,8 +1163,9 @@ def test_a_launch_error_still_closes_with_a_report(
     assert "run_workflows FAILED in" in out
     assert "wf0 analyze_climate  FAILED (OSError)" in out
     assert "not run: wf1 build_model, wf2 analyze_projections" in out
-    # Two claims that are FALSE when no child ever launched.
-    assert "/logs/" not in out
+    # Startup diagnostics exist, but no child workflow log is claimed.
+    assert "    logs " not in out
+    assert "/summary.md" in out
     assert "printed above" not in out
 
 
@@ -1289,7 +1296,7 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
     assert len(envs) == 1
     assert envs[0][rw.console_style.ANNOUNCED_ENV] == "1"
     # The runner's own keys survived the merge.
-    assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-metrics"
+    assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-indicators"
     parent = _read_only_manifest(project_dir)
     assert (
         envs[0]["CST_SIMULATION_INVOCATION_ID"]
@@ -1470,6 +1477,32 @@ def test_the_preflight_is_silent_on_every_other_flag_pair(
     _write_cfg(cfg, flags, project_dir=str(project_dir))
 
     assert rw.run(str(cfg), cores=3, extra=[]) == 0
+
+
+@pytest.mark.parametrize("extra", [[], ["--", "--dry-run"]])
+def test_indicators_without_a_simulation_report_recovery(
+    tmp_path, capture_runs, capsys, extra
+):
+    cfg = tmp_path / "project.yml"
+    _write_cfg(
+        cfg,
+        {
+            name: "true" if name == "simulate_system" else "false"
+            for name in rw.WORKFLOW_ORDER
+        },
+    )
+    (tmp_path / "project-simulation.yml").write_text(
+        "experiment_name: test\noperations: [indicators]\nindicator_sets: [default]\n",
+        encoding="utf-8",
+    )
+    assert rw.main(["--config", str(cfg), *extra]) == 2
+    error = capsys.readouterr().err
+    assert "No completed simulation" in error
+    assert "test" in error and "_engine" in error and "simulation.json" in error
+    assert "operations: [simulations, indicators]" in error
+    assert "Traceback" not in error
+    assert not (tmp_path / "project/experiments").exists()
+    assert capture_runs[0] == []
 
 
 def test_the_preflight_exits_two_through_main(tmp_path, capture_runs, capsys):

@@ -23,7 +23,7 @@ different rule — translate through [What changed](#what-changed) before readin
 ### R12 generation/simulation split
 
 WF3 publishes a ready collection; WF4 consumes it through the mandatory
-simulation runner and publishes retained responses and metric sets. The final
+simulation runner and publishes retained responses and indicator sets. The final
 rule tables below replace the combined workflow's numbering. Historical tables
 in “What changed” retain the numbers in force at their stated dates.
 
@@ -163,8 +163,11 @@ so one lookup answers both.
 
 ## Conventions
 
-- Every rule also writes a `log:` part and a `benchmark:` part under
-  `logs/_parts/` and `benchmarks/_parts/`. Uniform, so not repeated per rule.
+- Rule log and benchmark parts live under
+  `logs/<execution>/_parts/wfN-<child-id>/{logs,benchmarks}/` for managed launches.
+  Gathers publish `logs/<execution>/wfN.log` and `wfN-benchmarks.{md,tsv}`.
+  Failed attempts retain partial parts; retries use fresh namespaces.
+  See `docs/guide/running.md` § Execution logs and benchmarks. Uniform, so not repeated per rule.
 - **Writes (undeclared)** is a real disk write that Snakemake does not know
   about. These matter: they are invisible to `--dry-run`, not cleaned by
   `--delete-all-output`, and unusable as a dependency. Three rules mutate
@@ -279,11 +282,11 @@ the user-facing output tree and scientific limitations.
 
 #### 0.06 · `gather_benchmarks`
 
-Merges benchmark parts into `benchmarks/wf0_benchmarks.md`.
+Merges benchmark parts into `logs/<execution>/wf0-benchmarks.md` and adjacent raw `.tsv`.
 
 #### 0.07 · `gather_logs`
 
-Merges the registered rule log parts into `logs/wf0_analyze_climate.log` and removes
+Merges the registered rule log parts into `logs/<execution>/wf0.log` and removes
 the parts. `LOG_RULES` defines the order and is checked by
 `tests/test_log_rules_contract.py`.
 
@@ -399,7 +402,7 @@ The store reaches WF1's evaluation (1.15), never its forcing.
 | 1.12 | `plot_model_forcing` | The same figures on the model's own forcing grid. |
 | 1.13 | `run_historical_simulation` | Runs Wflow.jl once. |
 | 1.14 | `export_simulation_tables` | Excel-ready per-variable tables from the run. |
-| 1.15 | `plot_model_evaluation` | The evaluation figures, and the metrics table. |
+| 1.15 | `plot_model_evaluation` | The evaluation figures, and the indicators table. |
 | 1.16 | `write_run_metadata` | The staleness sidecar for the run. |
 | 1.17 | `gather_benchmarks` | Merges the timing parts. |
 | 1.18 | `gather_logs` | Merges the log parts. |
@@ -671,7 +674,7 @@ own TOML.
 
 **Writes.** `<model>/run_default/output.csv` — `temp()`, so a successful run
 does not leave it: rule 1.14 derives the readable per-variable tables from it
-and rule 1.15 reads it for the metrics, then Snakemake drops it. Run with
+and rule 1.15 reads it for the indicators, then Snakemake drops it. Run with
 `--notemp` to keep it (the baseline gate pins it, and iterating on a 1.15 figure
 otherwise re-runs the whole model).
 
@@ -681,7 +684,7 @@ otherwise re-runs the whole model).
 the evaluation figures — four sheets per station plus the basin-average series.
 One rule, both products.
 
-**Writes.** `<model>/evaluation/performance_metrics.csv` · one
+**Writes.** `<model>/evaluation/performance_indicators.csv` · one
 `<var>_basavg.png` per basin-average `model.outvars` entry.
 
 **Writes (undeclared).** Per station, keyed by `wflow_id`:
@@ -695,29 +698,30 @@ longer than a year.
 
 **Why no figure is declared** — figures name a point by its `wflow_id`, as every
 other artifact of a run does, so no single figure filename is predictable at parse
-time. The metrics table is this rule's terminal in `WF1_TERMINALS` instead. The rename also closed two defects the old key hid: an
+time. The indicators table is this rule's terminal in `WF1_TERMINALS` instead. The rename also closed two defects the old key hid: an
 outlet and a gauge on one cell were plotted twice under two names, and an
 observation at the basin outlet matched nothing at all, because observations are
 keyed by `wflow_id` while the outlet series is keyed by its subcatchment id.
 `plot_results.resolve_stations` is where both are now handled.
 
-**Why the metrics and the figures share a rule** — `performance_metrics.csv` is
+**Why the indicators and the figures share a rule** — `performance_indicators.csv` is
 baseline-covered data while the figures are excluded, and the DAG cannot express
-that distinction; splitting anyway is not affordable, because the metrics are one `compute_metrics` call *inside* the
+that distinction; splitting anyway is not affordable, because the indicators are one `compute_indicators` call *inside* the
 figure loop, downstream of the model open, the gauge-name resolution, the merge,
 the alignment and the climate-parity transform. Splitting means either
 duplicating the parity work or adding a declared intermediate, and the harm it
 fixes is a wasted re-run, not a wrong number. **Consequence to know when reading
 the `AGENTS.md` validation ladder:** a plot-only edit here still re-runs the
-whole rule and rewrites identical metrics, so the gate passes but is not free.
+whole rule and rewrites identical indicators, so the gate passes but is not free.
 
 #### 1.17 · `gather_benchmarks`
 
-**Does.** Merges the per-rule timing parts into one table with a rule column and
-a TOTAL row, rewritten fresh each run. Takes the terminal set as input, which is
+**Does.** Merges timing parts into a rule overview and expandable individual-job table,
+with adjacent raw samples. The launcher refreshes recorded workflow elapsed time on completion;
+summed job time remains separate. Takes the terminal set as input, which is
 what schedules it last.
 
-**Writes.** `benchmarks/wf1_benchmarks.md`.
+**Writes.** `logs/<execution>/wf1-benchmarks.md` and `.tsv`.
 
 #### 1.18 · `gather_logs`
 
@@ -726,7 +730,7 @@ deletes the parts it consumed and prunes the emptied directories. After a
 **partial** re-run the untouched sections are marked "no part from this run" —
 the artifact describes the run that produced it, not an accumulated history.
 
-**Writes.** `logs/wf1_build_model.log`.
+**Writes.** `logs/<execution>/wf1.log`.
 
 ## Two meanings of "subbasin"
 
@@ -923,7 +927,7 @@ the default numeric baseline gate is unchanged.
 
 **Does.** As WF1 1.17, for WF2.
 
-**Writes.** `benchmarks/wf2_benchmarks.md`.
+**Writes.** `logs/<execution>/wf2-benchmarks.md` and `.tsv`.
 
 #### 2.08 · `gather_logs`
 
@@ -931,7 +935,7 @@ the default numeric baseline gate is unchanged.
 the fan-out rules, so following one run meant opening five files and knowing
 their order.
 
-**Writes.** `logs/wf2_analyze_projections.log`.
+**Writes.** `logs/<execution>/wf2.log`.
 
 ---
 
@@ -969,8 +973,8 @@ flowchart LR
 | 3.07 | `generate_weather_realizations` | Snakemake | Unperturbed roots, moved to `series/run_<id>.nc`; date products |
 | 3.08 | `perturb_climate_realizations` | Snakemake, one job per perturbed run | `series/run_<id>.nc` |
 | 3.09 | `publish_scenario_collection` | Snakemake | Validated collection and its ready marker |
-| 3.10 | `gather_benchmarks` | Snakemake (generation phase) | `benchmarks/wf3_benchmarks_<plan>.md` |
-| 3.11 | `gather_logs` | Snakemake (generation phase) | `logs/wf3_generate_scenarios_<plan>.log` |
+| 3.10 | `gather_benchmarks` | Snakemake (generation phase) | `logs/<execution>/wf3-benchmarks.{md,tsv}` |
+| 3.11 | `gather_logs` | Snakemake (generation phase) | `logs/<execution>/wf3.log` |
 
 The former 3.09 copy step was removed on 2026-09-24
 (`dev/records/milestones/post-r12/migration_wf3-generation-rules.md`); the rules after
@@ -989,13 +993,13 @@ The current products are exported directly to `scenarios/`. Existing collections
 
 Use `scripts/simulate_system.py --config <project> --target all`, or the
 all-workflow runner. Target/operation validation happens before one Snakemake
-invocation. The fixed `simulate_and_metrics.smk` module owns model preparation
-and Wflow execution; `metrics_only.smk` omits those producers. A completed normal
+invocation. The fixed `simulate_and_indicators.smk` module owns model preparation
+and Wflow execution; `indicators_only.smk` omits those producers. A completed normal
 simulation also reduces retained responses without recreating model forcing.
 
 | Number | Rule/checkpoint | Output or role |
 |---|---|---|
-| — | `all` (target) | Complete selected metric set and execution records |
+| — | `all` (target) | Complete selected indicator set and execution records |
 | 4.01 | `write_model_fingerprint` | Model reference |
 | 4.02 | `check_model_unchanged` | Live model-reference verification |
 | 4.03 | `snapshot_simulation_inputs` | Frozen collection/model/settings/environment identity |
@@ -1003,11 +1007,11 @@ simulation also reduces retained responses without recreating model forcing.
 | 4.05 | `run_wflow_simulations_batch_<batch>` | Native run CSVs; a retry after a failure re-runs only the failed members |
 | 4.06 | `publish_wflow_outputs` | Complete simulation and response inventory |
 | — | `simulations_only` (target) | Native-response aggregate |
-| 4.07 | `prepare_indicator_plan` | Response-dependent metric-set identity and exact targets |
-| 4.08 | `derive_system_indicators` | Tables, unit index, declarations and `metrics.json` marker |
+| 4.07 | `prepare_indicator_plan` | Response-dependent indicator-set identity and exact targets |
+| 4.08 | `derive_system_indicators` | Tables, unit index, declarations and `indicators.json` marker |
 | 4.09 | `gather_logs` | Experiment-scoped merged log |
 | 4.10 | `gather_benchmarks` | Experiment-scoped benchmark table |
-| — | `simulations_and_indicators` (target) | Selected metric-set aggregate |
+| — | `simulations_and_indicators` (target) | Selected indicator-set aggregate |
 
 A batch is one Snakemake job, so a failing member fails the job and Snakemake
 deletes its declared outputs. The driver therefore moves each finished member's
@@ -1017,8 +1021,8 @@ members, runs the rest, and restores every CSV to `output/` on success
 (`blueearth_cst/experiment/batch_staging.py`). The staging directory exists only
 between a failed attempt and its successful retry.
 
-Metrics-only requires `operation: metrics-only` with
-`--target simulations_and_indicators` (`metrics` is accepted for one release) and
+Indicators-only requires `operation: indicators-only` with
+`--target simulations_and_indicators` (`indicators` is accepted for one release) and
 retained simulation/response records. It cannot schedule generation, preparation
 or Julia. Mixed or inconsistent targets are refused by the runner.
 
@@ -1033,7 +1037,7 @@ or Julia. Mixed or inconsistent targets are refused by the runner.
 | 3.12 perturbation | 3.08 |
 | 3.14 downscaling | 4.04 |
 | 3.15 Wflow batches | 4.05 |
-| 3.16 legacy table reduction | 4.08–4.10 retained metric planning/publication |
+| 3.16 legacy table reduction | 4.08–4.10 retained indicator planning/publication |
 
 See [workflow migration](../../../dev/records/milestones/r12/migration-workflow-names.md),
 [post-R12 project-tree migration](../../../dev/records/milestones/post-r12/migration-project-tree.md),

@@ -34,7 +34,7 @@ instead of `sans`:
 
 ```
 Warning: Could not load "...\Library\bin\gvplugin_pango.dll" - ...
-Warning: no hard-coded metrics for 'sans'.  Falling back to 'Times' metrics
+Warning: no hard-coded indicators for 'sans'.  Falling back to 'Times' indicators
 ```
 
 **Root cause.** Two name-mismatch bugs in conda-forge's Windows graphviz/glib

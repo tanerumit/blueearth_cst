@@ -1,143 +1,237 @@
-"""Merge a workflow's per-rule Snakemake benchmark TSVs into one Markdown table.
+"""Gather execution-owned benchmark parts into a compact report and raw TSV.
 
-Snakemake writes one benchmark TSV per rule (per job) under
-``<parts_dir>/<W.NN_rule>[/…].tsv`` (TSV is Snakemake's fixed benchmark
-format). This gather step (one job per workflow) collects that workflow's parts
-into a single readable ``benchmarks/wf<W>_benchmarks.md`` — a Markdown table with
-a ``rule`` column and a bold ``TOTAL`` row — regenerated fresh each run.
-
-WF1 and WF2 both pass ``benchmarks/_parts``, so parts are filtered by the ``W.``
-numbering prefix on the first path component under ``parts_dir``. WF3 passes
-``benchmarks/_parts/<experiment>`` instead: its part names are rule numbers,
-identical across experiments, so a shared directory would let one experiment's
-stranded part be merged into another's table and deleted with it.
-
-That nests WF3's parts INSIDE the directory WF1 and WF2 share, which is safe
-only because the prefix filter is applied to the glob before anything else uses
-it: WF1's gather sees ``<experiment>/3.16_….tsv`` as first component
-``<experiment>``, which does not start with ``1.``, so those parts are neither
-rowed nor deleted. The filtered list is the SAME list ``_remove_parts`` deletes —
-keep it that way, or a filter that gates only the table would have WF1's gather
-silently eating WF3's parts.
+The workflow prefix filters both reading and deletion. Nested parts from other
+workflows or collections are never consumed. Retained TSV rows allow the launcher
+to refresh elapsed time after the canonical invocation has finished.
 """
 
 import glob
+import json
+import math
 import os
+import re
+from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
+from blueearth_cst.shared.invocation_summary import _duration
 from blueearth_cst.shared.snake_utils import _log_header_lines
 
-# How the TOTAL row aggregates each Snakemake benchmark column.
-_SUM = ["s", "io_in", "io_out", "cpu_time"]  # additive across jobs
-_MAX = ["max_rss", "max_vms", "max_uss", "max_pss"]  # peak across jobs
-_MEAN = ["mean_load"]  # average across jobs
 
-# Legend appended under the table. Snakemake's benchmark columns are a fixed set
-# (psutil-sampled); this explains what each means and how to read it.
-_LEGEND = """\
-
-**How to read this** — one row per rule (fan-out rules aggregate all their jobs).
-The **TOTAL** row *sums* the time / IO / CPU columns but takes the **peak** of the
-memory columns, since peak usage in different rules does not happen at once.
-
-| column | meaning | interpretation |
-| --- | --- | --- |
-| `s` / `h:m:s` | wall-clock runtime (seconds / h:m:s) | the headline cost of each step |
-| `max_rss` | peak physical RAM held (MB) | the "does it fit in memory?" number |
-| `max_vms` | peak virtual address space (MB) | usually far larger than RSS and rarely actionable |
-| `max_uss` | peak RAM unique to the process (MB) | memory reclaimed if it died — a tight lower bound |
-| `max_pss` | peak RAM incl. a share of shared pages (MB) | Linux-only; on Windows a proxy equal to `max_uss` |
-| `io_in` / `io_out` | disk read / written (MB) | spots IO-bound steps; may under-report on Windows |
-| `mean_load` | average CPU load (%), 100 ≈ one core busy | >100 ⇒ used multiple cores; well under 100 ⇒ waited on IO |
-| `cpu_time` | total CPU seconds (user + system) | vs `s`: cpu_time ≫ s ⇒ parallel, ≈ s ⇒ single-threaded |
-
-Metrics come from Snakemake's `benchmark:` sampler. On Windows `max_pss` mirrors
-`max_uss` and the `io_*` columns can under-report (psutil limitation).
-"""
-
-
-def _hms(seconds):
+def _hms(seconds: float) -> str:
+    """Format a measured duration without hiding missing values."""
+    if pd.isna(seconds) or not math.isfinite(seconds):
+        return "unavailable"
     seconds = int(round(seconds))
     return f"{seconds // 3600}:{(seconds % 3600) // 60:02d}:{seconds % 60:02d}"
 
 
-def merge_benchmarks(parts_dir, workflow_num, out_path):
-    """Concatenate workflow ``workflow_num``'s benchmark parts + a TOTAL row."""
-    prefix = f"{workflow_num}."
-    tsvs = sorted(
-        p
-        for p in glob.glob(os.path.join(parts_dir, "**", "*.tsv"), recursive=True)
-        if os.path.relpath(p, parts_dir)
-        .replace("\\", "/")
-        .split("/")[0]
-        .startswith(prefix)
-    )
-    parent = os.path.dirname(out_path)
-    if parent:
-        os.makedirs(parent, exist_ok=True)
+def _measurements(frame: pd.DataFrame, column: str) -> pd.Series:
+    """Select finite, nonnegative observations for explicit partial summaries."""
+    if column not in frame:
+        return pd.Series(index=frame.index, dtype=float)
+    values = pd.to_numeric(frame[column], errors="coerce")
+    return values.where(values.ge(0) & values.map(math.isfinite))
 
-    frames = []
-    for path in tsvs:
-        rule = os.path.splitext(os.path.relpath(path, parts_dir))[0].replace("\\", "/")
-        df = pd.read_csv(path, sep="\t")
-        df.insert(0, "rule", rule)
-        frames.append(df)
 
-    if not frames:  # no parts (e.g. nothing ran)
-        with open(out_path, "w", encoding="utf-8") as handle:
-            handle.write(  # same provenance header as rule logs, rendered for Markdown
-                _log_header_lines(
-                    out_path, kind="benchmark", time_label="generated", markdown=True
-                )
-            )
-            handle.write(
-                f"# wf{workflow_num} benchmarks\n\n(no benchmark parts found)\n"
-            )
-        return
+def _rule_name(label: str) -> str:
+    """Keep identifiers in details and readable rule labels in the overview."""
+    rule = label.split("/")[0]
+    return re.sub(r"^\d+\.\d+[a-z]?_", "", rule).replace("_", " ").capitalize()
 
-    merged = pd.concat(frames, ignore_index=True)
-    total = {"rule": "TOTAL"}
-    for col in _SUM:
-        if col in merged:
-            total[col] = round(merged[col].sum(skipna=True), 4)
-    for col in _MAX:
-        if col in merged:
-            total[col] = merged[col].max(skipna=True)
-    for col in _MEAN:
-        if col in merged:
-            total[col] = round(merged[col].mean(skipna=True), 4)
-    if "s" in total and "h:m:s" in merged.columns:
-        total["h:m:s"] = _hms(total["s"])
 
-    merged = pd.concat([merged, pd.DataFrame([total])], ignore_index=True)
-    merged.loc[merged["rule"] == "TOTAL", "rule"] = "**TOTAL**"  # emphasise the total
-    with open(out_path, "w", encoding="utf-8") as handle:
-        handle.write(  # same provenance header as rule logs, rendered for Markdown
-            _log_header_lines(
-                out_path, kind="benchmark", time_label="generated", markdown=True
-            )
+def _rule_summary(merged: pd.DataFrame) -> pd.DataFrame:
+    """Summarize fan-out jobs while accounting separately for benchmark repeats."""
+    rows = []
+    groups = merged.groupby(merged["rule"].str.split("/").str[0], sort=True)
+    for rule, group in groups:
+        times = _measurements(group, "s")
+        rss = _measurements(group, "max_rss")
+        # Repeats are observations of the same job, not additional fan-out jobs.
+        # Sum per-job medians so repetition does not inflate estimated job cost.
+        job_times = times.groupby(group["rule"]).median()
+        missing = int(times.isna().sum())
+        rows.append(
+            {
+                "Rule": _rule_name(rule),
+                "Jobs": group["rule"].nunique(),
+                "Samples": len(group),
+                "Summed job time": _hms(job_times.sum(min_count=len(job_times))),
+                "Median/job": _hms(job_times.median()),
+                "Slowest job": _hms(job_times.max()),
+                "Peak job RAM (MB)": (
+                    f"{rss.max():.1f}" if rss.notna().any() else "unavailable"
+                ),
+                "Missing timing samples": missing,
+            }
         )
-        handle.write(f"# wf{workflow_num} benchmarks\n\n")
-        handle.write(merged.to_markdown(index=False, floatfmt=".2f"))
-        handle.write("\n")
-        handle.write(_LEGEND)
+    return pd.DataFrame(rows)
 
-    _remove_parts(tsvs, parts_dir)
+
+def _julia_phases(record: dict[str, Any]) -> str:
+    """Summarize available process-local Julia timings without imputing gaps."""
+    directory = (record.get("resources") or {}).get("directory")
+    if not directory:
+        return ""
+    rows = []
+    failed = 0
+    for path in sorted(Path(directory).glob("julia-*.tsv")):
+        frame = pd.read_csv(path, sep="\t")
+        required = {"phase", "status", "wall_s", "compile_s"}
+        if not required.issubset(frame.columns):
+            continue
+        failed += int(frame["status"].ne("ok").sum())
+        members = frame.loc[frame["phase"].eq("member")]
+        # Each file is one Julia process; the first observed member can fail.
+        first = members.iloc[:1]
+        later = members.iloc[1:]
+        load = frame.loc[frame["phase"].eq("wflow_load") & frame["status"].eq("ok")]
+        for label, values in (
+            ("Wflow load", _measurements(load, "wall_s")),
+            (
+                "First observed member compilation",
+                _measurements(first.loc[first["status"].eq("ok")], "compile_s"),
+            ),
+            (
+                "Later observed members",
+                _measurements(later.loc[later["status"].eq("ok")], "wall_s"),
+            ),
+        ):
+            rows.extend((label, value) for value in values.dropna())
+    if not rows and not failed:
+        return ""
+    lines = ["", "## Julia phases", ""]
+    if rows:
+        observed = pd.DataFrame(rows, columns=["Phase", "seconds"])
+        summary = observed.groupby("Phase", sort=False)["seconds"].agg(
+            ["count", "median"]
+        )
+        summary.columns = ["Observations", "Median duration"]
+        summary["Median duration"] = summary["Median duration"].map(_hms)
+        lines.extend([summary.reset_index().to_markdown(index=False), ""])
+    lines.append(
+        "Available successful observations only; missing phases are unmeasured. "
+        f"Failed observations: {failed}. First/later members are identified per Julia process."
+    )
+    return "\n".join(lines) + "\n"
+
+
+def merge_benchmarks(
+    parts_dir: str | os.PathLike[str],
+    workflow_num: str | int,
+    out_path: str | os.PathLike[str],
+    *,
+    invocation_path: str | os.PathLike[str] | None = None,
+    remove_parts: bool = True,
+    refresh: bool = False,
+) -> None:
+    """Write a rule overview, detailed measurements, and adjacent raw TSV.
+
+    Args:
+        parts_dir: Root containing this execution's Snakemake benchmark parts.
+        workflow_num: Workflow prefix used to isolate parts before deletion.
+        out_path: Markdown destination; raw TSV uses the same stem.
+        invocation_path: Canonical workflow invocation JSON, if available.
+        remove_parts: Delete only successfully merged parts; disable on failure.
+        refresh: Read retained TSV instead of parts to update finalized metadata.
+
+    Repeated samples stay in the TSV and detail table. Overview durations use
+    each job's median across repeats; incomplete sums remain unavailable.
+    """
+    out = Path(out_path)
+    raw = out.with_suffix(".tsv")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    prefix = f"{workflow_num}."
+    tsvs = []
+    if refresh:
+        merged = pd.read_csv(raw, sep="\t")
+    else:
+        tsvs = sorted(
+            p
+            for p in glob.glob(os.path.join(parts_dir, "**", "*.tsv"), recursive=True)
+            if os.path.relpath(p, parts_dir)
+            .replace("\\", "/")
+            .split("/")[0]
+            .startswith(prefix)
+        )
+        frames = []
+        for path in tsvs:
+            rule = os.path.splitext(os.path.relpath(path, parts_dir))[0].replace(
+                "\\", "/"
+            )
+            frame = pd.read_csv(path, sep="\t")
+            frame.insert(0, "sample", range(1, len(frame) + 1))
+            frame.insert(0, "rule", rule)
+            frames.append(frame)
+        merged = (
+            pd.concat(frames, ignore_index=True)
+            if frames
+            else pd.DataFrame(columns=["rule", "sample"])
+        )
+        merged.to_csv(raw, sep="\t", index=False)
+
+    record = (
+        json.loads(Path(invocation_path).read_text(encoding="utf-8"))
+        if invocation_path is not None
+        else {}
+    )
+    duration = _duration(record)
+    if record.get("status") == "running":
+        duration = "running (not finalized)"
+    lines = [
+        _log_header_lines(
+            out_path, kind="benchmark", time_label="generated", markdown=True
+        ),
+        f"# WF{workflow_num} benchmarks",
+        "",
+        f"Workflow elapsed: {duration}.",
+        f"Outcome: {record.get('status', 'unknown')}.",
+        f"Work performed: {record.get('work_performed', 'unknown')}.",
+        "",
+        "Coverage: collected benchmark samples only; reused, failed and unmeasured "
+        "jobs cannot be counted from these files. Completeness: unknown.",
+        "",
+    ]
+    if merged.empty:
+        lines.append(
+            "No benchmark parts found; missing measurements do not mean zero cost."
+        )
+    else:
+        lines.extend(
+            [
+                "## By rule",
+                "",
+                _rule_summary(merged).to_markdown(index=False),
+                "",
+                "Summed job time includes overlapping jobs and is not workflow elapsed time. "
+                "Repeated samples use each job's median; missing job durations make sums unavailable. "
+                "Peak job RAM is the largest individual-job RSS measurement, not concurrent memory.",
+                "",
+                "<details>",
+                "<summary>Individual jobs and resource measurements</summary>",
+                "",
+                merged.fillna("unavailable").to_markdown(index=False),
+                "",
+                "</details>",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            f"Raw measurements: [{raw.name}]({raw.name}).",
+            "`s` is job wall time; `cpu_time` is CPU seconds; memory and I/O are MB. "
+            "On Windows, `max_pss` mirrors `max_uss` and I/O may under-report.",
+            _julia_phases(record),
+        ]
+    )
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    if remove_parts and not refresh:
+        _remove_parts(tsvs, parts_dir)
 
 
 def _remove_parts(tsvs, parts_dir):
-    """Delete merged benchmark parts and prune now-empty part subdirs.
-
-    The merged ``.md`` is the durable artifact; the per-rule TSV parts are
-    scratch. Only ``tsvs`` (already prefix-filtered to this workflow) are
-    removed — WF1 and WF2 share ``_parts`` and WF3 sits in a subdir of it — and
-    directory pruning only ever removes *empty* dirs. A shared root is therefore
-    removed only after its last workflow part is merged, and WF1 pruning an
-    emptied ``_parts/<experiment>/`` is harmless: the next WF3 run recreates it.
-    Note: a later *partial* re-run regenerates parts only for the rules that
-    re-ran, so its merged table reflects just those (a full run stays complete).
-    """
+    """Delete only merged parts and prune empty directories, preserving siblings."""
     for path in tsvs:
         try:
             os.remove(path)
@@ -154,4 +248,9 @@ def _remove_parts(tsvs, parts_dir):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        merge_benchmarks(sm.params.parts_dir, str(sm.params.workflow_num), sm.output[0])
+        merge_benchmarks(
+            sm.params.parts_dir,
+            str(sm.params.workflow_num),
+            sm.output[0],
+            invocation_path=os.environ.get("CST_EXECUTION_RECORD"),
+        )

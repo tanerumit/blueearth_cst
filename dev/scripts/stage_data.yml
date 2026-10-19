@@ -156,6 +156,17 @@ datasets:
     # - parameters          : 18 fields, incl. RGIID, GLIMSID, AREA, ZMIN,
     #                         ZMAX, ZMED, SLOPE (Randolph Glacier Inventory 6.0)
 
+  # FlatGeobuf twins of the five layers above, read by the rapid/baseline
+  # project catalogs (`deltares_data_pdrive.yml` names merit_hydro_index,
+  # hydro_rivers_lin, hydro_lakes, hydro_reservoirs and rgi as .fgb) when
+  # re-rooted at this mirror. Same paths as `local_e2e_data.yml`; allow_empty
+  # keeps a readable empty layer where the basin has no features.
+  - {name: basin_index_fgb, type: vector, path: topography/merit_hydro/basin_index.fgb}
+  - {name: rivers_lin2019_fgb, type: vector, path: hydrography/rivers_lin2019/rivers_ge30m.fgb}
+  - {name: hydro_lakes_fgb, type: vector, path: hydrography/lakes/lake-db.fgb, allow_empty: true}
+  - {name: hydro_reservoirs_fgb, type: vector, path: hydrography/reservoirs/reservoir-db.fgb, allow_empty: true}
+  - {name: rgi_fgb, type: vector, path: hydrography/rgi/rgi.fgb, allow_empty: true}
+
   # --- Meteo / climate forcing sources ---------------------------------------
   # wflow historical forcing here is `clim_historical: era5` with
   # `variables: [precip, temp]` over 2000-2020 (see test_case/project_config_*.yml).

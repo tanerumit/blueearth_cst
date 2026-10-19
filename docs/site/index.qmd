@@ -40,10 +40,10 @@ locally calibrated model or detailed engineering design.
 | If you want to… | Go to |
 |---|---|
 | Install the toolbox on your machine | [Setup guide](setup/install.md) |
-| Run a basin assessment end to end | [Quick start](guide/quick-start.qmd) |
-| Point the toolbox at your own basin | [Configuring a project](guide/configuration.qmd) |
-| Run selected analyses or revisit an experiment | [Running the workflows](guide/running.qmd) |
-| Find and interpret the results | [Reading the outputs](guide/outputs.qmd) |
+| Run a basin assessment end to end | [Quick start](guide/quick-start.md) |
+| Point the toolbox at your own basin | [Configuring a project](guide/configuration.md) |
+| Run selected analyses or revisit an experiment | [Running the workflows](guide/running.md) |
+| Find and interpret the results | [Reading the outputs](guide/outputs.md) |
 
 ## The five workflows
 
@@ -67,5 +67,5 @@ enable in this order:
 
 Model building and scenario generation are both needed before simulation.
 Projection analysis is independent of scenario generation and provides context
-for interpreting the response surface. See the [quick start](guide/quick-start.qmd)
+for interpreting the response surface. See the [quick start](guide/quick-start.md)
 for an example run.

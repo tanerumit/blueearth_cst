@@ -20,7 +20,7 @@ from blueearth_cst.experiment.generation_plan import (
 )
 from blueearth_cst.experiment.generation_publication import initialize_generation
 from blueearth_cst.experiment.scenario_export import export_scenario_collection
-from blueearth_cst.shared import invocation_history
+from blueearth_cst.shared import execution_outputs, invocation_history
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.output_capture import captured_output
 from blueearth_cst.shared.windows_job import run_project_child
@@ -99,6 +99,8 @@ def run_owned(
         "CST_GENERATION_OWNED": invocation_id,
         "CST_GENERATION_INVOCATION_ID": invocation_id,
     }
+    if history_pair is not None:
+        base_env.update(execution_outputs.environment(*history_pair))
     source_env = {**base_env, "CST_GENERATION_PHASE": "source"}
     if reservation_context is not None:
         reservation_context.recheck()
@@ -172,9 +174,9 @@ def run_owned(
                 }
                 history["configuration"]["archive_state"] = "retained_creator"
                 invocation_history.update(history_path, history)
-            print(
-                f"WF3: reusing ready scenario collection {plan['collection_id']}; no weather generation needed",
-                flush=True,
+            log_row(
+                f"Reusing scenario collection: {plural(len(plan['rows']), 'run')}; no weather generation needed",
+                module="generation",
             )
             return 0
     lookup_path = (
@@ -224,6 +226,7 @@ def run_owned(
     return result
 
 
+@execution_outputs.capture_launch
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Generate a pinned scenario collection"

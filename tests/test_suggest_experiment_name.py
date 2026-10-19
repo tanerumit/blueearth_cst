@@ -96,7 +96,7 @@ def test_subprocess_previews_configured_family_and_override_without_writing(tmp_
         tmp_path,
         "# fixed family retained in user YAML\n"
         "experiment_name: basin_stress  # keep this annotation\n"
-        "operation: simulate-and-metrics\n"
+        "operation: simulate-and-indicators\n"
         "compute:\n"
         "  julia_threads: 2  # unrelated scheduling choice\n",
     )
@@ -119,7 +119,7 @@ def test_subprocess_previews_default_with_bare_key_and_preserves_comments(tmp_pa
         tmp_path,
         "# default numbered experiment is chosen at execution\n"
         "experiment_name:   # intentionally unset\n"
-        "operation: simulate-and-metrics\n",
+        "operation: simulate-and-indicators\n",
     )
     before = _inventory(tmp_path)
     result = _run(config)
@@ -131,7 +131,9 @@ def test_subprocess_previews_default_with_bare_key_and_preserves_comments(tmp_pa
 
 @pytest.mark.parametrize("missing", ["project file", "config_path", "workflow file"])
 def test_subprocess_missing_config_refuses_without_any_writes(tmp_path, missing):
-    config, project = _annotated_config(tmp_path, "operation: simulate-and-metrics\n")
+    config, project = _annotated_config(
+        tmp_path, "operation: simulate-and-indicators\n"
+    )
     if missing == "project file":
         config.unlink()
         expected_error = config.name

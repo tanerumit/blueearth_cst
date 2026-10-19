@@ -309,8 +309,16 @@ def validate_request(request: dict, project_root: Path | str) -> dict:
             paths.append(item["path"])
         if paths != sorted(set(paths)):
             raise ValueError("provider code paths must be unique and sorted")
-    simulation = _fields(
-        request["simulation"],
+    simulation = request["simulation"]
+    from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+    include_unperturbed(simulation)
+    _fields(
+        {
+            key: value
+            for key, value in simulation.items()
+            if key != "include_unperturbed"
+        },
         {"climate_source", "model_root", "outvars", "model_request"},
         "declared simulation",
     )
@@ -510,7 +518,9 @@ def _seed(value: Any, request: dict, root: Path, *, verify: bool = False) -> Non
         raise ValueError("unsupported seed state")
 
 
-def _resolution(value: Any, root: Path, *, verify: bool = False) -> None:
+def _resolution(
+    value: Any, root: Path, *, verify: bool = False, include: bool = True
+) -> None:
     _fields(
         value,
         {
@@ -545,10 +555,15 @@ def _resolution(value: Any, root: Path, *, verify: bool = False) -> None:
         from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
 
         marker = read_collection_v2(root / value["manifest"]["path"])
+        from blueearth_cst.experiment.simulation_runs import selected_run_ids
+
         if (
             marker["collection_id"] != value["collection_id"]
             or marker["collection_revision"] != value["collection_revision"]
-            or [item["run_id"] for item in marker["series"]] != runs
+            or selected_run_ids(
+                marker, root / value["manifest"]["path"], include=include
+            )
+            != runs
         ):
             raise ValueError("resolution differs from ready collection")
 
@@ -624,7 +639,14 @@ def validate_reservation(
     if value["state"] != expected or (simulation is not None and resolution is None):
         raise ValueError("reservation state disagrees with bindings")
     if resolution is not None:
-        _resolution(resolution, root, verify=verify)
+        from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+        _resolution(
+            resolution,
+            root,
+            verify=verify,
+            include=include_unperturbed(value["request"]["simulation"]),
+        )
         if value["seed"]["state"] == "awaiting_sources":
             raise ValueError("resolution cannot precede generation seed binding")
         if verify and value["seed"]["state"] == "bound":
@@ -838,9 +860,9 @@ def _allocation(ledger: dict, name: str) -> dict | None:
 
 
 def _flags(
-    new: bool, note: str | None, metrics: bool, enabled: bool, recover: bool
+    new: bool, note: str | None, indicators: bool, enabled: bool, recover: bool
 ) -> None:
-    if any(type(flag) is not bool for flag in (new, metrics, enabled, recover)):
+    if any(type(flag) is not bool for flag in (new, indicators, enabled, recover)):
         raise ValueError("operation flags must be booleans")
     if note is not None and type(note) is not str:
         raise ValueError("note must be text or null")
@@ -848,8 +870,8 @@ def _flags(
         raise ValueError("--note requires --new-experiment")
     if not enabled and (new or note is not None or recover):
         raise ValueError("WF4 disabled with experiment creation/note/recovery flags")
-    if metrics and (new or note is not None or recover):
-        raise ValueError("metrics-only cannot create or recover reservations")
+    if indicators and (new or note is not None or recover):
+        raise ValueError("indicators-only cannot create or recover reservations")
     if recover and (new or note is not None):
         raise ValueError("recovery cannot combine with creation/note")
 
@@ -860,7 +882,7 @@ def _select(
     requested: str | None,
     *,
     new: bool,
-    metrics: bool,
+    indicators: bool,
     recover: bool,
 ) -> Selection:
     name = "stress_test" if requested is None else _name(requested)
@@ -868,7 +890,7 @@ def _select(
     allocated = _allocation(ledger, name)
     if allocated is None and exact.exists():
         _legacy_owner(root, name)
-        if metrics:
+        if indicators:
             from blueearth_cst.experiment.simulation_record import read_simulation_v2
 
             read_simulation_v2(exact)
@@ -901,9 +923,14 @@ def _select(
     if allocation is None:
         if recover:
             raise ValueError("no committed allocation exists for recovery")
-        if metrics:
+        if indicators:
             return Selection(
-                "missing", root, selected, base, number, "metrics-only never allocates"
+                "missing",
+                root,
+                selected,
+                base,
+                number,
+                "indicators-only never allocates",
             )
         return Selection(
             "create",
@@ -941,7 +968,7 @@ def _select(
     else:
         _read_pair(root, allocation)
         action = "continue"
-    if metrics:
+    if indicators:
         from blueearth_cst.experiment.simulation_record import read_simulation_v2
 
         read_simulation_v2(root / "experiments" / selected)
@@ -962,7 +989,7 @@ def preview_experiment(
     *,
     new_experiment: bool = False,
     note: str | None = None,
-    metrics_only: bool = False,
+    indicators_only: bool = False,
     wf4_enabled: bool = True,
     recover: bool = False,
 ) -> Selection:
@@ -970,7 +997,7 @@ def preview_experiment(
     root = Path(project_root).absolute()
     try:
         root = _root(project_root)
-        _flags(new_experiment, note, metrics_only, wf4_enabled, recover)
+        _flags(new_experiment, note, indicators_only, wf4_enabled, recover)
         ledger = _ledger(root)
         _reconcile(root, ledger)
         selected = _select(
@@ -978,7 +1005,7 @@ def preview_experiment(
             ledger,
             requested_name,
             new=new_experiment,
-            metrics=metrics_only,
+            indicators=indicators_only,
             recover=recover,
         )
         transactions = _path(root, _TRANSACTIONS_PATH)
@@ -1170,7 +1197,7 @@ def admit_experiment_owned(
     creator_invocation_id: str,
     new_experiment: bool = False,
     note: str | None = None,
-    metrics_only: bool = False,
+    indicators_only: bool = False,
     wf4_enabled: bool = True,
     recover: bool = False,
     request_comparator: Callable[[dict, dict], None] = compare_request,
@@ -1178,8 +1205,8 @@ def admit_experiment_owned(
 ) -> Selection:
     """Admit/create under caller-held project ownership, never execute producers."""
     root = _root(project_root)
-    _flags(new_experiment, note, metrics_only, wf4_enabled, recover)
-    if not metrics_only:
+    _flags(new_experiment, note, indicators_only, wf4_enabled, recover)
+    if not indicators_only:
         validate_request(request, root)
         verify_captured_sources(sources, request)
         _uuid(creator_invocation_id, "creator_invocation_id")
@@ -1198,14 +1225,14 @@ def admit_experiment_owned(
         ledger,
         requested_name,
         new=new_experiment,
-        metrics=metrics_only,
+        indicators=indicators_only,
         recover=recover,
     )
     if selected.action in {"refuse", "missing"}:
-        if before != canonical_json_bytes(ledger) and not metrics_only:
+        if before != canonical_json_bytes(ledger) and not indicators_only:
             _save_ledger(root, ledger)
         raise ValueError(selected.reason)
-    if selected.action == "continue" and not metrics_only:
+    if selected.action == "continue" and not indicators_only:
         allocation = _allocation(ledger, selected.name)
         if allocation["publication"] == "prepared":
             compare_request(
@@ -1215,7 +1242,7 @@ def admit_experiment_owned(
             return recover_experiment_owned(root, selected.name, failpoint=failpoint)
         request_comparator(read_reservation(root, selected.name)["request"], request)
     if selected.action != "create":
-        if before != canonical_json_bytes(ledger) and not metrics_only:
+        if before != canonical_json_bytes(ledger) and not indicators_only:
             _save_ledger(root, ledger)
         return selected
     reservation_id = uuid.uuid4().hex

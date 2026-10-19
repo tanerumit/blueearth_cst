@@ -82,7 +82,7 @@ def configuration(base, *, retained=None):
     generated["n_realizations"] = 1
     write_yaml(generation, generated)
     simulation = base / "simulate_system.yml"
-    settings = {"operation": "simulate-and-metrics"}
+    settings = {"operation": "simulate-and-indicators"}
     if retained:
         settings["scenario_collection"] = {
             "manifest_path": str(retained.collection_marker)
@@ -187,6 +187,15 @@ def bind(case, context, *, freeze=False):
         resolution = reservation.read_reservation(case.project, context.name)[
             "resolution"
         ]
+        from blueearth_cst.experiment.response_inventory import make_response_request
+
+        documents["response_request"] = make_response_request(
+            resolution["run_ids"], documents["response_request"]["variables"]
+        )
+        if not yaml.safe_load(case.simulation.read_bytes()).get(
+            "include_unperturbed", True
+        ):
+            documents["settings"]["include_unperturbed"] = False
         intent = simulation_intent_v2(
             context.name, resolution, original["simulator"], documents, projection
         )
@@ -195,6 +204,24 @@ def bind(case, context, *, freeze=False):
         freeze_simulation_v2(
             root, intent, invocation_id=invocation, command=["fixture"]
         )
+
+
+def test_unperturbed_switch_binds_only_perturbed_runs_and_refuses_changes(retained):
+    settings = yaml.safe_load(retained.simulation.read_bytes())
+    settings["include_unperturbed"] = False
+    write_yaml(retained.simulation, settings)
+    context = admit(retained)
+    bind(retained, context, freeze=True)
+    record = reservation.read_reservation(retained.project, context.name)
+    assert record["resolution"]["run_ids"] == ["run_2"]
+    assert record["simulation"] is not None
+    assert admit(retained).action == "continue"
+    settings["include_unperturbed"] = True
+    write_yaml(retained.simulation, settings)
+    before = durable_inventory(retained)
+    with pytest.raises(ValueError, match="include_unperturbed"):
+        admit(retained)
+    assert durable_inventory(retained) == before
 
 
 def reject_producers(monkeypatch):
@@ -417,7 +444,7 @@ def test_changed_request_refuses_public_runner_before_producers(
 
 
 @pytest.mark.parametrize("owner", ["legacy", "reserved"])
-def test_metrics_only_uses_retained_readiness_without_new_input_reads(
+def test_indicators_only_uses_retained_readiness_without_new_input_reads(
     retained, monkeypatch, owner
 ):
     name = helper.EXPERIMENT
@@ -444,8 +471,8 @@ def test_metrics_only_uses_retained_readiness_without_new_input_reads(
             publish_simulation_v2(root, response_inventory)
     settings = {
         "experiment_name": name,
-        "operation": "metrics-only",
-        "metrics": ["gwr"],
+        "operation": "indicators-only",
+        "indicators": ["gwr"],
     }
     write_yaml(retained.simulation, settings)
     retained.generation.unlink()
@@ -455,15 +482,15 @@ def test_metrics_only_uses_retained_readiness_without_new_input_reads(
     monkeypatch.setattr(
         reservation_context,
         "capture_request",
-        lambda *args, **kwargs: pytest.fail("metrics-only captured a new Request"),
+        lambda *args, **kwargs: pytest.fail("indicators-only captured a new Request"),
     )
     monkeypatch.setattr(
         reservation_context,
         "resolve_selected_collection",
-        lambda *args, **kwargs: pytest.fail("metrics-only read generation inputs"),
+        lambda *args, **kwargs: pytest.fail("indicators-only read generation inputs"),
     )
     before = durable_inventory(retained)
-    with pytest.raises(ValueError, match="metrics-only"):
+    with pytest.raises(ValueError, match="indicators-only"):
         admit(retained, new_experiment=True)
     assert durable_inventory(retained) == before
     context = admit(retained)
@@ -471,6 +498,10 @@ def test_metrics_only_uses_retained_readiness_without_new_input_reads(
     assert context.reservation_id == reservation_id
     assert context.request is None
     context.recheck()
+    assert durable_inventory(retained) == before
+    # A dry run selects the same retained experiment without a request to compare.
+    preview = admit(retained, preview=True)
+    assert (preview.name, preview.request) == (name, None)
     assert durable_inventory(retained) == before
     if owner == "legacy":
         assert not (retained.project / "experiments/_engine/allocation.json").exists()

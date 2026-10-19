@@ -48,7 +48,7 @@ def _table(rows: list[dict]) -> pd.DataFrame:
 
 
 def _row(
-    metric="q_mean",
+    indicator="q_mean",
     st_id="00",
     rlz="0",
     location="101",
@@ -60,7 +60,7 @@ def _row(
     derived from the lookup at reporting time rather than baked in here.
     """
     return {
-        "metric": metric,
+        "indicator": indicator,
         "st_id": st_id,
         "rlz_id": rlz,
         "location": location,
@@ -68,10 +68,10 @@ def _row(
     }
 
 
-def _grid(metric: str, location: str, base: float, n: int = 6) -> list[dict]:
+def _grid(indicator: str, location: str, base: float, n: int = 6) -> list[dict]:
     return [
         _row(
-            metric=metric,
+            indicator=indicator,
             location=location,
             st_id=f"st_{i:02d}",
             value=base * (1.0 + 0.1 * i),
@@ -140,13 +140,13 @@ def test_near_zero_group_is_division_safe():
 def test_tolerance_is_per_group_not_per_file():
     """The point of grouping: a big series must not set the threshold for a small one.
 
-    Two metrics three orders of magnitude apart. A move that is material for the
+    Two indicators three orders of magnitude apart. A move that is material for the
     small one is far below a file-wide ATOL derived from the large one, so a
     global tolerance would pass this table and a grouped one must fail it.
     """
     ref = _table(_grid("gev_rl100", "101", 5000.0) + _grid("q_low", "101", 0.5))
     cur = ref.copy()
-    small = cur.index[cur["metric"] == "q_low"]
+    small = cur.index[cur["indicator"] == "q_low"]
     cur.loc[small[0], "value"] += 0.5  # +100% of a ~0.5 value
 
     file_wide_atol = cb.INDICATOR_ATOL_FRAC * float(ref["value"].abs().mean())
@@ -158,7 +158,7 @@ def test_tolerance_is_per_group_not_per_file():
 
 
 def test_locations_are_separate_groups():
-    """Same metric, different gauges: catchment area makes their magnitudes differ."""
+    """Same indicator, different gauges: catchment area makes their magnitudes differ."""
     ref = _table(_grid("q_mean", "101", 2000.0) + _grid("q_mean", "202", 0.4))
     cur = ref.copy()
     small = cur.index[cur["location"] == "202"]
@@ -269,14 +269,14 @@ def test_key_columns_are_compared_as_WRITTEN():
 
 def test_reader_rejects_a_table_with_no_value_column(tmp_path):
     p = tmp_path / "bad.csv"
-    p.write_text("metric,st_id\nq_mean,st_00\n")
+    p.write_text("indicator,st_id\nq_mean,st_00\n")
     with pytest.raises(ValueError, match="no 'value' column"):
         cb.read_indicator_table(str(p))
 
 
 def test_reader_keeps_key_columns_as_written(tmp_path):
     p = tmp_path / "t.csv"
-    p.write_text("metric,st_id,rlz_id,location,value\nq_mean,01,0,101,12.5\n")
+    p.write_text("indicator,st_id,rlz_id,location,value\nq_mean,01,0,101,12.5\n")
     df = cb.read_indicator_table(str(p))
     # The zero padding is the contract, and `01` -> `1` is the defect it guards.
     assert df.loc[0, "st_id"] == "01"
@@ -311,9 +311,9 @@ def _check_ns(project_dir, manifest_path, workflow=None, tolerance=0.0):
 
 def _write_simulate_system_targets(project_dir: str) -> str:
     """Materialize every workflow-3 target. Returns the indicator table path."""
-    from tests.test_check_baseline_scope import _write_metric_plan_fixture
+    from tests.test_check_baseline_scope import _write_indicator_plan_fixture
 
-    _write_metric_plan_fixture(project_dir)
+    _write_indicator_plan_fixture(project_dir)
     indicator = ""
     for workflow, kind, template in cb.TARGETS:
         if workflow != "simulate_system":
@@ -326,9 +326,11 @@ def _write_simulate_system_targets(project_dir: str) -> str:
             scope = "run" if "_run_" in p.name else "group"
             frame[f"{scope}_id"] = [
                 f"{scope}_{number:02d}"
-                for number in frame.groupby(["metric", "location"]).cumcount() + 1
+                for number in frame.groupby(["indicator", "location"]).cumcount() + 1
             ]
-            frame[["metric", "location", f"{scope}_id", "value"]].to_csv(p, index=False)
+            frame[["indicator", "location", f"{scope}_id", "value"]].to_csv(
+                p, index=False
+            )
             indicator = path
         elif kind in ("yaml", "run_record"):
             p.write_text("loaded_config:\n  project:\n    project_dir: synthetic\n")
@@ -378,7 +380,7 @@ def test_roundtrip_records_reference_table_and_checks_clean(
         reference = Path(manifest_path).parent / row["ref_table"]
         assert reference.exists()
         assert list(pd.read_csv(reference).columns) == [
-            "metric",
+            "indicator",
             "location",
             f"{scope}_id",
             "value",

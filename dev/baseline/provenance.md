@@ -54,7 +54,7 @@ passes the gate and still changes the file**:
 | --- | --- | --- |
 | `cmip6_change_factors_annual.csv` | normalized sha256, byte-exact | yes |
 | `cmip6_change_factors_monthly.csv` | normalized sha256, byte-exact | yes |
-| `q_indicators.csv` | `indicator_ref/74ed83c06b2e7e6c.csv`, grouped on `(metric, location)`; ATOL(g) = 1e-3 × mean of abs(value_ref) within g, RTOL = 0.01 | **no** |
+| `q_indicators.csv` | `indicator_ref/74ed83c06b2e7e6c.csv`, grouped on `(indicator, location)`; ATOL(g) = 1e-3 × mean of abs(value_ref) within g, RTOL = 0.01 | **no** |
 | `run_default/output.csv` | `discharge_ref/9baa48f90ceaf138.csv`, per timestep; ATOL = 1e-3 × mean(Q_ref), RTOL = 0.01 | **no** |
 
 The tolerances are deliberate and are not a defect — see `check_baseline.py`'s
@@ -244,8 +244,8 @@ whose *target set* changed rather than only its values.
 
 ```
 REMOVED  experiments/experiment/config/simulation.json
-REMOVED  .../metric_sets/a50d1a4f6526a5e4...ab14/q_indicators.csv
-ADDED    .../metric_sets/b71ca72a2b13/q_indicators.csv
+REMOVED  .../indicator_sets/a50d1a4f6526a5e4...ab14/q_indicators.csv
+ADDED    .../indicator_sets/b71ca72a2b13/q_indicators.csv
 KEPT     5 rows, none CHANGED
 ```
 
@@ -273,14 +273,14 @@ bar this file exists to hold re-records to.
 **The tree it describes.** `test_case/test_local` in the `session-1` worktree,
 WF3+WF4 regenerated from `project_config_baseline.yml` on 2026-09-17 (WF3 1m50s,
 WF4 8m56s) against a WF1 model and WF2 slices already present and already
-passing. Collection `c3f88ea5c76f`, metric set `b71ca72a2b13`.
+passing. Collection `c3f88ea5c76f`, indicator set `b71ca72a2b13`.
 
 **Caveat, stronger here than usual.** The recording worktree is not the primary,
 so the usual "untracked fixture shared by every branch" warning has more force
 than normal: this manifest now describes a tree that only `session-1` holds.
 The values are the same ones the primary's tree produces — that is precisely
 what the zero-movement comparison above establishes — but the *paths* are keyed
-to a collection and metric set generated here. A worktree whose own WF3/WF4
+to a collection and indicator set generated here. A worktree whose own WF3/WF4
 output carries different identity segments will orphan the indicator row again
 until `t2609171743`'s option 1 (template-relative manifest keys) lands.
 

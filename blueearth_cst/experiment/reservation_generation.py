@@ -30,19 +30,31 @@ def bind_ready_collection_owned(
     generation_plan=None,
 ):
     """Atomically bind a ready collection and any previously unbound plan seed."""
-    from blueearth_cst.experiment.reservation import bind_reservation_owned
+    from blueearth_cst.experiment.reservation import (
+        bind_reservation_owned,
+        read_reservation,
+    )
+    from blueearth_cst.experiment.simulation_runs import (
+        include_unperturbed,
+        selected_run_ids,
+    )
 
     root = Path(root).resolve()
     marker_path = confined_path(
         root, Path(marker_path).resolve().relative_to(root).as_posix()
     )
     marker = read_collection_v2(marker_path)
+    reservation = read_reservation(root, name)
     resolution = {
         "resolution_mode": resolution_mode,
         "manifest": file_reference(marker_path, "project_root", root),
         "collection_id": marker["collection_id"],
         "collection_revision": marker["collection_revision"],
-        "run_ids": [entry["run_id"] for entry in marker["series"]],
+        "run_ids": selected_run_ids(
+            marker,
+            marker_path,
+            include=include_unperturbed(reservation["request"]["simulation"]),
+        ),
     }
     seed = None
     if generation_plan is not None:

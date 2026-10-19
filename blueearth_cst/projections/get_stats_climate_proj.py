@@ -294,8 +294,8 @@ if __name__ == "__main__":
 
             if series_identity.cache_hit(declared_outputs, expected_digest):
                 log_row(
-                    f"Reusing current basin-average series for {name_model} · {name_scenario} "
-                    f"({plural(len(declared_outputs), 'output')} already current)",
+                    f"Reusing basin averages: {name_model} · {name_scenario} "
+                    f"({plural(len(declared_outputs), 'current output')})",
                     module="stats",
                 )
                 for path in declared_outputs:
@@ -358,7 +358,7 @@ if __name__ == "__main__":
                 # is the human identity -- which is what tells two interleaved
                 # reduce jobs apart -- and the two artifacts by name.
                 log_row(
-                    f"Computing basin-average series for {name_model} · {name_scenario} · {name_member}",
+                    f"Computing basin averages: {name_model} · {name_scenario} · {name_member}",
                     module="stats",
                 )
                 series_identity.assert_raw_identity(

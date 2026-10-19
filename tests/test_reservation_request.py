@@ -39,7 +39,7 @@ def case(tmp_path, monkeypatch):
     wf4.write_text(
         yaml.safe_dump(
             {
-                "operation": "simulate-and-metrics",
+                "operation": "simulate-and-indicators",
                 "scenario_collection": {"manifest_path": str(marker)},
             }
         ),
@@ -75,6 +75,23 @@ def case(tmp_path, monkeypatch):
 
 def project_request(case, **kwargs):
     return request_module.capture_request(case[0], Path.cwd(), **kwargs)
+
+
+def test_unperturbed_switch_is_frozen_but_default_identity_is_unchanged(case):
+    from blueearth_cst.experiment.reservation import validate_request
+
+    original, _ = project_request(case)
+    settings = yaml.safe_load(case[2].read_bytes())
+    settings["include_unperturbed"] = True
+    case[2].write_text(yaml.safe_dump(settings), encoding="utf-8")
+    explicit_default, _ = project_request(case)
+    assert explicit_default == original
+    settings["include_unperturbed"] = False
+    case[2].write_text(yaml.safe_dump(settings), encoding="utf-8")
+    omitted, _ = project_request(case)
+    assert omitted["simulation"]["include_unperturbed"] is False
+    assert content_sha256(omitted) != content_sha256(original)
+    validate_request(omitted, case[0].parent / "project")
 
 
 def test_retained_explicit_selection_does_not_capture_unused_producer_files(case):
@@ -184,11 +201,11 @@ def test_unclassified_simulation_field_refused(case):
         project_request(case)
 
 
-def test_resources_and_metrics_do_not_change_scientific_request(case):
+def test_resources_and_indicators_do_not_change_scientific_request(case):
     before, _ = project_request(case)
     document = yaml.safe_load(case[2].read_bytes())
     document["compute"] = {"julia_threads": 4, "batch_size": 2}
-    document["metrics"] = ["q"]
+    document["indicators"] = ["q"]
     case[2].write_text(yaml.safe_dump(document), encoding="utf-8")
     after, _ = project_request(case)
     assert before == after

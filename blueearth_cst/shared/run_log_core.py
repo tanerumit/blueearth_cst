@@ -20,6 +20,10 @@ import traceback
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from blueearth_cst.shared.console_terminal import restore_terminal_streams
+
+restore_terminal_streams()
+
 _HYDROMT_LOG_RE = re.compile(
     r"^\d{4}-\d{2}-\d{2} (\d{2}:\d{2}:\d{2}),\d{3} - \S+ - (\S+) - (\w+) - (.*)$"
 )
@@ -84,13 +88,13 @@ def _presentation_message(module: str, message: str) -> str:
         if match:
             path, rows, points = match.groups()
             return f"Perturbation lookup written → {path} ({rows} monthly rows; {plural(int(points), 'perturbation point')})"
-    if module == "metrics":
+    if module == "indicators":
         match = re.fullmatch(
             r"(\S+): (\d+) declarations? over (\d+) result keys?", message
         )
         if match:
             identity, declarations, keys = match.groups()
-            return f"Metric set {identity} planned: {plural(int(declarations), 'metric declaration')}; {plural(int(keys), 'expected result key')}"
+            return f"Indicator set {identity} planned: {plural(int(declarations), 'indicator declaration')}; {plural(int(keys), 'expected result key')}"
     if module == "responses" and message.startswith(
         "Duplicate series on one model point, kept once: "
     ):
@@ -168,7 +172,7 @@ def _compact_log_line(text):
     match = _HYDROMT_LOG_RE.match(core)
     if not match:
         own = re.fullmatch(
-            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment|metrics|responses|wflow) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
+            r"(\d{2}:\d{2}:\d{2}) - (weathergen|experiment|indicators|responses|wflow) - (?:(WARNING|ERROR|CRITICAL|DEBUG|INFO) - )?(.*)",
             core,
         )
         if own:
@@ -227,7 +231,16 @@ def _log_path_parts(log_path):
         if anchor in parts:
             i = parts.index(anchor)
             root = os.sep.join(parts[:i]) if i > 0 else ""
-            log_id = "/".join(parts[i + 1 :]) or os.path.basename(log_path)
+            suffix = parts[i + 1 :]
+            # Managed executions add a folder and child namespace before the
+            # rule parts; keep those opaque identities out of heartbeat rows.
+            if (
+                len(suffix) >= 5
+                and suffix[1] == "_parts"
+                and suffix[3] in {"logs", "benchmarks"}
+            ):
+                suffix = suffix[4:]
+            log_id = "/".join(suffix) or os.path.basename(log_path)
             return root, log_id
     return "", os.path.basename(log_path)
 

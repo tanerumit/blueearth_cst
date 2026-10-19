@@ -2,13 +2,13 @@
 title: "WF4 — Simulate system"
 ---
 
-`simulate_system.smk` runs Wflow-SBM for explicit series in a ready WF3 collection and reduces retained native responses to requested indicators. Invoke it through `scripts/simulate_system.py`, which validates the operation and target before Snakemake starts.
+`simulate_system.smk` runs Wflow-SBM for explicit series in a ready WF3 collection and reduces retained native responses to named indicator sets. Invoke it through `scripts/simulate_system.py`, which validates the selected operations and indicator sets before Snakemake starts.
 
 ## Rules
 
 | Rule | Operation |
 |---|---|
-| `all` (target) | Collect the selected metric set and records. |
+| `all` (target) | Collect the selected indicator set and records. |
 | 4.01 `write_model_fingerprint` | Record the model reference. |
 | 4.02 `check_model_unchanged` | Verify the live model against its reference. |
 | 4.03 `snapshot_simulation_inputs` | Freeze collection, model, settings, and environment identity. |
@@ -16,13 +16,13 @@ title: "WF4 — Simulate system"
 | 4.05 `run_wflow_simulations_batch_<batch>` | Run Wflow in batches, retaining native responses. |
 | 4.06 `publish_wflow_outputs` | Publish the response inventory. |
 | `simulations_only` (target) | Collect simulation outputs without indicators. |
-| 4.07 `prepare_indicator_plan` | Resolve metric-set identity and targets. |
-| 4.08 `derive_system_indicators` | Produce indicator tables and the metric-set marker. |
+| 4.07 `prepare_indicator_plan` | Resolve each distinct indicator request's identity and targets. |
+| 4.08 `derive_system_indicators` | Produce each immutable indicator set: tables, coverage evidence and marker. |
 | 4.09 `gather_logs` | Merge experiment logs. |
 | 4.10 `gather_benchmarks` | Merge experiment benchmarks. |
-| `simulations_and_indicators` (target) | Collect the selected metric set. |
+| `simulations_and_indicators` (target) | Collect the selected indicator set. |
 
-The supported target includes `all`; the workflow also exposes simulation-only and simulation-plus-indicator target aggregates. A metrics-only operation can produce another metric set from completed responses without rerunning Wflow. The wrapper selects the appropriate module and validates the requested operation/target combination.
+The runner infers its target from `operations`: both operations run `all`, simulations alone stop at `simulations_only`, and indicators alone read completed responses without rerunning Wflow. Sets with identical numerical requests share one plan and one immutable indicator set. After Snakemake, the runner publishes each set separately; a failed set keeps its previous publication, and the command exits nonzero unless every set is current. With several sets, Snakemake runs with `--keep-going`, which also lets independent Wflow batches continue after one fails.
 
 ## Rule flow
 
@@ -32,25 +32,33 @@ flowchart LR
   B --> C["4.05 Run Wflow batches"]
   C --> D["4.06 Publish responses"]
   D --> E["4.07 Plan indicators"]
-  E --> F["4.08 Derive metric set"]
+  E --> F["4.08 Derive indicator set"]
   D --> G["simulations_only target"]
   F --> H["simulations_and_indicators target"]
   D --> I["4.09–4.10 Records"]
   F --> I
 ```
 
-The metrics-only operation starts from existing retained responses and proceeds through the indicator branch. The simulation-only target stops after response publication.
+Indicators alone start from existing retained responses and proceed through the indicator branch. Simulations alone stop after response publication.
 
 ## Configuration
 
-The project file supplies the `model` context and `workflows.simulate_system.enabled` and `.config_path`; the latter resolves the workflow YAML beside the project file. The WF4 file, `test_case/project_config_rapid_simulate_system.yml`, sets `experiment_name` (the output namespace) and `operation` (`simulate-and-metrics` or `metrics-only`). The template at `config/templates/project_config.simulate_system.template.yml` also describes the optional `compute` block: `julia_threads`, `max_parallel_batches`, `batch_size_max`, `batch_size`, and `disk_headroom_gb`. The runner target and explicit run selection complete the simulation request.
+The project file supplies the `model` context and `workflows.simulate_system.enabled` and `.config_path`; the latter resolves the workflow YAML beside the project file. The WF4 file, `test_case/project_config_rapid_simulate_system.yml`, sets `experiment_name` (the output namespace), `operations` and `indicator_sets`. The template at `config/templates/project_config.simulate_system.template.yml` also describes the optional `compute` block: `julia_threads`, `max_parallel_batches`, `batch_size_max`, `batch_size`, and `disk_headroom_gb`.
 
 ```yaml
 experiment_name: experiment_rapid
-operation: simulate-and-metrics
-# Optional compute: julia_threads, max_parallel_batches,
-# batch_size_max, batch_size, disk_headroom_gb
+operations: [simulations, indicators]   # either alone; omitted means both
+indicator_sets: [default, example_subset]
+indicator_set_definitions:
+  example_subset:
+    config_path: indicator_sets/example_subset.yml   # relative to this file
 ```
+
+`operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter. `indicator_sets` lists set ids (`[a-z][a-z0-9_]*`, at most 64 characters); omitted means `[default]`. `default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for `model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file that declares it. Selected set files are read once per invocation. Copy `config/templates/indicator_set.template.yml` for a custom set: it selects registered definitions, or names one registered calculation under an authored id. A set never defines arithmetic, units, calendars, missingness or grain.
+
+Selected indicators must be available: before simulating, their variables are checked against `model.outvars`; when indicators run alone, against the retained responses. A missing variable fails with the set, indicator, method and variable; it never schedules a simulation.
+
+The scalar `operation: simulate-and-indicators | indicators-only` and `indicators:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
 
 ## Inputs
 
@@ -62,4 +70,72 @@ WF4 requires the completed WF1 model and an explicitly selected ready WF3 collec
 
 ## Outputs
 
-An experiment retains native Wflow response CSVs and a response inventory. Each metric set retains `metrics.json`, indicator tables, unit index, and declarations that identify the source responses. Logs and benchmarks are scoped to the experiment. A metric set is immutable; changing an indicator request creates another set from the retained responses. See [Reading the outputs](../guide/outputs.qmd) for paths and join keys.
+An experiment retains native Wflow response CSVs and a response inventory. New immutable indicator sets use
+`indicator-set/5`, under `_engine/indicator_sets/<id>/`. They retain `indicators.json`, indicator tables, group
+membership, declarations, return-level evidence, per-series block coverage and the execution context.
+Each selected set has a readable view at `results/indicator_sets/<set-id>/`: run and group tables, group
+lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.md).
+
+## Local calculation sets
+
+`blueearth_cst/indicators/` provides a plain Python interface independent of WF4 files and Snakemake.
+Its [authoring guide](../../../blueearth_cst/indicators/README.md) documents contracts, dependencies,
+parameters, independent checks and extension examples. Trusted installed sets own formulas in
+`calculations.py`, registrations and fixed `ASSUMPTIONS` in `registry.py`, independent numerical
+checks in `checks.py`, and local guidance in `README.md`. Assumptions describe implemented choices;
+they do not offer alternative scientific methods. The water-year anchor remains explicit context.
+
+The optional bundled `flow_regime` set includes the matched prototype aliases and whole-period mean,
+plus five rolling extremes and daily change indicators. Its recharge entry requires retained `gwr`.
+`flood_risk` declares 2, 5, 10, 15 and 20-year discharge hazard levels. It remains opt-in, and the
+production probability qualification gate permits only 2 and 10 years with the shipped evidence.
+Selecting the entire example therefore fails explicitly at an unsupported probability. Select an
+eligible local calculation explicitly for a confined qualified calculation:
+
+```yaml
+schema_version: 1
+id: flood_10
+title: Ten-year discharge hazard
+description: Annual maximum discharge; no exposure or damage calculation.
+selection:
+  indicators:
+    - id: peak_10
+      title: Ten-year annual maximum discharge
+      description: Qualified production GEV estimator and screening requirements.
+      references: []
+      calculation:
+        set: flood_risk
+        method: flood_return_level/1
+        parameters: {return_period: 10}
+```
+
+`selection: {registry: flow_regime}` selects all registrations of that trusted module. An authored
+entry's optional `calculation.set` selects a trusted local callable. YAML cannot import a file path or
+execute Python. Legacy definitions and authored aliases retain their existing spelling and behavior.
+New local calculations have explicit set/indicator identities and need no `equivalent_definition`.
+
+## Integrity and numerical rechecking
+
+Discover indicator sets on demand with:
+
+```powershell
+pixi run python scripts/inspect_indicators.py --experiment <experiment-root> --list
+pixi run python scripts/inspect_indicators.py --experiment <experiment-root> --manifest <indicators.json>
+pixi run python scripts/inspect_indicators.py --experiment <experiment-root> --manifest <indicators.json> --recheck
+```
+
+The default command checks saved hashes, completion identity and artifact structure. It imports no
+current calculation registry and needs no original discharge input. It reports matching saved check
+receipts as **historical** evidence. Hash consistency does not prove authenticity against coordinated
+edits of artifacts and manifests.
+
+`--recheck` additionally requires matching execution sources, definitions, original input identity and
+recorded dependencies. It invokes current independent set checkers and records their hashes and current
+runtime in a new receipt. Changed checker-only code is allowed; it receives fresh attribution. A missing
+or changed input blocks numerical rechecking while preserving artifact inspection. A requested recheck
+exits nonzero if unavailable or unsuccessful. Both scripts support `--traceback` for diagnosis.
+
+The strict production reader retains its input and cache validity checks. Integrity inspection never
+makes a stale result reusable. Existing `/3` and `/4` publications remain readable without rewriting;
+their missing execution context conservatively prevents fresh numerical eligibility. See the
+[migration note](../../../dev/records/milestones/post-r12/migration-structured-metrics.md).

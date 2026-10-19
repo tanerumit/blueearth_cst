@@ -14,7 +14,7 @@ to the dicts first and to the tables here second.
 
 ## 1. Variables
 
-| `model.outvars` label | CSDMS name | csv code | token | table | metric |
+| `model.outvars` label | CSDMS name | csv code | token | table | indicator |
 | --- | --- | --- | --- | --- | --- |
 | `river discharge` | `river_water__volume_flow_rate` | `Q` | `q` | `q_run_indicators.csv` | *11 names — see §2* |
 | `precipitation` | `atmosphere_water__precipitation_volume_flux` | `p` | `precip` | `precip_run_indicators.csv` | `precip_annual_total` |
@@ -41,12 +41,12 @@ Column by column, with the dict that owns it:
   header is the fixed `Q` that `shared/gauges.py` keys on. Changing a code renames the csv column, the hydromt variable
   (`<code>_subcatchment`), rule 1.14's derived tables, and figure filenames.
 - **token** — the short name in the result **filename** and in the composite
-  metric. Owned by
+  indicator. Owned by
   `blueearth_cst/shared/indicator_tables.py::VARIABLE_TOKENS`. Published as a
   contract in `contracts/hydrological-model-seam.md` §HM-7, which is the
   authority for this column; the row above is a copy of it.
-- **table / metric** — derived from the token by `indicator_table_filename` and
-  `basin_metric_name`; no dict of its own.
+- **table / indicator** — derived from the token by `indicator_table_filename` and
+  `basin_indicator_name`; no dict of its own.
 
 **Why the token and the code differ at all, for three of six.** They answer to
 different owners: the code reaches the csv through the TOML, the token names our
@@ -84,14 +84,14 @@ figure sees only what the csv carried.
 | `qof` | `mean` | Overland Flow (m³s⁻¹) |
 | `swe` | `mean` | Snowpack liquid water (mm) |
 
-## 2. Metric vocabulary
+## 2. Indicator vocabulary
 
-A `metric` value is `<token>_<statistic>`, so a result file is self-contained
+A `indicator` value is `<token>_<statistic>`, so a result file is self-contained
 once it leaves the project tree and needs no separate `variable` column.
 
-**Discharge** — 11 metrics, owned by `indicator_tables.py::Q_METRIC_SUFFIXES`:
+**Discharge** — 11 indicators, owned by `indicator_tables.py::Q_INDICATOR_SUFFIXES`:
 
-| metric | statistic | grain |
+| indicator | statistic | grain |
 | --- | --- | --- |
 | `q_annual_mean` | mean of daily flow, per year | per-realization |
 | `q_mean_annual_max` | annual maximum, meaned over years | per-realization |
@@ -104,6 +104,15 @@ once it leaves the project tree and needs no separate `variable` column.
 | `q_return_level_2yr_7day_min` | GEV return level of the annual 7-day minimum | pooled (`rlz_id = 0`) |
 | `q_wettest_month_mean` | mean flow in the wettest month, chosen once from the pooled baseline | pooled (`rlz_id = 0`) |
 | `q_driest_month_mean` | mean flow in the driest month, same rule | pooled (`rlz_id = 0`) |
+
+**Discharge outside the default preset** — 5 registered definitions, owned by
+`indicator_registry.py::OPTIONAL_Q_CALCULATIONS`. A custom indicator set selects them; `current_default`
+never expands them. IHA-style (eflowrisk `amax30d`, `amin30d`, `amin90d`, `mean_rate_rise`,
+`mean_rate_fall`), but averaged over water years rather than the eflowrisk median.
+
+- `q_mean_annual_30day_max`, `q_mean_annual_30day_min`, `q_mean_annual_90day_min`:
+  `annual_rolling_extreme/1` with `window` and `extreme`; m3 s-1.
+- `q_mean_rise_rate`, `q_mean_fall_rate`: `annual_daily_change/1` with `direction`; m3 s-1 d-1.
 
 The two return periods were the `Tpeak` / `Tlow` config keys until 2026-08-12,
 which made these two names partly config-derived — a project with `Tpeak: 50`
@@ -125,19 +134,22 @@ shorter alternative:
   years", a two-step reduction the pre-R11 names hid.
 - **"return level", not "return period" or "return interval".** The return
   *period* is the input `T` in years; the return *level* is the output, a
-  discharge magnitude — which is what the row's `value` holds. Naming the metric
+  discharge magnitude — which is what the row's `value` holds. Naming the indicator
   after the period would name the wrong quantity. "Return interval" is
   additionally non-standard; the established synonyms are *return period* and
   *recurrence interval*.
 
-**Basin-scalar variables** — one metric each, owned by
-`indicator_tables.py::BASIN_METRIC_SUFFIXES`. All are per-realization. Two
+**Basin-scalar variables** — one indicator each, owned by
+`indicator_tables.py::BASIN_INDICATOR_SUFFIXES`. All are per-realization. Two
 asymmetries in that table are ruled, not accidental:
 
 - **Overland flow reduces with a `mean`, the rest with a `sum` or a `max`.** It
   is a volume flow rate (m³ s⁻¹), so summing daily values gives a quantity in no
   unit anyone wants; the annual mean preserves the native unit. ET, recharge and
-  precipitation keep `annual_total` in mm/yr, because a daily sum of a mm Δt⁻¹
+  precipitation keep `annual_total` and report mm: the mean over water-year
+  blocks of each block's summed daily depth (partial edge blocks kept without
+  duration normalization, missing days contributing zero), which is mean annual
+  depth in mm/yr only for complete nonmissing blocks. A daily sum of a mm Δt⁻¹
   flux is a legitimate time-integral. Scoped deliberately to overland flow.
 - **These suffixes omit the `mean_` prefix the `q` vocabulary uses**
   (`snow_annual_max`, not `snow_mean_annual_max`), by owner ruling 2026-08-08.
@@ -146,11 +158,11 @@ asymmetries in that table are ruled, not accidental:
 
 ## 3. Row identifiers
 
-Current `metric-set/3` indicator tables carry four columns, in this order:
+Current `indicator-set/3` indicator tables carry four columns, in this order:
 
 | column | meaning |
 | --- | --- |
-| `metric` | `<token>_<statistic>` from §2 |
+| `indicator` | `<token>_<statistic>` from §2 |
 | `location` | the registry's bare Wflow id, joinable to `outlet_index.csv` |
 | `run_id` or `group_id` | prefixed text identifying a run or group in its respective table |
 | `value` | numeric result stored to four significant digits |
@@ -160,17 +172,17 @@ Current `metric-set/3` indicator tables carry four columns, in this order:
 and `st_id`. Join group IDs directly to `group_metadata.csv`, then by `st_id` to
 `perturbation_lookup.csv` for monthly changes. `group_members.csv` records every contributing run,
 including singleton groups. An empty `st_id` and `is_reference=true` identify the unperturbed group.
-Run-grain group summaries are equal-weight means of realization-level metrics with NaN propagation;
+Run-grain group summaries are equal-weight means of realization-level indicators with NaN propagation;
 return levels retain pooled estimation from member-local blocks.
 
 Axis columns are derived at reporting time rather than stored in the indicator
 tables. `precip_change` in the perturbation lookup is a percent. HM-7 in
 `dev/reference/contracts/hydrological-model-seam.md` defines the current
 contract; `blueearth_cst/shared/surface_axes.py` supplies monthly axis calculations.
-Keep identifiers as text; their scope is the owning collection or metric set.
+Keep identifiers as text; their scope is the owning collection or indicator set.
 
 `indicator_tables.py::INDICATOR_COLUMNS` describes the legacy expanded rows;
-the current retained four-column schema is written by `metric_plan.py`.
+the current retained four-column schema is written by `indicator_plan.py`.
 
 `basin` is a **reserved** `location` for a whole-basin scalar. Nothing emits it
 today: since 8bd51de the csv columns are per-subcatchment means, so no

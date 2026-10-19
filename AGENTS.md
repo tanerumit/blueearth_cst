@@ -12,7 +12,7 @@ BlueEarth Climate Stress Test is a Python/R/Julia Snakemake workflow engine; no 
 | `build_model.smk` | wf1 | Build Wflow-SBM from global data; run historical forcing |
 | `analyze_projections.smk` | wf2 | CMIP6 change factors as a plausibility overlay |
 | `generate_scenarios.smk` | wf3 | Model-independent, durable scenario collections |
-| `scripts/simulate_system.py` | wf4 | Validated simulation and immutable retained-response metrics |
+| `scripts/simulate_system.py` | wf4 | Validated simulation and immutable retained-response indicators |
 
 Convenience order: wf0 → wf1 → wf2 → wf3 → wf4. WF1 and WF3 are independent prerequisites of WF4;
 WF2 never drives generation. WF0 shares region/climate producers: run it first or omit it;

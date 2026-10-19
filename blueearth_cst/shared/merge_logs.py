@@ -193,7 +193,7 @@ def merge_logs(rules, out_path, parts_dir, remove_parts=False):
             out.write(f"{bar}\n== {_rule_tag(label)}\n{bar}\n\n")
             members = _members(parts_dir, label)
             if not members:
-                out.write("# (no part from this run — rule was already up to date)\n\n")
+                out.write("# (no log part collected — reused or unmeasured work)\n\n")
                 continue
             for member, path in members:
                 if member is not None:

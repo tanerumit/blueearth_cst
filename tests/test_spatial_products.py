@@ -249,7 +249,7 @@ def test_supplied_points_support_multiple_parents_and_downstream_snap(monkeypatc
     assert set(result["basin_id"]) == set(outlets)
     assert set(result["snapped_index"]) == set(outlets.values())
     assert (result["snapped_distance_m"] > 0).all()
-    assert [message.split(": original", 1)[0] for message, _ in rows] == [
+    assert [message.split(" adjusted to", 1)[0] for message, _ in rows] == [
         "Output location coordinates adjusted:",
         "West",
         "East",
@@ -287,8 +287,10 @@ def test_supplied_coordinate_adjustments_are_warned(monkeypatch, role, adjustmen
         assert rows[0][0] == "Output location coordinates adjusted:"
         message, options = rows[1]
         assert options == {"module": "spatial", "level": "WARNING"}
-        assert "Supplied station" in message
-        assert "lon=" in message and "lat=" in message and "→ adjusted" in message
+        assert message == (
+            f"Supplied station adjusted to lon={result['snapped_x'].iloc[0]:.9f}, "
+            f"lat={result['snapped_y'].iloc[0]:.9f}"
+        )
         if adjustment == "cell-center":
             assert result["snapped_distance_m"].iloc[0] == 0
 
@@ -623,7 +625,7 @@ def test_waterbodies_tell_an_empty_clip_from_a_missing_source(capsys):
         "glaciers": 0,
     }
     out = capsys.readouterr().out
-    assert "source file missing for rgi" in out
+    assert "Glaciers layer omitted: rgi files missing (C:/data/rgi.gpkg)" in out
     assert "hydro_lakes" not in out  # an empty clip is not a fault
     assert all(frame.crs.to_epsg() == 4326 for frame in layers.values())
 
@@ -635,4 +637,4 @@ def test_a_source_absent_from_the_catalog_warns_and_draws_nothing(capsys):
     catalog.sources = {}
     layers = clip_waterbodies(catalog, gpd.GeoDataFrame(geometry=[], crs=4326))
     assert all(frame.empty for frame in layers.values())
-    assert "rgi is absent from the catalog" in capsys.readouterr().out
+    assert "Glaciers layer omitted: rgi absent from catalog" in capsys.readouterr().out

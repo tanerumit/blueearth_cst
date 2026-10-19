@@ -17,7 +17,7 @@ from snakemake.exceptions import WorkflowError
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, listed, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, warning_count, window_year_pair
-from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
+from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -29,7 +29,7 @@ from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError
 from blueearth_cst.projections import projection_figures
 from blueearth_cst.projections.get_change_climate_proj import analysis_windows
 
-# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+# Windows: make Snakemake's benchmark memory/IO/CPU indicators work (else all NA).
 patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so
@@ -264,7 +264,7 @@ from blueearth_cst.projections import reference_window as _rw
 
 REFERENCE_WINDOW = _rw.clip_reference_window(time_horizon_hist)
 for _line in _rw.window_warnings(REFERENCE_WINDOW):
-    warn_row(_line, module="reference_window")
+    defer_warning(_line, module="reference_window")
 
 # Record the GCM reference alone in provenance and the report.
 REFERENCE_RECORD = _rw.alignment_record(REFERENCE_WINDOW)
@@ -292,7 +292,7 @@ try:
 except RemovedGriddedOutputsError as _error:
     raise WorkflowError(str(_error)) from None
 for _warning in _gridded_warnings:
-    warn_row(_warning, module="config")
+    defer_warning(_warning, module="config")
 
 # Step 5d: the statistic set. OPTIONAL and unset in every shipped config, so the
 # config snapshot -- one of the 15 manifest targets, fingerprinted by sha256 --
@@ -627,10 +627,8 @@ if _best_effort:
     # only the name changes, so the names are what the row lists. Through
     # `defer_warning` for the reason given on the skip report above.
     defer_warning(
-        f"Variable availability is unverified for {listed(sorted(_best_effort))}. "
-        "The catalog checks only pr/tas. A listed member may not "
-        "publish them -- that fails at read time rather than skipping at "
-        "catalog selection.", module="resolution"
+        f"Availability unverified: {listed(sorted(_best_effort))}; catalog checks only pr/tas. "
+        "Missing variables will fail during fetching.", module="resolution"
     )
 
 # The series set is DERIVED from resolution, not from the config cross-product.
@@ -811,6 +809,7 @@ def get_horizon(wildcards):
 # this run" section to every merged WF2 log. WF2 builds no climate store,
 # standalone or otherwise: it reads the region polygon from `delineate_region`.
 # Both directions are now mechanically checked for all three workflows.
+from blueearth_cst.shared.execution_outputs import workflow_paths, declare_warning_tally
 WORKFLOW_LOG_NAME = "wf2_analyze_projections.log"
 
 # One tally per run, opened at parse time and published to every job process
@@ -819,6 +818,9 @@ WORKFLOW_LOG_NAME = "wf2_analyze_projections.log"
 # `snake_utils.declare_warning_tally`.
 declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts"
+_paths = workflow_paths(project_dir, "wf2", WORKFLOW_LOG_NAME, "wf2_benchmarks.md", LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
+WORKFLOW_LOG_PATH, BENCHMARK_OUTPUT_PATH = _paths.log, _paths.benchmark
+LOG_PARTS_DIR, BENCH_PARTS_DIR = _paths.log_parts, _paths.benchmark_parts
 
 # The run's key folders, stated once -- see the same block in
 # build_model.smk. `data` is the DELTARES catalog's root, not the CMIP6
@@ -829,7 +831,7 @@ declare_path_tokens(
     projections=clim_project_dir,
 )
 declare_project_root(project_dir)
-RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
+RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("2.01", "delineate_region", summary="delineate the basin boundary")
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("2.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
@@ -894,12 +896,12 @@ WF2_TARGETS = {
     # alongside four rules writing logs/2.NN_*.log directly -- five files a
     # reader had to open in the right order to follow one run). Every rule
     # now logs into logs/_parts/ and rule 2.08 merges the lot.
-    "workflow_log": f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-    "benchmarks": f"{project_dir}/benchmarks/wf2_benchmarks.md",
+    "workflow_log": WORKFLOW_LOG_PATH,
+    "benchmarks": BENCHMARK_OUTPUT_PATH,
 }
 
 rule all:
-    message: target_banner("all", WF2_TARGETS.values(), project_dir)
+    message: target_banner("all", WF2_TARGETS.values(), project_dir, compact=True)
     input:
         **WF2_TARGETS,
 
@@ -1335,7 +1337,7 @@ rule gather_logs:
         # exact defect the LOG_RULES block records for 1.01, 2.01 and 3.03.
         SPATIAL_UNITS.outputs["basins"],
     output:
-        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+        WORKFLOW_LOG_PATH,
     params:
         rules = LOG_RULES,
         parts_dir = LOG_PARTS_DIR,
@@ -1355,9 +1357,10 @@ rule gather_benchmarks:
         # gather has to wait for it or its `_parts/` row misses this run.
         SPATIAL_UNITS.outputs["basins"],
     output:
-        f"{project_dir}/benchmarks/wf2_benchmarks.md",
+        BENCHMARK_OUTPUT_PATH,
+        BENCHMARK_OUTPUT_PATH.removesuffix(".md") + ".tsv",
     params:
-        parts_dir = f"{project_dir}/benchmarks/_parts",
+        parts_dir = BENCH_PARTS_DIR,
         workflow_num = 2,
     script: "blueearth_cst/shared/merge_benchmarks.py"
 

@@ -891,7 +891,7 @@ def display_root(project_dir):
     return _relativize_paths(absolute, "")
 
 
-def target_banner(name, targets, project_dir=None):
+def target_banner(name, targets, project_dir=None, *, compact=False):
     """Return a target rule's ``message:``: the banner, then one target per line.
 
     A target carries NO number: it does no work, so numbering it put a step in
@@ -927,7 +927,18 @@ def target_banner(name, targets, project_dir=None):
     while ``project_dir`` may arrive either way.
 
     Evaluated once at Snakefile parse time, like :func:`rule_banner`.
+
+    With ``compact=True``, show only provided/requested counts. Use only for
+    target aggregators: Snakemake runs them once all requested inputs exist.
+    As with other job messages, a dry-run shows the planned completion.
+    Pass ``targets=None`` for checkpoint-dependent inputs; the console handler
+    counts those from the resolved job record at execution time.
     """
+    if compact:
+        if targets is None:
+            return "Confirm requested outputs"
+        count = sum(1 for _ in targets)
+        return f"Requested outputs: {count}/{count} provided"
     banner = f"Target: {name}"
     action = {
         "all": "confirm requested outputs",
@@ -974,7 +985,8 @@ def target_banner(name, targets, project_dir=None):
 # Snakemake's fixed PREAMBLE (`Assuming unrestricted shared filesystem usage.`,
 # `host: ...`, `Provided cores: N`) is deliberately absent: it is printed before
 # `onstart`, so no Snakefile hook can be installed early enough to mute it. It
-# is a handful of lines once per run; the volume was never there.
+# is filtered before handler installation by the owned runners' snakemake_console
+# entry point. Bare Snakemake, dry runs and verbose runs retain native startup output.
 #
 # Nor can `--quiet` reach it, which is the obvious next idea and was measured
 # route by route on 2026-09-18 (`dev/tasks/t2609181302-*`): the category named
@@ -999,11 +1011,27 @@ _MARKER_DONE = "DONE"
 
 
 _CONSOLE_MUTED_PREFIXES = (
+    "Indicator details: ",
+    "DAG of jobs will be updated after completion.",
+    "Updating checkpoint dependencies.",
     "Select jobs to execute...",
     "Removing temporary output ",
     "Would remove temporary output ",
     "Touching output file ",
 )
+
+# Presentation labels only: numerical request ids and rule names stay unchanged.
+_INDICATOR_CONTEXTS = {}
+_INDICATOR_RULE_LABELS = {
+    "publish_wflow_outputs": "Retain simulation outputs",
+    "prepare_indicator_plan": "Check simulation outputs for indicators",
+    "derive_system_indicators": "Calculate indicators",
+}
+
+
+def register_indicator_context(key, identity, names):
+    """Associate an opaque job wildcard with its selected indicator-set names."""
+    _INDICATOR_CONTEXTS[(key, str(identity))] = ", ".join(names)
 
 
 #: PUBLIC: `scripts/run_workflows.py` sets it. Set on the environment every
@@ -1134,6 +1162,8 @@ def _console_wildcards(wildcards):
         return ""
     if not items:
         return ""
+    if len(items) == 1 and tuple(map(str, items[0])) in _INDICATOR_CONTEXTS:
+        return f"[{_INDICATOR_CONTEXTS[tuple(map(str, items[0]))]}]"
     # CMIP6 series identifiers already describe the source, experiment and
     # member; the extra "series" label adds no information to a DONE row.
     fields = " | ".join(
@@ -1159,7 +1189,7 @@ def _console_wildcard_key(key):
 
     ``_id`` joined them in 2026-09-16's WF3/WF4 console restoration, and it is
     the suffix with the most wildcards behind it: ``collection_id``, ``run_id``,
-    ``metric_request_id`` and ``metric_set_id`` are every fan-out wildcard the
+    ``indicator_request_id`` and ``indicator_set_id`` are every fan-out wildcard the
     two R12 workflows have. WF4's 4.04 banner already wrote
     ``run {wildcards.run_id}`` against a finish line reading ``[run_id 07]``, so
     this was a live defect before those workflows had banners to mismatch.
@@ -1385,7 +1415,7 @@ def _plan_lines(counts):
     runs = [isinstance(row[2], int) and row[2] > 0 for row in rows]
     partial = any(runs) and not all(runs)
     number_width = max(len(row[0]) for row in rows) + 2
-    name_width = max(len(row[1]) for row in rows)
+    name_width = max(len(_INDICATOR_RULE_LABELS.get(row[1], row[1])) for row in rows)
     count_width = max(
         (len(str(row[2])) for row in rows if isinstance(row[2], int) and row[2]),
         default=1,
@@ -1402,7 +1432,8 @@ def _plan_lines(counts):
             cell = jobs
         else:
             cell = (str(jobs) if jobs else "").rjust(count_width)
-        text = f"{gutter}{number.ljust(number_width)}{name.ljust(name_width)}  {cell}"
+        label = _INDICATOR_RULE_LABELS.get(name, name)
+        text = f"{gutter}{number.ljust(number_width)}{label.ljust(name_width)}  {cell}"
         lines.append((text.rstrip(), will_run))
     unlisted = sum(
         1
@@ -1836,6 +1867,14 @@ class _ConsoleHandler(logging.StreamHandler):
             # say (see `rule_banner`'s `quiet_start`).
             return None
         message = self._trim_summary(fields.get("rule_name"), message)
+        if rule_name in _PLAN_EXCLUDED_RULES and fields.get("input") is not None:
+            count = len(fields["input"])
+            message = f"Requested outputs: {count}/{count} provided"
+        if rule_name in _INDICATOR_RULE_LABELS:
+            context = _console_wildcards(fields.get("wildcards"))
+            message = f"{rule_id(_RULE_NUMBERS[rule_name])} {_INDICATOR_RULE_LABELS[rule_name]}"
+            if context:
+                message += f"  {context}"
         # NO progress counter here. It is replayed from the last progress
         # record, so on a start line it is the tally BEFORE this job: two
         # consecutive starts repeat a number, and the last start of a run reads
@@ -1927,7 +1966,8 @@ class _ConsoleHandler(logging.StreamHandler):
             )
         number = _RULE_NUMBERS.get(rule_name)
         if rule_name:
-            identity = f"{rule_id(number)} {rule_name}" if number else rule_name
+            label = _INDICATOR_RULE_LABELS.get(rule_name, rule_name)
+            identity = f"{rule_id(number)} {label}" if number else label
         else:
             identity = f"job {jobid}"
         # The identity is coloured HERE, not inherited from the start line's

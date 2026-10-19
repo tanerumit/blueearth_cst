@@ -43,7 +43,7 @@ byte-hashable only because they were rounded, and P1 dropped the rounding as par
 of moving them to a long float32 shape. `record` stores a reference copy of the
 table under dev/baseline/indicator_ref/ and `check` aligns the two on their row
 keys and applies a per-group absolute+relative tolerance. Grouped, not global,
-because one long table stacks metrics in different units and gauges of different
+because one long table stacks indicators in different units and gauges of different
 catchment areas -- a single file-wide mean would let the biggest series set the
 threshold for the smallest.
 
@@ -226,10 +226,10 @@ INDICATOR_REF_SUBDIR = "indicator_ref"
 # duplicated string. tests/test_check_baseline_indicator.py pins the two together.
 INDICATOR_VALUE_COLUMN = "value"
 # Rows are grouped by these columns before a tolerance is derived, so each group's
-# ATOL comes from its OWN magnitude. Grouping matters: `metric` alone would let a
+# ATOL comes from its OWN magnitude. Grouping matters: `indicator` alone would let a
 # large-catchment gauge set the threshold for a small one, and no grouping at all
 # would let a return level in m3/s set it for a volume in mm.
-INDICATOR_GROUP_COLUMNS = ("metric", "location")
+INDICATOR_GROUP_COLUMNS = ("indicator", "location")
 
 # Volatile attrs stripped before fingerprinting netCDF files.
 VOLATILE_NC_ATTRS = frozenset(
@@ -269,7 +269,7 @@ TARGETS: list[tuple[str, str, str]] = [
     # Per-station evaluation figures are keyed by wflow_id (2026-08-10), so no
     # single name is config-invariant. FIGURE_KINDS targets are excluded from
     # the gate by default anyway; the run's numbers are covered by output.csv
-    # and performance_metrics.csv.
+    # and performance_indicators.csv.
     (
         "build_model",
         "png",
@@ -343,8 +343,8 @@ TARGETS: list[tuple[str, str, str]] = [
     # on numeric noise that indicates no defect. Compared against a stored
     # reference table with a per-group tolerance instead -- see the indicator
     # block and INDICATOR_ATOL_FRAC.
-    ("simulate_system", "indicator", "{metric_set_dir}/q_run_indicators.csv"),
-    ("simulate_system", "indicator", "{metric_set_dir}/q_group_indicators.csv"),
+    ("simulate_system", "indicator", "{indicator_set_dir}/q_run_indicators.csv"),
+    ("simulate_system", "indicator", "{indicator_set_dir}/q_group_indicators.csv"),
     # `{exp_dir}/config/simulation.json` was a target here until 2026-09-17 and
     # must not come back (`t2609171739`). It records an ABSOLUTE PATH
     # (`collection.manifest_path`) and a CODE FINGERPRINT
@@ -361,7 +361,7 @@ TARGETS: list[tuple[str, str, str]] = [
     # numbers are designed not to.
     #
     # What it would have guarded is guarded at RUN time instead, and better --
-    # rule 4.02 `check_model_unchanged` plus the collection and metric-set
+    # rule 4.02 `check_model_unchanged` plus the collection and indicator-set
     # immutability errors, all of which fire during the run rather than in a gate
     # someone remembers to run afterwards.
 ]
@@ -412,9 +412,9 @@ def active_targets(
 
 
 def resolve(template: str, project_dir: str) -> str:
-    metric_set_dir = ""
-    if "{metric_set_dir}" in template:
-        metric_set_dir = resolve_metric_set_dir(project_dir)
+    indicator_set_dir = ""
+    if "{indicator_set_dir}" in template:
+        indicator_set_dir = resolve_indicator_set_dir(project_dir)
     return template.format(
         project_dir=project_dir,
         clim_project_dir=f"{project_dir}/data/climate/projections/{CLIM_PROJECT}",
@@ -422,7 +422,7 @@ def resolve(template: str, project_dir: str) -> str:
         # need the bare project name as well as the directory built from it.
         clim_project=CLIM_PROJECT,
         exp_dir=f"{project_dir}/experiments/{EXPERIMENT_NAME}",
-        metric_set_dir=metric_set_dir,
+        indicator_set_dir=indicator_set_dir,
     )
 
 
@@ -449,7 +449,7 @@ def target_pattern(template: str, project_dir: str) -> re.Pattern[str]:
     """
     sentinel = "<<<SEGMENT>>>"  # cannot occur in a path we resolve
     # Separators are normalised on BOTH sides before matching. `resolve` is not
-    # self-consistent about them on Windows: `resolve_metric_set_dir` returns
+    # self-consistent about them on Windows: `resolve_indicator_set_dir` returns
     # `Path.as_posix()`, while every other template interpolates `project_dir`
     # verbatim, so one recorded key can carry backslashes and another forward
     # slashes for the same tree. Matching raw text would make this check pass on
@@ -461,16 +461,16 @@ def target_pattern(template: str, project_dir: str) -> re.Pattern[str]:
         clim_project_dir=f"{root}/data/climate/projections/{CLIM_PROJECT}",
         clim_project=CLIM_PROJECT,
         exp_dir=f"{root}/experiments/{EXPERIMENT_NAME}",
-        metric_set_dir=(
-            f"{root}/experiments/{EXPERIMENT_NAME}/results/metric_sets/{sentinel}"
+        indicator_set_dir=(
+            f"{root}/experiments/{EXPERIMENT_NAME}/results/indicator_sets/{sentinel}"
         ),
     )
     patterns = [filled]
-    if "{metric_set_dir}" in template:
+    if "{indicator_set_dir}" in template:
         patterns.append(
             filled.replace(
-                f"/results/metric_sets/{sentinel}",
-                f"/_engine/metric_sets/{sentinel}/data",
+                f"/results/indicator_sets/{sentinel}",
+                f"/_engine/indicator_sets/{sentinel}/data",
             )
         )
     return re.compile(
@@ -515,7 +515,7 @@ def rekey_by_template(rec_targets: dict, project_dir: str) -> dict:
     its NAME was rebuilt from a shorter digest (`t2609171743`).
 
     Rows recorded from 2026-09-17 carry the `template` they came from, which is
-    the stable thing: `{metric_set_dir}/q_indicators.csv` means the same artifact
+    the stable thing: `{indicator_set_dir}/q_indicators.csv` means the same artifact
     whatever the segment length. Resolving it here re-keys the row to today's
     path, and everything downstream keeps working on resolved paths exactly as
     before -- this is deliberately a remap at ONE point rather than a new lookup
@@ -543,8 +543,8 @@ def rekey_by_template(rec_targets: dict, project_dir: str) -> dict:
     return out
 
 
-def resolve_metric_set_dir(project_dir: str) -> str:
-    """Resolve the baseline's sole metric plan; never select by mtime or glob rank.
+def resolve_indicator_set_dir(project_dir: str) -> str:
+    """Resolve the baseline's sole indicator plan; never select by mtime or glob rank.
 
     A tree with no successor plan or multiple plans needs an explicitly selected
     baseline fixture before this gate can compare it. Legacy result paths are
@@ -557,65 +557,65 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     )
 
     experiment = Path(project_dir) / "experiments" / EXPERIMENT_NAME
-    plans = list((experiment / "_engine/metric_requests").glob("*.json"))
+    plans = list((experiment / "_engine/indicator_requests").glob("*.json"))
     if len(plans) != 1:
         raise BaselineFixtureError(
-            f"baseline requires exactly one retained metric plan, found {len(plans)}; "
+            f"baseline requires exactly one retained indicator plan, found {len(plans)}; "
             "select a dedicated baseline fixture (legacy tables are not a successor baseline)"
         )
     plan = read_canonical_json(plans[0])
-    if plan.get("schema_version") != "metric-request/3":
+    if plan.get("schema_version") not in ("indicator-request/3", "indicator-request/4"):
         raise BaselineFixtureError(
-            "baseline requires metric-request/3; regenerate the legacy fixture and re-record the baseline"
+            "baseline requires indicator-request/3 or /4; regenerate the legacy fixture and re-record the baseline"
         )
-    # The /3 split-table layout retains the engine/results separation. Legacy
+    # The split-table layout retains the engine/results separation. Legacy
     # numeric-ID plans and mixed-table sets must be regenerated before recording.
     if (
         content_sha256(
             {key: value for key, value in plan.items() if key != "request_sha256"}
         )
         != plan.get("request_sha256")
-        or content_sha256(plan["request"]) != plan.get("metric_request_id")
+        or content_sha256(plan["request"]) != plan.get("indicator_request_id")
         or plans[0].stem
-        != identity_segment(plan["metric_request_id"], "metric_request_id")
+        != identity_segment(plan["indicator_request_id"], "indicator_request_id")
     ):
-        raise ValueError("baseline metric plan digest or request identity differs")
-    identity = plan["metric_set_id"]
+        raise ValueError("baseline indicator plan digest or request identity differs")
+    identity = plan["indicator_set_id"]
     if (
         not isinstance(identity, str)
         or len(identity) != 64
         or any(c not in "0123456789abcdef" for c in identity)
     ):
-        raise ValueError("baseline metric set id is not canonical SHA-256")
-    segment = identity_segment(identity, "metric_set_id")
+        raise ValueError("baseline indicator set id is not canonical SHA-256")
+    segment = identity_segment(identity, "indicator_set_id")
     marker = read_canonical_json(
-        experiment / "_engine/metric_sets" / segment / "metrics.json"
+        experiment / "_engine/indicator_sets" / segment / "indicators.json"
     )
-    if marker.get("schema_version") != "metric-set/3":
+    if marker.get("schema_version") not in ("indicator-set/3", "indicator-set/4"):
         raise BaselineFixtureError(
-            "baseline requires metric-set/3; regenerate the legacy fixture and re-record the baseline"
+            "baseline requires indicator-set/3 or /4; regenerate the legacy fixture and re-record the baseline"
         )
     if (
         marker.get("status") != "ready"
-        or marker.get("metric_set_id") != identity
+        or marker.get("indicator_set_id") != identity
         or content_sha256(
             {
                 key: value
                 for key, value in marker.items()
-                if key != "metrics_manifest_sha256"
+                if key != "indicators_manifest_sha256"
             }
         )
-        != marker.get("metrics_manifest_sha256")
+        != marker.get("indicators_manifest_sha256")
         or marker.get("response_inventory", {}).get("sha256")
         != plan.get("response_inventory_sha256")
     ):
-        raise ValueError("baseline metric marker differs from the selected plan")
+        raise ValueError("baseline indicator marker differs from the selected plan")
     result_root = marker.get("result_root")
-    if result_root not in (
-        f"_engine/metric_sets/{segment}/data",
-        f"results/metric_sets/{segment}",
-    ):
-        raise ValueError("baseline metric result root differs from selected set")
+    roots = [f"_engine/indicator_sets/{segment}/data"]
+    if marker["schema_version"] == "indicator-set/3":
+        roots.append(f"results/indicator_sets/{segment}")
+    if result_root not in roots:
+        raise ValueError("baseline indicator result root differs from selected set")
     destination = experiment / result_root
     return destination.as_posix()
 
@@ -1038,7 +1038,7 @@ def check_discharge(
 # ruled these targets onto "check_baseline.py's existing compare_discharge-style
 # tolerance comparator". The one real difference is that a discharge target is a
 # SINGLE series with one meaningful magnitude, while an indicator table stacks
-# many series -- metrics in different units, gauges with different catchment
+# many series -- indicators in different units, gauges with different catchment
 # areas -- into one long table. So the tolerance is derived per group rather than
 # once for the file. Everything else (structural-checks-first, ATOL from the
 # reference's own mean, RTOL as a large-value tightener, division-safe skip
@@ -1704,7 +1704,7 @@ def main() -> None:
     compare_p.add_argument("--cur", required=True, help="Candidate output.csv")
 
     args = p.parse_args()
-    # `resolve_metric_set_dir` raises while RESOLVING targets, before any
+    # `resolve_indicator_set_dir` raises while RESOLVING targets, before any
     # comparison runs, so an unusable fixture used to kill the whole invocation
     # with a traceback -- including the scopes that would have reported cleanly.
     # A missing fixture is a fact about the tree, and it is reported as one.

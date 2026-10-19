@@ -301,9 +301,9 @@ def read_indicators(indicators_path: Union[str, Path]) -> pd.DataFrame:
     import pandas as pd
 
     table = pd.read_csv(indicators_path, dtype={"group_id": str, "location": str})
-    if list(table.columns) != ["metric", "location", "group_id", "value"]:
+    if list(table.columns) != ["indicator", "location", "group_id", "value"]:
         raise SurfaceMemberMismatchError(
-            "surface indicators must have metric,location,group_id,value; regenerate legacy tables"
+            "surface indicators must have indicator,location,group_id,value; regenerate legacy tables"
         )
     return table
 
@@ -311,7 +311,7 @@ def read_indicators(indicators_path: Union[str, Path]) -> pd.DataFrame:
 def resolve_group_design(group_metadata):
     """Resolve group IDs directly to declared design keys and suffix width.
 
-    Membership is validated by the metric-set reader. This coordinate join does
+    Membership is validated by the indicator-set reader. This coordinate join does
     not expand result rows into member runs or infer groups from numeric IDs.
     """
     if list(group_metadata.columns) != ["group_id", "st_id", "is_reference"]:

@@ -191,13 +191,12 @@ exposes every artifact through HydroMT without containing Wflow configuration.
 - `{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt` — waterbodies sentinel.
 - `{basin_dir}/staticgeoms/outlet_index.csv` — deterministic compatibility,
   basin, subbasin, location, station, and Wflow-ID crosswalk.
-- `{project_dir}/logs/_parts/1.NN_{rule}.log`, `{project_dir}/benchmarks/_parts/1.NN_{rule}.tsv`
-  (per-rule logs AND benchmarks live under `_parts/`; `gather_logs` (1.16) merges
-  the logs into one `logs/wf1_build_model.log` via
-  `blueearth_cst/shared/merge_logs.py` and then **deletes** the parts, and
-  `gather_benchmarks` (1.14) merges the benchmarks into one
-  `benchmarks/wf1_benchmarks.md` (Markdown table, `rule` column + `TOTAL` row)
-  via `merge_benchmarks.py`. All five workflows collect their own scoped parts.)
+- `logs/<execution>/_parts/wf1-<child-id>/{logs,benchmarks}/1.NN_{rule}.{log,tsv}`.
+  `gather_logs` merges logs into `logs/<execution>/wf1.log` via
+  `blueearth_cst/shared/merge_logs.py`; `gather_benchmarks` writes adjacent
+  `wf1-benchmarks.md` and `.tsv` via `merge_benchmarks.py`. Successful gathers remove
+  merged parts; failed attempts retain their partial measurements. The Markdown overview groups jobs
+  by rule and distinguishes measured workflow elapsed time from summed job durations.
   — ephemeral run artifacts (R3 §6); not manifest targets, not committed. The
   `1.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9). The
   spatial and Wflow-build rules use `1.05_prepare_land_and_soil_maps` and

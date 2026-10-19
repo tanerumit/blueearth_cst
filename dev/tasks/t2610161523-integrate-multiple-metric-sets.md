@@ -6,7 +6,7 @@ effort: 2
 area: wf4
 queue:
 created: 2026-10-16
-updated: 2026-10-17
+updated: 2026-10-18
 ---
 
 > [!note] Overview
@@ -15,6 +15,8 @@ updated: 2026-10-17
 > **What it takes** — Review the design, then implement configuration, registry, and publication changes.
 
 ## Progress
+
+Next: Owner decides whether to land the completed `feat/named-indicator-sets` batch.
 
 Design sealed at the owner's request on 2026-10-16:
 [final design v3](t2610161523/design-runs/named-indicator-sets/design-v3.md).
@@ -36,6 +38,15 @@ test 0717f60f). Limitations are recorded in the index. Open: landing (owner's de
 - [x] Review and seal [the design](t2610161523/design-runs/named-indicator-sets/design-v3.md).
 - [x] Implement the agreed integration and update affected consumers and documentation.
 - [x] Verify default compatibility, independent set reuse, and failure recovery.
+
+Structured-registry follow-up on 2026-10-18 implements the Workbench usability brief in the same lane.
+The independent metric module and WF4 adapters are committed at `68fe3a89`; verification is complete.
+The owner chose to preserve the existing GEV qualification gate. Matched q inputs give 128 exact
+pre/post values across January/October water years; 76 qualified prototype values meet tolerance,
+with 12 unsupported-probability refusals and eight unavailable recharge entries.
+The real indicators-only run published 700 default and 40 qualified flood estimates; all six default
+tables are byte-identical to the oracle. Fresh numerical checks and isolated checkpoint/reuse retries pass.
+See [implementation and evidence](t2610161523/structured-registry-implementation.md).
 
 ## Work location
 

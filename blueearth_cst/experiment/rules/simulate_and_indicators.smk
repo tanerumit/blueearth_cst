@@ -7,6 +7,7 @@ import os
 import sys
 from blueearth_cst.shared.output_capture import captured_output
 from blueearth_cst.experiment.simulation_runner import simulation_indicator_sets, simulation_selection, resolve_selected_collection
+from blueearth_cst.experiment.simulation_runs import include_unperturbed, selected_run_ids
 from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2, read_simulation_intent_v2, read_simulation_v2, SimulationFrozenError
 from blueearth_cst.experiment.wf4_ancillary_descriptor import resolve_wf4_preparation
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import resolved_unit_interpretation
@@ -31,7 +32,7 @@ SELECTION, COLLECTION = resolve_selected_collection(config_path, REPOSITORY)
 _intent = read_canonical_json(Path(SELECTION["manifest_path"]).parent / "collection_intent.json")
 SIM_WINDOW_START = _intent["scenario_spec"]["simulation_window"]["start"]
 SIM_WINDOW_END = _intent["scenario_spec"]["simulation_window"]["end"]
-RUN_IDS = [item["run_id"] for item in COLLECTION["series"]]
+RUN_IDS = selected_run_ids(COLLECTION, SELECTION["manifest_path"], include=include_unperturbed(my_cfg))
 _retained_selection = None
 if Path(f"{engine_dir}/simulation_intent.json").exists():
     _retained_selection = read_simulation_intent_v2(exp_dir)["collection"]
@@ -106,7 +107,8 @@ def _live_simulation_inputs():
                 resolution_mode=SELECTION["resolution_mode"], preparation=preparation,
                 simulation_window={"start": SIM_WINDOW_START, "end": SIM_WINDOW_END},
                 julia_command=shlex.split(julia_prefix(1)),
-                header_path=Path(directory) / "headers.txt")
+                header_path=Path(directory) / "headers.txt",
+                include_unperturbed=include_unperturbed(my_cfg))
 
 _simulation_complete = False
 if Path(f"{exp_dir}/_engine/simulation.json").exists():

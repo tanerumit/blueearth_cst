@@ -48,6 +48,9 @@ def simulation_selection(config_path):
     from blueearth_cst.shared.config_composition import normalize_indicator_settings
 
     settings = normalize_indicator_settings(settings)
+    from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+    include_unperturbed(settings)
     if indicator_sets.uses_named_selection(settings):
         selection = indicator_sets.workflow_selection(settings, workflow_path)
         operation = (
@@ -117,6 +120,23 @@ def simulation_indicator_sets(project, settings, selection):
         check_required_variables(
             sets, set(indicator_tables(outvars)), "the configured model.outvars"
         )
+    from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+    if not include_unperturbed(settings):
+        dependent = [
+            f"{item.set_id}:{indicator.indicator}"
+            for item in sets
+            for indicator in item.indicators
+            if indicator.declaration.reference == "unperturbed_runs"
+        ]
+        if dependent:
+            raise ValueError(
+                "include_unperturbed: false cannot calculate indicators requiring "
+                "unperturbed reference runs: "
+                + ", ".join(dependent)
+                + ". Select an indicator set without these indicators, use "
+                "operations: [simulations], or set include_unperturbed: true."
+            )
     return sets
 
 

@@ -477,13 +477,29 @@ def build_indicator_plan(experiment_root, request):
         st_num=specification["n_design_points"],
         unit_id_capacity=intent["run_group_id_capacity"],
     )
+    selected = set(intent_v2["collection"]["run_ids"])
+    groups = {
+        key: tuple(run for run in members if run in selected)
+        for key, members in groups.items()
+        if any(run in selected for run in members)
+    }
+    reference_runs = tuple(run for run in reference_runs if run in selected)
+    evaluated_runs = [
+        row.run_id for row in rows if row.evaluated and row.run_id in selected
+    ]
     registry = declarations_for_calculations(request["calculations"])
+    if not reference_runs and any(item.reference for item in registry):
+        raise IndicatorPlanStale(
+            "Selected indicators require unperturbed reference runs, which were not simulated. "
+            "Select an indicator set without those indicators, or simulate a new experiment "
+            "with include_unperturbed: true."
+        )
     bundles = tuple(
         DeclaredBundle("st_id", key, members) for key, members in groups.items()
     )
     unit_rows = indicator_unit_index(
         [row.run_id for row in rows],
-        [row.run_id for row in rows if row.evaluated],
+        evaluated_runs,
         bundles,
         unit_id_capacity=intent["run_group_id_capacity"],
     )
@@ -523,11 +539,7 @@ def build_indicator_plan(experiment_root, request):
         }
     expected_keys = []
     for indicator in registry:
-        ids = (
-            [row.run_id for row in rows if row.evaluated]
-            if indicator.grain == "run"
-            else []
-        )
+        ids = list(evaluated_runs) if indicator.grain == "run" else []
         ids += list(bundle_ids.values())
         expected_keys.extend(
             [indicator.name, location, unit]

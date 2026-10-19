@@ -269,8 +269,9 @@ def test_the_experiment_name_does_not_enter_the_simulation_identity(frozen):
 
 
 @pytest.mark.parametrize("wflow_available", [True, False])
+@pytest.mark.parametrize("include", [False, True])
 def test_the_live_input_planner_applies_the_prepared_clock_once(
-    frozen, monkeypatch, wflow_available
+    frozen, monkeypatch, wflow_available, include
 ):
     """The production WF4 planner, with only Julia and the stage probe replaced."""
     import subprocess
@@ -317,6 +318,7 @@ def test_the_live_input_planner_applies_the_prepared_clock_once(
         "simulation_window": {"start": 2046, "end": 2054},
         "julia_command": ["fixture-julia"],
         "header_path": project / "headers.txt",
+        "include_unperturbed": include,
     }
     if not wflow_available:
         with pytest.raises(KeyError, match="julia:Wflow"):
@@ -329,6 +331,6 @@ def test_the_live_input_planner_applies_the_prepared_clock_once(
         assert q["end"] == "2054-12-31 00:00:00"
         assert q["calendar"] == "standard"
         assert q["locations"] == ["9", "2"]
-        assert request["run_ids"] == ["run_1", "run_2"]
+        assert request["run_ids"] == (["run_1", "run_2"] if include else ["run_2"])
     assert len(calls) == 1
     assert toml.read_bytes() == original

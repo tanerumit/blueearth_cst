@@ -74,7 +74,14 @@ class ReservationContext:
             # Diagnose changed science before looking up its as-yet-unproduced
             # collection. Producer-mode exceptions require a bound resolution.
             compare_request(retained, current)
-            _, marker = resolve_selected_collection(self.config_path, self.repository)
+            from blueearth_cst.experiment.simulation_runs import (
+                include_unperturbed,
+                selected_run_ids,
+            )
+
+            selection, marker = resolve_selected_collection(
+                self.config_path, self.repository
+            )
             compare_request(
                 {
                     key: resolution[key]
@@ -83,7 +90,11 @@ class ReservationContext:
                 {
                     "collection_id": marker["collection_id"],
                     "collection_revision": marker["collection_revision"],
-                    "run_ids": [entry["run_id"] for entry in marker["series"]],
+                    "run_ids": selected_run_ids(
+                        marker,
+                        selection["manifest_path"],
+                        include=include_unperturbed(requested["simulation"]),
+                    ),
                 },
             )
         compare_request(retained, current)

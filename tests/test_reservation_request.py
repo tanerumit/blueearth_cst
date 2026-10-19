@@ -77,6 +77,23 @@ def project_request(case, **kwargs):
     return request_module.capture_request(case[0], Path.cwd(), **kwargs)
 
 
+def test_unperturbed_switch_is_frozen_but_default_identity_is_unchanged(case):
+    from blueearth_cst.experiment.reservation import validate_request
+
+    original, _ = project_request(case)
+    settings = yaml.safe_load(case[2].read_bytes())
+    settings["include_unperturbed"] = True
+    case[2].write_text(yaml.safe_dump(settings), encoding="utf-8")
+    explicit_default, _ = project_request(case)
+    assert explicit_default == original
+    settings["include_unperturbed"] = False
+    case[2].write_text(yaml.safe_dump(settings), encoding="utf-8")
+    omitted, _ = project_request(case)
+    assert omitted["simulation"]["include_unperturbed"] is False
+    assert content_sha256(omitted) != content_sha256(original)
+    validate_request(omitted, case[0].parent / "project")
+
+
 def test_retained_explicit_selection_does_not_capture_unused_producer_files(case):
     from blueearth_cst.experiment.reservation import (
         CapturedSource,

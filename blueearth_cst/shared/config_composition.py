@@ -173,7 +173,14 @@ GENERATION_KEYS = frozenset(
     }
 )
 SIMULATION_KEYS = frozenset(
-    {"experiment_name", "scenario_collection", "operation", "compute", "indicators"}
+    {
+        "experiment_name",
+        "scenario_collection",
+        "operation",
+        "compute",
+        "indicators",
+        "include_unperturbed",
+    }
 )
 
 

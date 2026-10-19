@@ -32,7 +32,7 @@ def bound(tmp_path, monkeypatch):
             "seed_resolution": {"resolved": 123},
         },
         "resolution": None,
-        "request": {"selection": {"mode": "project-generation"}},
+        "request": {"selection": {"mode": "project-generation"}, "simulation": {}},
     }
     candidate = {
         "identity_digests": deepcopy(plan["candidate_identity_digests"]),

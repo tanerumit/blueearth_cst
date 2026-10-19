@@ -121,8 +121,9 @@ def test_named_sets_refuse_an_explicit_target(tmp_path):
     os.name != "nt",
     reason="run_project_child refuses project writers off Windows",
 )
-def test_named_sets_publish_independent_immutable_sets(tmp_path):
-    experiment = build_v2_experiment(tmp_path)
+@pytest.mark.parametrize("include", [False, True])
+def test_named_sets_publish_independent_immutable_sets(tmp_path, include):
+    experiment = build_v2_experiment(tmp_path, include_unperturbed=include)
     root = experiment.root
     _named(experiment, SETTINGS)
     code, output = _simulate(experiment)
@@ -149,6 +150,9 @@ def test_named_sets_publish_independent_immutable_sets(tmp_path):
         registered = rows(by_indicator["gwr_annual_total"], scope)
         authored = rows(by_indicator["recharge_depth"], scope)
         assert registered and len(registered) == len(authored)
+        if not include:
+            assert len(registered) == 1
+            assert all(float(row["value"]) == 9.0 for row in registered)
         # Only the indicator key differs; values and keys match exactly.
         assert [
             {**row, "indicator": "gwr_annual_total"} for row in authored

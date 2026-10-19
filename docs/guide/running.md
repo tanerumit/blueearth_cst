@@ -287,6 +287,15 @@ Completed batch checkpoints can be reused after an ordinary failed run. A hard
 stop while writing a native CSV or restoring a batch may leave partial outputs
 that need diagnosis; reservation recovery does not repair those files.
 
+To skip unperturbed realizations in WF4, set `include_unperturbed: false` in its
+`simulate_system` configuration file. The default is `true`. WF4 then prepares
+forcing and simulates only perturbed members; WF3 keeps the complete collection.
+Existing run IDs stay unchanged. Changing this switch requires `--new-experiment`.
+Indicators are calculated only for simulated members and their design-point groups.
+Indicators needing unperturbed reference runs (such as wet/dry reference-month indicators)
+require `true`; otherwise select a set without them or use `operations: [simulations]`.
+Indicators-only runs always use the retained simulation's members.
+
 ## Calculate different indicators from existing simulations
 
 An experiment is tied to its scenario collection, model, and simulation

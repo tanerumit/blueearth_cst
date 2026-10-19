@@ -187,6 +187,15 @@ def bind(case, context, *, freeze=False):
         resolution = reservation.read_reservation(case.project, context.name)[
             "resolution"
         ]
+        from blueearth_cst.experiment.response_inventory import make_response_request
+
+        documents["response_request"] = make_response_request(
+            resolution["run_ids"], documents["response_request"]["variables"]
+        )
+        if not yaml.safe_load(case.simulation.read_bytes()).get(
+            "include_unperturbed", True
+        ):
+            documents["settings"]["include_unperturbed"] = False
         intent = simulation_intent_v2(
             context.name, resolution, original["simulator"], documents, projection
         )
@@ -195,6 +204,24 @@ def bind(case, context, *, freeze=False):
         freeze_simulation_v2(
             root, intent, invocation_id=invocation, command=["fixture"]
         )
+
+
+def test_unperturbed_switch_binds_only_perturbed_runs_and_refuses_changes(retained):
+    settings = yaml.safe_load(retained.simulation.read_bytes())
+    settings["include_unperturbed"] = False
+    write_yaml(retained.simulation, settings)
+    context = admit(retained)
+    bind(retained, context, freeze=True)
+    record = reservation.read_reservation(retained.project, context.name)
+    assert record["resolution"]["run_ids"] == ["run_2"]
+    assert record["simulation"] is not None
+    assert admit(retained).action == "continue"
+    settings["include_unperturbed"] = True
+    write_yaml(retained.simulation, settings)
+    before = durable_inventory(retained)
+    with pytest.raises(ValueError, match="include_unperturbed"):
+        admit(retained)
+    assert durable_inventory(retained) == before
 
 
 def reject_producers(monkeypatch):

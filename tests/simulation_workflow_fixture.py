@@ -6,7 +6,9 @@ from pathlib import Path
 import yaml
 
 
-def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None, dry_run=False):
+def parse_simulation_workflow(
+    tmp_path, monkeypatch, *, config=None, dry_run=False, include_unperturbed=True
+):
     """Supply an already-validated collection to test scheduling declarations.
 
     Physical artifact validation is exercised by the collection/response suites;
@@ -42,6 +44,16 @@ def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None, dry_run=Fal
             for run in ("run_01", "run_02", "run_03")
         ]
     }
+    if not include_unperturbed:
+        from blueearth_cst.shared.workflow_config_snapshot import file_reference
+
+        lookup = collection / "scenario_run_lookup.csv"
+        lookup.write_text(
+            "run_id,st_id\nrun_01,\nrun_02,1\nrun_03,2\n", encoding="utf-8"
+        )
+        manifest["scenario_run_lookup"] = file_reference(
+            lookup, "record_directory", collection
+        )
     monkeypatch.setattr(
         simulation_runner,
         "resolve_selected_collection",
@@ -51,7 +63,12 @@ def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None, dry_run=Fal
     monkeypatch.setenv("CST_SIMULATION_INVOCATION_ID", uuid.uuid4().hex)
     settings = tmp_path / "simulation.yml"
     settings.write_text(
-        "experiment_name: fixture\noperation: simulate-and-indicators\n",
+        "experiment_name: fixture\n"
+        + (
+            "operation: simulate-and-indicators\n"
+            if include_unperturbed
+            else "operations: [simulations]\ninclude_unperturbed: false\n"
+        ),
         encoding="utf-8",
     )
     document = config or {

@@ -246,6 +246,7 @@ def capture_request(
         "scenario_collection",
         "indicators",
         "compute",
+        "include_unperturbed",
         # Analysis intent, never simulation identity.
         "operations",
         "indicator_sets",
@@ -294,6 +295,11 @@ def capture_request(
             "model_request": model_request,
         },
     }
+    from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+    # Omission and true preserve the existing reservation identity.
+    if not include_unperturbed(workflow):
+        request["simulation"]["include_unperturbed"] = False
     request = _json_value(request)
     content_sha256(request)  # Reject non-finite/unsupported values before allocation.
     for role, original, data in captures:

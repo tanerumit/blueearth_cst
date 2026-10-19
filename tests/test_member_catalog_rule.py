@@ -73,18 +73,29 @@ def downscale(workflow):
 
 
 @pytest.mark.workflow_contract
-def test_resource_observations_do_not_become_rerun_parameters(tmp_path, monkeypatch):
+@pytest.mark.parametrize("include", [False, True])
+def test_resource_observations_do_not_become_rerun_parameters(
+    tmp_path, monkeypatch, include
+):
     from tests.simulation_workflow_fixture import parse_simulation_workflow
 
-    workflow = parse_simulation_workflow(tmp_path, monkeypatch, dry_run=True)
+    workflow = parse_simulation_workflow(
+        tmp_path, monkeypatch, dry_run=True, include_unperturbed=include
+    )
+    assert workflow.globals["RUN_IDS"] == (
+        ["run_01", "run_02", "run_03"] if include else ["run_02", "run_03"]
+    )
     batch_rules = [
         rule
         for rule in workflow.rules
         if rule.name.startswith("run_wflow_simulations_batch_")
     ]
     assert batch_rules
+    scheduled = []
     for rule in batch_rules:
         assert set(rule.params.keys()) == {"records", "julia"}
+        scheduled.extend(rule.params["records"][1::3])
+    assert scheduled == workflow.globals["RUN_IDS"]
     evidence = workflow.globals["_batch_resource_decision"]
     assert evidence["plan"]["available_memory_bytes"] > 0
     assert evidence["batches"]

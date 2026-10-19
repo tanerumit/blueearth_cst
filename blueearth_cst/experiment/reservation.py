@@ -309,8 +309,16 @@ def validate_request(request: dict, project_root: Path | str) -> dict:
             paths.append(item["path"])
         if paths != sorted(set(paths)):
             raise ValueError("provider code paths must be unique and sorted")
-    simulation = _fields(
-        request["simulation"],
+    simulation = request["simulation"]
+    from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+    include_unperturbed(simulation)
+    _fields(
+        {
+            key: value
+            for key, value in simulation.items()
+            if key != "include_unperturbed"
+        },
         {"climate_source", "model_root", "outvars", "model_request"},
         "declared simulation",
     )
@@ -510,7 +518,9 @@ def _seed(value: Any, request: dict, root: Path, *, verify: bool = False) -> Non
         raise ValueError("unsupported seed state")
 
 
-def _resolution(value: Any, root: Path, *, verify: bool = False) -> None:
+def _resolution(
+    value: Any, root: Path, *, verify: bool = False, include: bool = True
+) -> None:
     _fields(
         value,
         {
@@ -545,10 +555,15 @@ def _resolution(value: Any, root: Path, *, verify: bool = False) -> None:
         from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
 
         marker = read_collection_v2(root / value["manifest"]["path"])
+        from blueearth_cst.experiment.simulation_runs import selected_run_ids
+
         if (
             marker["collection_id"] != value["collection_id"]
             or marker["collection_revision"] != value["collection_revision"]
-            or [item["run_id"] for item in marker["series"]] != runs
+            or selected_run_ids(
+                marker, root / value["manifest"]["path"], include=include
+            )
+            != runs
         ):
             raise ValueError("resolution differs from ready collection")
 
@@ -624,7 +639,14 @@ def validate_reservation(
     if value["state"] != expected or (simulation is not None and resolution is None):
         raise ValueError("reservation state disagrees with bindings")
     if resolution is not None:
-        _resolution(resolution, root, verify=verify)
+        from blueearth_cst.experiment.simulation_runs import include_unperturbed
+
+        _resolution(
+            resolution,
+            root,
+            verify=verify,
+            include=include_unperturbed(value["request"]["simulation"]),
+        )
         if value["seed"]["state"] == "awaiting_sources":
             raise ValueError("resolution cannot precede generation seed binding")
         if verify and value["seed"]["state"] == "bound":

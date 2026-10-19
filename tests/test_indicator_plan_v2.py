@@ -115,6 +115,21 @@ def _result(root, plan):
     return root / "_engine/indicator_sets" / short / "data"
 
 
+def test_indicators_use_only_simulated_perturbed_members(tmp_path, monkeypatch):
+    _live(monkeypatch)
+    experiment = build_v2_experiment(tmp_path, include_unperturbed=False)
+    root = experiment.root
+    assert not (root / "hydrology/wflow/output/run_1.csv").exists()
+    plan = _plan(root)
+    assert {row["run_id"] for row in plan["units"]} == {"run_2"}
+    manifest = publish_indicator_set(root, plan)
+    assert read_indicator_set(root, _engine(root, plan) / "indicators.json") == manifest
+    for scope, unit in (("run", "run_2"), ("group", "group_1")):
+        table = pd.read_csv(_result(root, plan) / f"gwr_{scope}_indicators.csv")
+        assert set(table[f"{scope}_id"]) == {unit}
+        assert np.allclose(table["value"], 9.0)
+
+
 def test_request_identity_is_stable_before_simulation_publication(experiment):
     """The combined DAG names requests after freezing, before responses exist."""
     root = experiment.root

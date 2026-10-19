@@ -20,6 +20,11 @@
 # Indicators alone read the retained responses and never start Wflow.
 operations: [simulations, indicators]
 
+# Include each realization's unperturbed member in WF4 (default: true).
+# False skips its forcing preparation and simulation; WF3 retains it for ancestry.
+# Indicators needing unperturbed reference runs require true.
+include_unperturbed: true
+
 
 # -----------------------------------------------------------------------------
 #  INDICATOR SETS

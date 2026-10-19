@@ -241,7 +241,11 @@ def resolve_indicator_environment():
 def current_indicator_request(experiment_root, calculations, anchor):
     """Resolve stage-three identity without any live source/model or Julia access."""
     root = Path(experiment_root).resolve()
-    _require_v2(root)
+    # Combined runs resolve request identities after freezing the intent, before
+    # publishing responses. Planning and indicators-only entry still require a
+    # completed simulation; request naming only needs the checked frozen intent.
+    if not (root / "_engine/simulation_intent.json").is_file():
+        _require_v2(root)
     if (root / "_engine/simulation.json").is_file():
         record = read_simulation_v2(root)
         request = indicator_request(

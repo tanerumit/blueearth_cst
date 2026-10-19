@@ -115,6 +115,20 @@ def _result(root, plan):
     return root / "_engine/indicator_sets" / short / "data"
 
 
+def test_request_identity_is_stable_before_simulation_publication(experiment):
+    """The combined DAG names requests after freezing, before responses exist."""
+    root = experiment.root
+    calculations = default_calculations(["gwr"])
+    completed = current_indicator_request(root, calculations, "YE-DEC")
+    (root / "_engine/simulation.json").unlink()
+    (root / "_engine/response_inventory.json").unlink()
+
+    pending = current_indicator_request(root, calculations, "YE-DEC")
+
+    assert pending == completed
+    assert content_sha256(pending) == content_sha256(completed)
+
+
 def test_simulations_only_does_not_resolve_indicator_requirements(
     experiment, monkeypatch
 ):

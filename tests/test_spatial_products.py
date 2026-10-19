@@ -625,7 +625,7 @@ def test_waterbodies_tell_an_empty_clip_from_a_missing_source(capsys):
         "glaciers": 0,
     }
     out = capsys.readouterr().out
-    assert "source file missing for rgi" in out
+    assert "Glaciers layer omitted: rgi files missing (C:/data/rgi.gpkg)" in out
     assert "hydro_lakes" not in out  # an empty clip is not a fault
     assert all(frame.crs.to_epsg() == 4326 for frame in layers.values())
 
@@ -637,4 +637,4 @@ def test_a_source_absent_from_the_catalog_warns_and_draws_nothing(capsys):
     catalog.sources = {}
     layers = clip_waterbodies(catalog, gpd.GeoDataFrame(geometry=[], crs=4326))
     assert all(frame.empty for frame in layers.values())
-    assert "rgi is absent from the catalog" in capsys.readouterr().out
+    assert "Glaciers layer omitted: rgi absent from catalog" in capsys.readouterr().out

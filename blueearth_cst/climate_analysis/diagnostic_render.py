@@ -542,15 +542,14 @@ def render(
     log_row(
         f"Wrote {plural(len(records), 'diagnostic figure')} for {listed(sources)}; "
         f"{sum(unavailable.values())} with unavailable or unscaled estimates; "
-        "availability details → plots/_engine/figure_captions.json",
+        "details → plots/_engine/figure_captions.json",
         module="diagnostics",
     )
     for reason, count in unavailable.items():
         log_row(f"{plural(count, 'figure')}: {reason}", module="diagnostics")
     if len(sources) == 1 and not carries_temp(sources[0]):
         log_row(
-            f"{sources[0]}: temperature and precipitation–temperature figures not requested "
-            "because this source has no native temperature data",
+            f"{sources[0]}: no native temperature; temperature and precipitation–temperature figures not requested",
             module="diagnostics",
         )
     return records

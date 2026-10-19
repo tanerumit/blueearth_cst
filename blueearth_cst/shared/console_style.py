@@ -891,7 +891,7 @@ def display_root(project_dir):
     return _relativize_paths(absolute, "")
 
 
-def target_banner(name, targets, project_dir=None):
+def target_banner(name, targets, project_dir=None, *, compact=False):
     """Return a target rule's ``message:``: the banner, then one target per line.
 
     A target carries NO number: it does no work, so numbering it put a step in
@@ -927,7 +927,14 @@ def target_banner(name, targets, project_dir=None):
     while ``project_dir`` may arrive either way.
 
     Evaluated once at Snakefile parse time, like :func:`rule_banner`.
+
+    With ``compact=True``, show only provided/requested counts. Use only for
+    target aggregators: Snakemake runs them once all requested inputs exist.
+    As with other job messages, a dry-run shows the planned completion.
     """
+    if compact:
+        count = sum(1 for _ in targets)
+        return f"Requested outputs: {count}/{count} provided"
     banner = f"Target: {name}"
     action = {
         "all": "confirm requested outputs",

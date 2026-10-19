@@ -176,8 +176,8 @@ def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind, c
         assert "no usable data or reference fit" in series["caption"]
         output = capsys.readouterr().out
         assert "Wrote 16 diagnostic figures for chirps" in output
-        assert "availability details → plots/_engine/figure_captions.json" in output
-        assert "no native temperature data" in output
+        assert "details → plots/_engine/figure_captions.json" in output
+        assert "no native temperature" in output
 
 
 def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):

@@ -16,6 +16,28 @@ CONFIG_FN = Path(__file__).with_name("project_config_fixture.yml")
 pytestmark = pytest.mark.workflow_contract
 
 
+def test_wf0_defers_diagnostics_and_summarizes_requested_outputs(
+    tmp_path, monkeypatch, capsys
+):
+    from blueearth_cst.shared import console_style
+
+    workflow = _parse_workflow("analyze_climate.smk", CONFIG_FN)
+    monkeypatch.setattr(console_style, "_CONSOLE_STYLE_ACTIVE", True)
+    monkeypatch.setattr(console_style, "_RUN_HEADER", None)
+    capsys.readouterr()
+    workflow.globals["_header"]()
+    captured = capsys.readouterr()
+    assert captured.out == captured.err == ""
+    details = console_style._RUN_HEADER[3]
+    assert "forcing:" in details["sources"]
+    assert details["extraction"]
+    assert "reporting year starts in" in details["reference"]
+
+    rule = workflow.get_rule("all")
+    count = len(rule.input)
+    assert rule.message == f"Requested outputs: {count}/{count} provided"
+
+
 def _differences(left, right):
     """Compare the existing exhaustive directive contract, allowing fan-out names."""
     return [

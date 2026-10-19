@@ -350,7 +350,7 @@ WF0_TARGETS = [
 
 # all — target aggregator: the canonical climate figure set per source
 rule all:
-    message: target_banner("all", WF0_TARGETS, project_dir)
+    message: target_banner("all", WF0_TARGETS, project_dir, compact=True)
     input:
         WF0_TARGETS,
 
@@ -627,11 +627,14 @@ def _header():
     try:
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
-        open_run_header("wf0 analyze_climate", project_dir, config_path)
-        from blueearth_cst.shared.snake_utils import listed, log_row
-        log_row(f"Historical climate diagnostics: {len(CANDIDATE_SOURCES)} sources ({listed(CANDIDATE_SOURCES)}); selected forcing source: {clim_source}; requested extraction period: {historical_window['start']}–{historical_window['end']}", module="diagnostics")
+        from blueearth_cst.shared.snake_utils import listed
         reference = DIAGNOSTIC_SETTINGS["reference_period"]
-        log_row(f"Diagnostic reference period: {reference['start']}–{reference['end']}; reporting year starts in {WATER_YEAR_START}", module="diagnostics")
+        open_run_header(
+            "wf0 analyze_climate", project_dir, config_path,
+            sources=f"{len(CANDIDATE_SOURCES)} ({listed(CANDIDATE_SOURCES)}); forcing: {clim_source}",
+            extraction=f"{historical_window['start']}–{historical_window['end']}",
+            reference=f"{reference['start']}–{reference['end']}; reporting year starts in {WATER_YEAR_START}",
+        )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

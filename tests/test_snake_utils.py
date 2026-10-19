@@ -511,6 +511,17 @@ class _FakeTTY:
 # --- target_banner (rule `all` message) --------------------------------------
 
 
+def test_compact_target_banner_summarizes_requested_outputs(tmp_path):
+    present = tmp_path / "present.csv"
+    missing = tmp_path / "missing.csv"
+    present.touch()
+    targets = {"present": present, "missing": missing}
+    assert target_banner("all", targets.values(), compact=True) == (
+        "Requested outputs: 2/2 provided"
+    )
+    assert target_banner("all", [], compact=True) == ("Requested outputs: 0/0 provided")
+
+
 def test_target_banner_puts_one_target_per_line(monkeypatch):
     """The whole point: Snakemake's own `input:` joins with ", "; this does not."""
     import io

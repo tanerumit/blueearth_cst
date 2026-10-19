@@ -127,7 +127,7 @@ def clip_waterbodies(
         layers[layer] = _empty_layer()
         if source not in getattr(catalog, "sources", {}):
             log_row(
-                f"Waterbody layer omitted from the study-area map: {source} is absent from the catalog ({layer})",
+                f"{layer.capitalize()} layer omitted: {source} absent from catalog",
                 module="spatial",
                 level="WARNING",
             )
@@ -137,8 +137,7 @@ def clip_waterbodies(
         except NoDataException as error:
             if "found no files" in str(error):
                 log_row(
-                    f"Waterbody layer omitted from the study-area map: source file missing for {source} ({catalog.get_source(source).full_uri}); "
-                    f"layer: {layer}",
+                    f"{layer.capitalize()} layer omitted: {source} files missing ({catalog.get_source(source).full_uri})",
                     module="spatial",
                     level="WARNING",
                 )

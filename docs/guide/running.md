@@ -222,10 +222,11 @@ opening settings, describes subbasin outlets with their upstream-area threshold
 in km², and distinguishes disabled workflows from pending ones. Long settings
 and command paths wrap within the terminal width; redirected output uses 100 columns.
 
-On color-capable terminals, launcher warning rows use orange without a `WARNING` column.
-Captured child processes use plain rows with `WARNING` retained. Console transcripts omit terminal
-colours; detailed workflow logs retain warning levels. Coordinate adjustments share one
-heading, followed by each location's original and resolved coordinates.
+On color-capable terminals, launcher and workflow rows retain their colour scheme and animated
+progress bars while console capture is active. Warning rows use orange without a `WARNING` column.
+Redirected output stays plain; `NO_COLOR` disables colours while retaining terminal progress updates.
+Saved transcripts omit terminal colours and repeated redraws; detailed workflow logs retain warning levels.
+Coordinate adjustments share one heading, followed by each location's original and resolved coordinates.
 
 The final summary totals the toolbox warning rows counted during this invocation
 and lists the contributing workflows. WF3's total includes its source and generation

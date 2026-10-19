@@ -20,6 +20,10 @@ import traceback
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from blueearth_cst.shared.console_terminal import restore_terminal_streams
+
+restore_terminal_streams()
+
 _HYDROMT_LOG_RE = re.compile(
     r"^\d{4}-\d{2}-\d{2} (\d{2}:\d{2}:\d{2}),\d{3} - \S+ - (\S+) - (\w+) - (.*)$"
 )

@@ -9,6 +9,7 @@ import logging
 import re
 import sys
 from contextlib import redirect_stderr
+from pathlib import Path
 
 _STARTUP = re.compile(
     r"(?:Assuming unrestricted shared filesystem usage\."
@@ -63,6 +64,12 @@ class _ProfileStream:
 
 
 def main() -> None:
+    # This entry point is also executed by filename, before a Snakefile can
+    # put the repository on sys.path or create its terminal handlers.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from blueearth_cst.shared.console_terminal import restore_terminal_streams
+
+    restore_terminal_streams()
     from snakemake.cli import main as snakemake_main
     from snakemake.logging import logger_manager
 

@@ -2,6 +2,7 @@
 
 import io
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -54,13 +55,18 @@ def test_owned_launcher_routes_both_snakemake_forms(monkeypatch, command):
 
 @pytest.mark.process_isolation
 @pytest.mark.parametrize("fail", [False, True])
-def test_real_startup_preserves_log_warnings_and_failures(tmp_path, fail):
+@pytest.mark.parametrize("terminal", [False, True])
+def test_real_startup_preserves_log_warnings_and_failures(tmp_path, fail, terminal):
     profile = tmp_path / "profiles/default"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("quiet: [reason]\n", encoding="utf-8")
     (tmp_path / "Snakefile").write_text(
         "from snakemake.logging import logger\n"
+        "import sys\n"
+        "from blueearth_cst.shared.console_style import install_console_style\n"
         "onstart:\n"
+        "    install_console_style()\n"
+        "    logger.info('TERMINAL=' + str(sys.stdout.isatty()))\n"
         "    logger.warning('Provided cores: 999')\n"
         "    logger.info('workflow diagnostic visible')\n"
         + ("    raise RuntimeError('startup failure visible')\n" if fail else "")
@@ -72,10 +78,16 @@ def test_real_startup_preserves_log_warnings_and_failures(tmp_path, fail):
         cwd=tmp_path,
         text=True,
         capture_output=True,
+        env={
+            **{key: value for key, value in os.environ.items() if key != "NO_COLOR"},
+            "CST_CONSOLE_INTERACTIVE": "1" if terminal else "0",
+        },
         timeout=90,
     )
     output = result.stdout + result.stderr
     assert result.returncode == (1 if fail else 0), output
+    assert f"TERMINAL={terminal}" in output
+    assert ("\x1b[" in output) == terminal
     assert "Using workflow specific profile" not in output
     assert "Building DAG of jobs..." not in output
     assert "Provided cores: 1" not in output

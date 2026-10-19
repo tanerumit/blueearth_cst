@@ -91,7 +91,10 @@ def current_directory() -> Path | None:
 
 def environment(path: Path, record: dict[str, Any]) -> dict[str, str]:
     """Environment additions for one workflow's children, never global state."""
+    from blueearth_cst.shared.console_terminal import terminal_environment
+
     return {
+        **terminal_environment(),
         DIRECTORY_ENV: str(path.parents[3] / record["execution_directory"]),
         RECORD_ENV: str(path),
         "PYTHONUNBUFFERED": "1",

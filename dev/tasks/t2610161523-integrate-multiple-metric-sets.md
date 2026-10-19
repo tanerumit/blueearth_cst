@@ -6,7 +6,7 @@ effort: 2
 area: wf4
 queue:
 created: 2026-10-16
-updated: 2026-10-18
+updated: 2026-10-19
 ---
 
 > [!note] Overview
@@ -16,7 +16,7 @@ updated: 2026-10-18
 
 ## Progress
 
-Next: Owner decides whether to land the completed `feat/named-indicator-sets` batch.
+Next: Retain task evidence and finish archival; implementation landed locally at `584c0704`.
 
 Design sealed at the owner's request on 2026-10-16:
 [final design v3](t2610161523/design-runs/named-indicator-sets/design-v3.md).
@@ -59,3 +59,14 @@ See [implementation and evidence](t2610161523/structured-registry-implementation
 - Verification: 4497 passed, 29 skipped, 1 expected failure; evidence in .tmp/task-ownership-landing.json.
 
 Review: [named indicator sets](t2610161523/design-runs/named-indicator-sets/status.md).
+
+## Landing — 2026-10-19
+
+Owner approved the complete branch, including the indicators-only recovery fix. Landed at `584c0704`
+with verified-tree equality and ancestry. Branch deleted; session-2 detached and free. No push.
+Final candidate `269b20d4`: 4,745 passed, 30 expected skips, one expected upstream failure.
+Lint and formatting passed. Fresh local all-five execution passed (10 scenario simulations), with
+reviewed evidence reuse across the final test-only inventory correction. Earlier numerical evidence
+remains retained; this execution gate makes no new numerical-equivalence claim.
+Receipts and logs: `t2610161523/.tmp/landing-20261019/` under `dev/tasks/`.
+Task documents, ignored evidence and the untracked walkthrough remain intact pending archival.

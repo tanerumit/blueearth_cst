@@ -16,7 +16,7 @@ updated: 2026-10-19
 
 ## Progress
 
-Next: Close after user-controlled landing.
+Next: Retain evidence and finish archival; landed locally at `584c0704` on 2026-10-19.
 
 - [x] Agree layout.
 - [x] Retain grouped benchmarks/TSV.
@@ -26,7 +26,7 @@ Next: Close after user-controlled landing.
 - [x] Document behavior.
 - [x] Verify workflows; commit.
 
-Implementation: `2ea2f063`, `feat/named-indicator-sets`, session-2. Awaiting landing.
+Implementation: `2ea2f063`; landed with `feat/named-indicator-sets` at `584c0704`. Session-2 is free.
 Historical outputs preserved; configuration archives/resource traces unchanged.
 Console follow-up: `0edf9ef9` restores live colours/progress; saved logs remain plain.
 
@@ -57,3 +57,7 @@ Console follow-up reuses this science evidence; its checks cover presentation an
 No numerical-equivalence claim.
 
 Board check reports nine unrelated existing errors.
+
+Final landing: fresh all-five local execution and final software gate passed; execution logs and
+benchmark artifacts passed assertions. Evidence: `t2610161523/.tmp/landing-20261019/`.
+Task evidence remains intact pending archival. No push.

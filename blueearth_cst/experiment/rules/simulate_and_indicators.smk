@@ -117,23 +117,10 @@ def _frozen_simulation(wc):
         return f"{exp_dir}/_engine/simulation_intent.json"
     return checkpoints.snapshot_simulation_inputs.get().output.simulation
 
-# The targets `rule all` lists, built HERE rather than inline in its `message:`:
-# Snakemake's f-string preprocessor cannot parse an f-string inside a multi-line
-# directive expression. See the same note in `generate_scenarios.smk`.
-#
-# The indicator outputs are a CHECKPOINT-dependent lambda with no parse-time path,
-# so they are named in prose -- as `run_stress_test.smk` named the same target.
-WF4_TARGETS = [
-    f"{engine_dir}/simulation.json",
-    f"{engine_dir}/response_inventory.json",
-    "selected immutable indicator set",
-    f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-    f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
-]
-
+# The console counts resolved inputs after the indicator checkpoints.
 # all
 rule all:
-    message: target_banner("all", WF4_TARGETS, project_dir)
+    message: target_banner("all", None, compact=True)
     input:
         f"{engine_dir}/simulation.json",
         f"{engine_dir}/response_inventory.json",
@@ -330,7 +317,7 @@ rule simulations_only:
     # printed two bare lines, which is the same job in a second grammar.
     # ONE LINE: Snakemake's parser takes a keyword's body as a single
     # expression and rejects a call split across lines here.
-    message: target_banner("simulations_only", [f"{engine_dir}/response_inventory.json"], project_dir)
+    message: target_banner("simulations_only", [f"{engine_dir}/response_inventory.json"], project_dir, compact=True)
     input:
         f"{engine_dir}/response_inventory.json",
         f"{engine_dir}/simulation.json",

@@ -154,13 +154,8 @@ rule derive_system_indicators:
 
 # simulations_and_indicators -- target (unnumbered)
 rule simulations_and_indicators:
-    # A `target_banner` with NO target list, unlike `simulations_only` and
-    # every `rule all`. `_selected_indicator_outputs` is a checkpoint-dependent input function, so
-    # its targets do not exist at parse time and re-calling it from `params`
-    # to list them would evaluate that resolution twice, at two different
-    # moments, for a cosmetic gain. The indicator sets are named by 4.08's own
-    # `Published <id>` row instead.
-    message: target_banner("simulations_and_indicators", [])
+    # The console counts resolved inputs after the indicator checkpoints.
+    message: target_banner("simulations_and_indicators", None, compact=True)
     input:
         _indicator_plan_paths,
         _selected_indicator_outputs,
@@ -242,16 +237,17 @@ def _header():
         # flush against Snakemake's preamble nor close flush against its
         # `Job stats:`. `open_run_header` owns that spacing.
         batching = globals().get("BATCH_PLAN_SUMMARY")
+        from blueearth_cst.shared.run_log_core import plural
+        details = {}
+        if OPERATION == "indicators-only":
+            details["responses"] = "Retained responses only; no generation, forcing preparation, or simulation"
+        else:
+            details["collection"] = f"{COLLECTION['collection_id']}; {plural(len(RUN_IDS), 'explicit run ID')}; resolution: {SELECTION['resolution_mode']}"
+            if globals().get("_simulation_complete"):
+                details["responses"] = f"Reusing simulation {stored['simulation_id']}; checking retained responses for requested indicators"
         open_run_header("wf4 simulate_system", project_dir, config_path,
                         experiment=experiment, operation=OPERATION,
-                        **({"batching": batching} if batching else {}))
-        from blueearth_cst.shared.run_log_core import log_row, plural
-        if OPERATION == "indicators-only":
-            log_row("Indicators-only: reading retained responses; no scenario generation, forcing preparation, or hydrological simulation will run", module="indicators")
-        else:
-            log_row(f"Selected scenario collection: {COLLECTION['collection_id']}; {plural(len(RUN_IDS), 'explicit run ID')}; resolution mode: {SELECTION['resolution_mode']}", module="experiment")
-            if globals().get("_simulation_complete"):
-                log_row(f"Reusing completed simulation {stored['simulation_id']}; retained native responses will be checked for the indicator request", module="responses")
+                        **({"batching": batching} if batching else {}), **details)
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

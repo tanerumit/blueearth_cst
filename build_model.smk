@@ -554,7 +554,7 @@ WF1_TARGETS = [
 ]
 
 rule all:
-    message: target_banner("all", WF1_TARGETS, project_dir)
+    message: target_banner("all", WF1_TARGETS, project_dir, compact=True)
     input:
         WF1_TARGETS,
 
@@ -1408,9 +1408,12 @@ def _header():
     try:
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
-        open_run_header("wf1 build_model", project_dir, config_path)
-        from blueearth_cst.shared.snake_utils import log_row
-        log_row(f"Historical run: {clim_source}; simulation window {SIMULATION_BOUNDS[0].date()}–{SIMULATION_BOUNDS[1].date()}; configured model resolution {model_resolution}", module="model")
+        open_run_header(
+            "wf1 build_model", project_dir, config_path,
+            forcing=clim_source,
+            simulation=f"{SIMULATION_BOUNDS[0].date()}–{SIMULATION_BOUNDS[1].date()}",
+            resolution=model_resolution,
+        )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

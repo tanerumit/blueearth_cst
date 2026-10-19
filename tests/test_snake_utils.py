@@ -520,6 +520,7 @@ def test_compact_target_banner_summarizes_requested_outputs(tmp_path):
         "Requested outputs: 2/2 provided"
     )
     assert target_banner("all", [], compact=True) == ("Requested outputs: 0/0 provided")
+    assert target_banner("all", None, compact=True) == "Confirm requested outputs"
 
 
 def test_target_banner_puts_one_target_per_line(monkeypatch):
@@ -2922,28 +2923,23 @@ def test_console_finish_line_drops_the_id_suffix_the_banner_drops():
     assert "run_id" not in out and "collection_id" not in out
 
 
-def test_console_start_line_leaves_a_multiline_banner_intact():
-    """`rule all` is a banner plus one target per line, and stays that way.
-
-    The counter used to be appended here and had to be steered onto the first
-    line, or it landed after the LAST target path where it read as part of the
-    path. With no counter on a start line there is nothing to steer.
-    """
+@pytest.mark.parametrize(
+    "name", ["all", "simulations_only", "simulations_and_indicators"]
+)
+def test_console_target_counts_resolved_inputs(name):
+    """Count actual job inputs, including targets resolved after checkpoints."""
     handler = _console_handler()
+    record = _job_info(1, name, "Confirm requested outputs")
+    record.input = ["a/x.csv", "logs/wf1.log"]
     out = _emit(
         handler,
         _console_record(event="progress", done=19, total=20),
-        _job_info(
-            1,
-            "all",
-            "Target: all - confirm requested outputs  [proj]\n    a/x.csv\n    logs/wf1.log",
-        ),
+        record,
     )
     lines = out.splitlines()
-    assert lines[0].endswith("Target: all - confirm requested outputs  [proj]"), lines[
-        0
-    ]
-    assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
+    assert len(lines) == 1
+    assert lines[0].endswith("Requested outputs: 2/2 provided")
+    assert "a/x.csv" not in out and "logs/wf1.log" not in out
 
 
 def test_console_finish_line_keeps_a_wildcard_actually_named_num():

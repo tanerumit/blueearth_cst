@@ -17,6 +17,39 @@ def scheduling(tmp_path, monkeypatch):
     return workflow.globals["_current_indicator_requests"].__globals__
 
 
+@pytest.mark.parametrize(
+    "operation", ["simulate-and-indicators", "indicators-only", "reuse"]
+)
+def test_simulation_startup_details_wait_for_header(
+    scheduling, operation, monkeypatch, capsys
+):
+    from blueearth_cst.shared import console_style
+
+    monkeypatch.setattr(console_style, "_CONSOLE_STYLE_ACTIVE", True)
+    monkeypatch.setattr(console_style, "_RUN_HEADER", None)
+    monkeypatch.setitem(
+        scheduling,
+        "OPERATION",
+        "indicators-only"
+        if operation == "indicators-only"
+        else "simulate-and-indicators",
+    )
+    monkeypatch.setitem(scheduling, "_simulation_complete", operation == "reuse")
+    monkeypatch.setitem(scheduling, "stored", {"simulation_id": "retained-id"})
+    monkeypatch.setitem(scheduling["COLLECTION"], "collection_id", "collection-id")
+    capsys.readouterr()
+    scheduling["_header"]()
+    captured = capsys.readouterr()
+    assert captured.out == captured.err == ""
+    details = console_style._RUN_HEADER[3]
+    if operation == "indicators-only":
+        assert "Retained responses only" in details["responses"]
+    else:
+        assert "explicit run IDs" in details["collection"]
+        if operation == "reuse":
+            assert "retained-id" in details["responses"]
+
+
 def test_requests_wait_for_checkpoint_and_resolve_only_once(scheduling, monkeypatch):
     state = {"ready": False, "observations": 0, "checkpoint_calls": 0}
 

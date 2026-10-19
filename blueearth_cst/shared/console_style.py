@@ -931,8 +931,12 @@ def target_banner(name, targets, project_dir=None, *, compact=False):
     With ``compact=True``, show only provided/requested counts. Use only for
     target aggregators: Snakemake runs them once all requested inputs exist.
     As with other job messages, a dry-run shows the planned completion.
+    Pass ``targets=None`` for checkpoint-dependent inputs; the console handler
+    counts those from the resolved job record at execution time.
     """
     if compact:
+        if targets is None:
+            return "Confirm requested outputs"
         count = sum(1 for _ in targets)
         return f"Requested outputs: {count}/{count} provided"
     banner = f"Target: {name}"
@@ -1863,6 +1867,9 @@ class _ConsoleHandler(logging.StreamHandler):
             # say (see `rule_banner`'s `quiet_start`).
             return None
         message = self._trim_summary(fields.get("rule_name"), message)
+        if rule_name in _PLAN_EXCLUDED_RULES and fields.get("input") is not None:
+            count = len(fields["input"])
+            message = f"Requested outputs: {count}/{count} provided"
         if rule_name in _INDICATOR_RULE_LABELS:
             context = _console_wildcards(fields.get("wildcards"))
             message = f"{rule_id(_RULE_NUMBERS[rule_name])} {_INDICATOR_RULE_LABELS[rule_name]}"

@@ -17,7 +17,7 @@ from snakemake.exceptions import WorkflowError
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, listed, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, warning_count, window_year_pair
-from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
+from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -264,7 +264,7 @@ from blueearth_cst.projections import reference_window as _rw
 
 REFERENCE_WINDOW = _rw.clip_reference_window(time_horizon_hist)
 for _line in _rw.window_warnings(REFERENCE_WINDOW):
-    warn_row(_line, module="reference_window")
+    defer_warning(_line, module="reference_window")
 
 # Record the GCM reference alone in provenance and the report.
 REFERENCE_RECORD = _rw.alignment_record(REFERENCE_WINDOW)
@@ -292,7 +292,7 @@ try:
 except RemovedGriddedOutputsError as _error:
     raise WorkflowError(str(_error)) from None
 for _warning in _gridded_warnings:
-    warn_row(_warning, module="config")
+    defer_warning(_warning, module="config")
 
 # Step 5d: the statistic set. OPTIONAL and unset in every shipped config, so the
 # config snapshot -- one of the 15 manifest targets, fingerprinted by sha256 --
@@ -899,7 +899,7 @@ WF2_TARGETS = {
 }
 
 rule all:
-    message: target_banner("all", WF2_TARGETS.values(), project_dir)
+    message: target_banner("all", WF2_TARGETS.values(), project_dir, compact=True)
     input:
         **WF2_TARGETS,
 

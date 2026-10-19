@@ -16,12 +16,34 @@ CONFIG_FN = Path(__file__).with_name("project_config_fixture.yml")
 pytestmark = pytest.mark.workflow_contract
 
 
-def test_wf0_defers_diagnostics_and_summarizes_requested_outputs(
-    tmp_path, monkeypatch, capsys
+@pytest.mark.parametrize(
+    "snakefile",
+    [
+        "analyze_climate.smk",
+        "build_model.smk",
+        "analyze_projections.smk",
+        "generate_scenarios.smk",
+    ],
+)
+def test_workflow_defers_header_and_summarizes_requested_outputs(
+    snakefile, monkeypatch, capsys
 ):
     from blueearth_cst.shared import console_style
 
-    workflow = _parse_workflow("analyze_climate.smk", CONFIG_FN)
+    if snakefile == "analyze_projections.smk":
+        from blueearth_cst.projections import reference_window
+
+        monkeypatch.setattr(reference_window, "SHORT_WINDOW_YEARS", 30)
+    monkeypatch.setattr(console_style, "_DEFERRED_WARNINGS", [])
+    capsys.readouterr()
+    workflow = _parse_workflow(snakefile, CONFIG_FN)
+    parsed = capsys.readouterr()
+    if snakefile == "analyze_projections.smk":
+        assert "Reference period is short" not in parsed.out + parsed.err
+        assert any(
+            "Reference period is short" in row[2]
+            for row in console_style._DEFERRED_WARNINGS
+        )
     monkeypatch.setattr(console_style, "_CONSOLE_STYLE_ACTIVE", True)
     monkeypatch.setattr(console_style, "_RUN_HEADER", None)
     capsys.readouterr()
@@ -29,9 +51,14 @@ def test_wf0_defers_diagnostics_and_summarizes_requested_outputs(
     captured = capsys.readouterr()
     assert captured.out == captured.err == ""
     details = console_style._RUN_HEADER[3]
-    assert "forcing:" in details["sources"]
-    assert details["extraction"]
-    assert "reporting year starts in" in details["reference"]
+    if snakefile == "analyze_climate.smk":
+        assert "forcing:" in details["sources"]
+        assert details["extraction"]
+        assert "reporting year starts in" in details["reference"]
+    elif snakefile == "build_model.smk":
+        assert details["forcing"]
+        assert details["simulation"]
+        assert details["resolution"]
 
     rule = workflow.get_rule("all")
     count = len(rule.input)

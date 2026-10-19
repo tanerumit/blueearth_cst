@@ -34,10 +34,8 @@ def _frozen_simulation(wc):
 
 # all
 rule all:
-    # Prose rather than a path: the indicator outputs are a checkpoint-dependent
-    # lambda with nothing to list at parse time, and this branch produces
-    # nothing else.
-    message: target_banner("all", ["selected immutable indicator set"], project_dir)
+    # The console counts resolved inputs after the indicator checkpoints.
+    message: target_banner("all", None, compact=True)
     input:
         lambda wc: _indicator_plan_paths(wc),
         lambda wc: _selected_indicator_outputs(wc),

@@ -114,8 +114,6 @@ declare_path_tokens(
 )
 declare_project_root(project_dir)
 
-WF3_TARGETS = (["historical climate and stress-test lookup"] if SOURCE_ONLY else
-               ["selected scenario collection"])
 SOURCE_TARGETS = [f"{store_dir}/extract_historical.nc", f"{store_dir}/basin_cells.csv", lookup_path]
 V2_MARKER = (
     f"{project_dir}/{V2_PLAN['outputs']['record_root']}/collection.json"
@@ -125,16 +123,17 @@ V2_TARGET = (
     V2_MARKER if V2_MODE and V2_PLAN["decision"] == "create"
     else os.environ.get("CST_GENERATION_RECEIPT_PATH")
 )
+WF3_TARGETS = SOURCE_TARGETS if SOURCE_ONLY else [
+    V2_TARGET,
+    f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+    f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+]
 
 # all
 rule all:
-    message: target_banner("all", WF3_TARGETS, project_dir)
+    message: target_banner("all", WF3_TARGETS, project_dir, compact=True)
     input:
-        SOURCE_TARGETS if SOURCE_ONLY else [
-            V2_TARGET,
-            f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
-            f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-        ],
+        WF3_TARGETS,
 
 # 3.01  delineate_region
 rule delineate_region:

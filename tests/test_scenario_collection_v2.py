@@ -20,6 +20,10 @@ from blueearth_cst.experiment.content_identity import (
     identity_segment,
     repository_code_inventory,
 )
+from blueearth_cst.experiment.generation_plan import (
+    GENERATION_CODE_ENTRIES,
+    GENERATION_INVENTORY_EXCLUDED,
+)
 from blueearth_cst.experiment.scenario_collection_v2 import (
     _profile,
     read_collection_v2,
@@ -58,23 +62,14 @@ def test_wf4_only_evidence_does_not_enter_seed_or_collection_identity():
 
 def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
     root = Path(__file__).resolve().parents[1]
-    entries = [
-        "blueearth_cst/experiment/generation_plan.py",
-        "blueearth_cst/experiment/scenario_provider.py",
-        "blueearth_cst/experiment/prepare_weathergen_config.py",
-        "blueearth_cst/experiment/prepare_cst_parameters.py",
-        *(
-            f"blueearth_cst/weathergen/{name}"
-            for name in (
-                "generate_weather.R",
-                "impose_climate_change.R",
-                "global.R",
-                "read_member_grid.R",
-                "member_helpers.R",
-            )
-        ),
-    ]
-    inventory = repository_code_inventory(root, entries)
+
+    def generation_inventory(repo):
+        # Match the scientific identity; diagnostic imports are excluded in production.
+        return repository_code_inventory(
+            repo, GENERATION_CODE_ENTRIES, GENERATION_INVENTORY_EXCLUDED
+        )
+
+    inventory = generation_inventory(root)
     paths = {item["path"] for item in inventory}
     forbidden = {
         "blueearth_cst/climate_analysis/prepare_climate_data_catalog.py",
@@ -89,11 +84,11 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
         target = tmp_path / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         copy2(root / relative, target)
-    original = repository_code_inventory(tmp_path, entries)
+    original = generation_inventory(tmp_path)
     for relative in forbidden:
         path = tmp_path / relative
         path.write_bytes(path.read_bytes() + b"\n# WF4-only mutation\n")
-    assert repository_code_inventory(tmp_path, entries) == original
+    assert generation_inventory(tmp_path) == original
 
     def identities(code):
         intent = collection_intent_v2()
@@ -128,12 +123,10 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
         _profile(intent)
         return revision, seed, intent["collection_id"]
 
-    assert identities(repository_code_inventory(tmp_path, entries)) == identities(
-        original
-    )
+    assert identities(generation_inventory(tmp_path)) == identities(original)
     changed = tmp_path / "blueearth_cst/experiment/scenario_provider.py"
     changed.write_bytes(changed.read_bytes() + b"\n# WF3 mutation\n")
-    assert repository_code_inventory(tmp_path, entries) != original
+    assert generation_inventory(tmp_path) != original
 
 
 def test_collection_v2_refuses_unknown_nested_document_key():

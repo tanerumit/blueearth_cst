@@ -319,6 +319,11 @@ To calculate different indicators from completed simulations, set
 python scripts/simulate_system.py --config <config> --cores 3
 ```
 
+The selected experiment must have a completed `_engine/simulation.json` record.
+This prerequisite also applies to dry runs. For a fresh experiment, use
+`operations: [simulations, indicators]` to run the model before calculating indicators;
+enabling the other workflows does not override an indicators-only selection.
+
 This reads the retained model responses and publishes each selected set to its
 own `results/indicator_sets/<set-id>/` folder without rerunning the model. The
 all-workflow runner does the same when the other four workflows are disabled.

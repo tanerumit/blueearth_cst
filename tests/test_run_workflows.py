@@ -1479,6 +1479,32 @@ def test_the_preflight_is_silent_on_every_other_flag_pair(
     assert rw.run(str(cfg), cores=3, extra=[]) == 0
 
 
+@pytest.mark.parametrize("extra", [[], ["--", "--dry-run"]])
+def test_indicators_without_a_simulation_report_recovery(
+    tmp_path, capture_runs, capsys, extra
+):
+    cfg = tmp_path / "project.yml"
+    _write_cfg(
+        cfg,
+        {
+            name: "true" if name == "simulate_system" else "false"
+            for name in rw.WORKFLOW_ORDER
+        },
+    )
+    (tmp_path / "project-simulation.yml").write_text(
+        "experiment_name: test\noperations: [indicators]\nindicator_sets: [default]\n",
+        encoding="utf-8",
+    )
+    assert rw.main(["--config", str(cfg), *extra]) == 2
+    error = capsys.readouterr().err
+    assert "No completed simulation" in error
+    assert "test" in error and "_engine" in error and "simulation.json" in error
+    assert "operations: [simulations, indicators]" in error
+    assert "Traceback" not in error
+    assert not (tmp_path / "project/experiments").exists()
+    assert capture_runs[0] == []
+
+
 def test_the_preflight_exits_two_through_main(tmp_path, capture_runs, capsys):
     """`main` catches PrerequisiteError beside ConfigError -- same exit 2."""
     project_dir = tmp_path / "project"

@@ -68,7 +68,7 @@ class IndicatorsOnlyIdentityMismatch(ValueError):
 
 
 def _require_v2(root):
-    """Refuse a pre-release v1 experiment by name rather than as a missing file.
+    """Require a completed v2 simulation before reading retained responses.
 
     v1 simulation records existed only between 2026-09-11 and 2026-09-22, and
     no release wrote one, so this toolbox reads v2 alone.
@@ -81,6 +81,15 @@ def _require_v2(root):
             f"{root.name}: written in the pre-release v1 simulation record "
             "format, which this toolbox no longer reads; simulate it again "
             "under a new experiment name"
+        )
+    if not (root / "_engine/simulation.json").is_file():
+        raise IndicatorsOnlySimulationUnavailable(
+            f"No completed simulation is available for experiment {root.name!r}: "
+            f"missing {root / '_engine/simulation.json'}. "
+            "Indicators-only operations require retained simulation responses, "
+            "including for a dry run. Set operations: [simulations, indicators] "
+            "to run a simulation first, or select the experiment_name of an "
+            "existing completed simulation."
         )
 
 

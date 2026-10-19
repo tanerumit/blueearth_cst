@@ -124,6 +124,15 @@ Look under `logs/` for each workflow's messages. Scenario generation writes
 `logs/wf4_simulate_system_<experiment>.log`. The `benchmarks/` directory
 records the time and resource use of individual steps.
 
+For the attempt as a whole, open `benchmarks/run-<invocation-id>.md`, linked by the runner's
+closing output. It reads the structured parent and child invocation records and lists elapsed time,
+execution mode, observed outcomes, warning counts when available, and source/diagnostic links.
+Standalone workflows also produce a summary. Repeated attempts retain separate summaries.
+An unfinished attempt or an older record without a measured duration stays explicitly incomplete
+or unavailable. See [Run summaries and WF4 benchmarking](benchmarking.md) for interpretation.
+Only WF4 records the additional process-resource timeline; the other workflows record invocation
+durations without resource sampling. Successful execution does not establish scientific output completeness.
+
 `<plan_key>` matches the name of the corresponding directory under
 `scenarios/_engine/requests/`. An incomplete run can leave logs and partial files.
 Check `collection.json` or `indicators.json` in the corresponding `_engine/`

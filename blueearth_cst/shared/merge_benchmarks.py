@@ -38,8 +38,11 @@ _MEAN = ["mean_load"]  # average across jobs
 _LEGEND = """\
 
 **How to read this** — one row per rule (fan-out rules aggregate all their jobs).
-The **TOTAL** row *sums* the time / IO / CPU columns but takes the **peak** of the
-memory columns, since peak usage in different rules does not happen at once.
+The **TOTAL** row *sums* the time / IO / CPU columns and takes the **maximum
+individual-job** memory values. Summed parallel job durations are not workflow
+elapsed time; maximum individual-job memory is not peak concurrent workflow
+memory. Partial reruns include only newly collected benchmark parts. Use the
+invocation-based `run-<invocation-id>.md` summary for launcher elapsed time.
 
 | column | meaning | interpretation |
 | --- | --- | --- |

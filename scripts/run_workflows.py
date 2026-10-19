@@ -1004,6 +1004,11 @@ def _closing_block(
     if launched:
         wrote.append(("logs", "<project>/logs/"))
     wrote.append(("invocation", _under_project(manifest_path, project_dir)))
+    from blueearth_cst.shared.invocation_summary import summary_path
+
+    run_summary_path = summary_path(manifest_path)
+    if run_summary_path.is_file():
+        wrote.append(("run summary", _under_project(run_summary_path, project_dir)))
     if manifest.get("command_receipt"):
         wrote.append(
             ("commands", _under_project(Path(manifest["command_receipt"]), project_dir))
@@ -1175,6 +1180,10 @@ def _run_owned(
         requested_workflows=[name for name in WORKFLOW_ORDER if flags[name]],
     )
     manifest_path = history_path
+    history["workflow_selection"] = dict(flags)
+    history["workflow_order"] = list(WORKFLOW_ORDER)
+    history["requested_workflows"] = [name for name in WORKFLOW_ORDER if flags[name]]
+    invocation_history.update(history_path, history)
     reservation_context = None
     try:
         if not flags["simulate_system"]:
@@ -1552,7 +1561,11 @@ def _run_owned(
             except BaseException as exc:
                 if child_record is not None:
                     invocation_history.finish(
-                        child_path, child_record, exit_code=None, error=exc
+                        child_path,
+                        child_record,
+                        exit_code=None,
+                        error=exc,
+                        elapsed_seconds=time.monotonic() - workflow_started,
                     )
                     _link_child(history_path, history, child_path, name, child_id)
                 else:
@@ -1563,6 +1576,7 @@ def _run_owned(
                             "phase": "launch",
                             "error": {"type": type(exc).__name__, "message": str(exc)},
                             "exit_code": None,
+                            "elapsed_seconds": time.monotonic() - workflow_started,
                         }
                     )
                     invocation_history.update(history_path, history)
@@ -1593,8 +1607,12 @@ def _run_owned(
                     pass
             elapsed = format_elapsed(time.monotonic() - workflow_started)
             if child_record is not None:
+                child_record["warning_count"] = workflow["warning_count"]
                 invocation_history.finish(
-                    child_path, child_record, exit_code=result.returncode
+                    child_path,
+                    child_record,
+                    exit_code=result.returncode,
+                    elapsed_seconds=time.monotonic() - workflow_started,
                 )
             if child_path.exists():
                 _link_child(history_path, history, child_path, name, child_id)
@@ -1645,7 +1663,8 @@ def _run_owned(
             manifest_path=manifest_path,
             manifest=manifest,
             ran=ran,
-            elapsed_seconds=time.monotonic() - started,
+            elapsed_seconds=history.get("elapsed_seconds")
+            or time.monotonic() - started,
             failed=True,
         )
         raise
@@ -1661,7 +1680,7 @@ def _run_owned(
         manifest_path=manifest_path,
         manifest=manifest,
         ran=ran,
-        elapsed_seconds=time.monotonic() - started,
+        elapsed_seconds=history.get("elapsed_seconds") or time.monotonic() - started,
         failed=exit_code != 0,
     )
     return exit_code
@@ -1702,7 +1721,7 @@ def _link_child(
     item = {
         "invocation_id": child_id,
         "workflow": workflow,
-        "record": file_reference(child_path, "project_root", parent_path.parents[4]),
+        "record": file_reference(child_path, "project_root", parent_path.parents[3]),
     }
     children = parent["children"]
     for index, child in enumerate(children):

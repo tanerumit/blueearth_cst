@@ -1,8 +1,39 @@
 ---
-title: "Benchmarking WF4"
+title: "Run summaries and WF4 benchmarking"
 ---
 
-WF4 records resources automatically during execution through either supported runner.
+Every supported workflow launcher writes a readable summary at
+`<project>/benchmarks/run-<invocation-id>.md`. An all-workflow run has one parent summary
+covering its explicitly linked children; a standalone workflow has its own summary.
+Different invocations keep separate files. The runner's closing output links to the report.
+
+The source is `<project>/config/_engine/invocations/<id>.json`, not console output or
+per-rule benchmark tables. Records retain numeric `elapsed_seconds` measured with a monotonic
+clock, alongside UTC timestamps for chronology. The timer belongs to the launcher process;
+a supervisor may supply an observed child duration, including preparation before child-record creation.
+The total covers the recorded launcher attempt and is not the sum of parallel job durations.
+No raw monotonic clock origin is stored. Time before invocation-record creation is not measured.
+
+Reports distinguish execution from dry runs, disabled workflows, workflows not invoked, launch
+failures and unfinished attempts. Warning counts appear only when recorded. Exit zero does not prove
+that computation ran, outputs are complete or scientific results are adequate; `work_performed`
+remains unknown unless the launcher has evidence. A no-op with every workflow disabled records no work.
+Old records without elapsed seconds retain an unavailable duration; UTC differences are not substituted.
+
+A report starts as a running snapshot and refreshes as the launcher observes children and completion.
+A hard-killed attempt retains its last snapshot without a fabricated end time. Report-writing failures
+are reported separately and preserve the original execution outcome. Structured invocation records
+remain authoritative, including when a report is missing or stale.
+Startup failures can be recorded once the project root is known. Supply `--project-dir` to
+the all-workflow runner or WF4 runner to retain failures that occur while reading configuration.
+
+Existing per-rule benchmark reports remain available. They describe collected job timings and resource
+samples. Partial reruns can replace those reports with only newly collected parts, and maximum
+individual-job memory is not peak concurrent workflow memory.
+
+## WF4 resource diagnostics
+
+Resource sampling remains limited to WF4, automatically through either supported runner.
 Dry runs do not start resource monitoring. No external monitoring service is used.
 
 Find the WF4 child invocation in `<project>/config/_engine/invocations/<id>.json`.

@@ -320,6 +320,12 @@ class BatchPlan:
     #: `settings` or `project`; `+ memory` / `+ cores` when a cap lowered it.
     regime: str
     active_cells: int | None
+    cores: int = 1
+    requested_parallel: int = 1
+    core_limit: int = 1
+    available_memory_bytes: int | None = None
+    estimated_memory_per_batch_bytes: int = 0
+    memory_limit: int | None = None
 
     def summary(self) -> str:
         from blueearth_cst.shared.snake_utils import plural
@@ -378,6 +384,7 @@ def resolve_batch_plan(
     width, width_source = pick(
         "max_parallel_batches", "max_parallel", f"{prefix}_max_parallel"
     )
+    requested_width = width
     sources = (
         [thread_source]
         if thread_source == width_source
@@ -390,13 +397,25 @@ def resolve_batch_plan(
     if width > by_cores:
         width = by_cores
         sources.append("cores")
+    per_batch = (
+        settings["memory_per_batch_gb"] * BYTES_PER_GB
+        + (active_cells or 0) * settings["memory_per_cell_kb"] * 1024
+    )
+    by_memory = None
     if available_memory_bytes is not None:
-        per_batch = (
-            settings["memory_per_batch_gb"] * BYTES_PER_GB
-            + (active_cells or 0) * settings["memory_per_cell_kb"] * 1024
-        )
         by_memory = max(1, int(0.8 * available_memory_bytes // per_batch))
         if width > by_memory:
             width = by_memory
             sources.append("memory")
-    return BatchPlan(threads, width, " + ".join(sources), active_cells)
+    return BatchPlan(
+        threads,
+        width,
+        " + ".join(sources),
+        active_cells,
+        cores=int(cores),
+        requested_parallel=requested_width,
+        core_limit=by_cores,
+        available_memory_bytes=available_memory_bytes,
+        estimated_memory_per_batch_bytes=int(per_batch),
+        memory_limit=by_memory,
+    )

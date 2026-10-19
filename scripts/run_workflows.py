@@ -1393,6 +1393,13 @@ def _run_owned(
                             "not_applicable"
                         )
                     invocation_history.update(child_path, child_record)
+                    from blueearth_cst.shared import resource_tracking
+
+                    if child_record.get("resources", {}).get("directory"):
+                        environment[resource_tracking.DIRECTORY_ENV] = child_record[
+                            "resources"
+                        ]["directory"]
+                    resource_tracking.phase(child_path, "snakemake")
                     # The simulation runner builds its own environment; the
                     # announcement rides on top of it rather than replacing it.
                     result = subprocess.CompletedProcess(
@@ -1411,6 +1418,7 @@ def _run_owned(
                             },
                         ),
                     )
+                    resource_tracking.phase(child_path, "finalization")
                     snapshot = environment.get("CST_INDICATOR_SELECTION")
                     if (
                         not manifest["dry_run"]
@@ -1433,6 +1441,7 @@ def _run_owned(
                             experiment_root = (
                                 project_dir / "experiments" / reservation_context.name
                             )
+                            resource_tracking.phase(child_path, "indicator_exports")
                             outcomes = publish_selected_sets(
                                 experiment_root, wf4_project, settings, selection
                             )

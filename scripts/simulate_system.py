@@ -14,7 +14,7 @@ from blueearth_cst.experiment.simulation_runner import (
     simulation_selection,
     simulation_settings,
 )
-from blueearth_cst.shared import invocation_history
+from blueearth_cst.shared import invocation_history, resource_tracking
 from blueearth_cst.shared.provenance import file_sha256
 from blueearth_cst.shared.windows_job import run_project_child
 from blueearth_cst.shared.workflow_config_snapshot import archive_lock
@@ -127,14 +127,20 @@ def main(argv=None):
                 record["configuration"]["archive_state"] = "not_applicable"
             environment.update(context.environment())
             environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
+            if record.get("resources", {}).get("directory"):
+                environment[resource_tracking.DIRECTORY_ENV] = record["resources"][
+                    "directory"
+                ]
             invocation_history.update(record_path, record)
             print("WF4 targets: " + " ".join(args.target), flush=True)
+            resource_tracking.phase(record_path, "snakemake")
             result = run_project_child(
                 command,
                 env=environment,
                 cwd=Path(__file__).resolve().parents[1],
                 writing=not preview,
             )
+            resource_tracking.phase(record_path, "finalization")
             if (
                 not preview
                 and selection.indicators
@@ -149,6 +155,7 @@ def main(argv=None):
                 # every ready set publishes even when another set's job failed,
                 # and the invocation is nonzero unless every set is current.
                 experiment_root = root / "experiments" / context.name
+                resource_tracking.phase(record_path, "indicator_exports")
                 outcomes = publish_selected_sets(
                     experiment_root, project, settings, selection
                 )

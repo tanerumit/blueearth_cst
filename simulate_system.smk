@@ -268,6 +268,10 @@ onstart:
     # stack does not exist yet then. Fail-open; see install_console_style.
     install_console_style()
     _header()
+    if globals().get("_batch_resource_decision") is not None:
+        from blueearth_cst.shared.resource_tracking import write_batch_decision
+        write_batch_decision("plan", _batch_resource_decision,
+            threads=int(_threads), run_ids=RUN_IDS)
 
 
 onsuccess:

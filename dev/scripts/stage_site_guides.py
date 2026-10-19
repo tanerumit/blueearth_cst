@@ -7,11 +7,11 @@ links resolve from docs/guide; staged links resolve from docs/site/guide.
 from pathlib import Path
 from shutil import copyfile
 
-GUIDES = ("quick-start", "configuration", "running", "outputs")
+GUIDES = ("quick-start", "configuration", "running", "benchmarking", "outputs")
 
 
 def stage_guides(docs_dir: Path) -> None:
-    """Refresh the four site copies and their self-contained diagram asset."""
+    """Refresh the site copies and their self-contained diagram asset."""
     source_dir = docs_dir / "guide"
     target_dir = docs_dir / "site" / "guide"
     # Read every required source before writing, so missing inputs fail the build.

@@ -232,6 +232,9 @@ if not _simulation_complete:
     # then a regime chosen by the model's active cell count. A `--set-threads`
     # on the batch rules still wins, as before.
     import psutil
+    from dataclasses import asdict
+    import time
+    _batch_decision_epoch = time.time()
     _plan = resolve_batch_plan(count_active_cells(f"{basin_dir}/staticmaps.nc"), _cores,
         ADVANCED_SETTINGS["batching"], compute, psutil.virtual_memory().available)
     _threads = min([_plan.threads, *[int(value) for name, value in
@@ -244,6 +247,12 @@ if not _simulation_complete:
         footprint=measure_member_footprint(basin_dir, SIM_WINDOW_START, SIM_WINDOW_END, write_states=False),
         headroom_bytes=disk_headroom_bytes(project_dir,
             fraction=ADVANCED_SETTINGS["defaults"]["batch_disk_headroom_fraction"], headroom_gb=compute.get("disk_headroom_gb")))
+    # Observations stay out of rule params: changing free RAM must not itself
+    # become a reason for Snakemake to rerun a simulation.
+    _batch_resource_decision = {"selected_at_epoch_s": _batch_decision_epoch,
+        "plan": asdict(_plan), "sizing": asdict(sizing),
+        "settings": ADVANCED_SETTINGS["batching"], "compute": compute,
+        "batches": split_evenly(RUN_IDS, sizing.batch_size)}
     if sizing.warning:
         # A bare `print` carried no stamp and no module column at all,
         # which put it further outside the grammar than the `logger`

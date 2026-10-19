@@ -416,6 +416,7 @@ def live_simulation_inputs_v2(
             "blueearth_cst/experiment/downscale_climate_forcing.py",
             "blueearth_cst/experiment/run_wflow_batch.jl",
             "blueearth_cst/shared/wflow_progress.jl",
+            "blueearth_cst/shared/resource_timing.jl",
             "blueearth_cst/shared/run_logged.py",
         ],
     )

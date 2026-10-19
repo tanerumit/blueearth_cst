@@ -122,6 +122,11 @@ def start(
         "error": None,
     }
     _write(path, record)
+    if workflow == "simulate_system" and mode == "execute":
+        from blueearth_cst.shared import resource_tracking
+
+        record["resources"] = resource_tracking.start(path)
+        _write(path, record)
     return path, record
 
 
@@ -138,6 +143,12 @@ def finish(
     error: BaseException | None = None,
 ) -> None:
     """Finish only when a launcher observes an outcome, not on hard kill."""
+    if record.get("resources") is not None:
+        from blueearth_cst.shared import resource_tracking
+
+        summary = resource_tracking.finish(path)
+        if summary is not None:
+            record["resources"] = summary
     record["status"] = "succeeded" if error is None and exit_code == 0 else "failed"
     record["exit_code"] = exit_code
     record["ended_at_utc"] = _now()

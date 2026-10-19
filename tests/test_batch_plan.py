@@ -56,6 +56,14 @@ def test_memory_caps_batches_at_once():
         257, 12, SETTINGS, available_memory_bytes=2 * BYTES_PER_GB
     )
     assert plan.max_parallel == 1 and plan.regime.endswith("memory")
+    assert plan.available_memory_bytes == 2 * BYTES_PER_GB
+    assert plan.requested_parallel == 2
+    assert plan.core_limit == 12
+    assert plan.memory_limit == 1
+    assert plan.estimated_memory_per_batch_bytes == int(
+        SETTINGS["memory_per_batch_gb"] * BYTES_PER_GB
+        + 257 * SETTINGS["memory_per_cell_kb"] * 1024
+    )
 
 
 def test_the_summary_says_what_chose_it():

@@ -73,6 +73,24 @@ def downscale(workflow):
 
 
 @pytest.mark.workflow_contract
+def test_resource_observations_do_not_become_rerun_parameters(tmp_path, monkeypatch):
+    from tests.simulation_workflow_fixture import parse_simulation_workflow
+
+    workflow = parse_simulation_workflow(tmp_path, monkeypatch, dry_run=True)
+    batch_rules = [
+        rule
+        for rule in workflow.rules
+        if rule.name.startswith("run_wflow_simulations_batch_")
+    ]
+    assert batch_rules
+    for rule in batch_rules:
+        assert set(rule.params.keys()) == {"records", "julia"}
+    evidence = workflow.globals["_batch_resource_decision"]
+    assert evidence["plan"]["available_memory_bytes"] > 0
+    assert evidence["batches"]
+
+
+@pytest.mark.workflow_contract
 def test_no_rule_builds_a_catalog_over_the_whole_sweep(workflow):
     """The removed rule, by name and by artifact.
 

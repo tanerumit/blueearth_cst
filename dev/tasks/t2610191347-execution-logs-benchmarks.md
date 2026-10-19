@@ -10,13 +10,13 @@ updated: 2026-10-19
 ---
 
 > [!note] Overview
-> **What changes** — Execution folders contain console transcripts, workflow logs and Markdown/TSV benchmarks.
-> **Why it matters** — Retain attributable history without mixing old parts or confusing job time with elapsed time.
-> **What it takes** — Invocation-owned paths, stream capture, grouped reports and integration checks.
+> **What changes** — Execution folders retain transcripts, logs and Markdown/TSV benchmarks.
+> **Why it matters** — Preserve execution history and distinguish job time from elapsed time.
+> **What it takes** — Owned paths, capture, grouped reports and checks.
 
 ## Progress
 
-Next: After user-controlled landing, close this item on main.
+Next: Close after user-controlled landing.
 
 - [x] Agree layout.
 - [x] Retain grouped benchmarks/TSV.
@@ -26,13 +26,13 @@ Next: After user-controlled landing, close this item on main.
 - [x] Document behavior.
 - [x] Verify workflows; commit.
 
-Implementation: `2ea2f063`, `feat/named-indicator-sets`, session-2. Ready for landing; no landing or push.
-Historical outputs remain untouched. Configuration archives/resource traces retain their locations.
-Child output is plain text. Pre-existing indicator prerequisite edits remain unstaged.
+Implementation: `2ea2f063`, `feat/named-indicator-sets`, session-2. Awaiting landing.
+Historical outputs preserved; configuration archives/resource traces unchanged.
+Console follow-up: `0edf9ef9` restores live colours/progress; saved logs remain plain.
 
 ## Evidence
 
-Pixi/Windows; this task's ignored `.tmp/` holds:
+Pixi/Windows evidence in ignored `.tmp/`:
 
 | Output | Passed checks |
 |---|---|
@@ -41,17 +41,19 @@ Pixi/Windows; this task's ignored `.tmp/` holds:
 | standalone-final.log | 27: WF0–WF2 and WF4 launcher contracts |
 | gather-adapter.log | 12: formatter and real Snakemake script execution |
 | execution-final.log | 6: timestamp, retry, transcript edge cases |
+| console-formatting-tests.log | 515: terminal/redirected capture, progress, logging, identity |
+| console-launcher-tests.log | 82: all-workflow/WF3 launchers |
+| console-lint.log / console-format-check.log | Lint/format passed |
 | lint.log / format-check.log | `pixi run lint` / `pixi run format-check` |
 | e2e-retry.log | All-five execution and artifact assertions |
 
-CLI/DAG/header checks: 9 passed, 24 deselected; workflow declarations unchanged afterward.
-All-five command: `tests.test_workflow_end_to_end._run_and_assert_all_five(..., local_inputs=True)`.
-Output root in session-2:
+CLI/DAG/header checks: 9 passed, 24 deselected; declarations unchanged.
+Session-2 outputs:
 `.tmp/pytest/run-f1b10932b9ac4182b0e2193112c5b288/test_all_five_workflows_run_fr0/project`.
 
 Input: verified 358-file rapid-v3 source copy, resealed against current contracts at `.tmp/e2e-bundle/`.
-A gather-preamble fix passed directly; the all-five retry reused freshly generated WF0 products
-and regenerated WF1–WF4. e2e-local.log retains an earlier code-identity failure.
+All-five retry reused freshly generated WF0 products and regenerated WF1–WF4.
+Console follow-up reuses this science evidence; its checks cover presentation and affected launchers.
 No numerical-equivalence claim.
 
 Board check reports nine unrelated existing errors.

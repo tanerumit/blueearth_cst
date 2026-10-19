@@ -60,6 +60,7 @@ _plan_key = Path(_scenario_request_path).parent.name
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{_plan_key}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{_plan_key}"
 WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
+from blueearth_cst.shared.execution_outputs import workflow_paths, declare_warning_tally
 
 # One tally per run, opened at parse time and published to every job process
 # through the environment: a rule prints its warnings from a process of its
@@ -67,6 +68,9 @@ WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
 # `snake_utils.declare_warning_tally`.
 declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
+_paths = workflow_paths(project_dir, "wf3", WORKFLOW_LOG_NAME, BENCHMARKS_NAME, LOG_PARTS_DIR, BENCH_PARTS_DIR)
+WORKFLOW_LOG_PATH, BENCHMARK_OUTPUT_PATH = _paths.log, _paths.benchmark
+LOG_PARTS_DIR, BENCH_PARTS_DIR = _paths.log_parts, _paths.benchmark_parts
 RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("3.01", "delineate_region", summary="delineate the basin boundary")
@@ -125,8 +129,8 @@ V2_TARGET = (
 )
 WF3_TARGETS = SOURCE_TARGETS if SOURCE_ONLY else [
     V2_TARGET,
-    f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
-    f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+    BENCHMARK_OUTPUT_PATH,
+    WORKFLOW_LOG_PATH,
 ]
 
 # all
@@ -362,7 +366,8 @@ if V2_MODE:
         input:
             GATHER_INPUTS,
         output:
-            f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+            BENCHMARK_OUTPUT_PATH,
+            BENCHMARK_OUTPUT_PATH.removesuffix(".md") + ".tsv",
         params:
             parts_dir = BENCH_PARTS_DIR,
             workflow_num = 3,
@@ -373,7 +378,7 @@ if V2_MODE:
         input:
             GATHER_INPUTS,
         output:
-            f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+            WORKFLOW_LOG_PATH,
         params:
             rules = LOG_RULES,
             parts_dir = LOG_PARTS_DIR,

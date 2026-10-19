@@ -52,6 +52,13 @@ def _kind(rel: str) -> str:
 #: writers and checked against the fresh v0.3.0 baseline tree.
 COVERED: dict[str, list[str]] = {
     "root": [
+        "logs/20261019T095008Z-1568406955d3/summary.md",
+        "logs/20261019T095008Z-1568406955d3/console.log",
+        "logs/20261019T095008Z-1568406955d3/wf2.log",
+        "logs/20261019T095008Z-1568406955d3/wf2-benchmarks.md",
+        "logs/20261019T095008Z-1568406955d3/wf2-benchmarks.tsv",
+        "logs/20261019T095008Z-1568406955d3/wf4-indicators.log",
+        "logs/20261019T095008Z-1568406955d3/_parts/wf2-abc/logs/2.03_fetch/member.log",
         "logs/wf1_build_model.log",
         "logs/wf2_analyze_projections.log",
         # WF3's and WF4's run records joined the project's own logs/ +

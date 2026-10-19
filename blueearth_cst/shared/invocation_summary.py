@@ -14,6 +14,10 @@ from urllib.parse import quote
 
 def summary_path(record_path: Path) -> Path:
     """Return the stable report location for this invocation, not this project."""
+    if record_path.is_file():
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        if record.get("execution_directory"):
+            return record_path.parents[3] / record["execution_directory"] / "summary.md"
     return record_path.parents[3] / "benchmarks" / f"run-{record_path.stem}.md"
 
 
@@ -192,7 +196,26 @@ def render_summary(record_path: Path) -> str:
         lines.extend(
             ["", f"Launcher error: {_cell(record['error'].get('type', 'unknown'))}."]
         )
-    if (root / "logs").is_dir():
+    if record.get("execution_directory"):
+        directory = root / record["execution_directory"]
+        lines.extend(
+            ["", _link("Execution logs and benchmarks", directory, report) + "."]
+        )
+        if (directory / "console.log").is_file():
+            lines.append(
+                _link("Console transcript", directory / "console.log", report) + "."
+            )
+        for item in children:
+            source = record_path.with_name(f"{item['invocation_id']}.json")
+            if source.is_file():
+                child = json.loads(source.read_text(encoding="utf-8"))
+                for artifact in child.get("artifacts", []):
+                    target = root / artifact["path"]
+                    lines.append(_link(target.name, target, report) + ".")
+        for artifact in record.get("artifacts", []):
+            target = root / artifact["path"]
+            lines.append(_link(target.name, target, report) + ".")
+    elif (root / "logs").is_dir():
         lines.extend(
             [
                 "",

@@ -19,7 +19,14 @@ def record_indicator_detail(root, message):
     native_message = message.encode("ascii", "backslashreplace").decode("ascii")
     logging.getLogger("snakemake.logging").info("Indicator details: " + native_message)
     if root is not None:
-        path = Path(root) / "logs/wf4_indicators.log"
+        from blueearth_cst.shared.execution_outputs import current_directory
+
+        directory = current_directory()
+        path = (
+            directory / "wf4-indicators.log"
+            if directory
+            else Path(root) / "logs/wf4_indicators.log"
+        )
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             with path.open("a", encoding="utf-8") as handle:

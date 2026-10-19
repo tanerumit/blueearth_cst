@@ -353,6 +353,11 @@ def build_project_tree_rules(
     # be closed by grammar -- only by the fact that nobody names an experiment
     # `a3f9c2b10d4e`.
     _hex = f"[0-9a-f]{{{SHORT_DIGEST_CHARS}}}"
+    execution = r"logs/[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}"
+    same_rx(
+        rf"{execution}/(?:summary\.md|console\.log|wf[0-4]\.log|wf[0-4]-benchmarks\.(?:md|tsv)|wf4-indicators\.log)"
+    )
+    same_rx(rf"{execution}/_parts/.+")
     same_rx(r"logs/wf[012]_[^/]+\.log")
     same_rx(rf"logs/wf3_generate_scenarios_{_hex}\.log")
     same_rx(r"logs/wf4_simulate_system_[a-z0-9_]+\.log")

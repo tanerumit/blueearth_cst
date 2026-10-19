@@ -1058,7 +1058,8 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     wrote = _group_rows(out, "wrote")
     assert wrote["project"] == root
     # Rows under the project use the token the project row defines.
-    assert wrote["logs"] == "<project>/logs/"
+    assert wrote["logs"].startswith("<project>/logs/")
+    assert wrote["logs"].count("/") == 3
     assert wrote["invocation"].startswith("<project>/config/_engine/invocations/")
     assert wrote["commands"].startswith("<project>/config/_engine/invocations/")
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
@@ -1127,7 +1128,7 @@ def test_unusual_exit_code_points_at_the_snakemake_log_for_cross_check(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert code == 120
-    assert "[5/5]  WF4  SIMULATE SYSTEM  --  FAILED (exit 120) after 0:00:0" in out
+    assert "[5/5]  WF4  SIMULATE SYSTEM  --  FAILED (exit 120) after " in out
     assert (
         "exit code 120 is not one Snakemake's own CLI ever raises (only 0 or 1)" in out
     )
@@ -1162,8 +1163,9 @@ def test_a_launch_error_still_closes_with_a_report(
     assert "run_workflows FAILED in" in out
     assert "wf0 analyze_climate  FAILED (OSError)" in out
     assert "not run: wf1 build_model, wf2 analyze_projections" in out
-    # Two claims that are FALSE when no child ever launched.
-    assert "/logs/" not in out
+    # Startup diagnostics exist, but no child workflow log is claimed.
+    assert "    logs " not in out
+    assert "/summary.md" in out
     assert "printed above" not in out
 
 

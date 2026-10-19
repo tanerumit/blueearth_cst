@@ -14,12 +14,17 @@ from blueearth_cst.experiment.simulation_runner import (
     simulation_selection,
     simulation_settings,
 )
-from blueearth_cst.shared import invocation_history, resource_tracking
+from blueearth_cst.shared import (
+    execution_outputs,
+    invocation_history,
+    resource_tracking,
+)
 from blueearth_cst.shared.provenance import file_sha256
 from blueearth_cst.shared.windows_job import run_project_child
 from blueearth_cst.shared.workflow_config_snapshot import archive_lock
 
 
+@execution_outputs.capture_launch
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
@@ -94,6 +99,7 @@ def main(argv=None):
             extra,
             snapshot_path=record_path.with_suffix(".indicator-selection"),
         )
+        environment.update(execution_outputs.environment(record_path, record))
         record["configuration"]["source_config_sha256"] = file_sha256(Path(args.config))
         with archive_lock(root, "project-execution"):
             from blueearth_cst.experiment.reservation_context import admit_context_owned

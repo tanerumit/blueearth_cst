@@ -86,7 +86,7 @@ def test_parent_capture_failure_records_no_fabricated_child(tmp_path, monkeypatc
     assert parent["status"] == "failed"
     assert parent["children"] == []
     assert parent["launch_failures"][0]["workflow"] == "analyze_climate"
-    report = next((root / "benchmarks").glob("run-*.md")).read_text()
+    report = next((root / "logs").glob("*/summary.md")).read_text()
     assert "launch failed (no child record)" in report
     assert "Stop boundary:" in report
 
@@ -101,7 +101,7 @@ def test_explicit_root_records_config_failure_before_child(tmp_path):
     assert parent["status"] == "failed"
     assert parent["children"] == []
     assert parent["error"]["type"] == "ConfigError"
-    assert (root / "benchmarks" / f"run-{parent['invocation_id']}.md").is_file()
+    assert (root / parent["execution_directory"] / "summary.md").is_file()
 
 
 def test_simulation_explicit_root_records_startup_failure(tmp_path):
@@ -165,7 +165,7 @@ def reporting_run(tmp_path, monkeypatch):
 def test_multiworkflow_summary_matches_children_and_preserves_history(reporting_run):
     config, root, outcomes = reporting_run
     assert run_workflows.run(str(config), cores=1, extra=[]) == 0
-    reports = list((root / "benchmarks").glob("run-*.md"))
+    reports = list((root / "logs").glob("*/summary.md"))
     assert len(reports) == 1  # One parent report, not a competing report per child.
     original = reports[0].read_bytes()
     parent = next(record for record in _records(root) if record["workflow"] is None)
@@ -179,7 +179,7 @@ def test_multiworkflow_summary_matches_children_and_preserves_history(reporting_
         assert saved["work_performed"] == "unknown"
     outcomes.extend([0, 0, 0])
     assert run_workflows.run(str(config), cores=1, extra=[]) == 0
-    assert len(list((root / "benchmarks").glob("run-*.md"))) == 2
+    assert len(list((root / "logs").glob("*/summary.md"))) == 2
     assert reports[0].read_bytes() == original
 
 
@@ -187,7 +187,7 @@ def test_summary_preserves_success_failure_and_stop_boundary(reporting_run):
     config, root, outcomes = reporting_run
     outcomes[:] = [0, 7]
     assert run_workflows.run(str(config), cores=1, extra=[]) == 7
-    report = next((root / "benchmarks").glob("run-*.md")).read_text()
+    report = next((root / "logs").glob("*/summary.md")).read_text()
     assert "analyze_climate | succeeded (exit 0)" in report
     assert "build_model | failed (exit 7)" in report
     assert "analyze_projections | not invoked" in report
@@ -228,7 +228,7 @@ def test_summary_distinguishes_dry_run_and_no_op(reporting_run, no_op):
         == 0
     )
     parent = next(record for record in _records(root) if record["workflow"] is None)
-    report = (root / "benchmarks" / f"run-{parent['invocation_id']}.md").read_text()
+    report = (root / parent["execution_directory"] / "summary.md").read_text()
     assert parent["work_performed"] == "no"
     if no_op:
         assert not parent["children"]

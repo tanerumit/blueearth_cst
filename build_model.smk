@@ -462,6 +462,7 @@ MAP_CANDIDATE_STORES = {
 # sliced the list to the first one anywhere, so a bracketed followups reference
 # truncated the label set it read. That parser is gone ([R10-10]), and the one
 # that replaced it anchors the closing bracket at column 0.
+from blueearth_cst.shared.execution_outputs import workflow_paths, declare_warning_tally
 WORKFLOW_LOG_NAME = "wf1_build_model.log"
 
 # One tally per run, opened at parse time and published to every job process
@@ -470,6 +471,9 @@ WORKFLOW_LOG_NAME = "wf1_build_model.log"
 # `snake_utils.declare_warning_tally`.
 declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts"
+_paths = workflow_paths(project_dir, "wf1", WORKFLOW_LOG_NAME, "wf1_benchmarks.md", LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
+WORKFLOW_LOG_PATH, BENCHMARK_OUTPUT_PATH = _paths.log, _paths.benchmark
+LOG_PARTS_DIR, BENCH_PARTS_DIR = _paths.log_parts, _paths.benchmark_parts
 
 # The run's key folders, stated ONCE. `run_header` prints them at the top of the
 # console and every rule log repeats them in its own header; below that, any
@@ -482,7 +486,7 @@ declare_path_tokens(
     climate=store_dir,
 )
 declare_project_root(project_dir)
-RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
+RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("1.01", "delineate_region", summary="delineate the basin boundary")
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("1.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
@@ -549,8 +553,8 @@ WF1_TERMINALS = [
 WF1_TARGETS = [
     *WF1_TERMINALS,
     *([RUN_RECORD] if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else []),
-    f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-    f"{project_dir}/benchmarks/wf1_benchmarks.md",
+    WORKFLOW_LOG_PATH,
+    BENCHMARK_OUTPUT_PATH,
 ]
 
 rule all:
@@ -1284,9 +1288,10 @@ rule gather_benchmarks:
     input:
         WF1_TERMINALS,
     output:
-        f"{project_dir}/benchmarks/wf1_benchmarks.md",
+        BENCHMARK_OUTPUT_PATH,
+        BENCHMARK_OUTPUT_PATH.removesuffix(".md") + ".tsv",
     params:
-        parts_dir = f"{project_dir}/benchmarks/_parts",
+        parts_dir = BENCH_PARTS_DIR,
         workflow_num = 1,
     script: "blueearth_cst/shared/merge_benchmarks.py"
 
@@ -1308,7 +1313,7 @@ rule gather_logs:
     input:
         WF1_TERMINALS,
     output:
-        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+        WORKFLOW_LOG_PATH,
     params:
         rules = LOG_RULES,
         parts_dir = LOG_PARTS_DIR,

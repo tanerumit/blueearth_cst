@@ -45,6 +45,7 @@ if str(_REPO_ROOT_PATH) not in sys.path:
 
 from blueearth_cst.shared import (  # noqa: E402
     console_style,
+    execution_outputs,
     invocation_history,
 )
 from blueearth_cst.shared.config_composition import (  # noqa: E402
@@ -950,12 +951,8 @@ def _closing_block(
     in one `not run` note instead. A group headed "ran" listing workflows that
     did not is worse than not printing them.
 
-    `logs` names the DIRECTORY rather than the per-workflow log files. Those
-    names are Snakefile constants (`wf4_simulate_system_<experiment>.log` is
-    built from a resolved experiment id), so reconstructing them here would put
-    a second definition of each in the one place that cannot notice when it
-    drifts -- and rule `all`'s own target list has already named each exact log
-    a few lines above.
+    `logs` names this execution's directory; workflow details are linked from
+    its summary rather than reconstructing individual filenames here.
     """
     root = os.fspath(project_dir).replace(os.sep, "/")
     verdict = "FAILED" if failed else "done"
@@ -1002,7 +999,8 @@ def _closing_block(
     # spelling the rule logs use (`run_log_core`).
     wrote: list[Any] = [("project", root)]
     if launched:
-        wrote.append(("logs", "<project>/logs/"))
+        directory = manifest.get("execution_directory", "logs")
+        wrote.append(("logs", f"<project>/{directory}/"))
     wrote.append(("invocation", _under_project(manifest_path, project_dir)))
     from blueearth_cst.shared.invocation_summary import summary_path
 
@@ -1079,6 +1077,7 @@ def _project_name(cfg: Mapping[str, Any], project_dir: Path) -> str:
     return str(name) if name else project_dir.name
 
 
+@execution_outputs.capture_launch
 def run(
     config_path: str,
     cores: int,
@@ -1140,6 +1139,7 @@ def run(
         raise
 
 
+@execution_outputs.capture_launch
 def _run_owned(
     config_path: str,
     cores: int,
@@ -1180,6 +1180,7 @@ def _run_owned(
         requested_workflows=[name for name in WORKFLOW_ORDER if flags[name]],
     )
     manifest_path = history_path
+    manifest["execution_directory"] = history["execution_directory"]
     history["workflow_selection"] = dict(flags)
     history["workflow_order"] = list(WORKFLOW_ORDER)
     history["requested_workflows"] = [name for name in WORKFLOW_ORDER if flags[name]]
@@ -1419,6 +1420,9 @@ def _run_owned(
                             writing=not manifest["dry_run"],
                             env={
                                 **environment,
+                                **execution_outputs.environment(
+                                    child_path, child_record
+                                ),
                                 "CST_SIMULATION_INVOCATION_ID": child_id,
                                 console_style.ANNOUNCED_ENV: "1",
                                 invocation_history.PARENT_ENV: history["invocation_id"],
@@ -1549,6 +1553,9 @@ def _run_owned(
                             ),
                         )
                     else:
+                        env_for_child.update(
+                            execution_outputs.environment(child_path, child_record)
+                        )
                         result = subprocess.CompletedProcess(
                             cmd,
                             run_project_child(

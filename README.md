@@ -277,11 +277,12 @@ See [experiment selection and recovery](docs/guide/running.md#select-resume-or-c
 
 ### Logs and DAGs
 
-WF0/WF1/WF2 retain their project-level logs and provenance records. Generation
-parts are scoped by generation request under `logs/_parts/generate_scenarios/`;
-simulation parts are scoped by experiment under `logs/_parts/simulate_system/`.
-Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflow
-runner retains an invocation record under `config/_engine/invocations/`.
+Each launcher attempt keeps its summary, console transcript, workflow logs and
+benchmark reports together under `logs/<timestamp>-<invocation-id>/`.
+Retries receive a new folder; an all-workflow run shares one folder with its children.
+Structured invocation records remain under `config/_engine/invocations/`.
+See [execution logs and benchmarks](docs/guide/running.md#execution-logs-and-benchmarks)
+for the layout and [benchmark interpretation](docs/guide/benchmarking.md).
 
 ```console
 # WF3's owned dry run shows the source-preparation DAG.

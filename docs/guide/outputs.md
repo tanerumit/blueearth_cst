@@ -48,8 +48,14 @@ use a directory outside the toolbox checkout.
       group_metadata.csv        group_id,st_id,is_reference
       <token>_run_indicators.csv    indicator,location,run_id,value
       <token>_group_indicators.csv  indicator,location,group_id,value
-  logs/
-  benchmarks/
+  logs/<UTC timestamp>-<short invocation ID>/
+    summary.md                  execution summary and links
+    console.log                 chronological launcher/child transcript
+    wfN.log                     detailed messages grouped by rule/member
+    wfN-benchmarks.md            compact timing and resource report
+    wfN-benchmarks.tsv           precise individual-job measurements
+    wf4-indicators.log          indicator details for this execution
+    _parts/                     execution-owned working files
 ```
 
 Two experiments can use the same generated climate series, but each experiment
@@ -119,22 +125,18 @@ in place; the smaller extent applies when climate inputs are regenerated.
 
 ## Check whether a run finished
 
-Look under `logs/` for each workflow's messages. Scenario generation writes
-`logs/wf3_generate_scenarios_<plan_key>.log`; simulation writes
-`logs/wf4_simulate_system_<experiment>.log`. The `benchmarks/` directory
-records the time and resource use of individual steps.
-
-For the attempt as a whole, open `benchmarks/run-<invocation-id>.md`, linked by the runner's
-closing output. It reads the structured parent and child invocation records and lists elapsed time,
+Open `logs/<timestamp>-<invocation-id>/summary.md`, linked by the runner's closing output.
+The same execution folder holds `console.log`, `wf0.log`–`wf4.log` for invoked workflows,
+and their `wfN-benchmarks.md` reports with raw `.tsv` measurements.
+The summary reads the structured parent and child invocation records and lists elapsed time,
 execution mode, observed outcomes, warning counts when available, and source/diagnostic links.
-Standalone workflows also produce a summary. Repeated attempts retain separate summaries.
+Standalone workflows also produce a summary. Repeated attempts retain separate execution folders.
 An unfinished attempt or an older record without a measured duration stays explicitly incomplete
 or unavailable. See [Run summaries and WF4 benchmarking](benchmarking.md) for interpretation.
 Only WF4 records the additional process-resource timeline; the other workflows record invocation
 durations without resource sampling. Successful execution does not establish scientific output completeness.
 
-`<plan_key>` matches the name of the corresponding directory under
-`scenarios/_engine/requests/`. An incomplete run can leave logs and partial files.
+An incomplete run can leave logs and partial files.
 Check `collection.json` or `indicators.json` in the corresponding `_engine/`
 metadata directory before treating a collection or
 indicator set as complete.

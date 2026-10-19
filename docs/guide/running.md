@@ -15,7 +15,7 @@ WF4 reports checking, calculating and saving indicators by their selected set na
 Its final summary links each set's results, identifies reused results, and reports
 missing or invalid values. If one set fails, it states whether earlier results
 remain available. Internal request and publication identities remain in the
-retained manifests and the experiment's `logs/wf4_indicators.log`.
+retained manifests and the execution's `wf4-indicators.log`.
 
 | Workflow | What it does |
 |---|---|---|
@@ -177,15 +177,54 @@ snakemake --unlock -s build_model.smk --configfile test_case/project_config_rapi
 
 If a run exhausts memory, lower `--cores` and rerun it. Larger basins and longer
 scenario collections need more memory and disk space; timings and resource use
-are recorded under `<project_dir>/benchmarks/`.
+are recorded with the execution logs described below.
+
+### Execution logs and benchmarks
+
+Every supported launcher attempt gets a new directory, including dry runs and startup failures
+when the project root is known:
+
+```text
+logs/<UTC timestamp>-<short invocation ID>/
+  summary.md
+  console.log
+  wf0.log ... wf4.log
+  wf0-benchmarks.md ... wf4-benchmarks.md
+  wf0-benchmarks.tsv ... wf4-benchmarks.tsv
+  wf4-indicators.log
+  _parts/
+```
+
+Open `summary.md` first. It links the canonical invocation records, workflow logs, benchmarks and
+resource diagnostics. `console.log` retains launcher and child output in observed order, without
+terminal colours or repeated progress redraws. Workflow logs retain the detailed rule/member view.
+Only collected outputs appear: dry runs and reused steps need not produce rule logs or benchmarks.
+Missing measurements are not zero costs, and unknown reuse remains labelled unknown.
+
+Benchmark Markdown starts with the recorded workflow elapsed time and a table grouped by rule:
+job/sample counts, summed job time, median, slowest job and peak individual-job RAM. Expand the
+individual-job section for CPU and I/O measurements; the adjacent TSV retains precise samples.
+Summed job durations can overlap and are not workflow elapsed time. Peak job RAM is not concurrent
+workflow memory. WF4 reports available Julia load, compilation and later-member timings separately.
+
+Each workflow's `_parts/` namespace belongs to its child invocation; WF3 source and generation
+phases share that child. Successful gathers remove their merged parts; failures retain partial
+logs and benchmark fragments. Retrying creates another execution directory and never merges old
+parts. Previously written top-level workflow logs and `benchmarks/` reports remain historical;
+they are not reassigned to new executions.
+
+Configuration archives keep their existing locations under `config/`; resource traces remain under
+`config/_engine/invocations/`. Removing an execution's diagnostic folder does not remove its
+configuration provenance or scientific outputs.
 
 The all-workflow console includes the selected experiment and its action in the
 opening settings, describes subbasin outlets with their upstream-area threshold
 in km², and distinguishes disabled workflows from pending ones. Long settings
 and command paths wrap within the terminal width; redirected output uses 100 columns.
 
-On color-capable terminals, warning rows use orange without a `WARNING` column.
-Plain output and saved logs retain that column. Coordinate adjustments share one
+On color-capable terminals, launcher warning rows use orange without a `WARNING` column.
+Captured child processes use plain rows with `WARNING` retained. Console transcripts omit terminal
+colours; detailed workflow logs retain warning levels. Coordinate adjustments share one
 heading, followed by each location's original and resolved coordinates.
 
 The final summary totals the toolbox warning rows counted during this invocation

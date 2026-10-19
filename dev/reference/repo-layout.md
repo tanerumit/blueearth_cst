@@ -117,6 +117,11 @@ The baseline covers data, not figures. `FIGURE_KINDS` targets are excluded by de
 
 Outputs land under `project_dir`, set in the config. Production `project_dir` lives outside the repository tree; the untracked in-repo `test_case/test_local` is a dev/test exemption.
 
+Execution diagnostics share `logs/<UTC timestamp>-<short invocation ID>/`: summary, console transcript,
+workflow logs and Markdown/TSV benchmarks. Child invocations share their parent's folder; each retry
+has fresh part namespaces. Historical shared logs and benchmark files remain untouched. The maintained
+layout and interpretation live in `docs/guide/running.md` § Execution logs and benchmarks.
+
 For new output projects, `config/<workflow>/` holds `run_record.yml`, captured files,
 `SOURCES.md`, and `catalogs/` for the latest WF0–WF2
 configuration archives. Shared execution inputs, archive locks and invocation history live in

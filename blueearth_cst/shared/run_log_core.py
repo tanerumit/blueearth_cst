@@ -227,7 +227,16 @@ def _log_path_parts(log_path):
         if anchor in parts:
             i = parts.index(anchor)
             root = os.sep.join(parts[:i]) if i > 0 else ""
-            log_id = "/".join(parts[i + 1 :]) or os.path.basename(log_path)
+            suffix = parts[i + 1 :]
+            # Managed executions add a folder and child namespace before the
+            # rule parts; keep those opaque identities out of heartbeat rows.
+            if (
+                len(suffix) >= 5
+                and suffix[1] == "_parts"
+                and suffix[3] in {"logs", "benchmarks"}
+            ):
+                suffix = suffix[4:]
+            log_id = "/".join(suffix) or os.path.basename(log_path)
             return root, log_id
     return "", os.path.basename(log_path)
 

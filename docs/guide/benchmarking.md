@@ -3,9 +3,10 @@ title: "Run summaries and WF4 benchmarking"
 ---
 
 Every supported workflow launcher writes a readable summary at
-`<project>/benchmarks/run-<invocation-id>.md`. An all-workflow run has one parent summary
+`<project>/logs/<timestamp>-<invocation-id>/summary.md`. An all-workflow run has one parent summary
 covering its explicitly linked children; a standalone workflow has its own summary.
-Different invocations keep separate files. The runner's closing output links to the report.
+Different attempts keep separate folders. The runner's closing output links to the report.
+See [execution logs and benchmarks](running.md#execution-logs-and-benchmarks) for the folder layout.
 
 The source is `<project>/config/_engine/invocations/<id>.json`, not console output or
 per-rule benchmark tables. Records retain numeric `elapsed_seconds` measured with a monotonic
@@ -27,9 +28,26 @@ remain authoritative, including when a report is missing or stale.
 Startup failures can be recorded once the project root is known. Supply `--project-dir` to
 the all-workflow runner or WF4 runner to retain failures that occur while reading configuration.
 
-Existing per-rule benchmark reports remain available. They describe collected job timings and resource
-samples. Partial reruns can replace those reports with only newly collected parts, and maximum
-individual-job memory is not peak concurrent workflow memory.
+## Workflow benchmark reports
+
+Each invoked workflow writes `wfN-benchmarks.md` and `wfN-benchmarks.tsv` in its execution folder
+when measurements are available. The Markdown report shows the recorded workflow elapsed time,
+followed by a rule overview: distinct jobs, collected samples, summed job time, median and slowest
+job, and peak individual-job RSS. Wildcard jobs are grouped under their rule. Repeated measurements
+count as samples; per-job medians determine job-duration statistics so repeats do not inflate the sum.
+Expand the detailed table for job identifiers and individual measurements, or use the adjacent TSV
+for further analysis.
+
+Summed job time is not workflow elapsed time: parallel jobs overlap and launcher overhead is separate.
+Peak job RSS is not peak concurrent workflow memory. Missing or invalid measurements are unavailable,
+never zero. Coverage remains unknown unless explicitly recorded; a successful attempt can reuse existing
+outputs and collect few or no new benchmark samples. Partial failures retain the collected measurements
+without claiming complete workflow coverage. Each retry starts with its own parts and reports.
+
+WF4 reports also summarize available Julia timings: Wflow loading, compilation in the first observed
+member of each Julia process, and later member wall times. These observations help distinguish startup
+cost from sustained simulation speed. Missing phases remain unmeasured, and failed observations are
+counted separately. First and later members refer to observations within each process.
 
 ## WF4 resource diagnostics
 
@@ -56,8 +74,8 @@ information, physical/logical CPU counts, RAM capacity, free output-volume space
 power plan at startup. No process command lines or environment dumps are collected.
 
 The launcher phases distinguish preparation, Snakemake execution, finalization and indicator exports.
-Within Snakemake, correlate sample timestamps with rule logs and the existing job benchmarks under
-`<project>/benchmarks/`. Those benchmark totals sum job durations: parallel job time is not workflow
+Within Snakemake, correlate sample timestamps with rule logs and `wf4-benchmarks.md` in the execution
+folder. Summed job durations are not workflow
 wall time, and the table does not include all launcher overhead. Julia's first member includes its
 cold compilation costs; later members provide a better comparison of sustained simulation speed.
 Compilation and GC timings are components of wall time; do not add them to it. Allocated bytes measure

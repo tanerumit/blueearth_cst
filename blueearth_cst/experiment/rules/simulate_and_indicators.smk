@@ -49,6 +49,10 @@ LOG_PARTS_DIR = f"{project_dir}/logs/_parts/simulate_system/{experiment}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/simulate_system/{experiment}"
 WORKFLOW_LOG_NAME = f"wf4_simulate_system_{experiment}.log"
 BENCHMARKS_NAME = f"wf4_benchmarks_{experiment}.md"
+from blueearth_cst.shared.execution_outputs import workflow_paths
+_paths = workflow_paths(project_dir, "wf4", WORKFLOW_LOG_NAME, BENCHMARKS_NAME, LOG_PARTS_DIR, BENCH_PARTS_DIR)
+WORKFLOW_LOG_PATH, BENCHMARK_OUTPUT_PATH = _paths.log, _paths.benchmark
+LOG_PARTS_DIR, BENCH_PARTS_DIR = _paths.log_parts, _paths.benchmark_parts
 RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
 WRITE_MODEL_FINGERPRINT = RULES.logged("4.01", "write_model_fingerprint", summary="record the model inputs for this experiment")
@@ -128,8 +132,8 @@ rule all:
         lambda wc: _selected_indicator_outputs(wc),
         # The gathers were declared but requested by nothing, so no WF4 run
         # merged its log or benchmark parts.
-        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-        f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+        WORKFLOW_LOG_PATH,
+        BENCHMARK_OUTPUT_PATH,
 
 if not _simulation_complete:
     # 4.01  write_model_fingerprint
@@ -329,7 +333,7 @@ rule gather_logs:
         lambda wc: _indicator_plan_paths(wc),
         lambda wc: _selected_indicator_outputs(wc),
     output:
-        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+        WORKFLOW_LOG_PATH,
     params:
         rules=LOG_RULES,
         parts_dir=LOG_PARTS_DIR,
@@ -342,7 +346,8 @@ rule gather_benchmarks:
         lambda wc: _indicator_plan_paths(wc),
         lambda wc: _selected_indicator_outputs(wc),
     output:
-        f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+        BENCHMARK_OUTPUT_PATH,
+        BENCHMARK_OUTPUT_PATH.removesuffix(".md") + ".tsv",
     params:
         parts_dir=BENCH_PARTS_DIR,
         workflow_num=4,

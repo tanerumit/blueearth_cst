@@ -125,6 +125,9 @@ def start(
         "launch_failures": [],
         "error": None,
     }
+    from blueearth_cst.shared.execution_outputs import bind_directory
+
+    bind_directory(path, record)
     _write(path, record)
     if workflow == "simulate_system" and mode == "execute":
         from blueearth_cst.shared import resource_tracking
@@ -172,6 +175,13 @@ def finish(
             "message": str(error),
         }
     _write(path, record)
+    try:
+        from blueearth_cst.shared.execution_outputs import finalize
+
+        finalize(path, record)
+        _write(path, record)
+    except (OSError, ValueError, KeyError) as exc:
+        print(f"(execution diagnostics unavailable: {exc})", file=sys.stderr)
     report = _publish_summary(path, record)
     if report is not None and record.get("workflow") is not None:
         try:

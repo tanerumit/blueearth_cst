@@ -632,6 +632,14 @@ def test_log_path_parts_project_root_and_id(tmp_path):
     root2, log_id2 = _log_path_parts(str(lp2))
     assert root2 == os.path.normpath(str(tmp_path / "gabon"))
     assert log_id2 == "3.10_run_wflow/rlz_1_st_1.log"
+    managed = (
+        tmp_path
+        / "gabon/logs/20261019T120000Z-abcdef012345/_parts"
+        / "wf3-child/logs/3.10_run_wflow/rlz_1_st_1.log"
+    )
+    root3, log_id3 = _log_path_parts(managed)
+    assert root3 == root
+    assert log_id3 == log_id2
 
 
 def test_relativize_strips_project_root_both_separators():

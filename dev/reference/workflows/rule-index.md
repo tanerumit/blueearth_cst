@@ -163,8 +163,11 @@ so one lookup answers both.
 
 ## Conventions
 
-- Every rule also writes a `log:` part and a `benchmark:` part under
-  `logs/_parts/` and `benchmarks/_parts/`. Uniform, so not repeated per rule.
+- Rule log and benchmark parts live under
+  `logs/<execution>/_parts/wfN-<child-id>/{logs,benchmarks}/` for managed launches.
+  Gathers publish `logs/<execution>/wfN.log` and `wfN-benchmarks.{md,tsv}`.
+  Failed attempts retain partial parts; retries use fresh namespaces.
+  See `docs/guide/running.md` § Execution logs and benchmarks. Uniform, so not repeated per rule.
 - **Writes (undeclared)** is a real disk write that Snakemake does not know
   about. These matter: they are invisible to `--dry-run`, not cleaned by
   `--delete-all-output`, and unusable as a dependency. Three rules mutate
@@ -279,11 +282,11 @@ the user-facing output tree and scientific limitations.
 
 #### 0.06 · `gather_benchmarks`
 
-Merges benchmark parts into `benchmarks/wf0_benchmarks.md`.
+Merges benchmark parts into `logs/<execution>/wf0-benchmarks.md` and adjacent raw `.tsv`.
 
 #### 0.07 · `gather_logs`
 
-Merges the registered rule log parts into `logs/wf0_analyze_climate.log` and removes
+Merges the registered rule log parts into `logs/<execution>/wf0.log` and removes
 the parts. `LOG_RULES` defines the order and is checked by
 `tests/test_log_rules_contract.py`.
 
@@ -713,11 +716,12 @@ whole rule and rewrites identical indicators, so the gate passes but is not free
 
 #### 1.17 · `gather_benchmarks`
 
-**Does.** Merges the per-rule timing parts into one table with a rule column and
-a TOTAL row, rewritten fresh each run. Takes the terminal set as input, which is
+**Does.** Merges timing parts into a rule overview and expandable individual-job table,
+with adjacent raw samples. The launcher refreshes recorded workflow elapsed time on completion;
+summed job time remains separate. Takes the terminal set as input, which is
 what schedules it last.
 
-**Writes.** `benchmarks/wf1_benchmarks.md`.
+**Writes.** `logs/<execution>/wf1-benchmarks.md` and `.tsv`.
 
 #### 1.18 · `gather_logs`
 
@@ -726,7 +730,7 @@ deletes the parts it consumed and prunes the emptied directories. After a
 **partial** re-run the untouched sections are marked "no part from this run" —
 the artifact describes the run that produced it, not an accumulated history.
 
-**Writes.** `logs/wf1_build_model.log`.
+**Writes.** `logs/<execution>/wf1.log`.
 
 ## Two meanings of "subbasin"
 
@@ -923,7 +927,7 @@ the default numeric baseline gate is unchanged.
 
 **Does.** As WF1 1.17, for WF2.
 
-**Writes.** `benchmarks/wf2_benchmarks.md`.
+**Writes.** `logs/<execution>/wf2-benchmarks.md` and `.tsv`.
 
 #### 2.08 · `gather_logs`
 
@@ -931,7 +935,7 @@ the default numeric baseline gate is unchanged.
 the fan-out rules, so following one run meant opening five files and knowing
 their order.
 
-**Writes.** `logs/wf2_analyze_projections.log`.
+**Writes.** `logs/<execution>/wf2.log`.
 
 ---
 
@@ -969,8 +973,8 @@ flowchart LR
 | 3.07 | `generate_weather_realizations` | Snakemake | Unperturbed roots, moved to `series/run_<id>.nc`; date products |
 | 3.08 | `perturb_climate_realizations` | Snakemake, one job per perturbed run | `series/run_<id>.nc` |
 | 3.09 | `publish_scenario_collection` | Snakemake | Validated collection and its ready marker |
-| 3.10 | `gather_benchmarks` | Snakemake (generation phase) | `benchmarks/wf3_benchmarks_<plan>.md` |
-| 3.11 | `gather_logs` | Snakemake (generation phase) | `logs/wf3_generate_scenarios_<plan>.log` |
+| 3.10 | `gather_benchmarks` | Snakemake (generation phase) | `logs/<execution>/wf3-benchmarks.{md,tsv}` |
+| 3.11 | `gather_logs` | Snakemake (generation phase) | `logs/<execution>/wf3.log` |
 
 The former 3.09 copy step was removed on 2026-09-24
 (`dev/records/milestones/post-r12/migration_wf3-generation-rules.md`); the rules after

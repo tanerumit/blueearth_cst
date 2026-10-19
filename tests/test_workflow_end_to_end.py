@@ -19,6 +19,7 @@ provide their data, so the validation ladder says when to run either gate.
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import socket
@@ -191,6 +192,25 @@ def _run_and_assert_all_five(
     manifest = read_indicator_set(experiment, indicators)
     tables = [experiment / item["file"]["path"] for item in manifest["tables"]]
     assert tables and all(path.stat().st_size > 0 for path in tables)
+
+    records = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in (project / "config/_engine/invocations").glob("*.json")
+    ]
+    parent = max(
+        (record for record in records if record["workflow"] is None),
+        key=lambda record: record["started_at_utc"],
+    )
+    diagnostics = project / parent["execution_directory"]
+    assert (diagnostics / "summary.md").is_file()
+    transcript = (diagnostics / "console.log").read_text(encoding="utf-8")
+    assert "run_workflows" in transcript and "\x1b" not in transcript
+    for number in range(5):
+        assert (diagnostics / f"wf{number}.log").is_file()
+        assert (diagnostics / f"wf{number}-benchmarks.md").is_file()
+        assert (diagnostics / f"wf{number}-benchmarks.tsv").is_file()
+    assert (diagnostics / "wf4-indicators.log").is_file()
+    assert not (project / "benchmarks").exists()
 
 
 @pytest.mark.integration

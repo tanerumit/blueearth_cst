@@ -172,9 +172,9 @@ def run_owned(
                 }
                 history["configuration"]["archive_state"] = "retained_creator"
                 invocation_history.update(history_path, history)
-            print(
-                f"WF3: reusing ready scenario collection {plan['collection_id']}; no weather generation needed",
-                flush=True,
+            log_row(
+                f"Reusing scenario collection: {plural(len(plan['rows']), 'run')}; no weather generation needed",
+                module="generation",
             )
             return 0
     lookup_path = (

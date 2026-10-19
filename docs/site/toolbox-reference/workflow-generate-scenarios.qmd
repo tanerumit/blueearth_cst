@@ -23,6 +23,9 @@ title: "WF3 — Generate scenarios"
 
 The `all` target waits for the ready collection and execution records. Wrapper steps 3.04–3.06 occur before the generation DAG; they are not Snakemake rules.
 
+Console completion and reuse messages report the number of scenario runs. Collection digests and
+internal manifest paths remain in retained records rather than those messages.
+
 ## Rule flow
 
 ```{mermaid}

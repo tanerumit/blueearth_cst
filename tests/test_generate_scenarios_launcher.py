@@ -82,7 +82,12 @@ def test_success_and_ready_reuse_export_the_selected_collection(
     assert "1 stochastic realization across 1 perturbation point" in console
     assert "planned collection: 2 runs" in console
     if ready:
-        assert "reusing ready scenario collection selected" in console
+        assert (
+            "Reusing scenario collection: 2 runs; no weather generation needed"
+            in console
+        )
+        assert plan["collection_id"] not in console
+        assert "_engine" not in console
     assert exports == (
         [(tmp_path, tmp_path / plan["outputs"]["record_root"] / "collection.json")]
         if exit_code == 0

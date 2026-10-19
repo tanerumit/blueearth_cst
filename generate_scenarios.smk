@@ -323,7 +323,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             )
             if not row.derived_from:
                 from blueearth_cst.shared.run_log_core import log_row
-                log_row(f"{row.run_id}: produced the unperturbed baseline through the same climate-transformation path as perturbed runs", module="generation")
+                log_row(f"{row.run_id}: unperturbed baseline ready", module="generation")
 
     rule publish_scenario_collection:
         message: PUBLISH_SCENARIO_COLLECTION.banner()
@@ -344,7 +344,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 INVOCATION_ID,
             )
             from blueearth_cst.shared.run_log_core import log_row, plural
-            log_row(f"Scenario collection ready: {V2_PLAN['collection_id']}; {plural(len(V2_PLAN['rows']), 'retained run')} → {output[0]}", module="generation")
+            log_row(f"Scenario collection ready: {plural(len(V2_PLAN['rows']), 'run')}", module="generation")
 
 
 # 3.10 / 3.11 -- merge the run's benchmark and log parts, generation phase only:

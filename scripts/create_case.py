@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 
@@ -25,6 +26,105 @@ _WORKFLOW_LABELS = {
     "generate_scenarios": ("WF3", "Scenario generation"),
     "simulate_system": ("WF4", "System simulation"),
 }
+
+
+def _yaml_parameters(
+    node: yaml.Node | None,
+    path: tuple[str, ...] = (),
+    seen: set[int] | None = None,
+) -> Iterator[tuple[tuple[str, ...], yaml.ScalarNode, yaml.Node]]:
+    """Walk physical mapping keys, including sequence items, without revisiting aliases."""
+    if seen is None:
+        seen = set()
+    if node is None or id(node) in seen:
+        return
+    seen.add(id(node))
+    if isinstance(node, yaml.MappingNode):
+        for key, value in node.value:
+            if isinstance(key, yaml.ScalarNode):
+                child = (*path, key.value)
+                yield child, key, value
+                yield from _yaml_parameters(value, child, seen)
+    elif isinstance(node, yaml.SequenceNode):
+        for item in node.value:
+            yield from _yaml_parameters(item, (*path, "*"), seen)
+
+
+def _template_comments(path: Path) -> dict[tuple[str, ...], str]:
+    """Read parameter help from the maintained template, including optional examples."""
+    text = path.read_text(encoding="utf-8")
+    # Optional YAML uses #key / #  key; prose uses '# ' and stays commented.
+    expanded = re.sub(
+        r"^(\s*)#(?=(?:  )*(?:(?:[\w][\w -]*|'[^']+'|\"[^\"]+\"):|- ))",
+        r"\1",
+        text,
+        flags=re.MULTILINE,
+    )
+    lines = expanded.splitlines()
+    comments = {}
+    for keys, key, _ in _yaml_parameters(yaml.compose(expanded)):
+        row = key.start_mark.line
+        if row:
+            previous = lines[row - 1].strip()
+            if previous.startswith("# ") and re.search(
+                r"\b(Input|Options): ", previous
+            ):
+                if len(keys) >= 2 and keys[0] in {
+                    "observations",
+                    "indicator_set_definitions",
+                }:
+                    keys = (keys[0], "*", *keys[2:])
+                elif len(keys) >= 3 and keys[:2] == ("members", "overrides"):
+                    keys = (*keys[:2], "*", *keys[3:])
+                elif keys[:2] == ("variables", "custom_variable"):
+                    keys = ("variables", "*", *keys[2:])
+                comments[keys] = previous
+    return comments
+
+
+def _annotate_config(text: str, comments: dict[tuple[str, ...], str]) -> str:
+    """Insert parameter help without reserializing YAML or losing existing comments."""
+    lines = text.splitlines(keepends=True)
+    additions: dict[int, list[str]] = {}
+    for keys, key, value in _yaml_parameters(yaml.compose(text)):
+        comment = comments.get(keys)
+        if comment is None:
+            # Custom mapping entries inherit help from a template wildcard.
+            for candidate, help_text in comments.items():
+                if len(candidate) == len(keys) and all(
+                    expected == actual or expected == "*"
+                    for expected, actual in zip(candidate, keys)
+                ):
+                    comment = help_text
+                    break
+        if comment is None:
+            kind = value.tag.rsplit(":", 1)[-1]
+            expected = {
+                "map": "mapping",
+                "seq": "list",
+                "str": "text",
+                "int": "integer",
+                "float": "number",
+                "bool": "true | false",
+                "null": "null or a configured value",
+            }.get(kind, "YAML value")
+            comment = f"# Configure {key.value.replace('_', ' ')}. Input: {expected}."
+        row = key.start_mark.line
+        indent = len(lines[row]) - len(lines[row].lstrip())
+        # Flow mappings share a line: label each parameter's help above that line.
+        prefix = lines[row][: key.start_mark.column].strip()
+        if prefix not in {"", "-"}:
+            comment = f"# {key.value}: {comment[2:]}"
+        existing = []
+        previous = row - 1
+        while previous >= 0 and lines[previous].lstrip().startswith("#"):
+            existing.append(lines[previous].strip())
+            previous -= 1
+        if comment not in existing:
+            additions.setdefault(row, []).append(" " * indent + comment + "\n")
+    return "".join(
+        "".join(additions.get(row, [])) + line for row, line in enumerate(lines)
+    )
 
 
 def _config_header(
@@ -207,6 +307,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     if yaml.safe_load(text) != expected:
         raise ValueError("Template aliases affect fields outside the case identity")
     files[config_path] = text.encode("utf-8")
+    templates = Path(__file__).resolve().parents[1] / "config/templates"
     created = datetime.now().astimezone().isoformat(sep=" ", timespec="seconds")
     created = f"{created[:-6]} {created[-6:]}"
     for relative, content in list(files.items()):
@@ -237,6 +338,21 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
                 ("observations", variable),
                 (destination / sidecar).as_posix(),
             )
+        comment_sources = (
+            [templates / "project_config.template.yml"]
+            if relative == config_path
+            else [
+                templates / f"project_config.{owner}.template.yml"
+                for owner in config_owners.get(relative, [])
+                if owner in _WORKFLOW_LABELS
+            ]
+        )
+        if "selection" in parsed and "id" in parsed:
+            comment_sources.append(templates / "indicator_set.template.yml")
+        comments = {}
+        for source in comment_sources:
+            comments.update(_template_comments(source))
+        yaml_text = _annotate_config(yaml_text, comments)
         files[relative] = _config_header(
             yaml_text, relative, slug, created, config_owners.get(relative, [])
         ).encode("utf-8")

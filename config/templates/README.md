@@ -10,18 +10,25 @@ what it held; see `config/defaults/README.md`.
 | File | Purpose |
 | --- | --- |
 | `project_config.template.yml` | The project file: what every workflow shares, and which workflows run. Start here. |
-| `project_config.analyze_climate.template.yml` | wf0. Empty on purpose; it reads the project file. |
+| `project_config.analyze_climate.template.yml` | wf0: historical diagnostics and optional subbasin figures |
 | `project_config.build_model.template.yml` | wf1: observations, run period, engine configs |
 | `project_config.analyze_projections.template.yml` | wf2: models, scenarios, variables, windows |
-| `project_config.run_stress_test.template.yml` | wf3: experiment, perturbation grid, compute |
+| `project_config.generate_scenarios.template.yml` | wf3: weather generation and perturbation grid |
+| `project_config.simulate_system.template.yml` | wf4: simulations, indicator sets and compute |
+| `indicator_set.template.yml` | Optional named selection of registered WF4 indicators |
 | `output_locations_template.csv` | Header-only schema for output locations |
 | `observed_daily_discharge_template.csv` | Header-only schema for observed discharge |
 | `archive/` | Unmaintained single-workflow configs; see its own README |
 
-The five YAML files are one set. Copy all five into your project folder and
+The six project YAML files are one set. Copy all six into your project folder and
 pass the project file to `--configfile`; its `config_path:` lines name the other
-four. A filled-in worked example is `test_case/project_config_rapid.yml` with
-its siblings; `docs/guide/configuration.md` walks through the layout.
+five. A filled-in worked example is `test_case/project_config_rapid.yml` with
+its siblings.
+
+Each parameter has a short definition immediately above it, followed by `Input:`
+for the expected format or `Options:` for fixed choices. Commented settings are
+optional examples: uncomment their YAML lines to enable them, retaining the
+explanatory comments. Longer notes explain scientific choices and dependencies.
 
 The project template uses `config/catalogs/deltares_data_pdrive.yml`, backed
 by `P:/wflow_global/hydromt`. Mount the Deltares P-drive before running.

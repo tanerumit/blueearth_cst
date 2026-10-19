@@ -85,8 +85,9 @@ def test_A1_dropped_months_always_account_for_exactly_one_year(
 
 def test_the_template_config_recommends_the_30_year_window():
     """5f puts OQ-4 in the TEMPLATE only; the seed fixture keeps [1990, 2010]."""
-    import re
     from pathlib import Path
+
+    import yaml
 
     # The key lives in the WF2 file since R13: the project file carries only
     # `{enabled, config_path}` stanzas, so the recommendation a user reads is
@@ -95,12 +96,8 @@ def test_the_template_config_recommends_the_30_year_window():
         Path(__file__).resolve().parents[1]
         / "config/templates/project_config.analyze_projections.template.yml"
     ).read_text(encoding="utf-8")
-    m = re.search(
-        r"reference_window:[^\n]*\n\s*start:\s*(\d{4})[^\n]*\n\s*end:\s*(\d{4})",
-        template,
-    )
-    assert m, "template must declare reference_window"
-    assert [int(m.group(1)), int(m.group(2))] == OQ4_WINDOW
+    window = yaml.safe_load(template)["reference_window"]
+    assert [window["start"], window["end"]] == OQ4_WINDOW
 
 
 def test_the_seed_fixture_keeps_its_own_shorter_window():

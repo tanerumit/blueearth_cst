@@ -67,6 +67,10 @@ The project file identifies shared settings and workflow enablement. Workflow la
 follow `workflows.*.config_path`, including custom filenames. All files and
 `INSTRUCTIONS.md` share one creation timestamp; existing case files are not updated.
 
+Parameters also receive short definitions and `Input:` or `Options:` hints, drawn from
+the toolbox's maintained configuration templates. Existing explanations and settings
+are preserved. Custom parameters without template help receive a basic YAML type hint.
+
 Read the generated `INSTRUCTIONS.md` for preview and execution commands and
 a guide to the output folders. After
 selecting forcing, disable historical climate analysis before enabling downstream

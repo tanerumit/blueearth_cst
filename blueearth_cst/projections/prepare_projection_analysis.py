@@ -399,19 +399,19 @@ def run(sm):
         )
     if joined:
         log_row(
-            f"Joined {plural(len(joined), 'window')} with historical members: {listed(joined)}",
+            f"Joined historical data for {plural(len(joined), 'window')}: {listed(joined)}",
             module="analysis",
         )
     missing = tables["availability"].loc[~tables["availability"].available]
     log_row(
-        f"Figure eligibility: {available} available, {len(missing)} skipped",
+        f"Figures: {available} available, {len(missing)} skipped",
         module="analysis",
     )
     for message in skipped_product_messages(tables["availability"]):
         log_row(message, module="analysis")
     if record["unavailable_members"]:
         log_row(
-            f"Skipped {plural(len(record['unavailable_members']), 'member–window combination')} in projection diagnostics; reasons → analysis_record.json",
+            f"Skipped {plural(len(record['unavailable_members']), 'member–window combination')}; reasons → analysis_record.json",
             module="analysis",
         )
 

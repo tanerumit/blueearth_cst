@@ -627,10 +627,8 @@ if _best_effort:
     # only the name changes, so the names are what the row lists. Through
     # `defer_warning` for the reason given on the skip report above.
     defer_warning(
-        f"Variable availability is unverified for {listed(sorted(_best_effort))}. "
-        "The catalog checks only pr/tas. A listed member may not "
-        "publish them -- that fails at read time rather than skipping at "
-        "catalog selection.", module="resolution"
+        f"Availability unverified: {listed(sorted(_best_effort))}; catalog checks only pr/tas. "
+        "Missing variables will fail during fetching.", module="resolution"
     )
 
 # The series set is DERIVED from resolution, not from the config cross-product.

@@ -350,9 +350,9 @@ def derive_available_point(*, point, unavailable_windows, **kwargs):
         unavailable_windows.append(record)
         log_row(
             f"Skipped {point['model']} · {point['scenario']} · {point['member']} · "
-            f"{kwargs['name_horizon']}: {record['window_kind']} window "
+            f"{kwargs['name_horizon']}: {record['window_kind']} "
             f"{record['requested_window']}; {' '.join(str(record.get('reason', 'requested window is not usable')).splitlines())}; "
-            f"available data {record['available_start']}–{record['available_end']}; details → summary/provenance.json",
+            f"data {record['available_start']}–{record['available_end']}; details → summary/provenance.json",
             module="change",
             level="WARNING",
         )
@@ -567,7 +567,7 @@ if "snakemake" in globals():
             )
 
         log_row(
-            f"Deriving change factors for {plural(len(points), 'model–scenario–member combination')} across "
+            f"Deriving change factors: {plural(len(points), 'model–scenario–member combination')}, "
             f"{plural(len(horizons), 'future window')}",
             module="change",
         )
@@ -638,7 +638,7 @@ if "snakemake" in globals():
                 )
 
         log_row(
-            f"Change factors available for {len(annual_changes)} of {len(annual_changes) + len(unavailable_windows)} combination–window pairs; "
+            f"Change factors: {len(annual_changes)}/{len(annual_changes) + len(unavailable_windows)} combination–window pairs available; "
             f"{len(unavailable_windows)} skipped",
             module="change",
         )
@@ -832,18 +832,15 @@ if "snakemake" in globals():
             ),
         )
         log_row(
-            f"Projection analysis report written → {os.path.basename(str(sm.output.report_md))}",
+            f"Report → {os.path.basename(str(sm.output.report_md))}",
             module="change",
         )
         log_row(
-            f"Provenance: {len(document['sources'])} source-series records; "
-            f"{document['composition']['resolved']} of {document['composition']['requested']} requested combinations fully resolved "
-            f"-> {os.path.basename(str(sm.output.provenance_json))}",
+            f"{len(document['sources'])} source series recorded → {os.path.basename(str(sm.output.provenance_json))}",
             module="change",
         )
         n_resolved = sum(1 for r in rows if r["status"] == "resolved")
         log_row(
-            f"Ensemble composition: {len(rows)} requested combinations; {n_resolved} fully resolved; remaining statuses recorded in the table "
-            f"-> {os.path.basename(str(sm.output.composition_csv))}",
+            f"Ensemble coverage: {n_resolved}/{len(rows)} combinations fully resolved; statuses → {os.path.basename(str(sm.output.composition_csv))}",
             module="change",
         )

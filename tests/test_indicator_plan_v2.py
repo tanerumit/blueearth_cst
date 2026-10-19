@@ -129,6 +129,47 @@ def test_request_identity_is_stable_before_simulation_publication(experiment):
     assert content_sha256(pending) == content_sha256(completed)
 
 
+def test_named_requests_share_provenance_but_new_observations_detect_drift(
+    experiment, monkeypatch
+):
+    from blueearth_cst.experiment import indicator_plan
+
+    calls = {"environment": 0, "code": 0}
+
+    def environment():
+        calls["environment"] += 1
+        return {"revision": calls["environment"]}
+
+    def code():
+        calls["code"] += 1
+        return [{"path": "indicator.py", "sha256": str(calls["code"]) * 64}]
+
+    monkeypatch.setattr(indicator_plan, "resolve_indicator_environment", environment)
+    monkeypatch.setattr(indicator_plan, "_indicator_code_inventory", code)
+    calculations = [default_calculations(["gwr"]), default_calculations(["q"])]
+    requests = indicator_plan.current_indicator_requests(
+        experiment.root, calculations, "YE-DEC"
+    )
+    assert calls == {"environment": 1, "code": 1}
+    for records, request in zip(calculations, requests):
+        expected = indicator_plan.indicator_request(
+            request["simulation_id"],
+            records,
+            "YE-DEC",
+            request["indicator_environment"],
+            request["return_level_validation"],
+            code_inventory=request["code_inventory"],
+        )
+        expected["simulation_schema_version"] = "simulation/3"
+        assert request == expected
+
+    fresh = indicator_plan.current_indicator_requests(
+        experiment.root, calculations, "YE-DEC"
+    )
+    assert calls == {"environment": 2, "code": 2}
+    assert all(content_sha256(a) != content_sha256(b) for a, b in zip(requests, fresh))
+
+
 def test_simulations_only_does_not_resolve_indicator_requirements(
     experiment, monkeypatch
 ):

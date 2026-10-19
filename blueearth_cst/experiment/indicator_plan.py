@@ -240,6 +240,18 @@ def resolve_indicator_environment():
 
 def current_indicator_request(experiment_root, calculations, anchor):
     """Resolve stage-three identity without any live source/model or Julia access."""
+    return current_indicator_requests(experiment_root, [calculations], anchor)[0]
+
+
+def current_indicator_requests(experiment_root, calculation_sets, anchor):
+    """Resolve a batch against one fresh simulation/code/environment observation.
+
+    Callers may retain these identities for DAG scheduling within one invocation.
+    Execution still checks live code, responses and environment independently.
+    No observation is cached across calls to this function.
+    """
+    if not calculation_sets:
+        return []
     root = Path(experiment_root).resolve()
     # Combined runs resolve request identities after freezing the intent, before
     # publishing responses. Planning and indicators-only entry still require a
@@ -248,16 +260,8 @@ def current_indicator_request(experiment_root, calculations, anchor):
         _require_v2(root)
     if (root / "_engine/simulation.json").is_file():
         record = read_simulation_v2(root)
-        request = indicator_request(
-            record["simulation_id"],
-            calculations,
-            anchor,
-            resolve_indicator_environment(),
-            return_level_validation.build_declaration(),
-        )
-        request["simulation_schema_version"] = record["schema_version"]
-        return request
-    if (root / "_engine/simulation_intent.json").is_file():
+        schema = record["schema_version"]
+    elif (root / "_engine/simulation_intent.json").is_file():
         # The v2 freeze has committed but responses have not published
         # _engine/simulation.json yet -- the DAG-build-time evaluation this
         # feeds (checkpoint prepare_indicator_plan, rule all's target lambda)
@@ -270,22 +274,33 @@ def current_indicator_request(experiment_root, calculations, anchor):
         # from this request before responses complete, and params.request is
         # re-resolved (this time via the v2-complete branch above) once the
         # job actually runs, so the two resolutions must hash identically.
-        intent = read_simulation_intent_v2(root)
+        record = read_simulation_intent_v2(root)
+        schema = "simulation/3"
+    else:
+        raise IndicatorsOnlySimulationUnavailable(
+            f"{root.name}: no frozen simulation intent; simulate the experiment first"
+        )
+    environment = resolve_indicator_environment()
+    validation = return_level_validation.build_declaration()
+    code = _indicator_code_inventory()
+    requests = []
+    for calculations in calculation_sets:
         request = indicator_request(
-            intent["simulation_id"],
+            record["simulation_id"],
             calculations,
             anchor,
-            resolve_indicator_environment(),
-            return_level_validation.build_declaration(),
+            environment,
+            validation,
+            code_inventory=code,
         )
-        request["simulation_schema_version"] = "simulation/3"
-        return request
-    raise IndicatorsOnlySimulationUnavailable(
-        f"{root.name}: no frozen simulation intent; simulate the experiment first"
-    )
+        request["simulation_schema_version"] = schema
+        requests.append(request)
+    return requests
 
 
-def indicator_request(simulation_id, calculations, anchor, environment, validation):
+def indicator_request(
+    simulation_id, calculations, anchor, environment, validation, *, code_inventory=None
+):
     """Compute a scheduling request before response values or reference months exist.
 
     ``calculations`` are resolved set records; they are sorted by indicator key so
@@ -304,23 +319,7 @@ def indicator_request(simulation_id, calculations, anchor, environment, validati
     return_level_validation.verify_declaration(
         validation, return_level_validation.load_report_bytes()
     )
-    directory = Path(__file__).parent
-    repo = directory.parents[1]
-    indicator_root = repo / "blueearth_cst/indicators"
-    # Trusted sets are imported dynamically; inventory execution sources explicitly.
-    # Independent checkers have fresh attribution in verification receipts.
-    sources = ["blueearth_cst/experiment/indicator_plan.py"]
-    sources.extend(
-        path.relative_to(repo).as_posix()
-        for path in indicator_root.rglob("*.py")
-        if path.name not in {"checks.py", "checking.py"}
-    )
-    excluded = [
-        path.relative_to(repo).as_posix()
-        for path in indicator_root.rglob("*.py")
-        if path.name in {"checks.py", "checking.py"}
-    ]
-    code = repository_code_inventory(repo, sources, excluded=excluded)
+    code = _indicator_code_inventory() if code_inventory is None else code_inventory
     return {
         "schema_version": "indicator-request/4",
         "simulation_id": simulation_id,
@@ -334,6 +333,25 @@ def indicator_request(simulation_id, calculations, anchor, environment, validati
         "indicator_environment": environment,
         "return_level_validation": validation,
     }
+
+
+def _indicator_code_inventory():
+    """Observe the full indicator execution closure, including dynamic sets."""
+    repo = Path(__file__).resolve().parents[2]
+    indicator_root = repo / "blueearth_cst/indicators"
+    sources = ["blueearth_cst/experiment/indicator_plan.py"]
+    sources.extend(
+        path.relative_to(repo).as_posix()
+        for path in indicator_root.rglob("*.py")
+        if path.name not in {"checks.py", "checking.py"}
+    )
+    # Independent checkers have fresh attribution in verification receipts.
+    excluded = [
+        path.relative_to(repo).as_posix()
+        for path in indicator_root.rglob("*.py")
+        if path.name in {"checks.py", "checking.py"}
+    ]
+    return repository_code_inventory(repo, sources, excluded=excluded)
 
 
 def _collection(simulation):

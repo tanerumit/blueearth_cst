@@ -41,18 +41,30 @@ PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", aft
 DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=max(len(INDICATOR_CALCULATIONS), 1), summary="compute and publish each immutable indicator set from retained responses")
 
 
+_INDICATOR_REQUESTS = None
+_VERIFIED_INDICATOR_PLANS = {}
+
+
 def _current_indicator_requests(wc=None):
     """Map each distinct request's short digest to the request itself."""
-    from blueearth_cst.experiment.indicator_plan import current_indicator_request
+    from blueearth_cst.experiment.indicator_plan import current_indicator_requests
 
+    global _INDICATOR_REQUESTS
+    # Always ask Snakemake first: an incomplete simulation checkpoint must defer
+    # expansion, and a failed resolution must never populate the scheduling cache.
     _frozen_simulation(wc)
+    if _INDICATOR_REQUESTS is not None:
+        return _INDICATOR_REQUESTS
+    resolved = current_indicator_requests(exp_dir, INDICATOR_CALCULATIONS, INDICATOR_ANCHOR)
     requests = {}
-    for records in INDICATOR_CALCULATIONS:
-        request = current_indicator_request(exp_dir, records, INDICATOR_ANCHOR)
+    for records, request in zip(INDICATOR_CALCULATIONS, resolved, strict=True):
         identity = short_digest(content_sha256(request))
         requests[identity] = request
         register_indicator_context("indicator_request_id", identity, [item.set_id for item in matching_sets(INDICATOR_SETS, records)])
-    return requests
+    # Per-process scheduling only. Rule execution/publication retain their fresh
+    # code, response and environment checks; subsequent invocations start empty.
+    _INDICATOR_REQUESTS = requests
+    return _INDICATOR_REQUESTS
 
 
 # 4.07  prepare_indicator_plan
@@ -85,8 +97,14 @@ def _selected_indicator_outputs(wc):
     from blueearth_cst.experiment.indicator_plan import read_indicator_set, verify_indicator_plan
     outputs = []
     for identity, request in _current_indicator_requests(wc).items():
-        checkpoints.prepare_indicator_plan.get(indicator_request_id=identity)
-        plan = verify_indicator_plan(exp_dir, request)
+        path = checkpoints.prepare_indicator_plan.get(indicator_request_id=identity).output[0]
+        # Rebuilt checkpoints invalidate validation even with preserved mtimes.
+        # Cache only completed, successfully verified plans for these exact bytes.
+        stored = read_canonical_json(Path(path))
+        key = (identity, content_sha256(stored))
+        if key not in _VERIFIED_INDICATOR_PLANS:
+            _VERIFIED_INDICATOR_PLANS[key] = verify_indicator_plan(exp_dir, request)
+        plan = _VERIFIED_INDICATOR_PLANS[key]
         if Path(plan["targets"]["manifest"]).exists():
             read_indicator_set(exp_dir, Path(plan["targets"]["manifest"]))
         outputs.extend(plan["targets"].values())

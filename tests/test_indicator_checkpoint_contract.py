@@ -14,18 +14,20 @@ import os
 import re
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
+import yaml
 
-from tests._v2_experiment import RUN_IDS, build_v2_experiment
+from tests._v2_experiment import RUN_IDS, build_v2_experiment, default_responses
 
 pytestmark = pytest.mark.workflow_contract
 
 REPO = Path(__file__).resolve().parents[1]
 
 
-def _simulate(experiment, *extra):
+def _simulate(experiment, *extra, target="indicators"):
     environment = os.environ.copy()
     environment.pop("SNAKEMAKE_PROFILE", None)
     environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
@@ -35,8 +37,7 @@ def _simulate(experiment, *extra):
             str(REPO / "scripts/simulate_system.py"),
             "--config",
             str(experiment.config),
-            "--target",
-            "indicators",
+            *(["--target", target] if target else []),
             "--cores",
             "1",
             *extra,
@@ -70,12 +71,34 @@ def _tamper_keeping_timestamps(root):
 
 def test_a_dry_run_writes_nothing_and_a_stale_response_is_refused(tmp_path):
     """Both happen before any project writer is launched, so on every platform."""
-    experiment = build_v2_experiment(tmp_path)
+    responses = default_responses()
+    discharge = {
+        **responses.variables[0],
+        "variable": "q",
+        "locations": ["9", "2"],
+        "units": "m3 s-1",
+    }
+    experiment = build_v2_experiment(
+        tmp_path,
+        replace(responses, variables=[*responses.variables, discharge]),
+        capacity=4,
+    )
     root = experiment.root
+    settings = experiment.config.parent / "simulate_system.yml"
+    settings.write_text(
+        yaml.safe_dump(
+            {
+                "experiment_name": root.name,
+                "operations": ["indicators"],
+                "indicator_sets": ["default", "flow_regime"],
+            }
+        ),
+        encoding="utf-8",
+    )
 
-    code, output = _simulate(experiment, "--dry-run")
+    code, output = _simulate(experiment, "--dry-run", target=None)
     assert code == 0, output
-    assert re.search(r"prepare_indicator_plan\s+1", output), output
+    assert re.search(r"prepare_indicator_plan\s+2", output), output
     assert not (root / "_engine/indicator_requests").exists()
     assert not (root / "_engine/indicator_sets").exists()
     assert not (root / "results/indicator_sets").exists()
@@ -83,7 +106,7 @@ def test_a_dry_run_writes_nothing_and_a_stale_response_is_refused(tmp_path):
     # Refused before any job is scheduled. A corrupt publication's refusal is
     # pinned in-process by test_indicator_plan_v2, at a fraction of the cost.
     _tamper_keeping_timestamps(root)
-    code, output = _simulate(experiment)
+    code, output = _simulate(experiment, target=None)
     assert code != 0, output
     assert "bytes differ" in output, output
     assert "Job stats:" not in output, output

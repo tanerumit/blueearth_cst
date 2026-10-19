@@ -199,6 +199,11 @@ pixi run python scripts/run_workflows.py --config test_case/project_config_rapid
 ```
 
 Preflights run immediately before their consumer, after preceding producers.
+When simulation is enabled, the runner announces experiment preparation and shows
+elapsed-time notices during long waits. Its change checks compare source YAML,
+catalog root locations and input/code identities without loading HydroMT. The
+consuming workflows perform HydroMT catalog and adapter validation. See
+[startup checks and compatibility](docs/site/toolbox-reference/retained-handoffs.qmd#startup-input-checks).
 Generation uses the owned all-workflow runner, which may be configured with only
 WF3 enabled. Simulation must use its dedicated runner or
 the all-workflow runner; bare `simulate_system.smk` invocation is unsupported.

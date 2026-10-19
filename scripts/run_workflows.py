@@ -31,6 +31,7 @@ import textwrap
 import time
 import uuid
 from collections.abc import Mapping
+from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -61,7 +62,10 @@ from blueearth_cst.shared.provenance import (  # noqa: E402
     file_sha256,
     toolbox_identity,
 )
-from blueearth_cst.shared.run_log_core import RUN_WARNING_TALLY_ENV  # noqa: E402
+from blueearth_cst.shared.run_log_core import (  # noqa: E402
+    RUN_WARNING_TALLY_ENV,
+    _Heartbeat,
+)
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _ANSI_FAIL,
     ADVANCED_SETTINGS,
@@ -594,7 +598,11 @@ def _unusual_exit_diagnosis(exit_code: int | None) -> str | None:
 
 
 def _console_block(
-    head: str, groups: list[tuple[str, list[Any]]], *, close: bool = False
+    head: str,
+    groups: list[tuple[str, list[Any]]],
+    *,
+    close: bool = False,
+    include_banner: bool = True,
 ) -> str:
     """A banner, then labelled groups of rows.
 
@@ -613,7 +621,7 @@ def _console_block(
     """
     pairs = [row for _, rows in groups for row in rows if isinstance(row, tuple)]
     width = max((len(key) for key, _ in pairs), default=0)
-    lines = _banner(head)
+    lines = _banner(head) if include_banner else []
     for label, rows in groups:
         lines.extend(["", *_wrap_console(label, initial="  ", continuation="  ")])
         if rows and not any(isinstance(row, tuple) for row in rows):
@@ -873,6 +881,7 @@ def _opening_block(
     dry_run: bool,
     flags: Mapping[str, bool],
     experiment: tuple[str, str | None] | None = None,
+    include_banner: bool = True,
 ) -> str:
     """The start-of-invocation block: which run this is, and what will run.
 
@@ -928,7 +937,7 @@ def _opening_block(
         groups.append(
             (f"nothing to invoke -- 0 of {total} workflows are enabled here", [])
         )
-    return _console_block("run_workflows", groups)
+    return _console_block("run_workflows", groups, include_banner=include_banner)
 
 
 def _closing_block(
@@ -1139,6 +1148,35 @@ def run(
         raise
 
 
+@contextmanager
+def _preparation_progress(enabled: bool):
+    """Announce the runner before experiment imports and report long waits."""
+    heartbeat = None
+    try:
+        print("\n" + "\n".join(_banner("run_workflows")), flush=True)
+        if enabled:
+            print("\n  Preparing configuration and experiment checks...", flush=True)
+            heartbeat = _Heartbeat("Workflow preparation", sys.stderr).start()
+    except Exception as exc:  # noqa: BLE001 -- reporting must never prevent admission
+        with suppress(OSError, ValueError):
+            print(
+                f"(preparation output unavailable: {exc})", file=sys.stderr, flush=True
+            )
+    try:
+        yield
+    finally:
+        if heartbeat is not None:
+            try:
+                heartbeat.stop()
+            except Exception as exc:  # noqa: BLE001 -- preserve the admission outcome
+                with suppress(OSError, ValueError):
+                    print(
+                        f"(preparation status unavailable: {exc})",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+
+
 @execution_outputs.capture_launch
 def _run_owned(
     config_path: str,
@@ -1187,27 +1225,32 @@ def _run_owned(
     invocation_history.update(history_path, history)
     reservation_context = None
     try:
-        if not flags["simulate_system"]:
-            if new_experiment or note is not None or recover_reservation:
-                raise ValueError("experiment flags require enabled simulate_system")
-        else:
-            from blueearth_cst.experiment.reservation_context import admit_context_owned
-            from blueearth_cst.experiment.simulation_runner import simulation_command
+        with _preparation_progress(flags["simulate_system"]):
+            if not flags["simulate_system"]:
+                if new_experiment or note is not None or recover_reservation:
+                    raise ValueError("experiment flags require enabled simulate_system")
+            else:
+                from blueearth_cst.experiment.reservation_context import (
+                    admit_context_owned,
+                )
+                from blueearth_cst.experiment.simulation_runner import (
+                    simulation_command,
+                )
 
-            simulation_command(config_path, list(simulation_targets), cores, extra)
-            reservation_context = admit_context_owned(
-                Path(config_path),
-                REPO_ROOT,
-                project_dir,
-                history["invocation_id"],
-                execute_generation=flags["generate_scenarios"],
-                execute_model=flags["build_model"],
-                new_experiment=new_experiment,
-                note=note,
-                recover=recover_reservation,
-                preview=manifest["dry_run"] or "--unlock" in extra,
-                announce=False,
-            )
+                simulation_command(config_path, list(simulation_targets), cores, extra)
+                reservation_context = admit_context_owned(
+                    Path(config_path),
+                    REPO_ROOT,
+                    project_dir,
+                    history["invocation_id"],
+                    execute_generation=flags["generate_scenarios"],
+                    execute_model=flags["build_model"],
+                    new_experiment=new_experiment,
+                    note=note,
+                    recover=recover_reservation,
+                    preview=manifest["dry_run"] or "--unlock" in extra,
+                    announce=False,
+                )
     except BaseException as exc:
         invocation_history.finish(history_path, history, exit_code=None, error=exc)
         raise
@@ -1268,6 +1311,7 @@ def _run_owned(
                 experiment=(reservation_context.name, reservation_context.action)
                 if reservation_context is not None
                 else None,
+                include_banner=False,
             ),
             flush=True,
         )

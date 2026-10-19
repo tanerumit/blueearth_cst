@@ -20,6 +20,34 @@ indicator request creates another indicator set from retained responses without
 rerunning Wflow. Published products are validated before reuse and are not
 silently overwritten.
 
+## Startup input checks
+
+When WF4 is enabled, the all-workflow runner checks the experiment request before launching WF0,
+then rechecks inputs before each enabled workflow handoff. These checks compare configuration,
+templates, local input hashes and scientific code identities. Catalog checks compare parsed source
+YAML and its root location: explicit `meta.root`, the first existing `meta.roots` candidate, or the
+catalog directory. A newly available preferred root is therefore detected even when the YAML bytes
+have not changed. Unchanged YAML bytes reuse parsed documents; files and root locations are read again.
+
+The launcher does not load HydroMT for these checks. Catalog expansion, driver/adapter validation and
+forcing-unit verification occur in the consuming workflows. Invalid adapter definitions can therefore
+be reported when their workflow starts rather than during experiment admission.
+
+New reservations use `experiment-request/2`, whose catalog entries retain source YAML and root context.
+Version 1 records remain readable and keep their original bytes and hashes. Cross-version request
+comparison projects their retained catalogs to the same source/root view. Other scientific fields,
+including producer code, still have to match. A legacy catalog whose materialized root differs from its
+current source root is refused rather than guessed or rewritten.
+
+**Compatibility after deferring HydroMT imports:** moving the imports into the WF3/WF4 consumers changes
+the fingerprints of `generation_sources.py` and `wf4_ancillary_descriptor.py`.
+The scientific inventory intentionally hashes full source
+contents, including imports. An existing full-pipeline experiment created with the earlier fingerprint
+therefore needs `--new-experiment`; its records and results remain intact. New collection identities
+change, and automatic seeds can change with them. The forcing conversions themselves are unchanged.
+Existing records and retained indicator results remain readable. Re-creating a scientific stage with
+changed code remains subject to its normal immutable-identity checks.
+
 For a stable post-processing path, WF4 publishes each selected indicator set to
 `experiments/<experiment_name>/results/indicator_sets/<set-id>/` after each invocation, including reuse.
 Each set's committed inventory is `_engine/indicator_sets/names/<set-id>/current.json` within the

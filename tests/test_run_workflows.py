@@ -178,6 +178,80 @@ def test_all_true_invokes_five_in_fixed_order(tmp_path, capture_runs):
     ]
 
 
+def test_preparation_is_announced_before_experiment_imports(
+    tmp_path, capture_runs, monkeypatch, capsys
+):
+    import builtins
+
+    original_import = builtins.__import__
+    before_import = []
+
+    def observe_import(name, *args, **kwargs):
+        if name == "blueearth_cst.experiment.reservation_context":
+            before_import.append(capsys.readouterr().out)
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", observe_import)
+    cfg = tmp_path / "c.yml"
+    _write_cfg(cfg, {name: "true" for name in rw.WORKFLOW_ORDER})
+    assert rw.run(str(cfg), cores=1, extra=[]) == 0
+    assert before_import
+    assert "Preparing configuration and experiment checks" in before_import[0]
+    output = "".join(before_import) + capsys.readouterr().out
+    assert output.count("\n  run_workflows\n") == 1
+
+
+def test_preparation_watchdog_stops_when_admission_fails(
+    tmp_path, capture_runs, monkeypatch
+):
+    from blueearth_cst.experiment import reservation_context
+
+    stopped = []
+    original_stop = rw._Heartbeat.stop
+
+    def stop(heartbeat):
+        original_stop(heartbeat)
+        stopped.append(not heartbeat._thread.is_alive())
+
+    def refuse(*args, **kwargs):
+        raise ValueError("changed request")
+
+    monkeypatch.setattr(rw._Heartbeat, "stop", stop)
+    monkeypatch.setattr(reservation_context, "admit_context_owned", refuse)
+    cfg = tmp_path / "c.yml"
+    _write_cfg(cfg, {name: "true" for name in rw.WORKFLOW_ORDER})
+    with pytest.raises(ValueError, match="changed request"):
+        rw.run(str(cfg), cores=1, extra=[])
+    assert stopped == [True]
+    assert _read_only_manifest(tmp_path / "project")["status"] == "failed"
+
+
+@pytest.mark.parametrize("failure", ["banner", "watchdog_start", "watchdog_stop"])
+def test_preparation_reporting_never_masks_admission_errors(monkeypatch, failure):
+    def unavailable(*args, **kwargs):
+        raise OSError("console unavailable")
+
+    class Watchdog:
+        def __init__(self, *args):
+            pass
+
+        def start(self):
+            if failure == "watchdog_start":
+                unavailable()
+            return self
+
+        def stop(self):
+            if failure == "watchdog_stop":
+                unavailable()
+
+    monkeypatch.setattr(rw, "_Heartbeat", Watchdog)
+    if failure == "banner":
+        monkeypatch.setattr(rw, "_banner", unavailable)
+    with pytest.raises(ValueError, match="admission failed"):
+        with rw._preparation_progress(True):
+            raise ValueError("admission failed")
+
+
 # --- §7(g) assertion 2: --keep-going on projections only (flag parity) -------
 
 

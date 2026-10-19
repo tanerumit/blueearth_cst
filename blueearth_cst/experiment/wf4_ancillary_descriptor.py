@@ -6,7 +6,6 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-import hydromt
 import numpy as np
 import xarray as xr
 import yaml
@@ -339,6 +338,8 @@ def resolve_wf4_preparation(
     oro_path: Path | None = None,
 ) -> dict[str, Any]:
     """Bind verified shared elevation and its relative HydroMT catalog to WF4."""
+    import hydromt
+
     from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
         resolve_preparation_payloads,
     )

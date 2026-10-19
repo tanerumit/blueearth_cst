@@ -351,48 +351,46 @@ def test_public_runner_reserves_before_first_producer(
     )
 
 
-@pytest.mark.parametrize("failed", [False, True])
-def test_catalog_resolution_keeps_warnings_and_failed_diagnostics(
-    pending, monkeypatch, capfd, catalog_console, failed
-):
-    import hydromt
-
-    catalog_console.addHandler(logging.StreamHandler(sys.stderr))
-
-    def catalog(*args, **kwargs):
-        catalog_console.info("Parsing data catalog from tiny-catalog.yml")
-        catalog_console.warning("WARNING: catalog source diagnostic")
-        if failed:
-            raise ValueError("catalog resolution failed")
-        return type("ResolvedCatalog", (), {"to_dict": lambda self: {}})()
-
-    monkeypatch.setattr(hydromt, "DataCatalog", catalog)
-    if failed:
-        with pytest.raises(ValueError, match="catalog resolution failed"):
-            request_module._catalog_value(pending.catalog)
-    else:
-        request_module._catalog_value(pending.catalog)
-    captured = capfd.readouterr()
-    output = captured.out + captured.err
-    assert "WARNING: catalog source diagnostic" in output
-    assert ("Parsing data catalog" in output) is failed
-    assert "Logging error" not in output
-
-
 @pytest.mark.process_isolation
-def test_catalog_metadata_resolution_is_quiet_in_fresh_process(pending):
-    """Use HydroMT's own startup handler, without pytest's logging setup."""
+@pytest.mark.parametrize("state", ["pending", "simulation_bound"])
+def test_admission_and_recheck_do_not_import_hydromt(pending, retained, state):
+    """Block direct and transitive imports in a clean interpreter."""
+    program = """
+import importlib.abc
+import sys
+import uuid
+from pathlib import Path
+
+class BlockHydroMT(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == 'hydromt' or fullname.startswith('hydromt.'):
+            raise AssertionError('admission imported HydroMT')
+
+sys.meta_path.insert(0, BlockHydroMT())
+from blueearth_cst.experiment.reservation_context import admit_context_owned
+from blueearth_cst.shared.workflow_config_snapshot import archive_lock
+
+config, root = map(Path, sys.argv[1:3])
+generation = sys.argv[3] == 'pending'
+with archive_lock(root, 'project-execution'):
+    context = admit_context_owned(
+        config, Path.cwd(), root, uuid.uuid4().hex,
+        execute_generation=generation, announce=False,
+    )
+    context.recheck()
+assert 'hydromt' not in sys.modules
+assert context.request['schema_version'] == 'experiment-request/2'
+print('admission checks complete')
+"""
+    case = pending if state == "pending" else retained
     result = subprocess.run(
         [
             sys.executable,
             "-c",
-            "from blueearth_cst.experiment.reservation_request import _catalog_value; "
-            "import sys; "
-            "values = [_catalog_value(sys.argv[1]) for _ in range(3)]; "
-            "assert values[0] == values[1] == values[2]; "
-            "assert 'elevation' in values[0]['resolved_sources']; "
-            "print('catalog checks complete')",
-            str(pending.catalog),
+            program,
+            str(case.config),
+            str(case.project),
+            state,
         ],
         cwd=REPOSITORY,
         capture_output=True,
@@ -400,7 +398,7 @@ def test_catalog_metadata_resolution_is_quiet_in_fresh_process(pending):
         timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-    assert result.stdout.strip() == "catalog checks complete"
+    assert result.stdout.strip() == "admission checks complete"
     assert result.stderr == ""
 
 

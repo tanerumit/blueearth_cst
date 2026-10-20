@@ -427,6 +427,30 @@ def test_a_changed_native_response_byte_refuses_planning(experiment):
         _plan(experiment.root)
 
 
+@pytest.mark.parametrize("document", ["intent", "response_inventory", "collection"])
+def test_verified_metadata_still_requires_the_exact_referenced_bytes(
+    experiment, monkeypatch, document
+):
+    from blueearth_cst.experiment import indicator_plan
+
+    root = experiment.root
+    request = current_indicator_request(root, default_calculations(["gwr"]), "YS-JAN")
+    validate = indicator_plan.read_simulation_v2
+
+    def changed_after_validation(path):
+        ready = validate(path)
+        if document == "collection":
+            target = experiment.collection_marker
+        else:
+            target = root.parent.parent / ready[document]["path"]
+        target.write_bytes(target.read_bytes() + b"\n")
+        return ready
+
+    monkeypatch.setattr(indicator_plan, "read_simulation_v2", changed_after_validation)
+    with pytest.raises(ValueError, match="bytes differ|size differs"):
+        build_indicator_plan(root, request, _observed_code=request["code_inventory"])
+
+
 def test_a_tampered_published_table_is_refused_on_read(published):
     root, marker, result = published
     read_indicator_set(root, marker)

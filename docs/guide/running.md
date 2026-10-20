@@ -224,6 +224,15 @@ including elapsed-time updates such as `  Workflow preparation 0:00:15 elapsed`.
 Reused WF3 collections use the same green `All requested files are present and up to date` verdict
 as the other workflows, without separate scenario-request or reuse rows.
 
+Change checks across WF0–WF4 use the canonical configuration, file-content, code-inventory and
+environment helpers. Each workflow compares its consumed inputs; reusable observations are shared
+within a checking phase, with no persistent check cache or alternate fingerprint format.
+
+WF4 observes scientific inputs afresh on each invocation. A completed simulation reuses its frozen
+native output layout after model, code, environment, preparation, settings and selected runs pass
+their checks, avoiding Julia startup for layout reconstruction. Indicator sets share fresh code and
+environment observations within each planning or publication phase; execution still checks independently.
+
 WF4 retains an experiment's original simulation identity and provenance when only execution-diagnostic
 code changes. Scientific input or simulation-code changes still require a new experiment. A refusal
 before workflow execution skips indicator publication; partial job failures still allow completed

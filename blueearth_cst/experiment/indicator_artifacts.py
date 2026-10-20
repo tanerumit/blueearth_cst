@@ -326,13 +326,17 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
             "response_inventory_sha256": manifest["response_inventory"]["sha256"],
         }
     else:
-        from blueearth_cst.experiment.response_inventory import (
-            read_response_inventory_v2,
-        )
         from blueearth_cst.experiment.simulation_record import read_simulation_v2
+        from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
 
-        read_simulation_v2(root)
-        inventory = read_response_inventory_v2(root)
+        # The canonical readiness check validates native bytes and selectors.
+        # Follow its checked inventory reference without rebuilding them twice.
+        simulation = read_simulation_v2(root)
+        inventory = read_canonical_json(
+            resolve_file_reference(
+                simulation["response_inventory"], {"project_root": root.parent.parent}
+            )
+        )
     runs = {item["run_id"] for item in inventory["series"]}
     group_ids = {row["group_id"] for row in members}
     if {row["run_id"] for row in members} != runs or any(

@@ -15,6 +15,7 @@ from blueearth_cst.experiment.console_reporting import (
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.indicator_plan import (
     current_indicator_request,
+    current_indicator_requests,
     indicator_anchor,
     verify_indicator_plan,
 )
@@ -54,19 +55,35 @@ def publish_selected_sets(
         retained_variables=retained_variables,
         legacy_context="export",
     )
+    # Each publication phase observes live code/environment once for all sets.
+    # If one request is invalid, retain the independent per-set failure path.
+    try:
+        requests = current_indicator_requests(
+            root,
+            [indicator_sets.calculation_records(item.indicators) for item in sets],
+            indicator_anchor(project),
+        )
+    except (OSError, KeyError, ValueError):
+        requests = None
     outcomes = []
-    for item in sets:
+    for index, item in enumerate(sets):
         try:
             previous = read_current_publication(root, item.set_id)["publication_id"]
         except (OSError, KeyError, ValueError, NamedExportError):
             previous = None
         try:
-            request = current_indicator_request(
-                root,
-                indicator_sets.calculation_records(item.indicators),
-                indicator_anchor(project),
+            request = (
+                requests[index]
+                if requests is not None
+                else current_indicator_request(
+                    root,
+                    indicator_sets.calculation_records(item.indicators),
+                    indicator_anchor(project),
+                )
             )
-            plan = verify_indicator_plan(root, request)
+            plan = verify_indicator_plan(
+                root, request, _observed_code=request["code_inventory"]
+            )
             counts = result_counts(
                 root, read_canonical_json(Path(plan["targets"]["manifest"]))
             )

@@ -364,7 +364,6 @@ def _indicator_code_inventory():
 
 
 def _collection(simulation):
-    from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
     from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
 
     root = Path(simulation["_root"])
@@ -372,7 +371,9 @@ def _collection(simulation):
     path = resolve_file_reference(
         simulation["collection"]["manifest"], {"project_root": project}
     )
-    collection = read_collection_v2(path)
+    # read_simulation_v2 already validated this complete collection closure.
+    # Its content-addressed marker still has to match before reusing metadata.
+    collection = read_canonical_json(path)
     intent = read_canonical_json(
         resolve_file_reference(
             collection["intent"],
@@ -442,12 +443,24 @@ def _native_runs_v2(root, inventory):
     return result
 
 
-def build_indicator_plan(experiment_root, request):
-    """Resolve units, references and final identity from complete retained responses."""
+def build_indicator_plan(experiment_root, request, *, _observed_code=None):
+    """Resolve units, references and final identity from complete retained responses.
+
+    ``_observed_code`` is a fresh observation shared only within the caller's
+    current planning/publication phase. Execution callers omit it and recheck.
+    """
     root = Path(experiment_root).resolve()
     _require_v2(root)
     simulation = read_simulation_v2(root)
-    intent_v2 = read_simulation_intent_v2(root)
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+
+    # Readiness has just checked the full intent, collection and native response
+    # closure. Reuse those verified documents, checking their exact bytes against
+    # the readiness references instead of walking the same closures again.
+    anchors = {"project_root": root.parent.parent}
+    intent_v2 = read_canonical_json(
+        resolve_file_reference(simulation["intent"], anchors)
+    )
     simulation = {
         **simulation,
         "_root": root,
@@ -465,11 +478,14 @@ def build_indicator_plan(experiment_root, request):
         request["water_year_anchor"],
         request["indicator_environment"],
         request["return_level_validation"],
+        code_inventory=_observed_code,
     )
     live["simulation_schema_version"] = "simulation/3"
     if live != request:
         raise IndicatorPlanStale("indicator declarations or invoked code changed")
-    inventory = read_response_inventory_v2(root)
+    inventory = read_canonical_json(
+        resolve_file_reference(simulation["response_inventory"], anchors)
+    )
     collection, intent, rows = _collection(simulation)
     source_descriptors = [item["descriptor"] for item in collection["series"]]
     if any(
@@ -719,12 +735,12 @@ def _rebased_plan(stored, root, expected):
     return rebased
 
 
-def verify_indicator_plan(experiment_root, request):
+def verify_indicator_plan(experiment_root, request, *, _observed_code=None):
     """Validate existing plans even when timestamps would schedule no job."""
     root = Path(experiment_root).resolve()
     path = _indicator_request_path(root, content_sha256(request))
     stored = read_canonical_json(path)
-    expected = build_indicator_plan(root, request)
+    expected = build_indicator_plan(root, request, _observed_code=_observed_code)
     if _rebased_plan(stored, root, expected) != expected:
         raise IndicatorPlanStale(
             f"indicator request expected={expected['request_sha256']} "

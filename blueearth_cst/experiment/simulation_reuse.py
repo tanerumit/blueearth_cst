@@ -1,5 +1,6 @@
 """Reuse frozen responses across changes confined to execution diagnostics."""
 
+from pathlib import Path
 from typing import Any
 
 from blueearth_cst.experiment.simulation_record import (
@@ -42,3 +43,110 @@ def check_simulation_reuse(retained: dict[str, Any], current: dict[str, Any]) ->
     if code_matches and _v2_simulation_id(comparable) == retained["simulation_id"]:
         return
     raise SimulationFrozenError("simulation inputs changed; use a new experiment name")
+
+
+def check_completed_simulation_inputs(
+    experiment_root,
+    *,
+    project_root,
+    model_root,
+    collection_path,
+    collection,
+    resolution_mode,
+    preparation,
+    simulation_window,
+    julia_command,
+    include_unperturbed=True,
+    _ready_simulation=None,
+) -> None:
+    """Recheck a completed simulation without regenerating its native layout.
+
+    Wflow's output layout is derived from the model and installed simulator.
+    Retain that frozen layout only if freshly observed model bytes, code,
+    environment, preparation, settings and selected collection still match.
+    This saves Julia startup/JIT without caching any input observation.
+    """
+    from blueearth_cst.experiment.content_identity import (
+        content_sha256,
+        read_canonical_json,
+        repository_code_inventory,
+        stage_environment,
+    )
+    from blueearth_cst.experiment.simulation_record import (
+        _assert_model_reference_current,
+        read_simulation_v2,
+        simulation_intent_v2,
+    )
+    from blueearth_cst.experiment.simulation_runs import selected_run_ids
+    from blueearth_cst.experiment.wf4_ancillary_descriptor import (
+        preparation_identity_v2,
+    )
+    from blueearth_cst.experiment.write_model_reference import build_model_reference
+    from blueearth_cst.shared.workflow_config_snapshot import (
+        file_reference,
+        resolve_file_reference,
+    )
+
+    root = Path(experiment_root).resolve()
+    project = Path(project_root).resolve()
+    model = Path(model_root).resolve()
+    ready = read_simulation_v2(root) if _ready_simulation is None else _ready_simulation
+    retained = read_canonical_json(
+        resolve_file_reference(ready["intent"], {"project_root": project})
+    )
+    reference = build_model_reference(model, project)
+    _assert_model_reference_current(
+        retained["documents"]["model_reference"], reference, model
+    )
+    repo = Path(__file__).resolve().parents[2]
+    code = repository_code_inventory(
+        repo,
+        [
+            "blueearth_cst/experiment/simulator_adapter.py",
+            "blueearth_cst/experiment/downscale_climate_forcing.py",
+            "blueearth_cst/experiment/run_wflow_batch.jl",
+            "blueearth_cst/shared/wflow_progress.jl",
+            "blueearth_cst/shared/resource_timing.jl",
+            "blueearth_cst/shared/run_logged.py",
+        ],
+    )
+    environment = stage_environment(
+        ["hydromt-wflow", "xarray", "netCDF4", "pyproj"],
+        julia_manifest=repo / "Manifest.toml",
+        julia_command=julia_command,
+    )
+    documents = {
+        "model_reference": reference,
+        "settings": {"simulation_window": dict(simulation_window)},
+        "environment": environment,
+        "simulator_adapter_code": code,
+        "response_request": retained["documents"]["response_request"],
+        "preparation": preparation,
+    }
+    if not include_unperturbed:
+        documents["settings"]["include_unperturbed"] = False
+    selection = {
+        "resolution_mode": resolution_mode,
+        "manifest": file_reference(collection_path, "project_root", project),
+        "collection_id": collection["collection_id"],
+        "collection_revision": collection["collection_revision"],
+        "run_ids": selected_run_ids(
+            collection, collection_path, include=include_unperturbed
+        ),
+    }
+    simulator = {
+        "name": "wflow",
+        "revision": content_sha256(
+            {"julia:Wflow": environment["packages"]["julia:Wflow"]}
+        ),
+    }
+    current = simulation_intent_v2(
+        root.name,
+        selection,
+        simulator,
+        documents,
+        preparation_identity_v2(
+            preparation, project_root=project, experiment_root=root
+        ),
+    )
+    check_simulation_reuse(retained, current)

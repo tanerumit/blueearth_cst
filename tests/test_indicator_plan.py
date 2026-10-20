@@ -240,8 +240,10 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
 
 def test_v2_indicator_plan_reads_collection_from_intent(tmp_path, monkeypatch):
     from blueearth_cst.experiment import indicator_plan
+    from blueearth_cst.experiment.content_identity import atomic_record
+    from blueearth_cst.shared.workflow_config_snapshot import file_reference
 
-    root = tmp_path / "experiment"
+    root = tmp_path / "experiments/experiment"
     (root / "_engine").mkdir(parents=True)
     (root / "_engine/simulation.json").write_bytes(b"{}\n")
     request = {
@@ -259,20 +261,23 @@ def test_v2_indicator_plan_reads_collection_from_intent(tmp_path, monkeypatch):
         "collection_revision": "c" * 64,
         "manifest": {"path": "scenarios/_engine/collections/b/collection.json"},
     }
+    intent = root / "_engine/simulation_intent.json"
+    inventory = root / "_engine/response_inventory.json"
+    atomic_record(intent, {"collection": collection})
+    atomic_record(inventory, {})
     monkeypatch.setattr(
         indicator_plan,
         "read_simulation_v2",
-        lambda path: {"schema_version": "simulation/3", "simulation_id": "a" * 64},
+        lambda path: {
+            "schema_version": "simulation/3",
+            "simulation_id": "a" * 64,
+            "intent": file_reference(intent, "project_root", tmp_path),
+            "response_inventory": file_reference(inventory, "project_root", tmp_path),
+        },
     )
     monkeypatch.setattr(
-        indicator_plan,
-        "read_simulation_intent_v2",
-        lambda path: {"collection": collection},
+        indicator_plan, "indicator_request", lambda *args, **kwargs: dict(request)
     )
-    monkeypatch.setattr(
-        indicator_plan, "indicator_request", lambda *args: dict(request)
-    )
-    monkeypatch.setattr(indicator_plan, "read_response_inventory_v2", lambda path: {})
     seen = {}
 
     def stop_after_collection(simulation):

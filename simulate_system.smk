@@ -104,7 +104,8 @@ def _selected_indicator_outputs(wc):
         stored = read_canonical_json(Path(path))
         key = (identity, content_sha256(stored))
         if key not in _VERIFIED_INDICATOR_PLANS:
-            _VERIFIED_INDICATOR_PLANS[key] = verify_indicator_plan(exp_dir, request)
+            _VERIFIED_INDICATOR_PLANS[key] = verify_indicator_plan(
+                exp_dir, request, _observed_code=request["code_inventory"])
         plan = _VERIFIED_INDICATOR_PLANS[key]
         if Path(plan["targets"]["manifest"]).exists():
             read_indicator_set(exp_dir, Path(plan["targets"]["manifest"]))

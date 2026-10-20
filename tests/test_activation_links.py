@@ -115,12 +115,12 @@ def test_retained_validation_citations_still_require_their_target(
 def test_durable_links_and_similarly_named_homes_are_allowed(tmp_path, monkeypatch):
     reference = tmp_path / "dev/reference"
     reference.mkdir(parents=True)
-    for home in ("records/decisions", "tasks-archive", "records/validation"):
+    for home in ("records/decision-history", "tasks-archive", "records/validation"):
         target = tmp_path / "dev" / home / "evidence.md"
         target.parent.mkdir(parents=True)
         target.write_text("Durable evidence", encoding="utf-8")
     (reference / "guide.md").write_text(
-        "[decision](../records/decisions/evidence.md#claim)\n"
+        "[decision](../records/decision-history/evidence.md#claim)\n"
         "[archive](../tasks-archive/evidence.md)\n"
         "[validation](../records/validation/evidence.md)\n"
         "[external](https://example.org/) [section](#claim)",

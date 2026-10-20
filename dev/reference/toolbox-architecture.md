@@ -47,6 +47,22 @@ documents. `blueearth_cst/shared/workflow_archive_launch.py` owns admission and 
 `invocation_history.py`; source archives and invocation outcomes have different purposes and lifetimes.
 The all-workflow and direct simulation runners own their respective launch coverage.
 
+Captured sources retain their original bytes; generated execution views and parsed configuration
+projections serve different purposes. Do not treat a source-byte checksum as a scientific artifact
+identity. WF0–WF2 archives describe each workflow's latest captured configuration; they are not a full
+configuration history. A record alone proves neither successful execution nor a portable rerun:
+`workflow_config_snapshot.py` owns archive validation and explicit rerun path resolution.
+
+WF4 forcing elevation is project-owned ancillary data, shared by content identity rather than bundled
+into WF3 scenario collections. `experiment/shared_orography.py` owns publication and byte checks;
+`experiment/wf4_ancillary_descriptor.py` binds the checked dependency and its HydroMT reader to WF4.
+Preserving an experiment therefore also requires preserving its referenced project dependencies.
+
+For an explicitly declared managed project root, the `cst-run-control` skill owns the operational
+run-manifest schema and conformance requirements. Implement or select a conforming adapter before
+claiming that contract. Existing launcher run records do not themselves declare a root managed or
+establish conformance; keep schema details in the skill rather than duplicating them here.
+
 Do not infer broader execution guarantees from historical designs. In particular, an accepted
 scheduler-neutral run-contract proposal does not establish universal namespace fencing, resumability or
 complete coverage of arbitrary raw Snakemake launches. Consult the actual launcher and its tests before

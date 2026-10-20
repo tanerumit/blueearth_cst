@@ -53,10 +53,19 @@ only evidence with a future use. Keep historical citations distinct from complia
 | User-facing installation, configuration and usage | `docs/` |
 | Disposable notes, logs and probes | Local scratch under the layout policy |
 
-Existing decision records remain evidence, including accepted designs whose adoption is partial or
-unverified. Their original status is historical metadata. The decision index points readers to current
-guidance; do not maintain a second current rule set inside those records.
-Do not create a replacement archive merely because current wording changed.
+`dev/records/decision-history/` preserves significant historical choices and rationale, including
+accepted designs whose adoption was partial or unverified. Developers and agents may consult it to
+understand past reasoning, but must use `dev/reference/` for current decisions and compliance.
+Historical acceptance labels and imperative wording do not establish present requirements.
+
+Before retaining a decision, place effective requirements in their existing reference owner and
+unresolved implementation work with its task. Put measured verification in `records/validation/` or
+the relevant milestone. Keep historical IDs and cited sections when consumers need them; otherwise
+retain concise rationale and recover superseded implementation instructions from Git.
+The history index maps each record to its current owner. Operational instructions must not require
+reading history to discover a rule. Optional links must identify their purpose as historical rationale
+or evidence. Do not create a new history record for every reference update or retain review bundles
+merely because a decision was made.
 
 ## Retention
 

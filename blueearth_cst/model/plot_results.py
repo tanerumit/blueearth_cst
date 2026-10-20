@@ -363,7 +363,7 @@ def analyse_wflow_historical(
         ds_basin = xr.Dataset()
 
     # Section 4 (per-subcatchment climate plots) removed 2026-08-09 — see
-    # dev/records/decisions/0006-retire-subcatchment-climate-plots.md. The climate
+    # dev/reference/wf1-model-construction.md (outputs and consumers). The climate
     # a reader wants is now the map/series family under forcing/plots/.
 
     # Apply one common warm-up boundary before any hydrological summary.

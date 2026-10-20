@@ -6,7 +6,7 @@ Use [the current reference](../reference/README.md) for development and complian
 
 | Location | Retained material |
 |---|---|
-| [decisions/](decisions/index.md) | Existing design decisions, alternatives and supporting evidence |
+| [decision-history/](decision-history/index.md) | Historical choices and rationale; no current rule authority |
 | [milestones/](milestones/README.md) | Milestone specifications, acceptance evidence and historical lineage |
 | `validation/` | Measurements, numerical comparisons and qualified acceptance evidence |
 | `migrations/` | Relocation maps and source identities needed to resolve historical citations |

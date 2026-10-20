@@ -1,5 +1,10 @@
 # Experiment numbering implementation evidence
 
+Historical verification record. Instructions and authorizations below describe the original task;
+current behavior is owned by `dev/reference/dev-repository-layout.md` and the implemented runners.
+See [decision-history migration](../../migrations/decision-history-transition-2026-10-20.md)
+for the original context archive's Git recovery location.
+
 Scratch paths below use `<task-scratch>` for a root assembled from parent `.tmp/scratchpad` and
 task ID `t2610032349`. Raw gate receipts retain the exact executed command arguments.
 
@@ -207,8 +212,9 @@ relative path separately. The pin remains reachable through ordinary merge ances
 with `git show <task-tree>:<relative-path>`; archived variants additionally preserve exact Git and Windows
 bytes. The Windows design variant matches the original G2 SHA256 exactly. No review was rewritten.
 
-The [context archive](original-context.zip) retains directory context for all intra-task citations.
-Its manifest records every member hash. Incoming live citations were searched before closure; only the
+The context archive is recoverable from `5fa77b34` at
+`dev/records/decisions/experiment-numbering-2026-10-10/original-context.zip`.
+Its retained manifest records every member hash. Incoming live citations were searched before closure; only the
 two closing notes and generated board depend on the removable task home. Existing host navigation:
 `dev/reference/repo-layout.md`, linked from the root agent instructions.
 

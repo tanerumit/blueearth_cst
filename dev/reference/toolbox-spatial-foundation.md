@@ -20,6 +20,11 @@ of land/soil inputs they do not consume; changing a model build must not manufac
 `blueearth_cst/spatial/` own the producer contracts. Their shared rule parameters must describe their
 actual spatial inputs, not unrelated workflow selection or model settings.
 
+`hydrography.nc` carries the grid stack between the vector and thematic stages. Preserve its identifier
+types and nodata semantics when reading it. It is deliberately absent from the model-input catalog:
+the thematic stage alone writes the complete `spatial_catalog.yml`, avoiding two writers of one catalog.
+`products.py` and `prepare_spatial_maps.py` own that boundary.
+
 ## Spatial identities and controls
 
 `blueearth_cst/spatial/identity.py` owns stable basin, subbasin and location identifiers and capacity
@@ -28,8 +33,9 @@ translation, while the project schema and `config/advanced_settings.yml` own adm
 
 The foundation resolves each parent feature independently and snaps configured controls to the analysis
 river network. Automatic partitioning supplies fallback parents when controls do not prescribe a split.
-The implemented budget and ID capacities are enforced by the current spatial configuration and identity
-code; old ADR descriptions of per-parent versus shared budgets are historical, not a competing contract.
+`basin.delineation.max_subbasins` is a ceiling applied independently to each automatic parent partition,
+not a project-wide budget. Configuration and identity code enforce its bounds and location capacities;
+read those owners for exact defaults and limits rather than historical configuration names.
 
 The persisted location registry preserves stable spatial identifiers. Model-specific gauge positions and
 outlet-index mappings are downstream representations; do not substitute positional model output labels

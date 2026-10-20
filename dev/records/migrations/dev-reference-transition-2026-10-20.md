@@ -3,6 +3,8 @@
 For subsequent review-directory destinations and Git recovery, see
 [review-retirement-2026-10-20.md](review-retirement-2026-10-20.md).
 The table below records this transition's original destinations.
+For subsequent decision-history and validation destinations, see
+[decision-history-transition-2026-10-20.md](decision-history-transition-2026-10-20.md).
 
 Implemented for review on session-3. Main and its shared task board were not edited.
 The reference index is the current topic-ownership map. Templates are reusable starting artifacts;

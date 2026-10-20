@@ -1,11 +1,13 @@
-> **Historical design record.** Acceptance and implementation statements below describe the recorded
-> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+> **Historical decision — no current operational authority.** Dates, acceptance labels and instructions
+> below describe the recorded state. Use the [current-topic map](index.md) for rules and compliance;
+> consult this body only for historical rationale or evidence.
+> [The migration map](../migrations/decision-history-transition-2026-10-20.md) resolves old citations.
 
 # ADR 0011 — Preserve exact config sources alongside one run record
 
-- **Status:** accepted P0 decision; implementation pending
+- **Status at recording:** accepted P0 decision; implementation pending
 - **Date:** 2026-09-19
-- **Lifecycle:** maintained-current proposal; earlier drafts remain in Git history
+- **Lifecycle:** historical accepted proposal; current implementation is mapped in `index.md`
 - **Scope:** output-project archives, not the repository's `config/`
 
 ### Context

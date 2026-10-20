@@ -220,7 +220,7 @@ Numbering conventions:
   carry no number: they aggregate work rather than execute a pipeline step.
 - **Every dependency points from a lower number to a higher one**, checked against each rule's `input:` block — **`ancient()` included**. `ancient()` suppresses the timestamp rerun-trigger, not the DAG edge.
 
-**Numbers are REUSED, so a stale reference resolves to a different rule.** Read every `W.NN` in `dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` and the dated migration records **as of its date**, and translate through `dev/records/milestones/r10/rule-numbering-crosswalks.md`. Do not rewrite those archives to current numbers.
+**Numbers are REUSED, so a stale reference resolves to a different rule.** Read every `W.NN` in `dev/records/milestones/`, `dev/records/decision-history/`, `dev/LOG.md` and the dated migration records **as of its date**, and translate through `dev/records/milestones/r10/rule-numbering-crosswalks.md`. Do not rewrite those archives to current numbers.
 
 Rules:
 

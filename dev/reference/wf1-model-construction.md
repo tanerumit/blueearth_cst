@@ -34,8 +34,8 @@ The `setup_constant_pars` values land as `input.static.<name>.value` TOML scalar
 maps in `staticmaps.nc`. Preserve explicit reference choices until their scientific effect has been
 assessed; template values are not evidence of local calibration.
 
-The retained landing/precedence evidence is under
-`dev/records/decisions/0001-restore-wflow-constant-parameters/`. Inspect the resulting TOML and active
+The historical landing/precedence evidence is under
+`dev/records/validation/wflow-constant-restoration/`. Inspect the resulting TOML and active
 upstream reader when changing those bindings; the old verification does not certify a new build.
 
 ## Mutable model-root ordering

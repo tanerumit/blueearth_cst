@@ -1,5 +1,7 @@
-> **Historical design record.** Acceptance and implementation statements below describe the recorded
-> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+> **Historical decision — no current operational authority.** Dates, acceptance labels and instructions
+> below describe the recorded state. Use the [current-topic map](index.md) for rules and compliance;
+> consult this body only for historical rationale or evidence.
+> [The migration map](../migrations/decision-history-transition-2026-10-20.md) resolves old citations.
 
 ADR 0004 — Order model-root readers on a terminal build sentinel, not on a declared output
 

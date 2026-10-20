@@ -64,7 +64,7 @@ the wf1 delta demonstrably does NOT propagate into the wf3 reduction, and the wf
 slice is no longer mixed-provenance in any way that matters: it was re-recorded
 from main@03e546c on those same numbers.
 Evidence: dev/records/milestones/r09/migration_indicator-axis-columns.md §5;
-dev/records/decisions/0001-restore-wflow-constant-parameters/baseline_diffs.md.
+dev/records/validation/wflow-constant-restoration/baseline_diffs.md.
 (That paragraph describes the world before R11: both tables were byte-hashed and
 `basin_indicators.csv` still existed. Kept as written because it is the record of
 how the residual was closed, not a description of the current gate.)

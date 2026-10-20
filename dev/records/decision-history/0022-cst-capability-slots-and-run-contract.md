@@ -1,6 +1,6 @@
 ---
 title: "ADR 0022 — Use capability slots and a scheduler-agnostic resumable CST run contract"
-Status: accepted
+Status: historical (accepted at recording)
 Date: 2026-07-26
 Deciders: Ümit Taner
 Supersedes: none
@@ -13,8 +13,11 @@ Revisions:
   - 2026-07-28: revision r3 applying owner arbitration of external review round 2 (findings ext2-1 … ext2-7). Publication is made token-atomic through content-addressed objects and a single inventory compare-and-set, namespace claims exclude overlapping namespaces, the bottom-up claim is narrowed to declarative auditability, and five arbitrated findings are recorded as known limitations rather than closed by mechanism.
 ---
 
-> **Retained design, not a claim of runtime adoption.** Consult the
-> [decision-to-reference map](index.md) for current implementation boundaries.
+> **Historical accepted design — no current operational authority or blanket adoption claim.**
+> Use [toolbox-architecture.md](../../reference/toolbox-architecture.md) for present applicability and
+> the `cst-run-control` skill for the shared operational specification. The body below preserves the
+> original design, review and section identifiers, not instructions to implement it as written.
+> [The migration map](../migrations/decision-history-transition-2026-10-20.md) resolves old citations.
 
 
 <!--
@@ -29,15 +32,15 @@ after ADR 0023 moved artifacts/ to the brain-infrastructure repository.
 
 ADR 0022 — Use capability slots and a scheduler-agnostic resumable CST run contract
 
-**Reading guide.** For the architectural choice, read Context, the opening of
+**Historical reading guide.** For the architectural choice, read Context, the opening of
 Decision, and [Alternatives considered](#alternatives-considered). For a specific
 contract, start with [Capability slots](#capability-slots),
 [Manifest contract](#manifest-contract), [Identity, hashes, and namespaces](#identity-hashes-and-namespaces),
 [State, attempts, and resume](#state-attempts-and-resume), or
 [Adoption and validation](#adoption-and-validation). Read the full relevant
-contract and [Consequences](#consequences) before implementing or auditing it.
+contract and [Consequences](#consequences) when investigating this former design.
 [Review record](#review-record) is historical evidence, not a routine prerequisite.
-The length preserves the standalone run contract; this guide does not replace it.
+The length preserves cited design detail; current implementation work starts from the reference above.
 
 ### Context
 

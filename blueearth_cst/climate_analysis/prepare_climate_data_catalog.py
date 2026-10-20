@@ -110,6 +110,9 @@ def resolved_unit_interpretation(data_libs, precip_source):
             raise ValueError(
                 f"UnverifiedForcingUnits: {precip_source} precipitation/time adapter differs from reviewed binding"
             )
+    # The evidence path below is a historical citation serialized into catalog metadata.
+    # Keep that provenance stable across documentation moves; the decision-history
+    # migration map resolves it. Current admission rules: dev/reference/toolbox-forcing-units.md.
     return UnitInterpretation(
         revision="daily-catalog-hydromt1.3.1-weathergenr2.0.0/2",
         evidence=(

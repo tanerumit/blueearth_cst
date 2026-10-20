@@ -11,6 +11,7 @@ Editable branch-owned consumers were updated. Sealed specifications moved withou
 
 | Former path | Retained destination |
 |---|---|
+| `dev/reference/sealed-records.yml` | `dev/records/sealed-records.yml` |
 | `dev/reference/roadmap.md` | `dev/records/milestones/roadmap.md` |
 | `dev/reference/task-lanes.md` | `dev/records/decisions/task-lanes.md` |
 | `dev/reference/agent-routing-diagnostics.md` | `dev/records/reviews/agent-routing-diagnostics.md` |

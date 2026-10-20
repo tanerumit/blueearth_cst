@@ -84,7 +84,7 @@ remove that setting when diagnosing why a job reran.
   of when to read it; update the owning document instead of repeating its rules.
 - Follow `dev/reference/naming.md`; existing names are grandfathered. Contract renames need a
   migration note. Update every live old path/key/command reference, including docs and comments.
-  Only records with a `SUPERSEDED` banner and entry in `dev/reference/sealed-records.yml` are frozen;
+  Only records with a `SUPERSEDED` banner and entry in `dev/records/sealed-records.yml` are frozen;
   do not infer archival status from age.
 - Snakefiles use `get_config(config, key, default, optional)`: raise for missing required keys;
   return defaults for optional ones. Forward `workflow.configfiles[0]` as `config_path` to R scripts.

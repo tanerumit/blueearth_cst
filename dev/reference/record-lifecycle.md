@@ -63,7 +63,7 @@ work is tracked, and no citations require its body or identifiers. Check cited d
 A newer summary or age alone does not establish disposability. Preserve measurements, tolerances and
 individual findings when consumers depend on them.
 
-Sealed evidence is immutable under [sealed-records.yml](sealed-records.yml). An authorized relocation may
+Sealed evidence is immutable under [sealed-records.yml](../records/sealed-records.yml). An authorized relocation may
 move it unchanged and update the registry path; never rewrite its body or recalculate its hash to make
 an edited record pass. Update editable consumers and record old-to-new paths for immutable citations.
 Keep intentionally historical IDs and anchors resolvable.

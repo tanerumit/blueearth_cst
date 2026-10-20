@@ -52,6 +52,6 @@ meaning and relationships and point to those owners. If code and guidance disagr
 before claiming compliance; acceptance of a historical design does not prove implementation.
 
 Proposals belong with `dev/tasks/`, reusable artifacts in `dev/templates/`, and dated evidence in
-[records](../records/README.md). [sealed-records.yml](sealed-records.yml) is active preservation metadata.
+[records](../records/README.md). [sealed-records.yml](../records/sealed-records.yml) owns preservation metadata.
 Keep revision histories, superseded specifications and session progress out of this folder.
 The [record lifecycle](record-lifecycle.md) owns the detailed maintenance policy.

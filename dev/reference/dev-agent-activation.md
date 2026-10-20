@@ -26,6 +26,11 @@ Project `AGENTS.md` supplies local routing constraints and read-when pointers. T
 subagent gate decide whether to delegate; an available role is not an instruction to spawn it.
 Use the shared activation tooling for provider-specific binding expansion and catalog limits.
 
+For documentation work, the manifest declares editorial, scientific writing/research/review,
+and interface-reference specialists. Their responsibilities are described in
+[documentation guidance](dev-documentation.md). The writing roles conditionally bind
+`scientific-software-documentation`; that does not require another root-catalog entry.
+
 ## Verification
 
 `dev/scripts/check_activation.py` reads the manifest and compares declared roles and explicit skills

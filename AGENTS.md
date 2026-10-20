@@ -38,7 +38,10 @@ Read the 2025 technical note in References before changing what a workflow compu
   files by `blueearth_cst/shared/config_composition.py`. Only `config_path` resolves against the project
   file; other paths resolve from the run directory. Cross-workflow keys belong in the project file's
   owning `basin:`, `climate:`, `model:` section or top level, never in workflow files.
-- `config/defaults/` changes runs; `config/templates/` contains scaffolds only. Keep the
+- `config/defaults/` changes runs; `config/templates/` contains scaffolds only. Keep
+  the single `config/templates/example-basin/` configuration starter current in the same
+  change as parameter/schema/default changes; `scripts/create_case.py` scaffolds external cases from this checkout.
+  Do not maintain a second starter in `cst-cases`. Keep the
   `project_config_` prefix on new seed configs or Git's glob silently excludes them.
   `config/catalogs/cmip6_data.yml` and `cmip6_store_index.json` are generated; never hand-edit them.
 - Real basin data and production `project_dir` outputs live outside this repository, referenced by
@@ -188,6 +191,8 @@ workflow execution, state affected consumers and omitted workflows; rapid must n
 - `README.md`: workflow execution and pipeline; start here.
 - `dev/reference/dev-task-and-session-workflow.md`: before board coordination, worktree handoff, or task closure.
 - `dev/reference/dev-record-lifecycle.md`: before promoting, shortening, superseding, or deleting dev records.
+- `dev/reference/dev-documentation.md`: before authoring or reviewing user guides,
+  scientific-method pages, toolbox reference, or technical notes.
 - `dev/reference/toolbox-plot-style.md`: before scientific plots/review pages; preserve defaults/exceptions and
   record newly approved styles. `dev/reference/dev-versioning.md`: before release/version decisions.
 - `docs/references/cst-toolbox-technical-note-2025.md`: methodology; code/current references win on stale

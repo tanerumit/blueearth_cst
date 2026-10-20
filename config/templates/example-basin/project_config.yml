@@ -1,31 +1,9 @@
-# =============================================================================
-#  blueearth_cst -- PROJECT config
-# =============================================================================
-#
-# A project is described by six files: this one, plus one per workflow.
-# Copy all six into your project folder and pass only THIS file to
-# Snakemake. You may keep the names; if you rename them, update the
-# `config_path` lines at the bottom to match:
-#
-#   project_config.template.yml                      -> project_config.yml
-#   project_config.analyze_climate.template.yml      -> project_config_analyze_climate.yml
-#   project_config.build_model.template.yml          -> project_config_build_model.yml
-#   project_config.analyze_projections.template.yml  -> project_config_analyze_projections.yml
-#   project_config.generate_scenarios.template.yml -> project_config_generate_scenarios.yml
-#   project_config.simulate_system.template.yml    -> project_config_simulate_system.yml
-#
-#   snakemake all -c 3 -s build_model.smk --configfile project_config.yml
-#
-# Keep the six files in one folder. `config_path:` is relative to this file;
-# every other path is relative to where you run Snakemake, or absolute.
-#
-# This file holds what several workflows share: the basin, the historical
-# climate, the model outputs. Settings used by one workflow only go in that
-# workflow's file.
-#
+# Example basin project: copy the whole directory or use scripts/create_case.py.
+# Review basin, climate, catalog and absolute case paths before running.
+# Keep this project file beside its five project_config_<workflow>.yml files.
+# config_path resolves beside this file; other relative paths use the toolbox root.
 # Commented YAML entries are optional settings or examples.
-# Background on the defaults: config/templates/README.md.
-# A filled-in example: test_case/project_config_rapid.yml and its siblings.
+# See README.md here and config/templates/README.md for setup and rationale.
 
 # Identify the project configuration schema. Options: 2.
 schema_version: 2
@@ -38,7 +16,7 @@ schema_version: 2
 # Define shared project storage and data access. Input: mapping.
 project:
   # Store project inputs and generated outputs. Input: absolute directory path outside repository.
-  project_dir: /path/to/my_project
+  project_dir: "/path/to/cst-cases/runs/example-basin"
   # This template's default catalog requires the Deltares P-drive.
   # Locate source datasets by catalog name. Input: HydroMT catalog YAML path.
   catalog: config/catalogs/deltares_data_pdrive.yml
@@ -56,12 +34,12 @@ basin:
   # Select the HydroMT basin region. Input: quoted HydroMT region dictionary.
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   # Set model grid cell size. Input: positive degrees; 0.00833333 is 30 arc-seconds.
-  resolution: 0.00833333
+  resolution: 0.00833
 
   # Points where the model reports results. Each `control` point also closes
   # a subbasin. Columns: output_locations_template.csv. null = outlets only.
   # Define reporting and subbasin control locations. Input: output-locations CSV path or null.
-  output_locations: /path/to/output_locations.csv
+  output_locations: "/path/to/cst-cases/applications/example-basin/data/output_locations.csv"
 
   # How the basin is split into subbasins.
   # Configure automatic subbasin delineation. Input: mapping.
@@ -109,9 +87,9 @@ climate:
   # Select inclusive historical water years. Input: year mapping spanning at least 16 years.
   window:
     # First historical water year. Input: integer year, <= end.
-    start: 1990
+    start: 2000
     # Last historical water year. Input: integer year, >= start.
-    end: 2020
+    end: 2016
 
   # First month of the water year. Changes every annual statistic.
   # Set the first water-year month. Input: three-letter month abbreviation, Jan–Dec.
@@ -136,7 +114,7 @@ model:
   # Any of: river discharge, overland flow, actual evapotranspiration,
   # groundwater recharge, snow. Observations can only be given for these.
   # Select variables retained from model runs. Input: list of river discharge | overland flow | actual evapotranspiration | groundwater recharge | snow.
-  outvars: ["river discharge", "actual evapotranspiration"]
+  outvars: ["river discharge", "actual evapotranspiration", "groundwater recharge"]
 
 
 # -----------------------------------------------------------------------------
@@ -154,7 +132,7 @@ plotting:
 #  WORKFLOWS
 # -----------------------------------------------------------------------------
 #
-# To skip a workflow: `enabled: false`, and remove its `config_path` line.
+# Run WF0 alone first; then disable it before enabling downstream workflows.
 
 # Enable workflows and locate their configuration files. Input: workflow-name-to-settings mapping.
 workflows:
@@ -163,28 +141,28 @@ workflows:
     # Include this workflow in the project run. Options: true | false.
     enabled: true
     # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
-    config_path: project_config.analyze_climate.template.yml
+    config_path: "project_config_analyze_climate.yml"
   # Configure WF1 model construction and historical simulation. Input: workflow settings mapping.
   build_model:
     # Include this workflow in the project run. Options: true | false.
-    enabled: true
+    enabled: false
     # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
-    config_path: project_config.build_model.template.yml
+    config_path: "project_config_build_model.yml"
   # Configure WF2 projection plausibility analysis. Input: workflow settings mapping.
   analyze_projections:
     # Include this workflow in the project run. Options: true | false.
-    enabled: true
+    enabled: false
     # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
-    config_path: project_config.analyze_projections.template.yml
+    config_path: "project_config_analyze_projections.yml"
   # Configure WF3 weather scenario generation. Input: workflow settings mapping.
   generate_scenarios:
     # Include this workflow in the project run. Options: true | false.
-    enabled: true
+    enabled: false
     # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
-    config_path: project_config.generate_scenarios.template.yml
+    config_path: "project_config_generate_scenarios.yml"
   # Configure WF4 simulation and indicator calculation. Input: workflow settings mapping.
   simulate_system:
     # Include this workflow in the project run. Options: true | false.
-    enabled: true
+    enabled: false
     # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
-    config_path: project_config.simulate_system.template.yml
+    config_path: "project_config_simulate_system.yml"

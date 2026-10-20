@@ -1,4 +1,4 @@
-"""Create an external case from its repository's example-basin template."""
+"""Create an external case from the toolbox's maintained example-basin template."""
 
 from __future__ import annotations
 
@@ -18,6 +18,8 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
+
+TOOLBOX_ROOT = Path(__file__).resolve().parents[1]
 
 _WORKFLOW_LABELS = {
     "analyze_climate": ("WF0", "Historical climate analysis"),
@@ -234,12 +236,12 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             raise ValueError(
                 f"Destination must not be a symbolic link or junction: {candidate}"
             )
-    template = _confined(root / "templates/example-basin", root)
+    template = _confined(TOOLBOX_ROOT / "config/templates/example-basin", TOOLBOX_ROOT)
     applications = _confined(root / "applications", root)
-    if not applications.is_dir() or not template.is_dir():
-        raise ValueError(
-            "Cases root requires applications/ and templates/example-basin/"
-        )
+    if not applications.is_dir():
+        raise ValueError("Cases root requires applications/")
+    if not template.is_dir():
+        raise ValueError("Toolbox requires config/templates/example-basin/")
     destination = applications / slug
     if destination.exists() or destination.is_symlink():
         raise ValueError(f"Application already exists: {destination}")
@@ -339,10 +341,10 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
                 (destination / sidecar).as_posix(),
             )
         comment_sources = (
-            [templates / "project_config.template.yml"]
+            [templates / "example-basin/project_config.yml"]
             if relative == config_path
             else [
-                templates / f"project_config.{owner}.template.yml"
+                templates / "example-basin" / f"project_config_{owner}.yml"
                 for owner in config_owners.get(relative, [])
                 if owner in _WORKFLOW_LABELS
             ]

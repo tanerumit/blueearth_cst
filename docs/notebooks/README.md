@@ -39,7 +39,8 @@ no install path to edit.
 All three run against `test_case/project_config_rapid.yml`, the cheap
 end-to-end config. To point one at your own project, change the `CONFIG`
 constant in the setup cell; everything downstream is derived from the config.
-For a new project, copy `config/templates/project_config.template.yml`.
+For a new project, scaffold from `config/templates/example-basin/` or copy the
+whole directory and follow its README; the project file needs its workflow files.
 
 Run the pipeline from the **primary checkout**, not from a task worktree.
 Snakemake keeps its up-to-date metadata under the working directory, so one

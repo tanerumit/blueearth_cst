@@ -32,9 +32,9 @@ def _project(tmp_path, template_body, reader_body="", reader="blueearth_cst/x.py
     declared key like any other and every fixture here nests under one. Without
     it each test would report `model` alongside whatever it is actually about.
     """
-    templates = tmp_path / "config" / "templates"
+    templates = tmp_path / "config/templates/example-basin"
     templates.mkdir(parents=True)
-    (templates / "project_config.build_model.template.yml").write_text(
+    (templates / "project_config_build_model.yml").write_text(
         template_body, encoding="utf-8"
     )
     target = tmp_path / reader
@@ -202,10 +202,16 @@ def test_the_templates_it_reads_are_the_ones_a_user_copies():
     catches: `config/defaults/` would give it plenty of keys, all of them
     hydromt's rather than ours. The tracked seeds are the one other source."""
     names = {path for path, _line, _text in declared_keys().values()}
-    assert any(name.startswith("config/templates/project_config") for name in names)
+    assert any(
+        name.startswith("config/templates/example-basin/project_config")
+        for name in names
+    )
     assert all(
         name.startswith(
-            ("config/templates/project_config", "test_case/project_config_")
+            (
+                "config/templates/example-basin/project_config",
+                "test_case/project_config_",
+            )
         )
         for name in names
     )

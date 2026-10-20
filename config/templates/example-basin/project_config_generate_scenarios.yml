@@ -15,7 +15,7 @@
 # seed from the climate-draw settings, source data and generator code, so any
 # change to those draws new weather.
 # Control reproducibility of generated weather. Input: integer or auto.
-seed: 123
+seed: "auto"
 
 # Generate weather realizations per grid point. Input: positive integer.
 n_realizations: 2

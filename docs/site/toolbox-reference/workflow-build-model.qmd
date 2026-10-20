@@ -118,7 +118,7 @@ The project file, for example `test_case/project_config_rapid.yml`, supplies `pr
 The workflow file, `test_case/project_config_rapid_build_model.yml`, sets `engine.build_config` and
 `engine.waterbodies_config` to the hydromt recipes in `config/defaults/`, `simulation_window.start`
 and `.end` to the historical run years, and optional `observations` paths keyed by modeled variable.
-The template at `config/templates/project_config.build_model.template.yml` shows these keys.
+The template at `config/templates/example-basin/project_config_build_model.yml` shows these keys.
 `engine` may be omitted to use the defaults; `simulation_window` is required and must fit inside
 `climate.window`. Declare this Wflow run period separately from the climate analysis record.
 

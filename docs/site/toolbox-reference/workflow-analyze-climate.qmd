@@ -58,7 +58,7 @@ For CHIRPS forcing, the store uses the common overlap with its ERA5 companion va
 checks that the resulting store covers the explicitly configured Wflow simulation period.
 
 The workflow file owns the optional diagnostic settings below. Candidate sources and analysis years remain in
-the project file. Start from `config/templates/project_config.analyze_climate.template.yml`.
+the project file. Start from `config/templates/example-basin/project_config_analyze_climate.yml`.
 
 ```yaml
 subbasin_figures: false

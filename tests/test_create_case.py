@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from blueearth_cst.shared.config_composition import WORKFLOW_NAMES, load_composed_config
 from scripts.create_case import (
     _WORKFLOW_LABELS,
     _annotate_config,
@@ -15,11 +16,12 @@ from scripts.create_case import (
 )
 
 
-@pytest.fixture
-def cases(tmp_path: Path) -> Path:
-    template = tmp_path / "templates" / "example-basin"
+@pytest.fixture(autouse=True)
+def template(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    toolbox = tmp_path / "toolbox"
+    monkeypatch.setattr("scripts.create_case.TOOLBOX_ROOT", toolbox)
+    template = toolbox / "config/templates/example-basin"
     (template / "data").mkdir(parents=True)
-    (tmp_path / "applications").mkdir()
     (template / "project_config.yml").write_text(
         "# Keep scientific comments\nschema_version: 2\n"
         "project:\n  project_dir: old-output\n  catalog: config/catalogs/data.yml\n"
@@ -42,13 +44,20 @@ def cases(tmp_path: Path) -> Path:
     )
     (template / "README.md").write_text("Old example\n", encoding="utf-8")
     (template / "notes.md").write_text("Old success\n", encoding="utf-8")
-    (tmp_path / "cst-applications.md").write_bytes(
+    return template
+
+
+@pytest.fixture
+def cases(tmp_path: Path) -> Path:
+    cases = tmp_path / "cases"
+    (cases / "applications").mkdir(parents=True)
+    (cases / "cst-applications.md").write_bytes(
         b"Inventory\r\n\r\n"
         b"| application | project | date-created | cst-version | purpose |\r\n"
         b"|---|---|---|---|---|\r\n"
         b"| [old](applications/old/notes.md) | | 2020-01-01 | | Old |\r\n"
     )
-    return tmp_path
+    return cases
 
 
 def args(cases: Path) -> list[str]:
@@ -165,9 +174,8 @@ def test_create_preserves_existing_output_tree(cases: Path, dry_run: bool) -> No
 
 @pytest.mark.parametrize("workflow", _WORKFLOW_LABELS)
 def test_headers_follow_custom_paths_and_replace_inherited_metadata(
-    cases: Path, workflow: str
+    cases: Path, template: Path, workflow: str
 ) -> None:
-    template = cases / "templates/example-basin"
     project = template / "project_config.yml"
     config = yaml.safe_load(project.read_text(encoding="utf-8"))
     config["workflows"] = {
@@ -236,8 +244,8 @@ def test_parameter_comments_preserve_flow_yaml_aliases_and_existing_help():
 def test_parameter_comments_support_user_named_entries(workflow, text, expected):
     template = (
         Path(__file__).resolve().parents[1]
-        / "config/templates"
-        / f"project_config.{workflow}.template.yml"
+        / "config/templates/example-basin"
+        / f"project_config_{workflow}.yml"
     )
     annotated = _annotate_config(text, _template_comments(template))
     assert expected in annotated
@@ -247,10 +255,14 @@ def test_parameter_comments_support_user_named_entries(workflow, text, expected)
 @pytest.mark.parametrize(
     "template",
     sorted(
-        (Path(__file__).resolve().parents[1] / "config/templates").glob(
-            "*.template.yml"
+        (Path(__file__).resolve().parents[1] / "config/templates/example-basin").glob(
+            "project_config*.yml"
         )
-    ),
+    )
+    + [
+        Path(__file__).resolve().parents[1]
+        / "config/templates/indicator_set.template.yml"
+    ],
     ids=lambda path: path.name,
 )
 def test_template_parameter_help_is_complete_and_concise(template: Path):
@@ -310,9 +322,8 @@ def test_invalid_arguments_write_nothing(cases: Path, option: str, value: str) -
 
 @pytest.mark.parametrize("fault", ["config", "observations", "write"])
 def test_preflight_failure_leaves_no_partial_case(
-    cases: Path, fault: str, monkeypatch: pytest.MonkeyPatch
+    cases: Path, template: Path, fault: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    template = cases / "templates/example-basin"
     if fault == "config":
         (template / "project_config.yml").write_text("project: [")
     elif fault == "observations":
@@ -329,3 +340,27 @@ def test_preflight_failure_leaves_no_partial_case(
     assert main(args(cases)) == 2
     assert not (cases / "applications/new-basin").exists()
     assert (cases / "cst-applications.md").read_bytes() == before
+
+
+@pytest.mark.parametrize("external_template", [False, True])
+def test_shipped_template_composes_for_every_workflow(
+    cases: Path, external_template: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exercise the maintained starter against the current composition contract."""
+    monkeypatch.setattr(
+        "scripts.create_case.TOOLBOX_ROOT", Path(__file__).resolve().parents[1]
+    )
+    assert not (cases / "templates").exists()
+    if external_template:
+        stale = cases / "templates/example-basin"
+        stale.mkdir(parents=True)
+        (stale / "project_config.yml").write_text("obsolete: true\n", encoding="utf-8")
+    assert main(args(cases)) == 0
+    config_path = cases / "applications/new-basin/project_config.yml"
+    config = load_composed_config(config_path)
+    assert set(config["workflows"]) == set(WORKFLOW_NAMES)
+    for workflow in WORKFLOW_NAMES:
+        composed = load_composed_config(config_path, workflow)
+        assert composed["workflows"][workflow] == config["workflows"][workflow]
+    assert config["project"]["project_dir"] == (cases / "runs/new-basin").as_posix()
+    assert Path(config["basin"]["output_locations"]).is_file()

@@ -94,7 +94,7 @@ def test_the_template_config_recommends_the_30_year_window():
     # in the file they open to change the projections settings.
     template = (
         Path(__file__).resolve().parents[1]
-        / "config/templates/project_config.analyze_projections.template.yml"
+        / "config/templates/example-basin/project_config_analyze_projections.yml"
     ).read_text(encoding="utf-8")
     window = yaml.safe_load(template)["reference_window"]
     assert [window["start"], window["end"]] == OQ4_WINDOW

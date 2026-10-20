@@ -2224,6 +2224,13 @@ def title_rule(text):
     return "-" * len(text)
 
 
+def up_to_date_verdict(stream):
+    """Format the shared green verdict for a workflow with no work to run."""
+    return "\n" + _paint_body(
+        _UP_TO_DATE_LINE, _console_colour(stream), _ANSI_DONE
+    ).rstrip("\n")
+
+
 class _UpToDateVerdict(logging.Filter):
     """Restate Snakemake's "Nothing to be done" as a green up-to-date verdict.
 
@@ -2238,10 +2245,7 @@ class _UpToDateVerdict(logging.Filter):
     def filter(self, record):
         try:
             if str(record.msg).startswith("Nothing to be done"):
-                verdict = _paint_body(
-                    _UP_TO_DATE_LINE, _console_colour(sys.stderr), _ANSI_DONE
-                )
-                record.msg, record.args = "\n" + verdict.rstrip("\n"), ()
+                record.msg, record.args = up_to_date_verdict(sys.stderr), ()
         except Exception:  # noqa: BLE001 -- a console style must never end a run
             pass
         return True

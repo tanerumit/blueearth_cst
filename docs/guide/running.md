@@ -221,6 +221,8 @@ and journal without scheduling the metadata rule or relabelling reused outputs.
 
 Initial runner preparation messages use two-space indentation without timestamps or module labels,
 including elapsed-time updates such as `  Workflow preparation 0:00:15 elapsed`.
+Reused WF3 collections use the same green `All requested files are present and up to date` verdict
+as the other workflows, without separate scenario-request or reuse rows.
 
 WF4 retains an experiment's original simulation identity and provenance when only execution-diagnostic
 code changes. Scientific input or simulation-code changes still require a new experiment. A refusal

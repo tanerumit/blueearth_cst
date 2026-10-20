@@ -11,8 +11,8 @@ what it held; see `config/defaults/README.md`.
 | --- | --- |
 | `example-basin/` | Worked external-case starter consumed by `scripts/create_case.py`; review its README before running. |
 | `indicator_set.template.yml` | Optional named selection of registered WF4 indicators. |
-| `output_locations_template.csv` | Header-only schema for output locations |
-| `observed_daily_discharge_template.csv` | Header-only schema for observed discharge |
+| `example-basin/data/output_locations.csv` | Example outlet; replace coordinates for the case. |
+| `example-basin/data/observed_daily_discharge_template.csv` | Header-only schema for optional observed discharge. |
 | `archive/` | Unmaintained single-workflow configs; see its own README |
 
 `example-basin/` contains the single maintained configuration set: the project
@@ -48,10 +48,9 @@ lag: measured 2026-08-10, it was 126 lines against the 149 a real build emitted.
 The `.reference.` infix is there because the bare name `wflow_sbm.toml` read as a
 build input, which is exactly what it is not.
 
-**Rename after copying.** Layer names inside the model are derived from your
-file's basename (`blueearth_cst/shared/gauges.py`), so a file still called
-`output_locations_template.csv` yields layers named `output-locations-template`.
-Drop the `_template` suffix when you copy.
+Output-location layer names are derived from the CSV basename
+(`blueearth_cst/shared/gauges.py`); the starter uses `output_locations.csv`.
+Both CSV starters live in `example-basin/data/` and are copied by the scaffolder.
 
 ---
 
@@ -219,7 +218,7 @@ and those ids only exist once output locations have driven the delineation.
 `model.outvars`; a series for a variable the model does not write is refused at
 parse time.
 
-## `output_locations_template.csv`
+## `example-basin/data/output_locations.csv`
 
 Output locations, **comma**-separated:
 
@@ -255,7 +254,7 @@ to stay fixed across rebuilds.
 `location_code` (`B001-S01-L01`) is for reading; `wflow_id` is the integer for
 joining and for scanning a CSV header.
 
-## `observed_daily_discharge_template.csv`
+## `example-basin/data/observed_daily_discharge_template.csv`
 
 Observed discharge, **semicolon**-separated — deliberately a different
 separator from the locations file; both are read with explicit `sep=`

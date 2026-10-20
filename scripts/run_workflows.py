@@ -400,13 +400,13 @@ def _handoff_label(name: str) -> str:
 
 
 def _clock() -> str:
-    """Wall-clock ``HH:MM:SS`` for a hand-off line.
+    """Local wall-clock ``YYYY-MM-DD HH:MM:SS`` for a hand-off line.
 
     A wall clock, unlike the monotonic durations everywhere else here: this
     answers "when did this start", which someone reads against the timestamps in
     the workflow's own log rows below it.
     """
-    return f"{datetime.now():%H:%M:%S}"
+    return f"{datetime.now():%Y-%m-%d %H:%M:%S}"
 
 
 def _banner(head: str) -> list[str]:
@@ -1416,7 +1416,7 @@ def _run_owned(
                 "\n"
                 + _handoff(
                     tag,
-                    f"starting {_clock()}",
+                    f"starting at {_clock()}",
                     note=_format_command(cmd),
                 )
                 + "\n",

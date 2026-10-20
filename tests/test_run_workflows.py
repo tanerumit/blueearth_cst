@@ -1088,8 +1088,14 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    assert re.search(r"\[1/4]  WF0  ANALYZE CLIMATE  --  starting \d\d:\d\d:\d\d", out)
-    assert re.search(r"\[4/4]  WF4  SIMULATE SYSTEM  --  starting \d\d:\d\d:\d\d", out)
+    assert re.search(
+        r"\[1/4]  WF0  ANALYZE CLIMATE  --  starting at \d{4}-\d{2}-\d{2} \d\d:\d\d:\d\d",
+        out,
+    )
+    assert re.search(
+        r"\[4/4]  WF4  SIMULATE SYSTEM  --  starting at \d{4}-\d{2}-\d{2} \d\d:\d\d:\d\d",
+        out,
+    )
     assert "  --  done in " not in out
     # Flush left, title and command both. A band has no group label and no rows,
     # so an indent would only make the line a reader scans for start one column
@@ -1162,7 +1168,10 @@ def test_the_console_is_not_muted_by_the_rule_log_level(
     )
     assert "  run_workflows" in out.splitlines()
     assert "  sequence\n" in out
-    assert re.search(r"\[1/5]  WF0  ANALYZE CLIMATE  --  starting \d\d:\d\d:\d\d", out)
+    assert re.search(
+        r"\[1/5]  WF0  ANALYZE CLIMATE  --  starting at \d{4}-\d{2}-\d{2} \d\d:\d\d:\d\d",
+        out,
+    )
     assert "run_workflows done in" in out
 
 

@@ -7,8 +7,8 @@ scaling, and the selected source directory. It contains no production paths or s
 Copy it into the owning task's temporary folder from the worktree root (replace `<id>`):
 
 ```powershell
-New-Item -ItemType Directory -Force 'dev/tasks/<id>/.tmp/figure-review'
-Copy-Item dev/reference/figure-comparison.html 'dev/tasks/<id>/.tmp/figure-review/comparison.html'
+New-Item -ItemType Directory -Force '.tmp/tasks/<id>/figure-review'
+Copy-Item dev/reference/figure-comparison.html '.tmp/tasks/<id>/figure-review/comparison.html'
 ```
 
 Edit the copy's `<title>` and `<h1>` for the active plot group. Replace `const items=[]` with a JSON array

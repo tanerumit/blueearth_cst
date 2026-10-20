@@ -360,7 +360,7 @@ in this visual review.
 - Start from the tracked `dev/reference/figure-comparison.html` template. See
   `dev/reference/figure-comparison.md` for setup and figure-record fields. Keep session data in scratch;
   update the tracked template when improvements to the review interface are approved.
-- Keep the disposable HTML review in `dev/tasks/<id>/.tmp/`; follow `repo-layout.md` for closure cleanup.
+- Keep the disposable HTML review in `.tmp/tasks/<id>/`; follow `repo-layout.md` for closure cleanup.
 - Show only the plot group currently under review, with existing and revised versions side by side.
   Preserve a baseline before revising the group.
 - Keep the original page header. Put the selected figure name in each comparison heading, for example
@@ -377,7 +377,7 @@ in this visual review.
   hints and collapsible control help may follow the path.
 - Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
   applicable plots, and render all affected callers when a shared figure helper changes.
-- Keep figure-specific tests and plotting-only probes temporary under `dev/tasks/<id>/.tmp/`, outside the
+- Keep figure-specific tests and plotting-only probes temporary under `.tmp/tasks/<id>/`, outside the
   persistent test suite. Verify figure changes by rendering and visual inspection. Retain tests for
   exported numerical indicators and workflow contracts separately from figure review checks.
 - During an explicitly deferred-check visual session, do not run tests or gates at each revision. Run

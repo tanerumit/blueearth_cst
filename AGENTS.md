@@ -46,9 +46,9 @@ Read the 2025 technical note in References before changing what a workflow compu
 - `dev/`: plans, retained findings, conventions and helpers; not shipped. Task folders and board belong to `main`:
   edit notes there and render with `python dev/scripts/todoboard.py render`; commit board-only changes
   separately. Never hand-edit generated `dev/TODO.md`. Save task documents in main's `dev/tasks/<id>/`;
-  resolve main with `git worktree list` or `.tmp/navigation/main-dev.lnk`. Never use `git add --sparse`
-  to create session-local task documents. Temporary notes, sketches, probes and logs belong in the relevant
-  `dev/tasks/<id>/.tmp/`, never `.tmp/scratchpad/`; see `dev/reference/repo-layout.md` for cleanup.
+  session `dev/TODO.md` and `dev/tasks/` link to main after board-view setup. Never use `git add --sparse`
+  to create session-local task documents. Temporary material stays local under `.tmp/tasks/<id-or-purpose>/`;
+  see `dev/reference/repo-layout.md` for placement and cleanup.
 - `docs/site/`: published documentation; `docs/notebooks/`: source notebooks; `docs/references/`:
   upstream guides. Historical migration guides live in `dev/records/milestones/`.
   Do not mirror configs into docs. Full layout: `dev/reference/repo-layout.md`.

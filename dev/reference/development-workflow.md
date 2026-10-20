@@ -43,9 +43,13 @@ Never mirror all of `dev/` or share a writable `.tmp/`.
 | Caches, environments, mutable outputs | Local to their owner; see the layout reference for scratch |
 | Immutable input data | Shared external location when consumers cannot modify it |
 
-Session working directories exclude tracked `tasks/` and `TODO.md` snapshots through sparse checkout;
-Git retains their index entries for history and merges. Never bypass this with `git add --sparse`.
-Resolve main with `git worktree list` or open `.tmp/navigation/main-dev.lnk`.
+Sessions expose main's canonical `dev/tasks/` through a directory junction and `dev/TODO.md` through a
+file symbolic link. Edits through those paths change main immediately; they do not wait for a merge.
+Git retains branch snapshots in its sparse index for history and merges. A worktree-local
+`sparse.expectFilesOutsideOfPatterns` setting preserves that separation, and a generated, untracked
+`dev/.gitignore` hides canonical additions from session staging. Never bypass this with `git add --sparse`,
+disable sparse checkout, or reapply a different sparse layout while these links are installed.
+The rest of `dev/`, including `records/` and the ledger snapshot, remains branch-local.
 
 Primary-checkout maintenance is limited to `dev/tasks/`, `dev/TODO.md`, and `dev/LOG.md`. With
 `core.hooksPath .githooks`, the pre-commit hook rejects changes to those paths on other branches,
@@ -86,17 +90,21 @@ until the branch resumes or lands.
 Follow [Task temporary material](repo-layout.md#task-temporary-material) for scratch placement, evidence
 retention, and safe cleanup. Tool state stays in its configured location.
 
-Preview navigation before applying it; name each session selected for sparse exclusion:
+For a new session, exclude its snapshots while clean, then preview and create the canonical board links.
+Run these commands from a checkout containing the helper, setting the target root explicitly:
 
 ```powershell
-pwsh -NoProfile -File dev/scripts/setup-worktree-navigation.ps1
-pwsh -NoProfile -File dev/scripts/setup-worktree-navigation.ps1 -Apply -ExcludeSnapshots -Worktree session-1
+pwsh -NoProfile -File dev/scripts/setup-board-view.ps1 -WorktreeRoot <session-root> -ExcludeSnapshots
+pwsh -NoProfile -File dev/scripts/setup-board-view.ps1 -WorktreeRoot <session-root> -LinkCanonicalBoard -CheckOnly
+pwsh -NoProfile -File dev/scripts/setup-board-view.ps1 -WorktreeRoot <session-root> -LinkCanonicalBoard
 ```
 
-The script owns navigation flags and preflight behavior. See
-[developer tools](../scripts/README.md#environment) for its operational summary.
-Shortcuts under `.tmp/navigation/` do not share file contents. Rerun setup after worktrees are added or
-recreated; sparse exclusion requires clean sessions and refuses custom sparse layouts.
+Link setup preserves preexisting ignored task scratch under the session's `.tmp/tasks/`; it refuses
+conflicting destinations, unrelated links and custom sparse layouts. File symbolic links require Windows
+Developer Mode or an elevated shell. Rerun setup after worktrees are added or recreated.
+Optional Explorer shortcuts are managed by `setup-worktree-navigation.ps1` (preview by default, `-Apply`
+to write). They include the canonical tasks and local scratch. See
+[developer tools](../scripts/README.md#environment) for navigation flags.
 
 Old branches may recreate `dev/00-current-board-main/`. Before removal, confirm `Get-Item -Force`
 reports `LinkType=Junction` targeting main's `dev/`. Remove only the verified junction from its owning

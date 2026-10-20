@@ -22,7 +22,7 @@ including task scratch, tool state, and runtime outputs.
 
 ## Start here
 
-- Find current work in main's `dev/TODO.md`; use the
+- Find current work in `dev/TODO.md` (linked to main in configured sessions); use the
   [development workflow](reference/development-workflow.md) when creating, handing off, or closing work.
 - Find implementation conventions in the [reference index](reference/README.md).
 - Choose verification using the [validation ladder](reference/validation-ladder.md).

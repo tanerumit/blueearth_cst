@@ -77,18 +77,19 @@ commit `45e3a564`; see [historical recovery](record-lifecycle.md#historical-evid
 ### Task temporary material
 
 Put temporary notes, sketches, probes, review pages and logs in the relevant
-`dev/tasks/<id>/.tmp/`, created only when needed. Check that Git ignores the path before writing;
-the repository's `.tmp/` pattern covers these nested folders. Do not use `.tmp/scratchpad/`.
+`.tmp/tasks/<id-or-purpose>/` in the owning checkout, created only when needed. Check that Git ignores
+the path before writing. `dev/tasks/` is shared with main, so it must not hold session-local scratch.
+Existing scratch relocated by board setup may retain a nested `.tmp/` directory; its contents are preserved.
 Configured tool state, including pytest directories, Ruff caches and navigation shortcuts, keeps its
 configured location and lifecycle.
 
 When removing an item from the TODO board, review its temporary material and preserve any evidence or
 rationale still needed by acceptance, landing or future readers in an appropriate durable home.
-Clean the reviewed task temporary material as part of closure, using `todo-board` closure safety and
-`done --discard-scratch` where applicable. Check containment, links and active writers before deletion;
+Clean reviewed temporary material in each contributing checkout as part of closure; the board's
+`done --discard-scratch` does not clean these local directories. Check containment, links and writers first;
 never delete another task's material. Required evidence must survive until its consumer no longer needs it.
 For work without a TODO item, keep transient notes in conversation; if files are necessary, use a
-purpose-named task folder and clean its temporary material at completion.
+purpose-named folder under `.tmp/tasks/` and clean it at completion.
 
 **Three inspection helpers, all report-only by default** — `prune_series_cache.py` (orphaned WF2 series), `prune_climate_store.py` (stale `<source>_<window>` climate stores) and `snapshot_project_tree.py` (a tree as a path list, checked against the project-tree inventory; also `pixi run tree-check`). Deleting is an explicit owner action via `--delete`. Run pruning **before** any reference snapshot, or the snapshot bakes the orphans in and the gate compares those instead of the live artifacts. Neither prune tool sees everything: files under directories the path map routes wholesale need an mtime sweep.
 

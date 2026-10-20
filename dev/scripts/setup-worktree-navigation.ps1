@@ -50,7 +50,7 @@ $failures = @()
 foreach ($root in $selected) {
     try {
         $navigationPath = Join-Path $root '.tmp/navigation'
-        foreach ($relative in @('', '.tmp', '.tmp/navigation', 'dev', 'dev/tasks')) {
+        foreach ($relative in @('', '.tmp', '.tmp/navigation', '.tmp/tasks', 'dev')) {
             $parentPath = if ($relative) { Join-Path $root $relative } else { $root }
             $existing = Get-Item -LiteralPath $parentPath -Force -ErrorAction SilentlyContinue
             if (($relative -eq '' -and -not $existing) -or ($existing -and
@@ -69,6 +69,7 @@ foreach ($root in $selected) {
             $targets[$label] = $destinations[$label]
         }
         $targets['local-tasks'] = Join-Path $root 'dev/tasks'
+        $targets['local-scratch'] = Join-Path $root '.tmp/tasks'
         $existingShortcuts = @(Get-ChildItem -LiteralPath $navigationPath -Filter '*.lnk' -Force -ErrorAction SilentlyContinue)
         foreach ($existing in $existingShortcuts) {
             if (($existing.Attributes -band [IO.FileAttributes]::ReparsePoint) -or $existing.PSIsContainer) {
@@ -87,8 +88,10 @@ foreach ($root in $selected) {
                     throw "Refusing unrelated shortcut path: $shortcutPath"
                 }
                 $shortcut = $shell.CreateShortcut($shortcutPath)
+                $legacyScratch = $label -eq 'local-scratch' -and $shortcut.TargetPath -and
+                    [IO.Path]::GetFullPath($shortcut.TargetPath) -eq (Join-Path $root '.tmp/scratchpad')
                 if (-not $shortcut.TargetPath -or [IO.Path]::GetFullPath($shortcut.TargetPath) -ne
-                        [IO.Path]::GetFullPath($targets[$label])) {
+                        [IO.Path]::GetFullPath($targets[$label]) -and -not $legacyScratch) {
                     throw "Refusing to replace a different shortcut: $shortcutPath"
                 }
             }

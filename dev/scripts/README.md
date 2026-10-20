@@ -41,11 +41,12 @@ both legs, so an import-time error fails the suite.
 | [`check_env.py`](check_env.py) | Whether a checkout can actually run the workflows (weathergenr, Julia, activation). |
 | [`inspect_weathergenr.R`](inspect_weathergenr.R) | The installed weathergenr's exports and the signatures the workflow calls; run after an upgrade. |
 | [`pixi_activate.bat`](pixi_activate.bat) | Activate the pixi env in a cmd shell. |
-| [Board exclusion](setup-board-view.ps1) | Sparse-exclude one clean session's board snapshots. |
+| [Board view](setup-board-view.ps1) | Exclude session snapshots and link main's canonical board. |
 | [Navigation setup](setup-worktree-navigation.ps1) | Preview or create shortcuts; sparse targets must be named. |
 | [`check_activation.py`](check_activation.py) | Drift between `dev/reference/agent-activation.md` and the untracked agent manifest. |
 
-Open `.tmp/navigation/main-dev.lnk` to view the board; edit through `todoboard.py` or main's own path.
+Open `dev/TODO.md` or `dev/tasks/` in any configured session to see the canonical board.
+See [board setup](../reference/development-workflow.md#local-scratch-and-navigation) for installation.
 Navigation preview makes no writes. Apply sparse exclusion with `-Apply -ExcludeSnapshots -Worktree
 session-N`; selected roots are preflighted before writing, failures are reported while valid roots
 continue, and stale shortcuts are retained. See

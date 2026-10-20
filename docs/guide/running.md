@@ -220,9 +220,11 @@ products change. A toolbox commit or Git dirty-state change alone is recorded in
 and journal without scheduling the metadata rule or relabelling reused outputs.
 
 Initial runner preparation messages use two-space indentation without timestamps or module labels,
-including elapsed-time updates such as `  Workflow preparation 0:00:15 elapsed`.
-Reused WF3 collections use the same green `All requested files are present and up to date` verdict
+including elapsed-time updates such as
+`  Preparing configuration and experiment checks... (0:00:15 elapsed)` and the final check duration.
+Reused WF3 collections use the same green `Up to date` verdict
 as the other workflows, without separate scenario-request or reuse rows.
+WF2 shows reference-period warnings when executing an analysis, and omits them on up-to-date runs.
 
 Change checks across WF0–WF4 use the canonical configuration, file-content, code-inventory and
 environment helpers. Each workflow compares its consumed inputs; reusable observations are shared

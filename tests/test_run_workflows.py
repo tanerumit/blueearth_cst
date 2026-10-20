@@ -226,6 +226,23 @@ def test_preparation_watchdog_stops_when_admission_fails(
     assert _read_only_manifest(tmp_path / "project")["status"] == "failed"
 
 
+def test_preparation_progress_reports_elapsed_time_in_the_introductory_row(
+    monkeypatch, capsys
+):
+    monkeypatch.setenv("CST_HEARTBEAT_SECS", "0")
+    clock = [100.0]
+    monkeypatch.setattr(rw.time, "monotonic", lambda: clock[0])
+    with rw._preparation_progress(True):
+        initial = capsys.readouterr()
+        assert initial.out.endswith(
+            "  Preparing configuration and experiment checks... (0:00:00 elapsed)\n"
+        )
+        clock[0] += 22
+    assert capsys.readouterr().err == (
+        "  Preparing configuration and experiment checks... (0:00:22 elapsed)\n"
+    )
+
+
 @pytest.mark.parametrize("failure", ["banner", "watchdog_start", "watchdog_stop"])
 def test_preparation_reporting_never_masks_admission_errors(monkeypatch, failure):
     def unavailable(*args, **kwargs):

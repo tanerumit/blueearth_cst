@@ -321,7 +321,7 @@ _ANSI_DONE = "92"  # bright green
 
 
 #: What an up-to-date run prints in place of Snakemake's "Nothing to be done".
-_UP_TO_DATE_LINE = "All requested files are present and up to date"
+_UP_TO_DATE_LINE = "Up to date"
 
 
 _ANSI_DIM = "38;5;243"  # dim grey -- the plan block's up-to-date rows

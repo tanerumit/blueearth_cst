@@ -1157,11 +1157,16 @@ class _PreparationHeartbeat(_Heartbeat):
     ) -> None:
         with suppress(OSError, ValueError):
             print(
-                f"{_line_reset(self._stream)}  {self._label} {text}",
+                f"{_line_reset(self._stream)}  {self._label}... ({text})",
                 file=self._stream,
                 end="" if redraw else "\n",
                 flush=True,
             )
+
+    def stop(self, failed: bool = False) -> None:
+        super().stop(failed=failed)
+        if not failed:
+            self._emit(f"{format_elapsed(time.monotonic() - self._start)} elapsed")
 
 
 @contextmanager
@@ -1171,9 +1176,12 @@ def _preparation_progress(enabled: bool):
     try:
         print("\n" + "\n".join(_banner("run_workflows")), flush=True)
         if enabled:
-            print("\n  Preparing configuration and experiment checks...", flush=True)
+            print(
+                "\n  Preparing configuration and experiment checks... (0:00:00 elapsed)",
+                flush=True,
+            )
             heartbeat = _PreparationHeartbeat(
-                "Workflow preparation", sys.stderr
+                "Preparing configuration and experiment checks", sys.stderr
             ).start()
     except Exception as exc:  # noqa: BLE001 -- reporting must never prevent admission
         with suppress(OSError, ValueError):

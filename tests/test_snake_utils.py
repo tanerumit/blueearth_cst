@@ -3473,10 +3473,12 @@ def test_console_an_unparsed_run_info_passes_through():
     assert out == "Job counts unavailable.\n"
 
 
-def test_nothing_to_be_done_is_restated_as_an_up_to_date_verdict():
+@pytest.mark.parametrize("colour", [False, True])
+def test_nothing_to_be_done_is_restated_as_an_up_to_date_verdict(monkeypatch, colour):
     """A logger filter, because onstart -- and so the handler -- never runs then."""
     import logging as _logging
 
+    monkeypatch.setattr(cs, "_console_colour", lambda stream: colour)
     record = _logging.LogRecord(
         "snakemake.logging",
         _logging.INFO,
@@ -3487,7 +3489,8 @@ def test_nothing_to_be_done_is_restated_as_an_up_to_date_verdict():
         None,
     )
     assert cs._UpToDateVerdict().filter(record) is True
-    assert record.getMessage() == "\nAll requested files are present and up to date"
+    expected = f"\033[{cs._ANSI_DONE}mUp to date\033[0m" if colour else "Up to date"
+    assert record.getMessage() == "\n" + expected
 
 
 def test_the_verdict_filter_is_on_snakemakes_logger_once():

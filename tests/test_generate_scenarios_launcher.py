@@ -81,7 +81,7 @@ def test_success_and_ready_reuse_export_the_selected_collection(
     captured = capsys.readouterr()
     console = captured.out
     if ready:
-        assert captured.err == ("\nAll requested files are present and up to date\n")
+        assert captured.err == "\nUp to date\n"
         assert "Scenario request" not in console
         assert "Reusing scenario collection" not in console
         assert plan["collection_id"] not in console
@@ -89,7 +89,7 @@ def test_success_and_ready_reuse_export_the_selected_collection(
     else:
         assert "1 stochastic realization across 1 perturbation point" in console
         assert "planned collection: 2 runs" in console
-        assert "All requested files are present and up to date" not in captured.err
+        assert "Up to date" not in captured.err
     assert exports == (
         [(tmp_path, tmp_path / plan["outputs"]["record_root"] / "collection.json")]
         if exit_code == 0

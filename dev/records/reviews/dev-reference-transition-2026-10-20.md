@@ -36,8 +36,8 @@ Editable branch-owned consumers were updated. Sealed specifications moved withou
 | `dev/reference/workflows/model_creation.md` | `dev/reference/wf1-model-construction.md` |
 | `dev/reference/workflows/rule-index.md` | `dev/reference/toolbox-workflow-map.md` |
 | `dev/reference/workflows/wf2-cmip6-store-readability.md` | `dev/reference/wf2-cmip6-source-readability.md` |
-| `dev/reference/workflows/wf3-stage-flow.html` | `dev/assets/diagrams/scenario-response-handoffs.html` |
-| `dev/reference/workflows/wf3-stage-flow.svg` | `dev/assets/diagrams/scenario-response-handoffs.svg` |
+| `dev/reference/workflows/wf3-stage-flow.html` | Retired snapshot; recover from Git as described below |
+| `dev/reference/workflows/wf3-stage-flow.svg` | Retired snapshot; recover from Git as described below |
 | `dev/reference/roadmap.md` | `dev/records/milestones/roadmap.md` |
 | `dev/reference/task-lanes.md` | `dev/records/decisions/task-lanes.md` |
 | `dev/reference/agent-routing-diagnostics.md` | `dev/records/reviews/agent-routing-diagnostics.md` |
@@ -55,6 +55,10 @@ Editable branch-owned consumers were updated. Sealed specifications moved withou
 | `dev/reference/workflow-report.md` | `dev/templates/workflow-report.md` |
 
 ## Mixed documents
+
+- The workflow diagram source and export were retired after their temporary move to `dev/assets/diagrams/`.
+  They supplied no unique retained evidence; their last versions are recoverable from commit `18ef13e6`
+  at `dev/assets/diagrams/scenario-response-handoffs.html` and `.svg`. No archive copy is maintained.
 
 - WG/HM identifiers remain in the current interface references. Their old section headings are historical;
   use the contract ID to find the current account. The CHIRPS closure witness is retained in

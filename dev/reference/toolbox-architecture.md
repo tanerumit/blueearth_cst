@@ -30,11 +30,6 @@ interface. The [weather-generator interface](toolbox-weather-generator-interface
 [hydrological-model interface](toolbox-hydrological-model-interface.md) describe replacement-engine obligations
 and current adapter requirements.
 
-![Scenario generation and retained-response handoffs](../assets/diagrams/scenario-response-handoffs.svg)
-
-This is a conceptual view, not a numbered DAG. Edit the [HTML source](../assets/diagrams/scenario-response-handoffs.html)
-and regenerate its SVG with `dev/scripts/export_svg.py`; do not edit both copies independently.
-
 ## Configuration and execution records
 
 Project settings own shared `basin`, `climate` and `model` sections. Each workflow has a closed

@@ -67,8 +67,8 @@ and retention. `dev/README.md` is the folder map and contributor entry point.
 
 Use `dev/reference/README.md` to find the existing topic owner for current rules and architecture.
 Reusable report/review artifacts and their usage guides live in `dev/templates/`.
-Diagram sources and retained exports live together in `dev/assets/diagrams/`; references embed or link
-to them. Keep temporary render previews in task scratch, not beside maintained references.
+Snapshot diagrams and render previews belong in task scratch. Retain one under records only when it
+provides evidence needed beyond the task; the record lifecycle governs retention.
 Keep proposals with tasks and dated evidence under records; neither supplies current compliance rules.
 
 The wrapper gives Item and Area / Origin up to 110 and 44 characters. The `#`

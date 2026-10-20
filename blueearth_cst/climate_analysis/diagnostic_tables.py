@@ -106,7 +106,7 @@ def daily_series(climate_nc, cells_csv, source, data_sources=None):
                         )
                     elif normalized_legacy:
                         warning.append(
-                            f"{source}: temperature values are already in °C despite the K label; using the catalog conversion record without converting again"
+                            f"{source}: temperature values are already in °C despite the K label; using as °C"
                         )
                 daily[var] = values
                 daily[f"{var}_cells"] = field.notnull().sum([LAT, LON]).to_series()

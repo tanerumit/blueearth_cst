@@ -103,7 +103,7 @@ def test_falsey_values_returned_as_is(falsey):
         (
             "weathergen",
             "Reading weather netcdf: source.nc",
-            "Reading historical climate for weather generation → source.nc",
+            "Reading historical climate → source.nc",
         ),
         (
             "weathergen",
@@ -118,7 +118,7 @@ def test_falsey_values_returned_as_is(falsey):
         (
             "weathergen",
             "Moving 2 figure(s) to plots",
-            "Moving 2 weather-generator diagnostic figures → plots",
+            "Moving diagnostic figures → plots",
         ),
         (
             "weathergen",

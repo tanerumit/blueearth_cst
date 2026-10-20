@@ -42,7 +42,7 @@ _DATA_SOURCE_FROM_RE = re.compile(r"^Reading (\S+) from (\S+)$")
 _GENERATION_MESSAGES = (
     (
         r"Reading weather netcdf: (.+)",
-        r"Reading historical climate for weather generation → \1",
+        r"Reading historical climate → \1",
     ),
     (
         r"Resampling on (\d+) basin cell\(s\) of (\d+) in the store",
@@ -56,9 +56,7 @@ _GENERATION_MESSAGES = (
     ),
     (
         r"Moving (\d+) figure\(s\) to (.+)",
-        lambda m: (
-            f"Moving {plural(int(m[1]), 'weather-generator diagnostic figure')} → {m[2]}"
-        ),
+        r"Moving diagnostic figures → \2",
     ),
     (r"Saving realization (\d+) of (\d+)", r"Writing stochastic realization \1 of \2"),
     (r"(\S+) reading realization (.+)", r"\1: reading source realization \2"),

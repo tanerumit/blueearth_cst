@@ -516,9 +516,8 @@ def render(
         if item["availability"] != "available"
     )
     log_row(
-        f"Wrote {plural(len(records), 'diagnostic figure')} for {listed(sources)}; "
-        f"{sum(unavailable.values())} with unavailable or unscaled estimates; "
-        "details → plots/_engine/figure_captions.json",
+        f"Wrote {plural(len(records), 'diagnostic figure')} for {listed(sources)} "
+        "→ plots/_engine/figure_captions.json",
         module="diagnostics",
     )
     for reason, count in unavailable.items():

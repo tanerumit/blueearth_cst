@@ -18,7 +18,9 @@ _DIAGNOSTIC_CODE = {"blueearth_cst/shared/execution_outputs.py"}
 # definition. An unknown old revision or any subsequent scientific edit fails
 # closed. The old inventory is retained in tests/data for migration coverage.
 _BOUNDARY_BEFORE = "69dcf9de9882f029d615873460572f1a1d9f639dee8bc2a7ab51e01514085a2c"
-_BOUNDARY_AFTER = "ff0150c6b9b001e0a87b1eb46ed1803a7c6a0a1e6615db5d7df422e985b49d1a"
+# Re-audited after merging main's reference migration: scientific-source
+# comments/docstrings changed, while executable calculations stayed identical.
+_BOUNDARY_AFTER = "632d9eb763ab007100f8c8fd2a0a9f5800363c4fafd41f410721d1c3732498af"
 
 # Audited archive-lifecycle migration: input staging and execution settings are
 # unchanged. Pin BOTH versions, rather than exempting this launcher wholesale:

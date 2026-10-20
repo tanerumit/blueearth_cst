@@ -4,7 +4,7 @@ Last updated: 2026-10-20
 
 Use this map before changing a rule: find its executable definition, shared producers and contract owner.
 The Snakefiles own exact rule names, numbers, inputs, outputs and dependencies; this document does not
-maintain a second inventory. [Toolbox architecture](../toolbox-architecture.md) owns workflow boundaries
+maintain a second inventory. [Toolbox architecture](toolbox-architecture.md) owns workflow boundaries
 and configuration ownership.
 
 ## Find the implementation
@@ -14,17 +14,17 @@ its implementation; inspect the selected configuration when determining which jo
 
 | Workflow | Rule definitions |
 |---|---|
-| WF0: historical climate analysis | [analyze_climate.smk](../../../analyze_climate.smk) |
-| WF1: model construction and historical run | [build_model.smk](../../../build_model.smk) |
-| WF2: projection analysis | [analyze_projections.smk](../../../analyze_projections.smk) |
-| WF3: scenario generation | [generate_scenarios.smk](../../../generate_scenarios.smk) |
-| WF4: simulation and indicators | [simulate_system.smk](../../../simulate_system.smk) |
+| WF0: historical climate analysis | [analyze_climate.smk](../../analyze_climate.smk) |
+| WF1: model construction and historical run | [build_model.smk](../../build_model.smk) |
+| WF2: projection analysis | [analyze_projections.smk](../../analyze_projections.smk) |
+| WF3: scenario generation | [generate_scenarios.smk](../../generate_scenarios.smk) |
+| WF4: simulation and indicators | [simulate_system.smk](../../simulate_system.smk) |
 
-WF3 also has preparation steps in [the all-workflow runner](../../../scripts/run_workflows.py).
-WF4 selects [simulation rules](../../../blueearth_cst/experiment/rules/simulate_and_indicators.smk) or
-[indicators-only rules](../../../blueearth_cst/experiment/rules/indicators_only.smk), then shares indicator
+WF3 also has preparation steps in [the all-workflow runner](../../scripts/run_workflows.py).
+WF4 selects [simulation rules](../../blueearth_cst/experiment/rules/simulate_and_indicators.smk) or
+[indicators-only rules](../../blueearth_cst/experiment/rules/indicators_only.smk), then shares indicator
 publication rules in its top-level Snakefile.
-[The simulation runner](../../../scripts/simulate_system.py) owns operation and target validation,
+[The simulation runner](../../scripts/simulate_system.py) owns operation and target validation,
 including multiple indicator requests. Read these launchers as well as the DAG when changing preparation
 or retained-artifact admission.
 
@@ -32,24 +32,24 @@ For rule labels and log ordering, inspect each workflow's `RuleRegistry` registr
 [Naming][rule-numbering] owns numbering conventions and the pointer for interpreting old
 numbered citations. Numbers are labels, not a substitute for inspecting dependencies.
 
-[rule-numbering]: ../naming.md#9-rule-numbering-wnn-reference-scheme
+[rule-numbering]: naming.md#9-rule-numbering-wnn-reference-scheme
 
 ## Find the current contract
 
 | Change concerns | Owning reference |
 |---|---|
-| Model-free regions, vectors and location identities | [Spatial foundation](../spatial-foundation.md) |
-| Model construction, forcing and mutable-root ordering | [Model construction](model_creation.md) |
-| CMIP6 grid readability and source-version admission | [CMIP6 readability](wf2-cmip6-store-readability.md) |
+| Model-free regions, vectors and location identities | [Spatial foundation](spatial-foundation.md) |
+| Model construction, forcing and mutable-root ordering | [Model construction](wf1-model-construction.md) |
+| CMIP6 grid readability and source-version admission | [CMIP6 readability](wf2-cmip6-source-readability.md) |
 | Projection windows, reductions and diagnostic availability | [WF2 guide][wf2-guide] |
 | Scenario collections, retained responses and indicator sets | [Retained handoffs][handoffs] |
-| Replacement weather generators or hydrological models | [Interchange contracts](../contracts/README.md) |
-| Figure ownership, annotation and export conventions | [Plot style](../plot-style.md) |
+| Replacement weather generators or hydrological models | [Interchange contracts](contracts/README.md) |
+| Figure ownership, annotation and export conventions | [Plot style](plot-style.md) |
 | Supported execution and log interpretation | [Workflow guide][workflow-guide] |
 
-[wf2-guide]: ../../../docs/site/toolbox-reference/workflow-analyze-projections.qmd
-[handoffs]: ../../../docs/site/toolbox-reference/retained-handoffs.qmd
-[workflow-guide]: ../../../docs/site/toolbox-reference/workflows.qmd
+[wf2-guide]: ../../docs/site/toolbox-reference/workflow-analyze-projections.qmd
+[handoffs]: ../../docs/site/toolbox-reference/retained-handoffs.qmd
+[workflow-guide]: ../../docs/site/toolbox-reference/workflows.qmd
 
 ## Check dependencies and consumers
 
@@ -63,9 +63,9 @@ contract rather than assuming a fixed list of files. Gather rules must wait for 
 including independent branches, before merging execution records.
 
 Validate the affected configured graph with the supported runner's dry-run interface.
-[The DAG plotting tool](../../../scripts/plot_workflow_dag.py) provides an executable graph view.
-Select consumer checks through the [validation ladder](../validation-ladder.md); examples include
+[The DAG plotting tool](../../scripts/plot_workflow_dag.py) provides an executable graph view.
+Select consumer checks through the [validation ladder](validation-ladder.md); examples include
 `tests/test_cross_workflow_inputs.py`, `tests/test_log_rules_contract.py` and the affected runner tests.
 These are navigation pointers, not an additional mandatory suite.
 
-[model-ordering]: model_creation.md#mutable-model-root-ordering
+[model-ordering]: wf1-model-construction.md#mutable-model-root-ordering

@@ -57,7 +57,7 @@ from blueearth_cst.shared.wflow_outputs import CODES as _WFLOW_CODES
 #: → short token used in filenames and in the composite ``indicator``.
 #:
 #: Authoritative source for the semantic names: the ``WFLOW_VARS`` map in
-#: ``dev/reference/workflows/model_creation.md``. **Six entries, not five** —
+#: ``blueearth_cst/model/setup_gauges_and_outputs.py``. **Six entries, not five** —
 #: ``precipitation`` is one of them, emitted at registry locations with header
 #: ``P`` when a ``location_registry`` is configured.
 VARIABLE_TOKENS = {

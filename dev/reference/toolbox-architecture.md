@@ -3,7 +3,7 @@
 Last updated: 2026-10-20
 
 Use this reference when changing workflow responsibilities, configuration ownership or retained handoffs.
-The [implementation map](workflows/rule-index.md) points to executable rules; execution instructions belong in
+The [implementation map](workflow-implementation-map.md) points to executable rules; execution instructions belong in
 [the workflow guide](../../docs/site/toolbox-reference/workflows.qmd).
 
 ## Workflow boundaries
@@ -28,9 +28,9 @@ operation/target contract is part of the boundary, not an optional shell conveni
 See [retained handoffs](../../docs/site/toolbox-reference/retained-handoffs.qmd) for the supported artifact
 interface and [interchange contracts](contracts/README.md) for replacement-engine obligations.
 
-![Scenario generation and retained-response handoffs](workflows/wf3-stage-flow.svg)
+![Scenario generation and retained-response handoffs](../assets/diagrams/scenario-response-handoffs.svg)
 
-This is a conceptual view, not a numbered DAG. Edit the [HTML source](workflows/wf3-stage-flow.html)
+This is a conceptual view, not a numbered DAG. Edit the [HTML source](../assets/diagrams/scenario-response-handoffs.html)
 and regenerate its SVG with `dev/scripts/export_svg.py`; do not edit both copies independently.
 
 ## Configuration and execution records
@@ -63,7 +63,7 @@ The toolbox is a repository-based Python/R/Julia workflow, with no API or fronte
 Do not add packaging tables or a build backend as a side effect of tooling changes.
 
 Model-neutral spatial products belong to the [spatial foundation](spatial-foundation.md).
-Model construction and mutable model-root ordering belong to the [WF1 contract](workflows/model_creation.md).
+Model construction and mutable model-root ordering belong to the [WF1 contract](wf1-model-construction.md).
 Historical climate figures belong to WF0/shared climate plotting, not a second subcatchment-climate
 plotting path inside model-result evaluation.
 

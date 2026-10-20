@@ -772,8 +772,8 @@ def get_horizon(wildcards):
 # this file is not the number order and is not required to be.
 #
 # DO NOT RENUMBER TO INSERT A RULE. Use a letter suffix (2.05b) until the next
-# deliberate sweep. Convention: dev/reference/naming.md §9; full map:
-# dev/reference/workflows/rule-index.md § What changed.
+# deliberate sweep. Convention: dev/reference/naming.md §9; historical translations:
+# dev/records/milestones/r10/rule-numbering-crosswalks.md.
 
 # --- log layout ---------------------------------------------------------------
 # EVERY WF2 rule that logs writes a PART under logs/_parts/, and rule 2.08 merges

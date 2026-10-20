@@ -194,7 +194,7 @@ workflow execution, state affected consumers and omitted workflows; rapid must n
   pipeline details, paths and artifacts.
 - `dev/reference/validation-ladder.md`: verification planning, affordability, unexpected gates and CI.
 - `dev/reference/repo-layout.md`, `dev/reference/naming.md`: placement and naming decisions.
-- `dev/reference/workflows/rule-index.md`: before adding/editing rules.
+- `dev/reference/workflow-implementation-map.md`: before adding/editing rules.
 - `docs/site/setup/install.md`, `docs/site/setup/env-setup-notes.md`: Pixi/R/Julia setup problems.
 - `docs/references/hydromt-user-guide/00-index.md`, `docs/references/hydromt-architecture.md`:
   model-build config, catalogs and regions.

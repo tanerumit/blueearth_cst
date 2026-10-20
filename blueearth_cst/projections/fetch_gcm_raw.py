@@ -104,8 +104,8 @@ def is_irregular_grid_error(error):
     are Legendre roots and vary by ~1% -- against hydromt's 5e-4 tolerance, so
     no Gaussian grid can ever pass. The data is well formed; the accessor's
     precondition is simply tighter than the grid type allows
-    (`dev/reference/workflows/wf2-cmip6-store-readability.md`
-    section 1, which carries the measured table).
+    (`dev/reference/wf2-cmip6-source-readability.md`
+    section 1; historical measurements are linked there).
     """
     return IRREGULAR_GRID_PHRASE in str(error)
 
@@ -199,7 +199,7 @@ def explaining_ambiguous_versions(entry, ambiguous):
             f"catalog glob opened all of them ({ambiguous_versions_phrase(ambiguous)}). "
             f"The read then failed with {type(exc).__name__}: {exc}. Pin one version "
             "to read this source deterministically -- see "
-            "dev/reference/workflows/wf2-cmip6-store-readability.md section 2."
+            "dev/reference/wf2-cmip6-source-readability.md section 2."
         ) from exc
 
 
@@ -909,7 +909,7 @@ def fetch_raw_slice(
     # from every WF2 ensemble: CanESM5, all five EC-Earth3 variants,
     # MPI-ESM1-2-HR/LR, CNRM-CM6-1/ESM2-1, MIROC6, MRI-ESM2-0, BCC-CSM2-MR
     # (measured 2026-08-18; the table is in section 1 of
-    # dev/reference/workflows/wf2-cmip6-store-readability.md).
+    # dev/records/milestones/r08/cmip6-readability-measurements.md).
     #
     # `_slice_spatial_dimensions` is the ONLY step in hydromt's read path that
     # needs an evenly spaced grid, and it runs only when a bbox is passed. So the
@@ -943,7 +943,7 @@ def fetch_raw_slice(
                 raise
             # The WHY -- Gaussian latitudes against hydromt's 5e-4 regularity
             # tolerance -- is in `is_irregular_grid_error` and in
-            # dev/reference/workflows/wf2-cmip6-store-readability.md,
+            # dev/reference/wf2-cmip6-source-readability.md,
             # section 1, which carries the measured table of which models. On the
             # console this row has one job: say that this source took the fallback
             # read, and which source. The WARNING level is what makes it findable;

@@ -1,4 +1,4 @@
-> Historical measurements; current reader behavior is documented in [CMIP6 readability](../../../reference/workflows/wf2-cmip6-store-readability.md).
+> Historical measurements; current reader behavior is documented in [CMIP6 readability](../../../reference/wf2-cmip6-source-readability.md).
 
 # WF2 — which CMIP6 stores this toolbox can read
 

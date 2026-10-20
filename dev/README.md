@@ -8,6 +8,7 @@ Developers and agents use the same guidance.
 | [reference/](reference/README.md) | Current rules, architecture and contracts, maintained in place |
 | `tasks/` and `TODO.md` | Active work and proposed changes; canonical board on main |
 | [templates/](templates/README.md) | Reusable report/review templates and usage instructions |
+| `assets/diagrams/` | Diagram sources and retained exports used by references |
 | [records/](records/README.md) | Selected historical evidence and design context |
 | `LOG.md` | Closure ledger pointing to retained outcomes |
 | [scripts/](scripts/README.md) | Developer maintenance and verification tools |

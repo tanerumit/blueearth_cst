@@ -34,6 +34,6 @@ The DAG preflight and fetch path must use the same selection policy.
 readability through actual staging. `tests/test_series_identity.py` owns version-selection checks.
 Inspect fetched coverage and diagnostics before interpreting absent ensemble members scientifically.
 
-[Readability measurements](../../records/milestones/r08/cmip6-readability-measurements.md) and
-[the historical inventory](../../records/milestones/r08/wf2-cmip6-store-inventory.md) describe particular
+[Readability measurements](../records/milestones/r08/cmip6-readability-measurements.md) and
+[the historical inventory](../records/milestones/r08/wf2-cmip6-store-inventory.md) describe particular
 crawls and verification runs. Their model counts are not current acceptance limits or availability claims.

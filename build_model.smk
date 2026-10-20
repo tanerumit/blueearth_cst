@@ -425,8 +425,8 @@ MAP_CANDIDATE_STORES = {
 #
 # DO NOT RENUMBER TO INSERT A RULE. Use a letter suffix (1.09b) until the next
 # deliberate sweep — renumbering is a migration, not an edit.
-# Convention: dev/reference/naming.md §9; full map:
-# dev/reference/workflows/rule-index.md § What changed.
+# Convention: dev/reference/naming.md §9; historical translations:
+# dev/records/milestones/r10/rule-numbering-crosswalks.md.
 
 # --- log layout ---------------------------------------------------------------
 # EVERY WF1 rule that logs writes a PART under logs/_parts/, and rule 1.18 merges

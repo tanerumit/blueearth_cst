@@ -3,7 +3,7 @@
 Last updated: 2026-10-20
 
 Use this reference when changing spatial ownership, region reuse, location identities or basin maps.
-`blueearth_cst/spatial/` owns the implementation; the [implementation map](workflows/rule-index.md) points
+`blueearth_cst/spatial/` owns the implementation; the [implementation map](workflow-implementation-map.md) points
 to rule definitions and consumer checks.
 
 ## Ownership and dependency direction
@@ -33,7 +33,7 @@ code; old ADR descriptions of per-parent versus shared budgets are historical, n
 
 The persisted location registry preserves stable spatial identifiers. Model-specific gauge positions and
 outlet-index mappings are downstream representations; do not substitute positional model output labels
-for the foundation's identity. The [WF1 contract](workflows/model_creation.md) describes those mappings.
+for the foundation's identity. The [WF1 contract](wf1-model-construction.md) describes those mappings.
 
 ## Basin maps
 

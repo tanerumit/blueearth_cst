@@ -12,6 +12,11 @@ Editable branch-owned consumers were updated. Sealed specifications moved withou
 | Former path | Retained destination |
 |---|---|
 | `dev/reference/sealed-records.yml` | `dev/records/sealed-records.yml` |
+| `dev/reference/workflows/model_creation.md` | `dev/reference/wf1-model-construction.md` |
+| `dev/reference/workflows/rule-index.md` | `dev/reference/workflow-implementation-map.md` |
+| `dev/reference/workflows/wf2-cmip6-store-readability.md` | `dev/reference/wf2-cmip6-source-readability.md` |
+| `dev/reference/workflows/wf3-stage-flow.html` | `dev/assets/diagrams/scenario-response-handoffs.html` |
+| `dev/reference/workflows/wf3-stage-flow.svg` | `dev/assets/diagrams/scenario-response-handoffs.svg` |
 | `dev/reference/roadmap.md` | `dev/records/milestones/roadmap.md` |
 | `dev/reference/task-lanes.md` | `dev/records/decisions/task-lanes.md` |
 | `dev/reference/agent-routing-diagnostics.md` | `dev/records/reviews/agent-routing-diagnostics.md` |

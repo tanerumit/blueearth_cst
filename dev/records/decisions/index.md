@@ -6,12 +6,12 @@ when policy or implementation changes. New work does not require another numbere
 
 | Retained record | Current owner / interpretation |
 |---|---|
-| [0001 — Wflow constants](0001-restore-wflow-constant-parameters.md) | [Model construction](../../reference/workflows/model_creation.md); exact values remain in the build template |
+| [0001 — Wflow constants](0001-restore-wflow-constant-parameters.md) | [Model construction](../../reference/wf1-model-construction.md); exact values remain in the build template |
 | [0002 — Subcatchment climate plots](0002-revive-subcatchment-climate-plots.md) | Superseded historical proposal; use the model construction contract |
 | [0003 — Shared region](0003-one-shared-region-artifact.md) | [Spatial foundation](../../reference/spatial-foundation.md) and current spatial code |
-| [0004 — Model-root sentinel](0004-order-model-readers-on-a-terminal-sentinel.md) | [Model construction](../../reference/workflows/model_creation.md#mutable-model-root-ordering) |
+| [0004 — Model-root sentinel](0004-order-model-readers-on-a-terminal-sentinel.md) | [Model construction](../../reference/wf1-model-construction.md#mutable-model-root-ordering) |
 | [0005 — Formatter adoption](0005-adopt-ruff-format-in-two-stages.md) | [Validation ladder](../../reference/validation-ladder.md); tool configuration owns scope |
-| [0006 — Retire duplicate climate plots](0006-retire-subcatchment-climate-plots.md) | [Model construction](../../reference/workflows/model_creation.md#outputs-and-consumers) |
+| [0006 — Retire duplicate climate plots](0006-retire-subcatchment-climate-plots.md) | [Model construction](../../reference/wf1-model-construction.md#outputs-and-consumers) |
 | [0007 — Basin-area maps](0007-draw-basin-area-from-the-spatial-foundation.md) | [Spatial foundation](../../reference/spatial-foundation.md#basin-maps) |
 | [0008 — Repository-based distribution](0008-ship-blueearth-cst-unpackaged.md) | [Toolbox architecture](../../reference/toolbox-architecture.md#implementation-ownership) |
 | [0009 — Generation/simulation split](0009-split-scenario-generation-and-system-simulation.md) | [Toolbox architecture](../../reference/toolbox-architecture.md#workflow-boundaries) |

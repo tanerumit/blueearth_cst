@@ -5,7 +5,7 @@
 rule in this repository calls it: WF4 publishes run and group reductions, and the consumers
 that actually draw a surface are out-of-repo (CST-API, the frontend,
 ``csthelpers``). They re-implement from
-``dev/reference/contracts/hydrological-model-seam.md``, as does this
+``dev/reference/toolbox-hydrological-model-interface.md``, as does this
 repository's own ``docs/notebooks/Climate Stress Test.ipynb``, which is
 deliberately written against the contract text rather than against this module.
 So when the two disagree, the contract wins and this file is the defect.

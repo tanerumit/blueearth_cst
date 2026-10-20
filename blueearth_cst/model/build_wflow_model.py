@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Build Wflow-SBM parameters from the engine-neutral spatial foundation."""
 
 import os
@@ -194,23 +195,16 @@ def _validate_registry(registry: pd.DataFrame, locations: gpd.GeoDataFrame) -> N
         raise ValueError(f"P1 location_registry lacks columns: {missing}")
     if registry["wflow_id"].duplicated().any():
         raise ValueError("P1 location_registry contains duplicate wflow_id values")
-    # ADR 0003 §12a: the old invariant here was "every primary location
-    # wflow_id must equal its subbasin_id". That is REPEALED, not broken —
-    # under §12 a primary is `basin_id*1000 + local_subbasin_number*10` while
-    # its subbasin_id is `basin_id*100 + local_subbasin_number`, so the two are
-    # deliberately different numbers and the old check made WF1 unbuildable.
-    #
-    # Replaced rather than deleted, because the property it protected is real:
-    # a primary must be identifiable from its id alone. Under §12 that reads as
-    # "ends in 0", which is also what tells a reader that 1010 is a subbasin
-    # outlet and 1011 a gauge inside it.
+    # A primary location is recognizable by its final zero digit. Its wflow_id
+    # deliberately differs from subbasin_id; spatial.identity owns the encoding.
     primary = registry[registry["location_id"].astype(int).eq(1)]
     misnumbered = primary.loc[
         primary["wflow_id"].astype(int) % 10 != 0, "location_code"
     ]
     if not misnumbered.empty:
         raise ValueError(
-            "every primary location wflow_id must end in 0 (ADR 0003 §12: "
+            "every primary location wflow_id must end in 0 "
+            "(see dev/reference/toolbox-spatial-foundation.md; "
             "basin_id*1000 + local_subbasin_number*10 + m, m=0 for the "
             f"primary); offenders: {sorted(misnumbered.astype(str))}"
         )

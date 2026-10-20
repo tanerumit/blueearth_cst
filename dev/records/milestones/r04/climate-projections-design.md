@@ -92,7 +92,7 @@ R1 sectioned this Snakefile's config and R3 moved it onto the shared
 `Snakefile_climate_projections`, lines 1–34 — verified). But everything else
 in workflow 2 predates the Phase-2 discipline:
 
-- No per-workflow contract doc — `dev/reference/workflows/climate_projections.md` was
+- No per-workflow contract doc — `dev/records/milestones/r04/climate_projections.md` was
   deferred from R1 to R4's opening act (roadmap R4 deliverables).
 - **Zero** `log:`/`benchmark:` directives on any rule in
   `Snakefile_climate_projections` (verified: the file has none). The exhaustive
@@ -121,7 +121,7 @@ mechanical.
 Same contract-first, behavior-preserving discipline R3 used, applied to
 workflow 2:
 
-1. **Contract before code.** `dev/reference/workflows/climate_projections.md` (format per
+1. **Contract before code.** `dev/records/milestones/r04/climate_projections.md` (format per
    `dev/milestones/r01/modularity-contracts-design.md` §4, mirroring the R3-authored
    `dev/reference/workflows/model_creation.md`) is R4's first commit, written against
    *current* behavior. Code commits then change behavior against a recorded
@@ -166,7 +166,7 @@ workflow 2:
 
 ## What changes
 
-### 1. Contract doc `dev/reference/workflows/climate_projections.md` (opening act)
+### 1. Contract doc `dev/records/milestones/r04/climate_projections.md` (opening act)
 
 Format per `dev/milestones/r01/modularity-contracts-design.md` §4, mirroring
 `dev/reference/workflows/model_creation.md`, target < 100 lines. Content grounded in
@@ -1190,7 +1190,7 @@ files under a `tmp_path` project dir), asserts:
 
 ## Commit plan (roadmap `r04:` prefix; one logical change per commit; tag `r04-projections`)
 
-1. `r04: add dev/reference/workflows/climate_projections.md contract doc`
+1. `r04: add dev/records/milestones/r04/climate_projections.md contract doc`
    (current behavior; owned keys, save_grids gating, plausibility-overlay note,
    the documented M2b attrs regression flag, the chain-audit findings table with
    its `Evidence`/`Outcome` columns if it fits else a pointer to

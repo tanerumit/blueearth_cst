@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Scaffold a dummy `project_dir` tree from the Snakefiles, without running anything.
 
 Layout review tool. `snakemake --summary` builds the DAG and prints every
@@ -103,7 +104,7 @@ def _stage_cross_workflow_inputs(project_dir: Path, config_path: Path) -> None:
     copies and they drifted (R9 P5 F3, and this file was the worst of them).
 
     NO REGION is staged, and that is the contract rather than an omission: since
-    ADR 0003 WF2 and WF3 each delineate their own
+    the shared-region refactor WF2 and WF3 each delineate their own
     `data/spatial/geoms/region.geojson` and declare it as an OUTPUT, so staging
     one would pre-empt a file the workflow is about to write.
     """

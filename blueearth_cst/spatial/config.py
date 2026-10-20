@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Parse and validate the Workflow 1 spatial-foundation configuration."""
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from blueearth_cst.shared.snake_utils import (
 )
 
 #: Default ceiling on automatically-derived subbasins, PER PARENT BASIN
-#: (ADR 0003 §11). The VALUE lives in ``config/advanced_settings.yml`` under
+#: The value lives in ``config/advanced_settings.yml`` under
 #: ``defaults:``, with the colour-ramp argument for the number itself; a project
 #: overrides it with ``basin.delineation.max_subbasins``.
 DEFAULT_MAX_SUBBASINS_PER_BASIN = ADVANCED_SETTINGS["defaults"]["max_subbasins"]
@@ -93,7 +94,7 @@ def resolve_gauge_points_path(
 
     **A legacy-only config raises.** It cannot be honoured, which is why the
     former ``FutureWarning`` was not enough. Gauge points became an input to
-    rule 1.02 ``delineate_subbasins_and_rivers``, and ADR 0003 §8b requires that
+    rule 1.02 ``delineate_subbasins_and_rivers``, and the spatial contract requires that
     rule's params to be a pure function of ``project`` + ``basin`` —
     it is declared by all three workflows and the other two carry no
     ``workflows.build_model`` section at all. So the legacy key reaches the
@@ -213,8 +214,8 @@ def parse_spatial_config(
     delineation_cfg = basin_cfg.get("delineation", {}) or {}
     if not isinstance(delineation_cfg, Mapping):
         raise TypeError("basin.delineation must be a mapping")
-    # ADR 0003 §11: `max_count` was a GLOBAL budget shared across parents;
-    # `max_per_basin` is a per-parent ceiling. Rejected BY NAME rather than
+    # `max_count` was a GLOBAL budget shared across parents;
+    # `max_subbasins` is a per-parent ceiling. Rejected BY NAME rather than
     # ignored, because `basin` has no closed schema (unlike
     # `advanced_settings`, whose `_ADVANCED_SETTINGS_SCHEMA` rejects unknown
     # keys) — so a leftover `max_count` would be dropped in silence and the
@@ -222,8 +223,9 @@ def parse_spatial_config(
     # wrote. On a three-basin project that is a silently tripled partition.
     if "max_count" in delineation_cfg:
         raise ValueError(
-            "basin.delineation.max_count was removed in ADR 0003 "
-            "§11. Rename it to 'max_subbasins' — and note the MEANING changed "
+            "basin.delineation.max_count was removed. "
+            "See dev/reference/toolbox-spatial-foundation.md. "
+            "Rename it to 'max_subbasins' — and note the MEANING changed "
             "with the name: max_count was one global budget shared across all "
             "parent basins, max_subbasins is a ceiling applied to each parent "
             "independently. A multi-basin project keeping the same number will "

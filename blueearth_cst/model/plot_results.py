@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/wf1-model-construction.md
 # -*- coding: utf-8 -*-
 """
 Plot wflow results and compare to observations if any
@@ -213,7 +214,7 @@ def analyse_wflow_historical(
     Model results should include the discharge keys Q_outlets and, if gauges are
     provided, Q_gauges_{basename(gauges_locs)}.
 
-    Per-subcatchment climate figures were removed 2026-08-09 (ADR 0006): the
+    Per-subcatchment climate figures were removed in the climate-plot consolidation: the
     climate a reader wants is the map and series family under
     ``models/hydrology/wflow/forcing/plots/``, and drawing it twice from two
     code paths was the duplication that decision retires.
@@ -363,7 +364,7 @@ def analyse_wflow_historical(
         ds_basin = xr.Dataset()
 
     # Section 4 (per-subcatchment climate plots) removed 2026-08-09 — see
-    # dev/records/decisions/0006-retire-subcatchment-climate-plots.md. The climate
+    # dev/reference/wf1-model-construction.md (outputs and consumers). The climate
     # a reader wants is now the map/series family under forcing/plots/.
 
     # Apply one common warm-up boundary before any hydrological summary.

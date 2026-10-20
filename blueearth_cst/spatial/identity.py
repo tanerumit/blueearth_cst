@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Deterministic identities for parent basins, subbasins, and locations."""
 
 from __future__ import annotations
@@ -9,15 +10,14 @@ import pandas as pd
 INT32_MAX = 2_147_483_647
 MAX_LOCAL_SUBBASIN_NUMBER = 99
 
-#: Additional (non-primary) locations allowed inside one subbasin (ADR 0003
-#: §12). The id reserves ONE digit for the within-subbasin member, so `m` runs
+#: Additional (non-primary) locations allowed inside one subbasin.
+#: The id reserves ONE digit for the within-subbasin member, so `m` runs
 #: 0–9 with 0 reserved for the primary. A tenth additional location would carry
 #: `m = 10` and land exactly on the NEXT subbasin's primary, so this is a
 #: collision boundary rather than a preference.
 #:
-#: If a real deployment ever needs more, the `basin_id*10000 +
-#: local_subbasin_number*100 + m` variant lifts the limit to 99 at five digits
-#: (ADR 0003 §12, *Cost, accepted*).
+#: Increasing capacity requires an explicit identity-format migration, not a
+#: larger constant: existing persisted IDs and consumers depend on this encoding.
 MAX_ADDITIONAL_LOCATIONS = 9
 
 
@@ -145,7 +145,7 @@ def assign_location_ids(locations: pd.DataFrame) -> pd.DataFrame:
             "subbasin_id",
             "subbasin_code",
             "subbasin_name",
-            # ADR 0003 §12: the wflow_id is built from the LOCAL subbasin
+            # The wflow_id is built from the LOCAL subbasin
             # number, not from `subbasin_id`. Carried explicitly rather than
             # recovered as `subbasin_id - basin_id*100`, so the id scheme does
             # not silently depend on how subbasin_id happens to be composed.
@@ -197,7 +197,7 @@ def assign_location_ids(locations: pd.DataFrame) -> pd.DataFrame:
         lambda row: f"{row['subbasin_code']}-L{int(row['local_location_number']):02d}",
         axis=1,
     )
-    # ADR 0003 §12: `wflow_id = basin_id*1000 + local_subbasin_number*10 + m`,
+    # `wflow_id = basin_id*1000 + local_subbasin_number*10 + m`,
     # `m = 0` for the subbasin's primary location and 1–9 for additional points
     # inside it. Basin 1 reads 1010, 1011, 1020, 1030…; basin 2 reads 2010, …
     #
@@ -218,8 +218,9 @@ def assign_location_ids(locations: pd.DataFrame) -> pd.DataFrame:
         crowded = sorted(set(ordered.loc[too_many, "subbasin_code"].astype(str)))
         raise ValueError(
             f"a subbasin cannot hold more than {MAX_ADDITIONAL_LOCATIONS} "
-            f"additional locations beside its primary under the ADR 0003 §12 "
-            f"wflow_id scheme; crowded subbasins: {crowded}"
+            "additional locations beside its primary under the wflow_id scheme "
+            "(see dev/reference/toolbox-spatial-foundation.md); "
+            f"crowded subbasins: {crowded}"
         )
     ordered["wflow_id"] = (
         ordered["basin_id"].astype("int64") * 1000

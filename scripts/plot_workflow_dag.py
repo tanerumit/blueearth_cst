@@ -53,7 +53,8 @@ A `--config` override reaches the project config before composition, so it can
 toggle a workflow or repoint a stanza's ``config_path`` -- but a project
 config's top level and its workflow stanzas are both CLOSED, so an override
 that invents a top-level key or writes a workflow setting is refused at parse
-time. See ``dev/records/milestones/r13/migration-config-tiers.md`` for the full mapping.
+time. See ``dev/reference/toolbox-architecture.md`` for configuration ownership;
+``blueearth_cst/shared/config_composition.py`` owns the exact accepted schema.
 
 Not a Snakemake rule and deliberately so: a rule that renders the DAG would sit
 inside the DAG it renders, and would show up in ``--summary`` and in the project
@@ -91,7 +92,7 @@ from blueearth_cst.shared.config_composition import (  # noqa: E402
 # names in blueearth_cst/shared/merge_logs.py (logs/wf1_build_model.log ...).
 WORKFLOW_NUMBER = {
     # 0 because analyze_climate runs BEFORE model creation. `W` is a workflow
-    # id, not a position (naming.md §9), and ids need not start at 1 -- so the
+    # id, not a position (dev-naming-conventions.md §9), and ids need not start at 1 -- so the
     # newcomer takes 0 and `ls logs/` still sorts in execution order, which
     # renumbering the other three would have cost a migration to achieve.
     "analyze_climate.smk": 0,

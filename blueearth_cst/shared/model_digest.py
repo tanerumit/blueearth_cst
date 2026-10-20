@@ -1,7 +1,6 @@
 """Pointer-derived fingerprint of the live Wflow model's runtime inputs.
 
-Implements the *Model reproducibility contract* in
-``dev/records/milestones/r09/project-tree-design.md``: each experiment records which
+Current guidance: ``dev/reference/wf1-model-construction.md``. Each experiment records which
 model state it used, so a changed live model cannot silently re-run an old
 experiment against different physics or state.
 

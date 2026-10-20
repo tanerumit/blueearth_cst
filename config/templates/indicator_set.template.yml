@@ -22,7 +22,7 @@ description: Illustrative reuse, not an approved second scientific set.
 selection:
   # List registered or authored indicator entries. Input: list of indicator mappings.
   indicators:
-    # A registered definition id (see dev/reference/indicator-glossary.md).
+    # A registered definition id (see dev/reference/toolbox-indicator-glossary.md).
     # Reuse a registered indicator definition. Input: registered definition ID.
     - definition: q_annual_mean
     # Reuse a registered indicator definition. Input: registered definition ID.

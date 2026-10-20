@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 import functools
 import itertools
 import json
@@ -120,7 +121,7 @@ CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configu
 # catalog above: delineating a basin is a hydrography read, not a projections
 # read. WF2 therefore reads BOTH catalogs — a divergence from the pre-v2.0
 # workflow, which read only the climate catalog. The name is historical: this
-# fed the climate store until ADR 0003 replaced it with the region rule.
+# fed the climate store until the shared-region refactor replaced it with the region rule.
 STORE_DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 # Shared — the model-free basin delineation the climate store extracts against.
@@ -344,7 +345,7 @@ clim_project_dir = f"{project_dir}/data/climate/projections/{clim_project}"
 #
 # WF2 needs the model-free delineated polygon and nothing else — that is what
 # freed it from wf1's hydrology_model/staticgeoms/region.geojson (design D2/A1,
-# goal G2). Until ADR 0003 the only model-free source was the climate-store
+# goal G2). Until the shared-region refactor the only model-free source was the climate-store
 # producer, so WF2 declared the whole extraction to obtain a 3 kB outline and
 # the design recorded that as "the accepted, stated price of A1". The region is
 # now its own artifact, so WF2 declares this rule and no store: a
@@ -358,7 +359,7 @@ REGION = region_rule(
 )
 region_path = REGION.region_geojson
 
-# --- The shared vector foundation (ADR 0003 §8) -------------------------------
+# --- The shared vector foundation -------------------------------
 # Same pattern once more: ONE producer contract, built here and identically in
 # the other two workflows, splatted into rule 2.02 below, and
 # tests/test_spatial_units_rule.py parses all three and fails on ANY difference
@@ -371,14 +372,12 @@ region_path = REGION.region_geojson
 # `modis_lai` and `soilgrids` to draw a subbasin outline; measured 2026-08-06,
 # the split avoids ~71% of what that would add. `snakemake -n` on this file must
 # therefore list `delineate_subbasins_and_rivers` and no job whose inputs mention those
-# three sources — that dry-run is §8's acceptance assertion, not this comment.
+# three sources — the dry-run checks that dependency boundary.
 #
-# WF2 does not yet CONSUME the layers (§10 leaves the consuming rules
-# deliberately unnamed); making them reachable is this decision, using them is
-# the next one.
+# WF2 requests these layers as explicit terminal products.
 #
-# `parse_spatial_config(basin_cfg)` takes NO model section: §8b requires the
-# shared rule's params to be a pure function of `project` + `shared.basin`, and
+# `parse_spatial_config(basin_cfg)` takes NO model section: the
+# shared rule's params must depend only on shared project and basin settings, and
 # this workflow has no `workflows.build_model` to offer anyway — which is
 # exactly why the asymmetry would have been fatal.
 SPATIAL_UNITS = spatial_units_rule(
@@ -772,8 +771,8 @@ def get_horizon(wildcards):
 # this file is not the number order and is not required to be.
 #
 # DO NOT RENUMBER TO INSERT A RULE. Use a letter suffix (2.05b) until the next
-# deliberate sweep. Convention: dev/reference/naming.md §9; full map:
-# dev/reference/workflows/rule-index.md § What changed.
+# deliberate sweep. Convention: dev/reference/dev-naming-conventions.md §9; historical translations:
+# dev/records/milestones/r10/rule-numbering-crosswalks.md.
 
 # --- log layout ---------------------------------------------------------------
 # EVERY WF2 rule that logs writes a PART under logs/_parts/, and rule 2.08 merges
@@ -805,7 +804,7 @@ def get_horizon(wildcards):
 # contract, but each workflow owns its own `log:` label and its own LOG_RULES,
 # so registering it is a per-file obligation the shared definition does not
 # carry, and it was missed in all three files in turn. And a store label
-# outlived the rule ADR 0003 §5 deleted, contributing a phantom "no part from
+# outlived the rule the shared-region refactor deleted, contributing a phantom "no part from
 # this run" section to every merged WF2 log. WF2 builds no climate store,
 # standalone or otherwise: it reads the region polygon from `delineate_region`.
 # Both directions are now mechanically checked for all three workflows.
@@ -883,7 +882,7 @@ WF2_TARGETS = {
     "figure_title_manifest": f"{clim_project_dir}/_engine/figure_titles.json",
     "figure_captions": FIGURE_CAPTIONS_MD,
     "figure_manifest": FIGURE_CAPTIONS_JSON,
-    # ADR 0003 §8. The vector rule has NO WF2 consumer yet (§10), so a target
+    # The vector rule has NO WF2 consumer yet, so a target
     # entry is what makes it reachable at all — an undeclared leaf is simply
     # never scheduled. One representative schedules the whole multi-output rule,
     # the same deal WF1's `spatial_catalog.yml` terminal gets. It is also a
@@ -919,7 +918,7 @@ rule all:
 # ambiguity it was insuring against: there is no longer a second stage-B rule that
 # could claim the same output.
 
-# 2.01  delineate_region — the one project region artifact (ADR 0003).
+# 2.01  delineate_region — the one project region artifact.
 # Byte-identical to 1.01 and 3.03 except message/log/benchmark.
 #
 # This REPLACES rule 2.11 extract_climate_grid -- the name that rule answered to
@@ -943,7 +942,7 @@ rule delineate_region:
         DELINEATE_REGION.benchmark(),
     script: REGION.script
 
-# 2.02  delineate_subbasins_and_rivers — the shared vector foundation (ADR 0003 §8).
+# 2.02  delineate_subbasins_and_rivers — the shared vector foundation.
 # Byte-identical to 1.02 and 3.04 except message/log/benchmark.
 #
 # WF2 declares the VECTOR half only. The raster half (rule 1.05) stays WF1-only,
@@ -1330,8 +1329,8 @@ rule gather_logs:
         (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
         FIGURE_CAPTIONS_JSON,
         ANALYSIS_OUTPUTS["analysis_record"],
-        # ADR 0003 §8: rule 2.02 is a LEAF here — nothing in WF2 consumes the
-        # vector layers yet (§10) — so it is not upstream of the three terminals
+        # rule 2.02 is a LEAF here — nothing in WF2 consumes the
+        # vector layers yet — so it is not upstream of the three terminals
         # above the way 2.01 is. Without this edge it would run in parallel
         # with the merge and its part would be stranded under `_parts/`, the
         # exact defect the LOG_RULES block records for 1.01, 2.01 and 3.03.

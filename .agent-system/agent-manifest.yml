@@ -1,7 +1,7 @@
 # blueearth_cst/.agent-system/agent-manifest.yml
 #
 # TRACKED project activation source. Record the rationale for changes in
-# dev/reference/agent-activation.md.
+# dev/reference/dev-agent-activation.md.
 roles:
   - cst-architect
   - cst-case-manager

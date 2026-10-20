@@ -235,6 +235,6 @@ create-case = { cmd = "python scripts/create_case.py", description = "Create an 
 # being excluded by an allow-list nobody maintains.
 #
 # Neither task publishes anything. Deployment to GitHub Pages is deliberately
-# not wired yet -- see dev/working/2026-08-19_quarto-docs-site/design.md P4.
+# not wired yet; see docs/README.md for the documentation entry point.
 docs-preview = { cmd = "quarto preview docs/site", description = "Serve the documentation site locally with live reload (Ctrl-C to stop)" }
 docs-build   = { cmd = "quarto render docs/site", description = "Render the documentation site to docs/site/_site (gitignored); the build gate" }

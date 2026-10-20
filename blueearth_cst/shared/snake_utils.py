@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Shared Snakefile helpers and compatibility exports.
 
 WF3 imports its scientific and neutral logging helpers from ``wf3_science``
@@ -395,7 +396,7 @@ def validate_experiment_name(name: str, project_dir) -> str:
 
     Grammar: ``^[a-z0-9][a-z0-9_]*$`` (lowercase alnum + underscore, must start
     with an alnum), nonempty, at most 64 chars — a strict subset of
-    ``dev/reference/naming.md``'s snake_case rule that deliberately excludes
+    ``dev/reference/dev-naming-conventions.md``'s snake_case rule that deliberately excludes
     hyphens and dots so the value can never introduce a path component or an
     extension. Uppercase is REJECTED (never silently lowercased). After the
     grammar, a containment assertion confirms the resolved target is a direct
@@ -665,7 +666,7 @@ SPATIAL_UNITS_SCRIPT = "blueearth_cst/spatial/delineate_spatial_units.py"
 
 @dataclass(frozen=True)
 class SpatialUnitsRule:
-    """The producer contract for the shared vector foundation (ADR 0006 §8).
+    """The producer contract for the shared vector foundation.
 
     The THIRD member of the shared-rule family, beside :class:`RegionRule` and
     :class:`ClimateStoreRule` and with the same shape. All three workflows
@@ -680,7 +681,7 @@ class SpatialUnitsRule:
 
     **Name the next one ``<thing>_rule``.** ``_contract`` was rejected — this
     repo uses "contract" for interchange surfaces
-    (``dev/reference/contracts/``, ``SPATIAL_CONTRACT_VERSION``,
+    (the engine-interface references, ``SPATIAL_CONTRACT_VERSION``,
     ``test_climate_store_contract.py``) and overloading it would be worse than
     the jargon it replaced; ``_definition`` was the runner-up, rejected on
     verbosity at the call sites.
@@ -699,19 +700,19 @@ def spatial_units_rule(project_dir, spatial_config, data_sources) -> SpatialUnit
 
     ONE rule definition, declared in all three workflows (``1.01c`` / ``2.03c``
     / ``3.01f``), over the vector half of what rule 1.01 used to do alone.
-    Before ADR 0006 §8, WF2 and WF3 could not reach the basin and subbasin
+    Before the shared-region refactor, WF2 and WF3 could not reach the basin and subbasin
     boundaries without declaring ``prepare_land_and_soil_maps`` — whose real product
     is ``spatial_maps.nc`` — so a projections-only run would have resampled
     ``vito``, ``modis_lai`` and ``soilgrids`` to draw a subbasin outline.
 
     Seven outputs. Six are the declared vector artifacts; the seventh,
-    ``hydrography.nc``, is the SEAM INTERMEDIATE (§8a). The raster half declares
+    ``hydrography.nc``, is the SEAM INTERMEDIATE. The raster half declares
     it as an input because the whole hydrography grid stack used to cross this
     boundary in memory, and recomputing it would make WF1 read the hydrography
     twice with two grids that can drift. It is deliberately absent from
     ``spatial_catalog.yml``.
 
-    **The params are a pure function of ``project`` + ``shared.basin`` (§8b),
+    **The params are a pure function of the shared project and basin settings,
     and that is a requirement, not a convenience.** The five projections-only
     configs contain no ``workflows.build_model`` keys at all, so a params
     payload drawn from that section would differ per invoking workflow — the

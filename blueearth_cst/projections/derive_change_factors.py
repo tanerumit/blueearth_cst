@@ -2,9 +2,9 @@
 
 Replaces the pair `monthly_change` (fanned out per `point_key` × horizon) and
 `monthly_change_scalar_merge` (a single aggregator over their `temp()` outputs).
-The design's rule table gives stage B **1 job** with no fan-out
-(`dev/records/milestones/r08/wf2-climate-analysis-v2-design.md` §5, "B. Derive"), reading the explicit
-expanded series list.
+Stage B runs **1 job** with no fan-out, reading the explicit expanded series list.
+Current workflow navigation: `dev/reference/toolbox-workflow-map.md`.
+Historical rationale: `dev/records/milestones/r08/wf2-climate-analysis-v2-design.md` §5, "B. Derive".
 
 **This step is value-neutral by construction.** The arithmetic is not reimplemented
 here: `get_change_annual_clim_proj` and

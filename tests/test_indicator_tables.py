@@ -69,7 +69,7 @@ def test_an_unknown_variable_raises_rather_than_being_skipped():
     # The error must say where to fix it -- both places, since the mapping is a
     # published contract and not only code.
     assert "indicator_tables.py" in message
-    assert "hydrological-model-seam.md" in message
+    assert "toolbox-hydrological-model-interface.md" in message
 
 
 def test_tokens_are_distinct_so_two_variables_cannot_share_a_table():
@@ -144,7 +144,7 @@ def test_fluxes_keep_their_annual_total_in_mm_per_year(token):
 @pytest.mark.parametrize(
     "outvar, token",
     [
-        ("precipitation", "precip"),  # not `p` -- naming.md §6 tier 2
+        ("precipitation", "precip"),  # not `p` -- dev-naming-conventions.md §6 tier 2
         ("actual evapotranspiration", "aet"),  # not `et` -- `pet` is canonical
         ("snow", "snow"),  # not `swe` -- CSDMS says snowpack liquid water
     ],

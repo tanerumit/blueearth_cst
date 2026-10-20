@@ -21,7 +21,7 @@ The earlier rationale claimed the split existed because hydromt 1.3's
 ``hydromt build`` cannot tolerate per-method no-data, with a removal trigger
 waiting on upstream. That trigger is withdrawn: rule 1.06 never invokes the
 ``hydromt build`` CLI, so the condition could not have fired. See
-``dev/reference/workflows/model_creation.md`` for the measurement and decision.
+``dev/reference/wf1-model-construction.md`` for the current construction contract.
 """
 
 import os

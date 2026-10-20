@@ -131,7 +131,7 @@ inventory (`declared_inventory.txt`, `observed_inventory.txt`), probe output
 (`_forceall_dryrun.txt`, `_batch_dryrun_demo.txt`) and gate record;
 `dev/reviews/**`; `dev/roadmap.md`'s historical phase entries;
 `docs/migration-r08-wf2.md` (a past release's user migration note); and
-`dev/reference/workflows/climate_experiment.md`, which is registered in
+`dev/records/milestones/r05/climate_experiment.md`, which is registered in
 `sealed-records.yml` and whose edit fails `tests/test_sealed_records.py` by
 design.
 

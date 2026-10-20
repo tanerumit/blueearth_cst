@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""`dev/reference/indicator-glossary.md` is checked against the code, not trusted.
+"""`dev/reference/toolbox-indicator-glossary.md` is checked against the code, not trusted.
 
 The glossary is a fifth hand-maintained copy of the variable vocabulary, and this
 repo already knows what happens to those: 8bd51de changed the csv header scheme
@@ -35,7 +35,10 @@ from blueearth_cst.shared.indicator_tables import (
 from blueearth_cst.shared.wflow_outputs import CODES, PLOT_META
 
 GLOSSARY = (
-    Path(__file__).resolve().parents[1] / "dev" / "reference" / "indicator-glossary.md"
+    Path(__file__).resolve().parents[1]
+    / "dev"
+    / "reference"
+    / "toolbox-indicator-glossary.md"
 )
 
 

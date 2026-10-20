@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/wf1-model-construction.md
 # -*- coding: utf-8 -*-
 """Render toolbox figures from a project tree on disk, without running a workflow.
 
@@ -35,7 +36,7 @@ stated reasons rather than forgotten:
   rule's logic, and a preview that drifts from the rule is worse than no
   preview.
 * ``clim-year`` / ``clim-month`` were the per-subcatchment climate signatures.
-  ADR 0006 retired that family along with its producer
+  The consolidation retired that family along with its producer
   (``climate_analysis/subcatchment_climate.py``) and ``plot_clim``, so there is
   no longer a rule-side function for a preview to call. The climate a reader
   wants is the map/series family under ``forcing/plots/``, which is the second

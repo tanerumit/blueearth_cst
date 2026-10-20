@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 # Advanced settings — toolbox-wide knobs a normal project never touches.
 #
 # NOT a `--configfile` target. The three Snakefiles are driven by a project's
@@ -138,7 +139,7 @@ defaults:
   hydrography: merit_hydro_ihu
   basin_index: merit_hydro_index
 
-  # Ceiling on automatically-derived subbasins, PER PARENT BASIN (ADR 0003 §11).
+  # Ceiling on automatically-derived subbasins, PER PARENT BASIN.
   # Overridable per project via `basin.delineation.max_subbasins`.
   #
   # Eleven, not twelve or twenty: twelve is the practical limit for a qualitative

@@ -9,11 +9,13 @@ alternative implementation:
   ``validate_wg5_catalog_runs``;
 - the **hydrological-model seam** (Wflow-SBM built by hydromt today):
   validators ``validate_hm1``..``validate_hm7`` (no ``validate_hm6a`` — its
-  contract surface is pinned transitively by HM-4) + the relational
+  configuration pointer is checked by HM-4, not file existence) + the relational
   ``validate_hm_gauge_column_identity``.
 
-Source of record: ``dev/records/milestones/p32b/interchange-contracts-design.md`` (ACCEPTED
-2026-07-24, §5.5) and the two seam docs ``dev/reference/contracts/*-seam.md``.
+Current guidance: ``dev/reference/toolbox-weather-generator-interface.md`` and
+``dev/reference/toolbox-hydrological-model-interface.md``. The design section
+IDs below identify historical rationale in
+``dev/records/milestones/p32b/interchange-contracts-design.md``, not additional requirements.
 
 Design invariants this module obeys (do not relax without a design change):
 
@@ -316,7 +318,7 @@ def validate_wg2(df: Any, st_num: int | None = None) -> list[str]:
 #: Renamed 2026-08-12 from the single ``generateWeatherSeries`` section: that
 #: function is not exported by weathergenr 1.2.0 and its dot.case keys matched
 #: no 1.2.0 argument, so the R hand-translated every one. The "upstream-spelled
-#: dot.case preserved verbatim" rationale this list used to carry (naming.md §2)
+#: dot.case preserved verbatim" rationale this list used to carry (dev-naming-conventions.md §2)
 #: is what the rename RESTORES — upstream now spells them snake_case.
 #:
 #: **weathergenr 2.0.0 (2026-08-17).** One key changed here: ``relax_priority``
@@ -561,7 +563,7 @@ def validate_wg5(cfg: Any) -> list[str]:
 
 # ---------------------------------------------------------------------------
 # Hydrological-model seam — HM-1, HM-2, HM-3, HM-4, HM-5, HM-7 (persisted).
-# HM-6a: no validator (existence pinned transitively via HM-4).
+# HM-6a: no file validator (HM-4 checks the configuration pointer only).
 # HM-6b (temp()) lives in the temp-validator section below.
 # ---------------------------------------------------------------------------
 

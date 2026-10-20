@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-architecture.md
 # -*- coding: utf-8 -*-
 """Render an indicator table as a heatmap, so a reader sees the pattern.
 
@@ -30,7 +31,7 @@ because the original encodes an assumption this toolbox does not share:
 **This module is what keeps ``seaborn`` in ``pixi.toml``.** As of 2026-08-17 the
 only other usage — WF2's change-factor ``JointGrid`` — was replaced, leaving the
 dependency declared with nothing importing it, which is exactly the state that
-got ``flit`` removed under ADR 0008. If this module is ever deleted, take
+motivated removing the unused build backend. If this module is ever deleted, take
 ``seaborn`` with it or give it another job.
 
 Colour: ``RdBu`` is kept from the original. Red–blue is the diverging pair that

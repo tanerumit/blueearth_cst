@@ -1,6 +1,6 @@
 """The WF0 figure filename grammar and its controlled vocabulary.
 
-``dev/reference/wf0-figure-filename-rule.md`` (agreed 2026-08-17) fixes the shape::
+``dev/reference/wf0-figure-naming.md`` (agreed 2026-08-17) fixes the shape::
 
     <dataset_scope>_<variable>_<plot_context>_<spatial_scope>.<extension>
 

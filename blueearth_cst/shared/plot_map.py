@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 # -*- coding: utf-8 -*-
 """The wflow basin map: read a model off disk and draw its DEM (rule 1.11).
 
@@ -67,7 +68,7 @@ STATICGEOMS_DIRNAME = "staticgeoms"
 #: The DEM variable inside ``staticmaps.nc`` (a CSDMS Standard Name).
 ELEVATION_VARIABLE = "land_elevation"
 
-# --- the engine-neutral spatial products (ADR 0007) --------------------------
+# --- the engine-neutral spatial products (the spatial map contract) --------------------------
 # elevation_basin depicts ELEVATION, which is data rather than a model result, so it
 # is drawn from the shared spatial foundation instead of from the wflow model.
 
@@ -207,10 +208,8 @@ def load_spatial_basin_layers(spatial_dir):
     vectors from ``geoms/`` — so this figure needs no wflow model and can be
     drawn before one exists.
 
-    What is NOT here, and is the known cost of the move: waterbodies. Lakes,
-    reservoirs and glaciers reach ``staticgeoms/`` from rule 1.07, a MODEL rule,
-    and the shared foundation carries none of them. Producing them data-side is
-    the fix, tracked separately — see ADR 0007.
+    Optional vector layers are read when present. The spatial reference owns
+    data-side waterbody provenance and its distinction from model filtering.
     """
     spatial_dir = Path(spatial_dir)
     hydrography = spatial_dir / HYDROGRAPHY_FILENAME

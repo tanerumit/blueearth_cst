@@ -9,7 +9,8 @@ at wf3 rule time and fails loud on divergence, naming the diverging key.
 WHICH sections is not written down anywhere: it is derived from the snapshot,
 by the rule stated above :func:`guarded_paths`.
 
-Design: dev/records/milestones/p31/experiment-structure-design.md §3/§3a/§3b/§3d.
+Current configuration ownership: dev/reference/toolbox-architecture.md.
+Historical rationale: dev/records/milestones/p31/experiment-structure-design.md §3/§3a/§3b/§3d.
 
 The comparator core (``compare_project_consistency``) is a PURE function of the
 live config dict + snapshot paths (gate 2 a–h call it directly on staged

@@ -1,20 +1,19 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Compose and write the versioned spatial-foundation products.
 
-Two halves since ADR 0003 §8, split at the thematic-raster seam:
+The producer is split at the thematic-raster seam:
 
 * the **vector half** (``prepare_spatial_units`` / ``write_spatial_units``) —
-  region polygon + hydrography catalog + ``shared.basin.gauge_points`` into the
+  region polygon, hydrography catalog and configured gauge points into the
   five vector layers, the location registry, and the hydrography grid stack.
-  Model-free, engine-neutral, and declared by ALL THREE workflows so WF2 and
-  WF3 can obtain basin and subbasin boundaries without resampling a single
-  thematic raster;
+  Model-free consumers obtain basin and subbasin boundaries without resampling
+  thematic rasters;
 * the **raster half** (``prepare_spatial_maps`` / ``write_spatial_maps``) —
   reads that seam back, adds the LULC/LAI/soil layers, and writes
   ``spatial_maps.nc`` with its catalog and report. **WF1 only**: it exists to
   parameterise Wflow.
 
-The seam is NOT free, and the split is not a pure decomposition (ADR 0003 §8a):
-what crossed it in memory is the whole hydrography grid stack, so the vector
+The seam carries the whole hydrography grid stack, so the vector
 half writes it as an intermediate the raster half declares as an input.
 Recomputing it instead would make WF1 read the hydrography twice with two grids
 that can drift.
@@ -58,12 +57,12 @@ SPATIAL_CONTRACT_VERSION = "blueearth-cst-spatial-v1"
 
 #: The seam intermediate's filename, relative to the spatial directory.
 #:
-#: A SEAM INTERMEDIATE, NOT A PRODUCT (ADR 0003 §8a): it is deliberately absent
+#: A SEAM INTERMEDIATE, NOT A PRODUCT: it is deliberately absent
 #: from ``spatial_catalog.yml``, which is the model-build interface. It carries
-#: the WHOLE hydrography grid stack -- not only the six layers §8a enumerates --
+#: the WHOLE hydrography grid stack, including derived layers,
 #: because ``spatial_maps.nc`` also holds ``cell_area``, ``river_order``,
 #: ``elevation`` and ``slope``, and recomputing those in the raster half is the
-#: second hydrography read §8a rejects.
+#: second hydrography read the shared-producer boundary prevents.
 HYDROGRAPHY_SEAM_NAME = "hydrography.nc"
 
 
@@ -267,7 +266,7 @@ def _vectorize_ids(data: xr.DataArray, id_column: str) -> gpd.GeoDataFrame:
 def _region_geometry(region_fn: str | os.PathLike[str]) -> gpd.GeoDataFrame:
     """Read the shared region artifact and split it into parent features.
 
-    This used to call ``parse_region_basin`` itself. Since ADR 0003 the
+    This used to call ``parse_region_basin`` itself. Since the shared-region refactor the
     delineation happens once per project, in rule ``delineate_region``, and this
     reads its declared output — so 1.02 and the climate store can no longer
     disagree about the region, and WF2/WF3 can obtain the polygon without
@@ -586,7 +585,7 @@ def _delineate_spatial_units(
 ]:
     """Resolve gauge-driven or automatic partitions independently per parent.
 
-    ADR 0003 §11: the ceiling is PER PARENT, so every automatic parent gets the
+    the ceiling is PER PARENT, so every automatic parent gets the
     same one and there is nothing to allocate.
     ``allocate_automatic_subbasin_budgets`` — which handed each parent one unit,
     spread the remainder by largest-remainder weighted on upstream area, and
@@ -798,7 +797,7 @@ def _delineate_spatial_units(
                 "subbasin_id",
                 "subbasin_code",
                 "subbasin_name",
-                # ADR 0003 §12 builds wflow_id from this, so it has to reach
+                # The identity encoding builds wflow_id from this, so it has to reach
                 # `assign_location_ids` rather than stop at the subbasin table.
                 "local_subbasin_number",
             ]
@@ -935,16 +934,15 @@ def prepare_spatial_units(
 ) -> SpatialUnits:
     """Build the model-free vector foundation and the hydrography grid seam.
 
-    The vector half of ADR 0003 §8. Every argument is a field
-    ``parse_spatial_config`` resolves from ``shared.basin`` ALONE — spelled out
-    rather than taken as a ``SpatialConfig`` so §8b's requirement is visible in
-    the signature: the rule is declared by all three workflows, so anything that
+    Every argument is a shared spatial input resolved by ``parse_spatial_config``.
+    Explicit arguments keep workflow-local settings out of the producer contract.
+    The rule is shared, so anything that
     could differ per invoking workflow (``workflows.build_model``, the
     ``--configfile`` path) cannot reach it. The thematic source names are
     deliberately absent: they belong to the raster half.
 
     ``region_fn`` is the rule's declared ``region_geojson`` input — the one
-    project region artifact (ADR 0003 §1), not a path this function derives.
+    project region artifact, not a path this function derives.
     """
     region = _region_geometry(region_fn)
     source = catalog.get_rasterdataset(
@@ -1160,7 +1158,7 @@ def _catalog_dict() -> dict[str, Any]:
     """Return the portable HydroMT catalog for a written spatial product.
 
     ``hydrography.nc`` is deliberately absent: it is the seam between the two
-    halves, not a product (ADR 0003 §8a). Adding it would advertise an
+    halves, not a product. Adding it would advertise an
     intermediate to ``build_wflow_model``, which resolves every model input
     through this catalog.
     """
@@ -1218,8 +1216,7 @@ def write_spatial_units(units: SpatialUnits, output_dir: str | Path) -> None:
 
     ``spatial_catalog.yml`` is NOT written here. It is the model-build
     interface, it lists the raster entries too, and a file with two writers is
-    the R7-1 anti-pattern — so it stays whole in the raster half (ADR 0003 §8,
-    *Neutral*).
+    ambiguous — so the complete catalog stays in the raster half.
     """
     output_dir = Path(output_dir)
     geoms_dir = output_dir / "geoms"

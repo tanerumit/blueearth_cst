@@ -2733,7 +2733,7 @@ unit factors; the measured `st_0` -> identity-member indicator differences
 ## 11. Revision log
 
 - **v1 (2026-08-15)** — first authored version. Seeded from
-  `dev/working/2026-08-15_wf3-scenario-generation-trace/stress-test-design-and-surface-axes.md`
+  `dev/records/milestones/r12/stress-test-design-and-surface-axes-2026-08-15.md`
   (six owner rulings + two same-day revisions, carried as S1–S11) and restructured
   to this repo's design house style, which the seed note — a design *conversation
   record* — did not have. New normative content closing the six intake gaps:

@@ -18,7 +18,7 @@ scientific text, filenames, optional-product settings and ordinary exports are p
 
 Source changes are confined to `plotting/fundamentals.py` and
 `climate_analysis/diagnostic_render.py`. The plotting reference documents finalization, matching export
-DPI and spacing. The delegation diagnostics record was added separately under `dev/reference/`.
+DPI and spacing. The delegation diagnostics are retained with this packet in `agent-routing-diagnostics.md`.
 No files were deleted. The replaced character-count wrapping and map-width resize were removed.
 
 This was a bounded correction of an agreed rule, not a new layout architecture. The existing lifecycle
@@ -30,7 +30,7 @@ the helper is not a general interactive layout manager. PNG/Agg is the validated
 The [brief](brief.md) was saved before source editing. A planning-only frontier agent allocated two
 execution roles: Python engineering and visual review. The coordinator reviewed the diff and integrated
 the complete render evidence. Requested models, limits and observability are recorded in the brief and
-the branch's `dev/reference/agent-routing-diagnostics.md`. Effective settings and token costs are unknown.
+`agent-routing-diagnostics.md`. Effective settings and token costs are unknown.
 
 - [Engineering evidence](engineering-evidence.md) discriminates the old failure from the correction.
   Old single-axis short/long captions grew axes by approximately 0.748/5.987 mm. The synthetic candidate

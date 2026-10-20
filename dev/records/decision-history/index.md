@@ -5,7 +5,9 @@ These records answer why a significant choice was made at the time. Use
 An old acceptance label, imperative statement or implementation plan is historical evidence,
 not an instruction to implement or enforce it today.
 
-Retained ADR bodies preserve cited identifiers, sections, alternatives and measurements.
+Retained records preserve alternatives and qualified measurements. Condensed ADRs 0001, 0003 and 0022
+include original-section recovery maps and full-source pins at `e9bbd72d`; historical section citations
+resolve against those originals rather than a newly numbered summary.
 Their original dates and status fields are not maintained as a second current account.
 The [lifecycle](../../reference/dev-record-lifecycle.md) governs admission and retention;
 ordinary reference updates do not require a new history record.

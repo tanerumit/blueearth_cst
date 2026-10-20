@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Extract historical climate data for a given region and time period.
 
 The SINGLE producer of the shared ``data/climate/historical/<key>/`` store.
@@ -7,9 +8,9 @@ as ``extract_historical_climate_<source>`` by ``analyze_climate.smk`` (0.04) —
 all from ``snake_utils.climate_store_rule`` (R07 B1). The extraction extent stays
 **model-free**: it comes from ``data/spatial/geoms/region.geojson``, the one
 project region artifact delineated from ``shared.basin`` + the catalog by rule
-``delineate_region`` (ADR 0003), so nothing here reads a built model.
+``delineate_region``, so nothing here reads a built model.
 
-Until ADR 0003 this script delineated that polygon itself and wrote a
+Until the shared-region refactor this script delineated that polygon itself and wrote a
 per-store-key copy (``store_region.geojson``). The copy is gone; the store's
 extent provenance now travels *in* ``extract_historical.nc`` as the
 ``region_bbox`` / ``region_geojson_sha256`` / ``region_source`` attributes,
@@ -579,7 +580,7 @@ def prep_historical_climate(
         actually wanted. Ignored outside the chirps branch.
     region_sha256 : str, optional
         Content digest of the region artifact the ``bbox`` came from, stamped
-        on the extraction as ``region_geojson_sha256`` (ADR 0003).
+        on the extraction as ``region_geojson_sha256``.
     region_source : str, Path, optional
         Path of that artifact, stamped as ``region_source`` relative to the
         directory of ``fn_out``.
@@ -773,8 +774,8 @@ def prep_historical_climate(
         ds, starttime, endtime, clim_source, enforce_min_years=enforce_min_years
     )
 
-    # The store's extent provenance, IN the extraction rather than beside it
-    # (ADR 0003). `store_region.geojson` used to sit in the store directory as
+    # The store's extent provenance is in the extraction rather than beside it.
+    # `store_region.geojson` used to sit in the store directory as
     # the record of where the bbox came from; the region is now one shared
     # project artifact, so a copy per store key would be a second source of
     # truth that can drift. Attributes cannot be separated from the data they
@@ -906,7 +907,7 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
-            # Two declared inputs (ADR 0003). The catalog is the store's
+            # Two declared inputs. The catalog is the store's
             # freshness boundary (R07 ext2-01), so an in-place catalog edit
             # mtime-triggers exactly one re-extraction; the region is the shared
             # project artifact, delineated once by WF0 rule 0.01, WF1 rule 1.02,

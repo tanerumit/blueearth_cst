@@ -1,22 +1,10 @@
-"""Delineate ``shared.basin.region`` once per project (ADR 0003).
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
+"""Delineate the project region once from basin settings and the data catalog.
 
-Rule ``delineate_region``'s script — the SINGLE producer of
-``spatial/geoms/region.geojson``, declared identically in all three workflows
-(``1.01b`` / ``2.03b`` / ``3.01b``) from ``snake_utils.region_rule``.
-
-Before ADR 0003 the same polygon was delineated TWICE from the same inputs:
-once by rule 1.01 (``spatial/products.py::_region_geometry``, on its way to
-``basins.geojson``) and once per climate-store key by the store producer
-(``store_region.geojson``). Measured on a real project, the two agreed exactly
-— agreement maintained by coincidence, since nothing compared them. Worse, WF2
-declared the entire climate-store producer purely to obtain that polygon, so a
-projections-only run paid for a multi-decade climate extraction to learn a
-basin outline.
-
-The extraction stays **model-free**, which is the property R07 B1 bought and
-this must not spend: the region comes from ``shared.basin.region`` plus the
-data catalog, never from a built model's ``staticmaps.nc`` or
-``staticgeoms/region.geojson``.
+Shared workflow declarations use ``region_rule`` to produce the same region
+artifact. Climate extraction and spatial products consume it independently of
+model construction. No built model or climate-store extraction is needed to
+obtain the polygon.
 """
 
 # NO `from __future__ import annotations` here, deliberately: Snakemake's

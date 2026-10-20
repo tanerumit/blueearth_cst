@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """WF3-safe scientific helpers shared with other workflows.
 
 The generation code inventory includes this whole file. Keep WF4-only code in
@@ -234,7 +235,7 @@ REGION_SCRIPT = "blueearth_cst/spatial/delineate_region.py"
 
 @dataclass(frozen=True)
 class RegionRule:
-    """The producer contract for the one project region artifact (ADR 0006).
+    """The producer contract for the one project region artifact.
 
     Same shape and same purpose as :class:`ClimateStoreRule`: all three
     workflows declare ``delineate_region`` from this object, so the three rule
@@ -276,7 +277,7 @@ def region_rule(
 
     ONE rule definition, declared in all three workflows (``1.01b`` / ``2.03b``
     / ``3.01b``), over the ONE delineation of ``shared.basin.region``. Before
-    ADR 0006 the polygon was derived twice — by rule 1.01 on its way to
+    the shared-region refactor the polygon was derived twice — by rule 1.01 on its way to
     ``basins.geojson``, and per climate-store key as ``store_region.geojson`` —
     and WF2 ran the whole climate-store producer to obtain it.
 
@@ -498,7 +499,7 @@ def climate_store_rule(
     return ClimateStoreRule(
         store_dir=store_dir,
         script=CLIMATE_STORE_SCRIPT,
-        # Two declared inputs since ADR 0006. The catalog is the store's
+        # Two declared inputs since the shared-region refactor. The catalog is the store's
         # freshness boundary (ext2-01); the region is the extent it cuts to,
         # produced once per project by `delineate_region` rather than
         # re-delineated per store key. `region_rule` owns the path, so the two

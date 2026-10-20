@@ -67,6 +67,11 @@ reading history to discover a rule. Optional links must identify their purpose a
 or evidence. Do not create a new history record for every reference update or retain review bundles
 merely because a decision was made.
 
+Live scripts, workflow comments and parameter guidance cite the owning `dev/reference/` topic rather
+than an ADR or historical section as authority. The reference may link to history for rationale.
+Do not rewrite a historical citation embedded in persisted provenance merely to rename documentation;
+retain its identity and resolve it through the current reference's recovery pointer.
+
 ## Retention
 
 Delete a retained record only after confirming that needed findings have another home, unresolved

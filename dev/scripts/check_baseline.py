@@ -1,4 +1,5 @@
-"""Record / check fingerprints for the M1 replication baseline.
+# Current guidance: dev/reference/dev-validation.md
+"""Record and check replication-baseline fingerprints.
 
 Walks the formal `rule all` targets across the three Snakefiles and writes
 a JSON manifest under dev/baseline/. Fingerprint format follows the
@@ -26,15 +27,15 @@ tolerance comparator below exists to detect.
 It is NOT a `rule all` target of
 build_model.smk (whose `rule all` lists only the 3 PNGs + config
 snapshot + outlet_index.csv); it is fingerprinted beyond `rule all` for
-constant-parameter-preservation coverage (ADR 0001, t260719a). A byte-hash is
+constant-parameter-preservation coverage. A byte-hash is
 wrong for it: raw daily discharge is full float64 and maximally LSB-sensitive,
 so an exact hash fails on any solver/env drift and a match cannot be attributed
 to a config change. Instead `record` stores a reduced reference series (time
 index + Q column) under dev/baseline/discharge_ref/, and `check` runs a
-time-index-aligned numeric comparator (ADR step 6): structural checks, then a
+time-index-aligned numeric comparator: structural checks, then a
 per-timestep absolute+relative tolerance. The SAME comparator (`compare_discharge`)
 is exposed via the `compare` subcommand for the one-off restored-vs-reference and
-reproducibility comparisons (ADR steps 4b/5), so reproducibility, materiality, and
+reproducibility comparisons, so reproducibility, materiality, and
 the durable regression check cannot disagree.
 
 The wf3 **indicator tables** are the second such target (type "indicator", R11
@@ -47,27 +48,9 @@ because one long table stacks indicators in different units and gauges of differ
 catchment areas -- a single file-wide mean would let the biggest series set the
 threshold for the smallest.
 
-**Mixed-provenance baseline (ADR 0001 t260719a, immaterial branch).** Since the
-constant-parameter restoration the wf1 slice reflects the RESTORED model, while the
-wf2/wf3 rows are the pre-restoration recording (the restored discharge move was
-immaterial — 0/7670 timesteps over tolerance — so wf3 was deliberately not re-run).
-**RESIDUAL TESTED AND CLOSED 2026-08-05.** This used to warn that a future wf3
-regen + `check` MAY fail the byte-exact q_indicators/basin_indicators fingerprints
-if the sub-tolerance wf1 move (max|dQ|/mean ~ 1.7e-4) survived their rounding, and
-to follow the ADR 0001 step-7 immaterial-branch path if it did. It has now been
-run. A wf3 regen from the RESTORED model reproduced both tables byte-identically
-below the header: the only fingerprint movement was the R9-followup rename of the
-perturbation-axis columns (tavg/prcp -> temp_change/precip_change), proven by
-reverting the header line alone and recovering both recorded sha256 exactly, with
-both sizes moving by exactly +16 bytes -- the header delta and nothing else. So
-the wf1 delta demonstrably does NOT propagate into the wf3 reduction, and the wf3
-slice is no longer mixed-provenance in any way that matters: it was re-recorded
-from main@03e546c on those same numbers.
-Evidence: dev/records/milestones/r09/migration_indicator-axis-columns.md §5;
-dev/records/validation/wflow-constant-restoration/baseline_diffs.md.
-(That paragraph describes the world before R11: both tables were byte-hashed and
-`basin_indicators.csv` still existed. Kept as written because it is the record of
-how the residual was closed, not a description of the current gate.)
+Use ``dev/reference/dev-validation.md`` for current baseline admission, input
+provenance and historical evidence. Old restoration results do not certify
+the current fixture; inspect its provenance before interpreting a comparison.
 
 Usage:
     python dev/scripts/check_baseline.py record
@@ -125,7 +108,7 @@ class BaselineFixtureError(ValueError):
 
 # v2 adds the workflow-1 discharge target (type "discharge"): a stored reference
 # series under dev/baseline/discharge_ref/ compared with a tolerance comparator
-# rather than a byte hash (ADR 0001 step 6).
+# rather than a byte hash.
 MANIFEST_VERSION = 3
 SIG_FIGS = 10
 
@@ -190,7 +173,7 @@ def format_provenance(prov: dict | None) -> str:
 
 PNG_TOLERANCE_FRAC = 0.10
 
-# Discharge comparator tolerances (ADR 0001 step 6). ATOL is set per-comparison
+# Discharge comparator tolerances. ATOL is set per-comparison
 # to DISCHARGE_ATOL_FRAC * mean(Q_reference); RTOL is the low-flow tightener.
 DISCHARGE_ATOL_FRAC = 1e-3
 DISCHARGE_RTOL = 0.01
@@ -251,18 +234,10 @@ VOLATILE_NC_ATTRS = frozenset(
 # (repeatable); it selects a path universe applied symmetrically to the recorded
 # and current sides. Mirrors `rule all` across build_model.smk,
 # analyze_projections.smk, run_stress_test.smk — plus the one
-# beyond-`rule all` discharge target (see module docstring / ADR 0001).
-# R07 (dev/records/milestones/r07/migration_project-layout.md §3a is the authority; this list is
-# written FROM that table). 14 live targets: all 14 change manifest key via the
-# examples/ -> test_case/ rename, 10 also move within the tree, 3 change
-# content. Retargeted here, in the fixture-rename commit, as the SOLE owner of
-# this edit -- so "the baseline blackout starts at commit 4" is literally true
-# rather than reworded. `check_baseline check` is therefore RED by construction
-# from this commit until the commit-14 re-record: the templates below describe
-# the post-R07 tree, which commits 7-12 have not yet produced. That is expected,
-# not a regression signal. The substitute gates for the window are the per-slice
-# semantic_tree_diff runs against the retained pre-R07 reference tree and the
-# comparator-based discharge anchor (migration map §7a).
+# beyond-`rule all` discharge target (see module docstring).
+# This executable inventory owns the targets. Current admission and re-recording
+# policy belongs to dev/reference/dev-validation.md; old migration plans do not
+# authorize accepting a failing comparison or replacing the reference.
 TARGETS: list[tuple[str, str, str]] = [
     # build_model.smk -- B10 (commit 12) splits the project-level
     # plots/ tree by DEPICTED subject: model inputs, the model, the run.
@@ -779,7 +754,7 @@ def compute_manifest(
 
 
 # ---------------------------------------------------------------------------
-# Discharge series: read, compare (ADR 0001 step 6), record/check integration.
+# Discharge series: read, compare, record/check integration.
 # ---------------------------------------------------------------------------
 
 
@@ -843,7 +818,7 @@ def compare_discharge(
     cur_times: list[str],
     cur_q: np.ndarray,
 ) -> dict:
-    """Time-index-aligned numeric discharge comparator (ADR 0001 step 6).
+    """Time-index-aligned numeric discharge comparator.
 
     Structural checks first (any hit ⇒ structural FAIL, never a numeric pass):
     duplicate timestamps in either series, unequal time-index sets, non-finite

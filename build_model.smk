@@ -1,3 +1,5 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
+# Current guidance: dev/reference/wf1-model-construction.md
 import sys
 import time
 import uuid
@@ -326,7 +328,7 @@ CLIMATE_STORE = climate_store_rule(
 )
 store_dir = CLIMATE_STORE.store_dir
 
-# --- The one project region artifact (ADR 0006) -------------------------------
+# --- The one project region artifact -------------------------------
 # Same pattern, same reason: ONE producer contract, built here and identically
 # in the other two workflows, splatted into rule 1.01 below. Only
 # message/log/benchmark are workflow-local, and
@@ -342,7 +344,7 @@ REGION = region_rule(
     basin_index=basin_index,
 )
 
-# --- The shared vector foundation (ADR 0006 §8) -------------------------------
+# --- The shared vector foundation -------------------------------
 # Third and last of the shared producer contracts, same pattern again: built
 # here and identically in the other two workflows, splatted into rule 1.02
 # below, and tests/test_spatial_units_rule.py parses all three workflows and
@@ -350,7 +352,7 @@ REGION = region_rule(
 #
 # `parse_spatial_config(basin_cfg)` WITHOUT `my_cfg`, deliberately, and this is
 # the one call site where that differs from the module-level `spatial_cfg`
-# above: §8b requires the shared rule's params to be a pure function of
+# above: the shared rule's params must be a pure function of
 # `project` + `shared.basin`, so the deprecated
 # `workflows.build_model.output_locations` fallback cannot feed it.
 #
@@ -363,9 +365,9 @@ REGION = region_rule(
 # an absent gauge file is a legitimate configuration. Rule 1.08 would then add
 # gauges to a model whose subbasins were derived without them.
 #
-# That is no longer reachable. §8b leaves no alternative on this side — a params
-# payload drawn from a section the projections-only configs do not have would
-# differ per invoking workflow — so the asymmetry is refused one level up
+# The shared-input contract forbids params drawn from workflow-local settings:
+# projections-only configs do not carry the model section, so the producer would
+# differ per invoking workflow. The asymmetry is refused one level up
 # instead: `resolve_gauge_points_path` RAISES on a legacy-only config, at the
 # module-level `parse_spatial_config` call above (line 47), before the DAG is
 # built. Both keys naming the same path still parse. A migrating project is
@@ -562,7 +564,7 @@ rule all:
     input:
         WF1_TARGETS,
 
-# 1.01  delineate_region — the one project region artifact (ADR 0006).
+# 1.01  delineate_region — the one project region artifact.
 # Byte-identical to 2.01 and 3.03 except message/log/benchmark; everything
 # else is splatted from REGION so the three cannot drift.
 rule delineate_region:
@@ -579,7 +581,7 @@ rule delineate_region:
         DELINEATE_REGION.benchmark(),
     script: REGION.script
 
-# 1.02  delineate_subbasins_and_rivers — the shared vector foundation (ADR 0006 §8).
+# 1.02  delineate_subbasins_and_rivers — the shared vector foundation.
 # Byte-identical to 2.02 and 3.04 except message/log/benchmark; everything
 # else is splatted from SPATIAL_UNITS so the three cannot drift.
 rule delineate_subbasins_and_rivers:
@@ -598,10 +600,10 @@ rule delineate_subbasins_and_rivers:
 
 # 1.05  prepare_land_and_soil_maps — the thematic raster stack, WF1 ONLY
 #
-# The raster half of ADR 0006 §8. The vector layers and the registry come from
+# The thematic raster stage. The vector layers and the registry come from
 # 1.02 now; this rule folds LULC/LAI/soil onto the grid 1.02 handed it and
 # writes the model-build interface. `hydrography` is the SEAM INTERMEDIATE
-# (§8a): the whole hydrography grid stack used to cross this boundary in
+# carrying the whole hydrography grid stack that used to cross this boundary in
 # memory, and re-deriving it here would mean two producers of one value.
 rule prepare_land_and_soil_maps:
     message: PREPARE_LAND_AND_SOIL_MAPS.banner()
@@ -728,7 +730,7 @@ rule write_gauge_index:
     input:
         outlets_path = f"{basin_dir}/staticgeoms/outlets.geojson",
         location_registry = f"{spatial_dir}/location_registry.csv",
-        # ADR 0004: rule 1.09 rewrites every staticgeoms/ layer, so this read
+        # rule 1.09 rewrites every staticgeoms/ layer, so this read
         # needs the terminal anchor. Nothing in WF1 consumes outlet_index.csv,
         # so waiting for the model to be final costs only a schedule slot.
         model_final = ancient(f"{basin_dir}/.model_final"),
@@ -780,7 +782,7 @@ rule add_climate_forcing:
         # invisible to Snakemake exactly as `output_gwr.csv` was.
         store_catalog = f"{basin_dir}/config/climate_store_catalog.yml",
         forcing_path = f"{basin_dir}/forcing/inmaps_historical.nc",
-        # TERMINAL BUILD SENTINEL (ADR 0004). `hydromt update wflow_sbm` calls
+        # TERMINAL BUILD SENTINEL. `hydromt update wflow_sbm` calls
         # mod.write(), which rewrites the WHOLE model root -- measured on the R9
         # gate run, where staticmaps.nc, wflow_sbm.toml, hydromt.log and every
         # staticgeoms/ layer all carry this rule's timestamps. So THIS rule, not
@@ -801,7 +803,7 @@ rule add_climate_forcing:
         # itself. `tests/test_model_root_ordering.py` checks that readers
         # declare it, not that it is attached to the right rule.
         #
-        # [R10-1] MERGE NOTE: ADR 0004 attached this to the old 1.09, which then
+        # [R10-1] MERGE NOTE: the original sentinel attached to the old 1.09, which then
         # consumed 1.06's YAML. The merge folded 1.06 in, so the rule that
         # carries the sentinel now also WRITES that YAML -- it is still the last
         # writer of the model root, so the anchor is unchanged.
@@ -831,7 +833,7 @@ rule run_historical_simulation:
     message: RUN_HISTORICAL_SIMULATION.banner()
     input:
         forcing_path = f"{basin_dir}/forcing/inmaps_historical.nc",
-        # ADR 0004. Already ordered after 1.09 through forcing_path; declared
+        # the model-root ordering contract. Already ordered after 1.09 through forcing_path; declared
         # anyway so the invariant is LOCAL rather than transitive -- a reader is
         # correct because of what it declares, not because of a chain someone
         # has to re-derive.
@@ -936,7 +938,7 @@ rule extract_climate_datasets:
         CLIMATE_STORE.script
 
 # 1.15  plot_model_evaluation — analyse + plot the wflow RUN (parallel leaf
-# with 1.11/1.12). Discharge only since ADR 0006; the climate figures it used
+# with 1.11/1.12). Discharge only since the climate-plot consolidation; the climate figures it used
 # to draw are the map/series family under forcing/plots/ now.
 
 # O-24, basin-average half. The ONE plot_model_evaluation family that is a pure
@@ -1028,7 +1030,7 @@ rule export_simulation_tables:
     message: EXPORT_SIMULATION_TABLES.banner()
     input:
         csv_path = f"{basin_dir}/run_default/output.csv",
-        # ADR 0004. Ordered after 1.09 transitively through csv_path, declared
+        # the model-root ordering contract. Ordered after 1.09 transitively through csv_path, declared
         # anyway for the same reason 1.13 and 1.15 declare it: the invariant is
         # LOCAL, not something a reader has to re-derive from a chain.
         model_final = ancient(f"{basin_dir}/.model_final"),
@@ -1051,11 +1053,11 @@ rule plot_model_evaluation:
    message: PLOT_MODEL_EVALUATION.banner()
    input:
        csv_path = f"{basin_dir}/run_default/output.csv",
-       # ADR 0004; transitively ordered after 1.09 via 1.13, declared for the
+       # the model-root ordering contract; transitively ordered after 1.09 via 1.13, declared for the
        # same reason as there.
        model_final = ancient(f"{basin_dir}/.model_final"),
        # The climate-store inputs went with the subcatchment climate figures
-       # (ADR 0006). This rule evaluates DISCHARGE now, so it no longer waits
+       # (the climate-plot consolidation). This rule evaluates DISCHARGE now, so it no longer waits
        # on rule 1.03 at all.
        # Both observation files, when configured: this rule reads the gauge
        # positions AND the observed series, so either changing must re-evaluate.
@@ -1093,11 +1095,11 @@ rule plot_model_evaluation:
    # too, which is what R7-5 was actually about.
    #
    # Note the family list above is two, not the three R7-5 named:
-   # `clim_{station}_{period}.png` no longer exists — ADR 0006 removed it on
+   # `clim_{station}_{period}.png` no longer exists — the climate-plot consolidation removed it on
    # 2026-08-09 with the branch that drew it.
    #
    # The two clim_wflow_1_* figures were declared here until 2026-08-09 and are
-   # gone with the branch that wrote them (ADR 0006). Their removal also
+   # gone with the branch that wrote them (the climate-plot consolidation). Their removal also
    # retires the failure mode declaring them introduced: a config with a
    # sub-year historical_window failed here with MissingOutputException where
    # it used to log a skip.
@@ -1149,7 +1151,7 @@ rule write_run_metadata:
     message: WRITE_RUN_METADATA.banner()
     input:
         indicators_csv = f"{basin_dir}/evaluation/performance_indicators.csv",
-        # ADR 0004: a rule reading under the model root waits on the terminal
+        # a rule reading under the model root waits on the terminal
         # marker, because rule 1.07 rewrites the whole directory. The indicators
         # table already orders this rule after 1.15, so the marker adds no edge
         # in practice -- it is declared because the convention is mechanical,
@@ -1174,7 +1176,7 @@ rule write_run_metadata:
 rule plot_basin_map:
     message: PLOT_BASIN_MAP.banner()
     input:
-        # ADR 0007: elevation_basin depicts ELEVATION, which is data rather than a
+        # elevation_basin depicts ELEVATION, which is data rather than a
         # model result, so it is drawn from the shared spatial foundation and
         # not from the wflow model. That also retires this rule's HDF5 race
         # workaround wholesale — it no longer opens staticmaps.nc, so it no
@@ -1248,7 +1250,7 @@ rule plot_model_forcing:
         forcing_path = f"{basin_dir}/forcing/inmaps_historical.nc",
         map_reference = MAP_REFERENCE.outputs["reference"],
         **{key: value for key, value in MAP_REFERENCE.inputs.items() if key != "basins"},
-        # ADR 0004; see rule 1.13.
+        # the model-root ordering contract; see rule 1.13.
         model_final = ancient(f"{basin_dir}/.model_final"),
         **_locations_input,
         # Shared spatial context also used by WF0's source-grid diagnostics.

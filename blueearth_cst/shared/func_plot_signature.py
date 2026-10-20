@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/wf1-model-construction.md
 # -*- coding: utf-8 -*-
 """Discharge performance indicators and the basin-average output figures.
 
@@ -8,7 +9,7 @@ What this file NO LONGER holds, since 2026-08-10: ``plot_hydro`` and
 ``shared/plot_evaluation.py``, beside the page settings they are drawn under —
 this module's own private copy of those settings (``_FIG_WIDTH_MM``,
 ``_CLIM_RC``, ``_PT_BODY``) went with them, along with the Theil-Sen trend
-helpers that served the subcatchment climate plots ADR 0006 retired. All of it
+helpers that served the retired subcatchment climate plots. All of it
 was reachable from nowhere.
 
 What is left is the part that is not about drawing: ``compute_indicators``, which

@@ -286,6 +286,10 @@ prerequisite is missing; a skip is no evidence, so read the reason (`-rs` is on)
 
 ## Which config to run
 
+Historical constant-restoration comparisons and the later closure of mixed-provenance concerns are
+summarized in [0001-restore-wflow-constant-parameters.md](../records/decision-history/0001-restore-wflow-constant-parameters.md).
+They explain the comparator's origin; they do not qualify the current baseline or authorize re-recording it.
+
 Default to `project_config_rapid.yml`. Reach for `project_config_baseline.yml` only when the run's numbers are the point.
 
 | Config | `project_dir` | Run it for |

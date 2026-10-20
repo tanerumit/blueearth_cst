@@ -37,6 +37,8 @@ assessed; template values are not evidence of local calibration.
 The historical landing/precedence evidence is under
 `dev/records/validation/wflow-constant-restoration/`. Inspect the resulting TOML and active
 upstream reader when changing those bindings; the old verification does not certify a new build.
+The historical choice and its aggregate-sensitivity limits are summarized in
+[0001-restore-wflow-constant-parameters.md](../records/decision-history/0001-restore-wflow-constant-parameters.md).
 
 ## Mutable model-root ordering
 

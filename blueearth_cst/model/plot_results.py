@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/wf1-model-construction.md
 # -*- coding: utf-8 -*-
 """
 Plot wflow results and compare to observations if any
@@ -213,7 +214,7 @@ def analyse_wflow_historical(
     Model results should include the discharge keys Q_outlets and, if gauges are
     provided, Q_gauges_{basename(gauges_locs)}.
 
-    Per-subcatchment climate figures were removed 2026-08-09 (ADR 0006): the
+    Per-subcatchment climate figures were removed in the climate-plot consolidation: the
     climate a reader wants is the map and series family under
     ``models/hydrology/wflow/forcing/plots/``, and drawing it twice from two
     code paths was the duplication that decision retires.

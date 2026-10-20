@@ -67,6 +67,9 @@ Do not infer broader execution guarantees from historical designs. In particular
 scheduler-neutral run-contract proposal does not establish universal namespace fencing, resumability or
 complete coverage of arbitrary raw Snakemake launches. Consult the actual launcher and its tests before
 claiming any of those properties.
+The historical alternatives and accepted limitations are summarized in
+[0022-cst-capability-slots-and-run-contract.md](../records/decision-history/0022-cst-capability-slots-and-run-contract.md);
+that record supplies rationale, not additional current requirements.
 
 ## Implementation ownership
 

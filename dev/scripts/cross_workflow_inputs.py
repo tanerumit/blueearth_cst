@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Stage the wf1 leaves WF2/WF3 declare and Snakemake will not satisfy on its own.
 
 A CROSS-WORKFLOW LEAF is a file some rule in WF2 or WF3 declares as an input
@@ -67,7 +68,7 @@ __all__ = [
 EXTRA_WF2_SNAPSHOT = "config/analyze_projections/run_record.yml"
 
 #: NOT read by either downstream workflow. R07 B1 retired the extraction's
-#: `ancient(region.geojson)` input and ADR 0003 gave WF2 and WF3 their own
+#: `ancient(region.geojson)` input and the shared-region refactor gave WF2 and WF3 their own
 #: `delineate_region`, each declaring `data/spatial/geoms/region.geojson` as an
 #: OUTPUT. Staged by the two test fixtures only to keep the scratch project
 #: looking like a completed wf1 run.

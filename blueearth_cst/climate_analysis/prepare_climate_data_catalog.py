@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-forcing-units.md
 import hashlib
 import os
 from copy import deepcopy
@@ -33,7 +34,7 @@ _REVIEWED_VARIABLES = frozenset(_REVIEWED_DAILY_BINDING["rename"].values())
 def _departs_from_reviewed_binding(adapter):
     """Report whether an adapter's arithmetic over the reviewed variables differs.
 
-    The reviewed binding (ADR 0010) is a statement about seven variables, not
+    The reviewed binding (the forcing-admission contract) is a statement about seven variables, not
     about the size of a catalog entry: what P1 established is the arithmetic
     `extract_historical_climate.py` applies to `precip`, `temp`, `temp_min`,
     `temp_max`, `press_msl`, `kin` and `kout`. An upstream catalog that also
@@ -51,7 +52,7 @@ def _departs_from_reviewed_binding(adapter):
       shadow the reviewed source of that variable.
 
     Everything else is surplus description and is ignored. Rejecting it was the
-    behaviour before ADR 0010, and it made the guard a version pin on one
+    behaviour before the forcing-admission contract, and it made the guard a version pin on one
     catalog file rather than a check on the arithmetic: hydromt's own
     `deltares_data` catalog states the identical seven conversions and adds
     `d2m`/`u10`/`v10` renames plus an `ssr` scale, and was refused for it.

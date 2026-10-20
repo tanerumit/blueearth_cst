@@ -57,3 +57,7 @@ Use `tests/test_spatial_identity.py`, `tests/test_spatial_config.py`, `tests/tes
 and `tests/test_spatial_units_rule.py` for their respective contracts.
 `tests/test_cross_workflow_inputs.py` checks workflow dependency boundaries.
 Select the applicable checks through the [validation ladder](dev-validation.md).
+
+For historical rationale and the original bounded timing/identity measurements, see
+[0003-one-shared-region-artifact.md](../records/decision-history/0003-one-shared-region-artifact.md).
+Those observations do not set today's configuration or certify a new basin.

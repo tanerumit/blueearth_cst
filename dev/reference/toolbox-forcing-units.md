@@ -22,6 +22,10 @@ Do not relax that branch merely because the general daily binding permits surplu
 The returned `UnitInterpretation` records the binding revision, units and evidence identifying the selected
 source and catalog/extraction hashes. Keep exact conversion values and revision strings in the owning code.
 Review the arithmetic before changing them; source attributes alone do not prove the values' units.
+Historical evidence-path strings remain part of that provenance even when documents move.
+Resolve old ADR paths through the
+[decision-history transition](../records/migrations/decision-history-transition-2026-10-20.md);
+their original acceptance labels do not override this reference.
 
 `tests/test_prepare_climate_data_catalog.py` exercises admission and rejection.
 [The retained forcing-unit investigation](../records/milestones/r12/implementation/evidence/p1-forcing-units.md)

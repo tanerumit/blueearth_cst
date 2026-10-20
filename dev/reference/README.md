@@ -10,51 +10,51 @@ before writing. Update that document for revisions; do not create a separate fil
 
 | When the change concerns | Update or consult |
 |---|---|
-| Task admission, sessions, board coordination or handoffs | [Development workflow](development-workflow.md) |
-| Repository placement, config directories or local scratch | [Repository layout](repo-layout.md) |
-| Documentation authority, promotion, retention or sealing | [Record lifecycle](record-lifecycle.md) |
-| File, identifier or output naming | [Naming](naming.md) |
-| Verification, evidence reuse, landing or CI | [Validation ladder](validation-ladder.md) |
-| Git branch, tag or commit conventions | [Git conventions](git-conventions.md) |
-| Release/version decisions | [Versioning](versioning.md) |
-| User documentation structure and authoring | [Documentation guidelines](documentation-guidelines.md) |
-| Project agent activation and diagnostics | [Agent activation](agent-activation.md) |
+| Task admission, sessions, board coordination or handoffs | [development-workflow.md](development-workflow.md) |
+| Repository placement, config directories or local scratch | [repo-layout.md](repo-layout.md) |
+| Documentation authority, promotion, retention or sealing | [record-lifecycle.md](record-lifecycle.md) |
+| File, identifier or output naming | [naming.md](naming.md) |
+| Verification, evidence reuse, landing or CI | [validation-ladder.md](validation-ladder.md) |
+| Git branch, tag or commit conventions | [git-conventions.md](git-conventions.md) |
+| Release/version decisions | [versioning.md](versioning.md) |
+| User documentation structure and authoring | [documentation-guidelines.md](documentation-guidelines.md) |
+| Project agent activation and diagnostics | [agent-activation.md](agent-activation.md) |
 
 ## Architecture and implementation
 
 | When the change concerns | Update or consult |
 |---|---|
-| Workflow boundaries, configuration ownership or retained handoffs | [Toolbox architecture](toolbox-architecture.md) |
-| Shared regions, spatial identities or map ownership | [Spatial foundation](spatial-foundation.md) |
-| Wflow construction, constant parameters or model-root ordering | [Model construction](wf1-model-construction.md) |
-| Forcing catalog admission and unit interpretation | [Forcing units](forcing-units.md) |
-| Generation inputs, outputs or replacement engines | [Weather-generator interface][generator] |
-| Simulator preparation, responses or replacement engines | [Hydrological-model interface][simulator] |
-| Rule definitions, dependencies and consumers | [Implementation map](workflow-implementation-map.md) |
-| CMIP6 grid handling or source-version selection | [CMIP6 readability](wf2-cmip6-source-readability.md) |
-| Output-variable names and indicator terminology | [Indicator glossary](indicator-glossary.md) |
+| Workflow boundaries, configuration ownership or retained handoffs | [toolbox-architecture.md](toolbox-architecture.md) |
+| Shared regions, spatial identities or map ownership | [spatial-foundation.md](spatial-foundation.md) |
+| Wflow construction, constant parameters or model-root ordering | [wf1-model-construction.md](wf1-model-construction.md) |
+| Forcing catalog admission and unit interpretation | [forcing-units.md](forcing-units.md) |
+| Generation inputs, outputs or replacement engines | [weather-generator-interface.md][generator] |
+| Simulator preparation, responses or replacement engines | [hydrological-model-interface.md][simulator] |
+| Rule definitions, dependencies and consumers | [workflow-implementation-map.md](workflow-implementation-map.md) |
+| CMIP6 grid handling or source-version selection | [wf2-cmip6-source-readability.md](wf2-cmip6-source-readability.md) |
+| Output-variable names and indicator terminology | [indicator-glossary.md](indicator-glossary.md) |
 
 ## Plotting and presentation
 
 | When the change concerns | Update or consult |
 |---|---|
-| Scientific figure appearance, export or review practice | [Plot style](plot-style.md) |
-| WF0 diagnostic figure filename grammar | [WF0 figure filenames](wf0-figure-filename-rule.md) |
-| A reusable report or comparison interface | [Templates and usage](../templates/README.md) |
+| Scientific figure appearance, export or review practice | [plot-style.md](plot-style.md) |
+| WF0 diagnostic figure filename grammar | [wf0-figure-filename-rule.md](wf0-figure-filename-rule.md) |
+| A reusable report or comparison interface | [templates/README.md](../templates/README.md) |
 
 ## Find guidance by workflow
 
 Use this lookup to reach the relevant topic owners; a workflow does not need its own reference file.
-[Architecture](toolbox-architecture.md) owns shared boundaries, and the
-[implementation map](workflow-implementation-map.md) explains how to inspect rules and consumers.
+[toolbox-architecture.md](toolbox-architecture.md) owns shared boundaries, and the
+[workflow-implementation-map.md](workflow-implementation-map.md) explains how to inspect rules and consumers.
 
 | Workflow | Development guidance | User guide | Rule definitions |
 |---|---|---|---|
-| WF0: historical climate | [Spatial][spatial], [figures][wf0-figures] | [WF0][guide0] | [WF0][rules0] |
-| WF1: model construction | [Model][model], [forcing][forcing] | [WF1][guide1] | [WF1][rules1] |
-| WF2: projections | [CMIP6 sources][cmip6], [spatial][spatial] | [WF2][guide2] | [WF2][rules2] |
-| WF3: scenarios | [Generator][generator], [handoffs][handoffs] | [WF3][guide3] | [WF3][rules3] |
-| WF4: simulation | [Simulator][simulator], [indicators][indicators] | [WF4][guide4] | [WF4][rules4] |
+| WF0: historical climate | [spatial-foundation.md][spatial], [wf0-figure-filename-rule.md][wf0-figures] | [workflow-analyze-climate.qmd][guide0] | [analyze_climate.smk][rules0] |
+| WF1: model construction | [wf1-model-construction.md][model], [forcing-units.md][forcing] | [workflow-build-model.qmd][guide1] | [build_model.smk][rules1] |
+| WF2: projections | [wf2-cmip6-source-readability.md][cmip6], [spatial-foundation.md][spatial] | [workflow-analyze-projections.qmd][guide2] | [analyze_projections.smk][rules2] |
+| WF3: scenarios | [weather-generator-interface.md][generator], [retained-handoffs.qmd][handoffs] | [workflow-generate-scenarios.qmd][guide3] | [generate_scenarios.smk][rules3] |
+| WF4: simulation | [hydrological-model-interface.md][simulator], [indicator-glossary.md][indicators] | [workflow-simulate-system.qmd][guide4] | [simulate_system.smk][rules4] |
 
 [spatial]: spatial-foundation.md
 [wf0-figures]: wf0-figure-filename-rule.md
@@ -88,6 +88,6 @@ meaning and relationships and point to those owners. If code and guidance disagr
 before claiming compliance; acceptance of a historical design does not prove implementation.
 
 Proposals belong with `dev/tasks/`, reusable artifacts in `dev/templates/`, and dated evidence in
-[records](../records/README.md). [sealed-records.yml](../records/sealed-records.yml) owns preservation metadata.
+[records/README.md](../records/README.md). [sealed-records.yml](../records/sealed-records.yml) owns preservation metadata.
 Keep revision histories, superseded specifications and session progress out of this folder.
-The [record lifecycle](record-lifecycle.md) owns the detailed maintenance policy.
+The [record-lifecycle.md](record-lifecycle.md) owns the detailed maintenance policy.

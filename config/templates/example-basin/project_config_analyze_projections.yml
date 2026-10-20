@@ -1,0 +1,63 @@
+# =============================================================================
+#  analyze_projections (wf2) -- CMIP6 change factors
+# =============================================================================
+#
+# Optional plausibility overlay: projections do not drive WF3 scenario
+# generation. Review model/scenario coverage and period choices before use.
+
+
+# -----------------------------------------------------------------------------
+#  ENSEMBLE
+# -----------------------------------------------------------------------------
+
+catalog: config/catalogs/cmip6_data.yml    # CMIP6 catalog (generated, do not edit)
+ensemble: cmip6
+
+# Models as Institution/Source. The full list of 65: config/templates/README.md.
+models:
+  - NOAA-GFDL/GFDL-ESM4
+  - INM/INM-CM5-0
+  - CMCC/CMCC-ESM2
+scenarios: [ssp245, ssp585]                # ssp119 ssp126 ssp245 ssp370 ssp434 ssp460 ssp534-over ssp585
+
+# Ensemble member labels, in order of preference. A label a model does not
+# have is skipped; four labels reach nearly every model.
+members:
+  preference: [r1i1p1f1, r1i1p1f2, r1i1p1f3, r1i1p2f1]
+  #selection: first_available              # one member per model | all
+  #overrides: {}                           # model -> label, for exceptions
+
+
+# -----------------------------------------------------------------------------
+#  VARIABLES
+# -----------------------------------------------------------------------------
+
+# Leave the value empty to use the built-in definition (precip: relative
+# change in mm/day; temp: absolute change in degC). For any other variable:
+#   <name>: {source: <catalog variable>, canonical: rate|state, units: <unit>, change: relative|absolute}
+variables:
+  precip:
+  temp:
+
+
+# -----------------------------------------------------------------------------
+#  WINDOWS
+# -----------------------------------------------------------------------------
+
+# Calendar years, inclusive. CMIP6 historical runs end in 2014; a later end
+# is cut back to 2014.
+reference_window:
+  start: 1985
+  end: 2014
+
+# One entry per horizon. `name` labels the outputs.
+future_windows:
+  - {start: 2030, end: 2060, name: near}
+  - {start: 2070, end: 2100, name: far}
+
+
+# -----------------------------------------------------------------------------
+#  REPORTING
+# -----------------------------------------------------------------------------
+
+#stats: [mean, median, std]               # ensemble statistics to report

@@ -9,6 +9,7 @@ what it held; see `config/defaults/README.md`.
 
 | File | Purpose |
 | --- | --- |
+| `example-basin/` | Worked external-case starter consumed by `scripts/create_case.py`; review its README before running. |
 | `project_config.template.yml` | The project file: what every workflow shares, and which workflows run. Start here. |
 | `project_config.analyze_climate.template.yml` | wf0: historical diagnostics and optional subbasin figures |
 | `project_config.build_model.template.yml` | wf1: observations, run period, engine configs |

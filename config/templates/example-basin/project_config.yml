@@ -1,0 +1,93 @@
+# =============================================================================
+#  example-basin -- PROJECT config
+# =============================================================================
+#
+# Example configuration for a new external case. Review every basin, climate,
+# catalog, and machine-specific path before running; see README.md here.
+#
+# PATH RULES -- the thing that bites in an external case:
+#   `config_path:` resolves against THIS file's directory.
+#   Every other path resolves against the directory you run Snakemake from
+#   (the blueearth_cst repo root), so it MUST be absolute here, or it will
+#   silently resolve inside the repo and find nothing.
+#
+# Exception: `catalog:` stays repo-relative. Catalogs are tracked repo files
+# and `cmip6_data.yml` is generated into `config/catalogs/`. A basin needing
+# new local datasets registers them in the repo's `config/catalogs/*_data*.yml`.
+#
+# Run it from the blueearth_cst repo root:
+#   Run from the toolbox root; see this folder's README for current commands.
+
+schema_version: 2
+
+
+# -----------------------------------------------------------------------------
+#  PROJECT
+# -----------------------------------------------------------------------------
+
+project:
+  # ABSOLUTE, under the cases repository's ignored runs/. Set by create_case.py.
+  project_dir: /path/to/cst-cases/runs/example-basin
+  catalog: config/catalogs/deltares_data_pdrive.yml   # repo-relative on purpose
+
+
+# -----------------------------------------------------------------------------
+#  BASIN
+# -----------------------------------------------------------------------------
+
+basin:
+  # Coordinates are longitude, latitude (x, y), in decimal degrees.
+  # Replace both coordinates for each case. Review uparea (km2) for the site;
+  # 100 is the Ntoum example's upstream-area threshold, not a universal value.
+  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+  resolution: 0.00833
+
+  # Source names in the Deltares P-drive catalog.
+  sources:
+    rivers: hydro_rivers_lin
+    lulc: globcover
+
+  # ABSOLUTE. Per-case sidecar, not the repo's shared test_data copy.
+  # The CSV uses x=longitude, y=latitude. Replace its example outlet.
+  output_locations: /path/to/cst-cases/applications/example-basin/data/output_locations.csv
+
+
+# -----------------------------------------------------------------------------
+#  CLIMATE
+# -----------------------------------------------------------------------------
+
+climate:
+  sources: [era5, chirps]
+  selected: era5
+  window:
+    start: 2000
+    end: 2016
+
+
+# -----------------------------------------------------------------------------
+#  MODEL
+# -----------------------------------------------------------------------------
+
+model:
+  outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
+
+
+# -----------------------------------------------------------------------------
+#  WORKFLOWS
+# -----------------------------------------------------------------------------
+
+workflows:
+  analyze_climate:
+    enabled: true
+  build_model:
+    enabled: false
+    config_path: project_config_build_model.yml
+  analyze_projections:
+    enabled: false
+    config_path: project_config_analyze_projections.yml
+  generate_scenarios:
+    enabled: false
+    config_path: project_config_generate_scenarios.yml
+  simulate_system:
+    enabled: false
+    config_path: project_config_simulate_system.yml

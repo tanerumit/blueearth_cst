@@ -1,0 +1,43 @@
+# =============================================================================
+#  build_model (wf1) -- build the Wflow-SBM model, run it on the historical record
+# =============================================================================
+#
+# Keep this next to the project file. The basin, climate record and output
+# variables come from there; only the model build and its run are set here.
+
+
+# -----------------------------------------------------------------------------
+#  OBSERVATIONS
+# -----------------------------------------------------------------------------
+
+# One observed series per variable in `model.outvars`. Optional. Needs
+# `basin.output_locations`; columns are matched by wflow_id.
+# Format: <repo>/config/templates/observed_daily_discharge_template.csv.
+#
+# ABSOLUTE PATH if you set one -- a relative path resolves against the repo
+# root, not this folder. Put the file in this case's `data/` folder, e.g.
+#   river discharge: /path/to/cst-cases/applications/my-basin/data/observed_discharge.csv
+observations:
+  river discharge: null
+
+
+# -----------------------------------------------------------------------------
+#  RUN PERIOD
+# -----------------------------------------------------------------------------
+
+# Required inclusive years for the Wflow run, inside `climate.window`.
+# Choose this separately from the longer climate record; short runs are allowed.
+simulation_window:
+  start: 2010
+  end: 2016
+
+
+# -----------------------------------------------------------------------------
+#  ENGINE
+# -----------------------------------------------------------------------------
+
+# hydromt build settings. These are the defaults; point at your own copies
+# to change how the model is built. Repo-relative, like the catalogs.
+#engine:
+#  build_config: config/defaults/wflow_build_model.yml
+#  waterbodies_config: config/defaults/wflow_update_waterbodies.yml

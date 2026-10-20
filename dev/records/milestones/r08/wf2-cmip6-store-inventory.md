@@ -229,7 +229,7 @@ Measured over the generated catalog, across the four tier-1 SSPs:
 | `+ r1i1p2f1` | **157** | **45** | 18 |
 | full 11-label union | 149 | 43 | 26 |
 
-`config/templates/example-basin/project_config_analyze_projections.yml` therefore ships
+`project_config.template.yml` therefore ships
 `[r1i1p1f1, r1i1p1f2, r1i1p1f3, r1i1p2f1]` — the maximum. The wider union is
 strictly worse: the extra physics variants (`p3f1`, `p5f1`, `r1i1000p1f1`, …)
 create more asymmetry than coverage. The 18 raising pairs are CAMS-CSM1-0,

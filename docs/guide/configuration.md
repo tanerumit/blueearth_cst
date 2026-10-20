@@ -8,7 +8,7 @@ workflow. Give the project file to a runner with `--config`; it names the other
 files. A direct Snakemake command uses `--configfile` instead.
 
 Start from `config/templates/example-basin/`, the single maintained starter.
-Use the [case scaffolder](running.qmd#create-an-external-case) to set case paths
+Use the [case scaffolder](running.md#create-an-external-case) to set case paths
 and outlet coordinates, or copy the whole directory and follow its README.
 It contains `project_config.yml` plus five workflow files, including commented
 examples of optional parameters. Keep the filenames so the `config_path` links

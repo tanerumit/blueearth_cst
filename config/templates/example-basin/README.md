@@ -11,7 +11,7 @@ is not a portable or universally runnable case.
 This is the toolbox-owned starter used by `scripts/create_case.py`. The
 scaffolder reads this checkout's copy; `cst-cases` holds application configs
 and run records. For commands, see the
-[new-case guide](../../../docs/site/guide/running.qmd#create-an-external-case). It sets the case paths,
+[new-case guide](../../../docs/guide/running.md#create-an-external-case). It sets the case paths,
 basin region and outlet, and starts fresh notes. Register the case in the
 application inventory after the workflows complete.
 Review the remaining choices below before running.
@@ -116,8 +116,8 @@ pixi run python scripts/simulate_system.py --config C:/Users/<you>/workspace/cst
 For downstream stages WF1–WF4 as appropriate, use the owned `run_workflows.py`
 wrapper shown above; it invokes simulation through the dedicated runner.
 Before executing a changed workflow, consult the toolbox's current
-[configuration guide](https://github.com/tanerumit/blueearth_cst/blob/main/docs/site/guide/configuration.qmd)
-and [running guide](https://github.com/tanerumit/blueearth_cst/blob/main/docs/site/guide/running.qmd).
+[configuration guide](https://github.com/tanerumit/blueearth_cst/blob/main/docs/guide/configuration.md)
+and [running guide](https://github.com/tanerumit/blueearth_cst/blob/main/docs/guide/running.md).
 
 ## Files
 

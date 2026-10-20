@@ -1,5 +1,7 @@
 # Documentation guidelines
 
+Last updated: 2026-10-20
+
 These guidelines govern authoring and review of the scientific approach, user guide,
 toolbox reference, and technical notes. They apply to human and agent authors.
 

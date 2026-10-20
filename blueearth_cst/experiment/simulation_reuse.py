@@ -1,8 +1,9 @@
-"""Reuse frozen responses across changes confined to execution diagnostics."""
+"""Reuse frozen responses across audited non-scientific implementation changes."""
 
 from pathlib import Path
 from typing import Any
 
+from blueearth_cst.experiment.content_identity import content_sha256
 from blueearth_cst.experiment.simulation_record import (
     SimulationFrozenError,
     _v2_simulation_id,
@@ -11,6 +12,13 @@ from blueearth_cst.experiment.simulation_record import (
 # Keep the original complete inventory as provenance. Only this observational
 # module is ignored when comparing an existing simulation with current inputs.
 _DIAGNOSTIC_CODE = {"blueearth_cst/shared/execution_outputs.py"}
+
+# Audited source-boundary transition from 040a8e61: no numerical producer
+# changed. Pin complete inventories on both sides, including the new boundary
+# definition. An unknown old revision or any subsequent scientific edit fails
+# closed. The old inventory is retained in tests/data for migration coverage.
+_BOUNDARY_BEFORE = "69dcf9de9882f029d615873460572f1a1d9f639dee8bc2a7ab51e01514085a2c"
+_BOUNDARY_AFTER = "ff0150c6b9b001e0a87b1eb46ed1803a7c6a0a1e6615db5d7df422e985b49d1a"
 
 # Audited archive-lifecycle migration: input staging and execution settings are
 # unchanged. Pin BOTH versions, rather than exempting this launcher wholesale:
@@ -60,15 +68,15 @@ def check_simulation_reuse(retained: dict[str, Any], current: dict[str, Any]) ->
         retained["documents"]["simulator_adapter_code"],
         current["documents"]["simulator_adapter_code"],
     )
-    code_matches = [
-        item
-        for item in retained["documents"]["simulator_adapter_code"]
-        if item["path"] not in ignored
-    ] == [
-        item
-        for item in current["documents"]["simulator_adapter_code"]
-        if item["path"] not in ignored
+    retained_code = retained["documents"]["simulator_adapter_code"]
+    current_code = current["documents"]["simulator_adapter_code"]
+    code_matches = [item for item in retained_code if item["path"] not in ignored] == [
+        item for item in current_code if item["path"] not in ignored
     ]
+    code_matches = code_matches or (
+        content_sha256(retained_code) == _BOUNDARY_BEFORE
+        and content_sha256(current_code) == _BOUNDARY_AFTER
+    )
     comparable = {
         **current,
         "document_digests": {
@@ -107,9 +115,9 @@ def check_completed_simulation_inputs(
     from blueearth_cst.experiment.content_identity import (
         content_sha256,
         read_canonical_json,
-        repository_code_inventory,
         stage_environment,
     )
+    from blueearth_cst.experiment.simulation_code import simulation_code_inventory
     from blueearth_cst.experiment.simulation_record import (
         _assert_model_reference_current,
         read_simulation_v2,
@@ -137,17 +145,7 @@ def check_completed_simulation_inputs(
         retained["documents"]["model_reference"], reference, model
     )
     repo = Path(__file__).resolve().parents[2]
-    code = repository_code_inventory(
-        repo,
-        [
-            "blueearth_cst/experiment/simulator_adapter.py",
-            "blueearth_cst/experiment/downscale_climate_forcing.py",
-            "blueearth_cst/experiment/run_wflow_batch.jl",
-            "blueearth_cst/shared/wflow_progress.jl",
-            "blueearth_cst/shared/resource_timing.jl",
-            "blueearth_cst/shared/run_logged.py",
-        ],
-    )
+    code = simulation_code_inventory(repo)
     environment = stage_environment(
         ["hydromt-wflow", "xarray", "netCDF4", "pyproj"],
         julia_manifest=repo / "Manifest.toml",

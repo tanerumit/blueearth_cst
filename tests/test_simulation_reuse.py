@@ -1,5 +1,6 @@
 """Execution diagnostics cannot invalidate otherwise identical frozen responses."""
 
+import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -21,7 +22,7 @@ def completed(tmp_path_factory):
 
 @pytest.fixture
 def observed_completed(completed, monkeypatch):
-    from blueearth_cst.experiment import content_identity
+    from blueearth_cst.experiment import content_identity, simulation_code
     from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
 
     retained = read_simulation_intent_v2(completed.root)
@@ -29,11 +30,11 @@ def observed_completed(completed, monkeypatch):
     environment = deepcopy(retained["documents"]["environment"])
     observations = []
 
-    def observe_code(repo, entries):
+    def observe_code(repo, entries, *, excluded):
         observations.append(tuple(entries))
         return deepcopy(code)
 
-    monkeypatch.setattr(content_identity, "repository_code_inventory", observe_code)
+    monkeypatch.setattr(simulation_code, "repository_code_inventory", observe_code)
     monkeypatch.setattr(
         content_identity, "stage_environment", lambda *a, **kw: environment
     )
@@ -278,3 +279,158 @@ def test_diagnostic_edit_cannot_hide_changed_scientific_inputs(retained, compone
         current["simulator"]["revision"] = "d" * 64
     with pytest.raises(SimulationFrozenError, match="simulation inputs changed"):
         check_simulation_reuse(retained, _rebuild(current))
+
+
+def _historical_code():
+    """Exact normalized inventory captured before the source-boundary refactor."""
+    return json.loads(
+        (Path(__file__).parent / "data/simulation-code-before-boundary.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+
+def test_boundary_bridge_matches_audited_sources():
+    from blueearth_cst.experiment.content_identity import content_sha256
+    from blueearth_cst.experiment.simulation_code import simulation_code_inventory
+    from blueearth_cst.experiment.simulation_reuse import (
+        _BOUNDARY_AFTER,
+        _BOUNDARY_BEFORE,
+    )
+
+    assert content_sha256(_historical_code()) == _BOUNDARY_BEFORE
+    assert (
+        content_sha256(simulation_code_inventory(Path(__file__).resolve().parents[1]))
+        == _BOUNDARY_AFTER
+    ), "Scientific source changes require a new compatibility audit"
+
+
+@pytest.mark.parametrize(
+    ("path", "scientific"),
+    [
+        ("plotting/export.py", False),
+        ("plotting/prepared_maps.py", False),
+        ("indicators/sets/default/calculations.py", False),
+        ("shared/snake_utils.py", False),
+        ("shared/run_log_core.py", False),
+        ("shared/workflow_config_snapshot.py", False),
+        ("experiment/generation_plan.py", False),
+        ("experiment/downscale_climate_forcing.py", True),
+        ("experiment/forcing_window.py", True),
+        ("experiment/simulator_adapter.py", True),
+        ("experiment/run_wflow_batch.jl", True),
+        ("shared/wflow_progress.jl", True),
+        ("climate_analysis/prepare_climate_data_catalog.py", True),
+        ("experiment/wf4_ancillary_descriptor.py", True),
+        ("experiment/simulation_code.py", True),
+    ],
+)
+def test_source_boundary_drives_actual_reuse_guard(
+    retained, monkeypatch, path, scientific
+):
+    from blueearth_cst.experiment.simulation_code import simulation_code_inventory
+
+    repo = Path(__file__).resolve().parents[1]
+    previous = deepcopy(retained)
+    previous["documents"]["simulator_adapter_code"] = simulation_code_inventory(repo)
+    previous = _rebuild(previous)
+    current = deepcopy(previous)
+    read_bytes = Path.read_bytes
+    changed = (repo / "blueearth_cst" / path).resolve()
+    assert changed.is_file()
+
+    def edited_bytes(source):
+        content = read_bytes(source)
+        return (
+            content + b"\n# source edit\n" if source.resolve() == changed else content
+        )
+
+    monkeypatch.setattr(Path, "read_bytes", edited_bytes)
+    current["documents"]["simulator_adapter_code"] = simulation_code_inventory(repo)
+    current = _rebuild(current)
+    if scientific:
+        assert current["simulation_id"] != previous["simulation_id"]
+        with pytest.raises(SimulationFrozenError):
+            check_simulation_reuse(previous, current)
+    else:
+        assert current["simulation_id"] == previous["simulation_id"]
+        check_simulation_reuse(previous, current)
+
+
+@pytest.mark.parametrize(
+    "change", [None, "old_code", "new_code", "duplicate", "settings", "environment"]
+)
+def test_boundary_bridge_accepts_only_the_audited_transition(retained, change):
+    from blueearth_cst.experiment.simulation_code import simulation_code_inventory
+
+    previous = deepcopy(retained)
+    previous["documents"]["simulator_adapter_code"] = _historical_code()
+    current = deepcopy(retained)
+    current["documents"]["simulator_adapter_code"] = simulation_code_inventory(
+        Path(__file__).resolve().parents[1]
+    )
+    if change == "old_code":
+        previous["documents"]["simulator_adapter_code"][0]["sha256"] = "f" * 64
+    elif change == "new_code":
+        current["documents"]["simulator_adapter_code"][0]["sha256"] = "f" * 64
+    elif change == "duplicate":
+        current["documents"]["simulator_adapter_code"].append(
+            deepcopy(current["documents"]["simulator_adapter_code"][0])
+        )
+    elif change == "settings":
+        current["documents"]["settings"]["simulation_window"]["end"] += 1
+    elif change == "environment":
+        current["documents"]["environment"]["packages"]["julia:Wflow"] = "changed"
+    previous, current = _rebuild(previous), _rebuild(current)
+    before = deepcopy((previous, current))
+    if change:
+        with pytest.raises(SimulationFrozenError):
+            check_simulation_reuse(previous, current)
+    else:
+        check_simulation_reuse(previous, current)
+    assert (previous, current) == before
+
+
+def test_completed_legacy_inventory_reuses_records_without_rewriting_bytes(
+    tmp_path, monkeypatch
+):
+    from blueearth_cst.experiment import content_identity, simulation_record
+    from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
+    from blueearth_cst.experiment.simulation_reuse import (
+        check_completed_simulation_inputs,
+    )
+
+    original = simulation_record.simulation_intent_v2
+
+    def historical_intent(name, collection, simulator, documents, preparation):
+        documents = {**documents, "simulator_adapter_code": _historical_code()}
+        return original(name, collection, simulator, documents, preparation)
+
+    # Build supported retained records using the captured pre-change inventory.
+    # This is a migration fixture, not a historical production model run.
+    with monkeypatch.context() as patch:
+        patch.setattr(simulation_record, "simulation_intent_v2", historical_intent)
+        experiment = build_v2_experiment(tmp_path)
+    retained = read_simulation_intent_v2(experiment.root)
+    monkeypatch.setattr(
+        content_identity,
+        "stage_environment",
+        lambda *a, **kw: deepcopy(retained["documents"]["environment"]),
+    )
+    before = {
+        path: path.read_bytes() for path in experiment.root.rglob("*") if path.is_file()
+    }
+    check_completed_simulation_inputs(
+        experiment.root,
+        project_root=experiment.project,
+        model_root=experiment.project / "models/hydrology/wflow",
+        collection_path=experiment.collection_marker,
+        collection=read_collection_v2(experiment.collection_marker),
+        resolution_mode=retained["collection"]["resolution_mode"],
+        preparation=retained["documents"]["preparation"],
+        simulation_window=retained["documents"]["settings"]["simulation_window"],
+        julia_command=["unused"],
+    )
+    assert {
+        path: path.read_bytes() for path in experiment.root.rglob("*") if path.is_file()
+    } == before

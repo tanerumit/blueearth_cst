@@ -300,6 +300,20 @@ model, and simulation settings. Use a new experiment name when those inputs
 change. If you change only the indicators, `operation: indicators-only` creates a
 new indicator set from retained model responses without rerunning simulation.
 
+Simulation implementation identity follows the forcing preparation and Wflow
+execution sources, including their scientific helpers. Python logging, figure
+exports, generation implementation and configuration archive code are outside
+that boundary; selected collection contents and resolved simulation inputs
+remain checked separately. Snakemake continues to schedule jobs.
+
+Completed simulations accept the audited source transition from `040a8e61`
+without rewriting their identity or provenance. Both source inventories are
+pinned: an unknown historical implementation still requires a new experiment.
+Incomplete experiments retain their strict freeze checks. Changed scientific
+code, model inputs, settings, preparation, response requirements or relevant
+environment also require a new experiment. The Julia progress helper remains
+tracked because it invokes Wflow.
+
 For a reproducible comparison, keep the whole project output directory, not
 only the indicator CSVs. The model build settings used by HydroMT are recorded
 in `models/hydrology/wflow/hydromt_build_config.yml`.

@@ -65,6 +65,7 @@ from blueearth_cst.shared.provenance import (  # noqa: E402
 from blueearth_cst.shared.run_log_core import (  # noqa: E402
     RUN_WARNING_TALLY_ENV,
     _Heartbeat,
+    _line_reset,
 )
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _ANSI_FAIL,
@@ -1148,6 +1149,21 @@ def run(
         raise
 
 
+class _PreparationHeartbeat(_Heartbeat):
+    """Keep startup progress aligned with the runner's introductory text."""
+
+    def _emit(
+        self, text: str, code: str | None = None, *, redraw: bool = False
+    ) -> None:
+        with suppress(OSError, ValueError):
+            print(
+                f"{_line_reset(self._stream)}  {self._label} {text}",
+                file=self._stream,
+                end="" if redraw else "\n",
+                flush=True,
+            )
+
+
 @contextmanager
 def _preparation_progress(enabled: bool):
     """Announce the runner before experiment imports and report long waits."""
@@ -1156,7 +1172,9 @@ def _preparation_progress(enabled: bool):
         print("\n" + "\n".join(_banner("run_workflows")), flush=True)
         if enabled:
             print("\n  Preparing configuration and experiment checks...", flush=True)
-            heartbeat = _Heartbeat("Workflow preparation", sys.stderr).start()
+            heartbeat = _PreparationHeartbeat(
+                "Workflow preparation", sys.stderr
+            ).start()
     except Exception as exc:  # noqa: BLE001 -- reporting must never prevent admission
         with suppress(OSError, ValueError):
             print(

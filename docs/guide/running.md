@@ -215,6 +215,9 @@ Managed launches merge rule logs and benchmarks when the invocation finishes. Th
 are not required DAG targets, so a fresh execution folder does not schedule gather rules when all
 scientific outputs are up to date. Direct Snakemake runs retain their gather targets.
 
+Initial runner preparation messages use two-space indentation without timestamps or module labels,
+including elapsed-time updates such as `  Workflow preparation 0:00:15 elapsed`.
+
 WF4 retains an experiment's original simulation identity and provenance when only execution-diagnostic
 code changes. Scientific input or simulation-code changes still require a new experiment. A refusal
 before workflow execution skips indicator publication; partial job failures still allow completed

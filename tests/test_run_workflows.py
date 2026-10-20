@@ -207,7 +207,7 @@ def test_preparation_watchdog_stops_when_admission_fails(
     from blueearth_cst.experiment import reservation_context
 
     stopped = []
-    original_stop = rw._Heartbeat.stop
+    original_stop = rw._PreparationHeartbeat.stop
 
     def stop(heartbeat):
         original_stop(heartbeat)
@@ -216,7 +216,7 @@ def test_preparation_watchdog_stops_when_admission_fails(
     def refuse(*args, **kwargs):
         raise ValueError("changed request")
 
-    monkeypatch.setattr(rw._Heartbeat, "stop", stop)
+    monkeypatch.setattr(rw._PreparationHeartbeat, "stop", stop)
     monkeypatch.setattr(reservation_context, "admit_context_owned", refuse)
     cfg = tmp_path / "c.yml"
     _write_cfg(cfg, {name: "true" for name in rw.WORKFLOW_ORDER})
@@ -244,7 +244,7 @@ def test_preparation_reporting_never_masks_admission_errors(monkeypatch, failure
             if failure == "watchdog_stop":
                 unavailable()
 
-    monkeypatch.setattr(rw, "_Heartbeat", Watchdog)
+    monkeypatch.setattr(rw, "_PreparationHeartbeat", Watchdog)
     if failure == "banner":
         monkeypatch.setattr(rw, "_banner", unavailable)
     with pytest.raises(ValueError, match="admission failed"):

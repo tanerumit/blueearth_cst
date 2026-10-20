@@ -206,6 +206,12 @@ exported file's checksum. Sets publish independently: a failed set keeps its pre
 summary names such mixed-age exports) and the command exits nonzero. Editing only titles, descriptions
 or authored citations refreshes `indicators.csv` without recomputing values.
 
+Calculation identities include the selected calculation packages, their imported dependencies and shared
+execution code. Adding or editing an unrelated indicator set leaves existing selections reusable; changing
+a reused formula invalidates its dependent selections. The change from the former all-set code inventory
+changes existing request identities once: the first indicator run after this update recalculates selected
+sets from retained responses. Saved publications remain readable, and model simulations are unaffected.
+
 Wait for workflow completion before reading an export: replacement is atomic per file, not across the
 folder. Ordinary export I/O failures roll back the replaced files. Dry-runs and `simulations_only` do not
 refresh exports. A folder is refreshed only when this set's committed publication owns it; an existing

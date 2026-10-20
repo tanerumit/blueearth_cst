@@ -10,6 +10,7 @@ wherever a test plans against it, because publication re-observes it.
 import csv
 import shutil
 from copy import deepcopy
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -155,7 +156,8 @@ def test_named_requests_share_provenance_but_new_observations_detect_drift(
         calls["environment"] += 1
         return {"revision": calls["environment"]}
 
-    def code():
+    def code(set_ids):
+        assert set_ids == ("default",)
         calls["code"] += 1
         return [{"path": "indicator.py", "sha256": str(calls["code"]) * 64}]
 
@@ -183,6 +185,80 @@ def test_named_requests_share_provenance_but_new_observations_detect_drift(
     )
     assert calls == {"environment": 2, "code": 2}
     assert all(content_sha256(a) != content_sha256(b) for a, b in zip(requests, fresh))
+
+
+@pytest.mark.parametrize("set_id", ["default", "flow_regime", "flood_risk"])
+def test_request_identity_tracks_only_contributing_sets(tmp_path, monkeypatch, set_id):
+    from blueearth_cst.experiment import indicator_plan, return_level_validation
+    from blueearth_cst.indicators import loader
+
+    repo = Path(indicator_plan.__file__).resolve().parents[2]
+    shutil.copytree(
+        repo / "blueearth_cst",
+        tmp_path / "blueearth_cst",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
+    monkeypatch.setattr(
+        indicator_plan,
+        "__file__",
+        str(tmp_path / "blueearth_cst/experiment/indicator_plan.py"),
+    )
+    execution_sources = loader.execution_sources
+
+    def copied_sources(set_ids=None):
+        return tuple(
+            tmp_path / path.relative_to(repo) for path in execution_sources(set_ids)
+        )
+
+    monkeypatch.setattr(loader, "execution_sources", copied_sources)
+    validation = return_level_validation.build_declaration()
+    path = indicator_sets.BUNDLED_ROOT / f"{set_id}.yml"
+
+    def request():
+        resolved = indicator_sets.resolve_set(
+            indicator_sets.SetSource(
+                set_id, path, True, path.read_text(encoding="utf-8")
+            ),
+            ["gwr"],
+        )
+        return indicator_plan.indicator_request(
+            "simulation",
+            indicator_sets.calculation_records(resolved.indicators),
+            "YE-DEC",
+            FIXTURE_ENVIRONMENT,
+            validation,
+        )
+
+    before = request()
+    root = tmp_path / "blueearth_cst/indicators"
+    new_set = root / "sets/new_unrelated_set"
+    new_set.mkdir()
+    (new_set / "__init__.py").write_text("", encoding="utf-8")
+    (new_set / "registry.py").write_text("INDICATORS = ()\n", encoding="utf-8")
+    assert request() == before
+
+    unselected = "flood_risk" if set_id != "flood_risk" else "flow_regime"
+    unrelated = root / f"sets/{unselected}/calculations.py"
+    unrelated.write_text(
+        unrelated.read_text(encoding="utf-8") + "\n# unrelated edit\n", encoding="utf-8"
+    )
+    assert request() == before
+
+    # Flow-regime aliases really depend on the default package as well.
+    selected = "default" if set_id == "flow_regime" else set_id
+    contributing = root / f"sets/{selected}/calculations.py"
+    contributing.write_text(
+        contributing.read_text(encoding="utf-8") + "\n# contributing edit\n",
+        encoding="utf-8",
+    )
+    assert request() != before
+
+    after_selected = request()
+    shared = root / "temporal.py"
+    shared.write_text(
+        shared.read_text(encoding="utf-8") + "\n# shared edit\n", encoding="utf-8"
+    )
+    assert request() != after_selected
 
 
 def test_simulations_only_does_not_resolve_indicator_requirements(

@@ -48,6 +48,7 @@ from blueearth_cst.experiment.wflow_response_reader import (
     ResponseRequest,
     open_responses,
 )
+from blueearth_cst.indicators import loader
 from blueearth_cst.shared.snake_utils import log_row, plural
 
 #: The published return-level provenance beside each v2 indicator set's marker.
@@ -291,16 +292,19 @@ def current_indicator_requests(experiment_root, calculation_sets, anchor):
         )
     environment = resolve_indicator_environment()
     validation = return_level_validation.build_declaration()
-    code = _indicator_code_inventory()
+    code_by_sets = {}
     requests = []
     for calculations in calculation_sets:
+        contributing = _calculation_sets(declarations_for_calculations(calculations))
+        if contributing not in code_by_sets:
+            code_by_sets[contributing] = _indicator_code_inventory(contributing)
         request = indicator_request(
             record["simulation_id"],
             calculations,
             anchor,
             environment,
             validation,
-            code_inventory=code,
+            code_inventory=code_by_sets[contributing],
         )
         request["simulation_schema_version"] = schema
         requests.append(request)
@@ -328,7 +332,11 @@ def indicator_request(
     return_level_validation.verify_declaration(
         validation, return_level_validation.load_report_bytes()
     )
-    code = _indicator_code_inventory() if code_inventory is None else code_inventory
+    code = (
+        _indicator_code_inventory(_calculation_sets(registry))
+        if code_inventory is None
+        else code_inventory
+    )
     return {
         "schema_version": "indicator-request/4",
         "simulation_id": simulation_id,
@@ -344,15 +352,22 @@ def indicator_request(
     }
 
 
-def _indicator_code_inventory():
-    """Observe the full indicator execution closure, including dynamic sets."""
+def _calculation_sets(declarations) -> tuple[str, ...]:
+    """Resolve actual calculation owners, including legacy definitions."""
+    return tuple(
+        sorted(
+            {loader.local_declaration(item).calculation_set for item in declarations}
+        )
+    )
+
+
+def _indicator_code_inventory(set_ids):
+    """Observe shared execution code and the selected dynamic set closure."""
     repo = Path(__file__).resolve().parents[2]
     indicator_root = repo / "blueearth_cst/indicators"
     sources = ["blueearth_cst/experiment/indicator_plan.py"]
     sources.extend(
-        path.relative_to(repo).as_posix()
-        for path in indicator_root.rglob("*.py")
-        if path.name not in {"checks.py", "checking.py"}
+        path.relative_to(repo).as_posix() for path in loader.execution_sources(set_ids)
     )
     # Independent checkers have fresh attribution in verification receipts.
     excluded = [

@@ -88,6 +88,7 @@ def test_identical_attempt_reuses_capture_without_rewriting_payloads(case, workf
     assert repeated_execution == execution
     assert first_context != second_context
     assert _files(current) == before
+    assert not (output / "config/SETTINGS.md").exists()
     assert _files(snapshots) == snapshot_files
     record = read_archive(output, workflow, f"config/{workflow}")
     assert record["invocation_id"] == "first"
@@ -238,7 +239,6 @@ def legacy_case(case):
     ):
         assert path.resolve().is_relative_to(output.resolve())
         shutil.rmtree(path)
-    (output / "config/SETTINGS.md").unlink()
     records = []
     histories = output / "config/_engine/invocations"
     histories.mkdir(parents=True, exist_ok=True)
@@ -335,9 +335,8 @@ def test_maintenance_reports_without_writes_and_migrates_legacy_history(
     assert _files(execution) == inputs
     assert _files(output / "config/_engine/invocations") == history
     assert {path: path.read_bytes() for path in original_sources} == original_sources
-    summary = output / "config/SETTINGS.md"
-    assert str(config) in summary.read_text(encoding="utf-8")
-    assert "execution-configs" not in summary.read_text(encoding="utf-8")
+    assert not (output / "config/SETTINGS.md").exists()
+    assert "SOURCES.md" in (output / "config/README.md").read_text(encoding="utf-8")
     after = _files(output)
     assert maintain_archives(output) == report
     assert _files(output) == after

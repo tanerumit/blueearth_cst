@@ -39,7 +39,7 @@ from blueearth_cst.shared.configuration_archive import (
     remove_stale_launch_contexts,
     retain_archive,
     same_configuration,
-    write_settings_summary,
+    write_config_readme,
 )
 from blueearth_cst.shared.provenance import (
     environment_file_hashes,
@@ -472,7 +472,7 @@ def prepare_workflow(
             payloads = archive_payloads(prior, record)
         publish_archive(project_root, workflow, relative, record, payloads)
         finish_archive_transaction(project_root, workflow)
-    write_settings_summary(project_root)
+    write_config_readme(project_root)
     remove_stale_launch_contexts(project_root, workflow)
     context = stage / f"launch-{invocation_id}.json"
     _write_once(

@@ -9,8 +9,6 @@ import uuid
 from pathlib import Path
 from typing import Any, Mapping
 
-import yaml
-
 from blueearth_cst.shared.provenance import file_sha256
 from blueearth_cst.shared.workflow_config_snapshot import (
     _replace,
@@ -25,12 +23,12 @@ WORKFLOWS = ("analyze_climate", "build_model", "analyze_projections")
 CONFIG_README = """\
 # Configuration records
 
-Start with [SETTINGS.md](SETTINGS.md) for readable settings and original source paths.
 Edit the source configuration supplied to the runner to change a run; generated
 files here are records, not editable run inputs.
 
 `analyze_climate/`, `build_model/` and `analyze_projections/` contain the latest
-exact source captures and `run_record.yml`. Unchanged settings reuse their snapshot.
+exact source captures and `run_record.yml`. `SOURCES.md` lists original source paths.
+Unchanged settings reuse their snapshot.
 Immutable historical snapshots, stable execution inputs, locks and attempt history
 live under `_engine/`. Attempt commands and outcomes are presented in the timestamped
 run summaries under `logs/`.
@@ -196,70 +194,12 @@ def remove_stale_launch_contexts(project: Path, workflow: str) -> None:
             remove_launch_context(project, path)
 
 
-def _settings_section(project: Path, workflow: str) -> str:
-    directory = project / "config" / workflow
-    record = validate_archive(directory)
-    sources = {item["id"]: item for item in record["source_files"]}
-    original_paths = {}
-    for item in record["generated_inputs"]:
-        source_id = item["role"].removeprefix("execution_")
-        if source_id == "project_config":
-            source_id = record["source_config"]
-        elif source_id == "workflow_config":
-            source_id = record["workflow_config"]
-        if source_id in sources:
-            original_paths[str(project / item["file"]["path"])] = sources[source_id][
-                "original_path"
-            ]
-
-    def readable(value):
-        if isinstance(value, dict):
-            return {key: readable(item) for key, item in value.items()}
-        if isinstance(value, list):
-            return [readable(item) for item in value]
-        return original_paths.get(value, value) if isinstance(value, str) else value
-
-    loaded = record["loaded_config"]
-    settings = {
-        key: loaded[key] for key in ("basin", "climate", "model") if key in loaded
-    }
-    settings[workflow] = loaded["workflows"][workflow]
-    return "\n".join(
-        [
-            f"## {workflow.replace('_', ' ').capitalize()}",
-            "",
-            "### Sources",
-            "",
-            *[f"- `{item['original_path']}`" for item in record["source_files"]],
-            "",
-            "### Settings",
-            "",
-            "```yaml",
-            yaml.safe_dump(readable(settings), sort_keys=False).rstrip(),
-            "```",
-            "",
-        ]
-    )
-
-
-def write_settings_summary(project: Path) -> Path:
-    """Present current WF0--WF2 settings without exposing internal paths."""
-    text = (
-        "# Settings used for this case\n\n"
-        "Generated configuration record. Edit the original sources to change a run.\n"
-        "Unchanged reruns reuse their snapshot. Commands and outcomes are in the run summaries under `logs/`.\n\n"
-        "Full resolved settings and environment are recorded in each workflow's `run_record.yml`.\n\n"
-    )
-    for workflow in WORKFLOWS:
-        if (project / "config" / workflow / "run_record.yml").exists():
-            text += _settings_section(project, workflow) + "\n"
-    path = project / "config/SETTINGS.md"
-    if not path.exists() or path.read_text(encoding="utf-8") != text:
-        path.write_text(text, encoding="utf-8")
+def write_config_readme(project: Path) -> Path:
+    """Explain the archive layout without duplicating captured settings."""
     readme = project / "config/README.md"
     if not readme.exists() or readme.read_text(encoding="utf-8") != CONFIG_README:
         readme.write_text(CONFIG_README, encoding="utf-8")
-    return path
+    return readme
 
 
 def maintenance_report(project: Path) -> dict[str, Any]:
@@ -345,5 +285,5 @@ def maintain_archives(project: Path) -> dict[str, Any]:
                 retain_archive(project, previous)
                 _remove_directory(project, previous)
             _inside(project, journal).unlink()
-        write_settings_summary(project)
+        write_config_readme(project)
         return maintenance_report(project)

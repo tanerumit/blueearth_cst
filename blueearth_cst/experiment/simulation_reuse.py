@@ -18,10 +18,16 @@ _DIAGNOSTIC_CODE = {"blueearth_cst/shared/execution_outputs.py"}
 # Any subsequent edit requires a new audit; it is not accepted by this bridge.
 _ARCHIVE_LAUNCH = "blueearth_cst/shared/workflow_archive_launch.py"
 _ARCHIVE_BEFORE = "5e6820a0fd81387a5e449d6755c2e3b39af2c1487aa1c6342a41675a36958f14"
-_ARCHIVE_AFTER = {
+_ARCHIVE_PREVIOUS = {
     _ARCHIVE_LAUNCH: "b5ec137d352bbe1cb7594a8fd1de259be4bf3f52a868ff7dbea55ac84fe26ff1",
     "blueearth_cst/shared/configuration_archive.py": (
         "02d8168156949d51a2bbc4cbd06d73c750db74a9134bfbd35f3ad1c1ecbe4e80"
+    ),
+}
+_ARCHIVE_AFTER = {
+    _ARCHIVE_LAUNCH: "805b78e0fc540c727f7d584da768fcb08431b7ef226009a864722492c446ec61",
+    "blueearth_cst/shared/configuration_archive.py": (
+        "ddee2d3ad42c37f875824915d78474dc94d996939d3df14def93397019724257"
     ),
 }
 
@@ -33,11 +39,10 @@ def _archive_upgrade_paths(
     new = {item["path"]: item["sha256"] for item in current}
     if len(old) != len(retained) or len(new) != len(current):
         return set()
-    if (
-        old.get(_ARCHIVE_LAUNCH) == _ARCHIVE_BEFORE
-        and not (set(_ARCHIVE_AFTER) - {_ARCHIVE_LAUNCH}) & old.keys()
-        and all(new.get(path) == checksum for path, checksum in _ARCHIVE_AFTER.items())
-    ):
+    if {path: old[path] for path in _ARCHIVE_AFTER if path in old} in (
+        {_ARCHIVE_LAUNCH: _ARCHIVE_BEFORE},
+        _ARCHIVE_PREVIOUS,
+    ) and all(new.get(path) == checksum for path, checksum in _ARCHIVE_AFTER.items()):
         return set(_ARCHIVE_AFTER)
     return set()
 

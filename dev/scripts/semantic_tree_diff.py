@@ -421,7 +421,6 @@ def build_project_tree_rules(
     same("config/_engine/journal.jsonl")
     # The bin's own README, rewritten by rule X.01 on every run.
     same("config/README.md")
-    same("config/SETTINGS.md")
     # Both still receive copies, but only of files the toolbox repository
     # cannot give back: a tracked, unmodified catalog or template is recorded
     # by git blob id instead. In a normal checkout these are usually EMPTY.

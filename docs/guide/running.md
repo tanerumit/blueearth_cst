@@ -103,8 +103,7 @@ Changing relevant settings or dependency contents still invalidates affected
 work. Existing runs may rebuild once after upgrading to this execution-view
 format; subsequent equivalent configurations reuse the staged inputs.
 
-Start with `<project_dir>/config/SETTINGS.md` to inspect the latest WF0–WF2 settings
-and original source paths. Exact captured sources remain in the named workflow
+Inspect the latest WF0–WF2 settings in the exact captured files under the named workflow
 folders; immutable snapshots and stable execution inputs live under `config/_engine/`.
 WF3 and WF4 retain their existing collection/experiment configuration records.
 Completed replacement directories and per-launch contexts are removed after their
@@ -116,8 +115,8 @@ For an existing case, inspect configuration maintenance without changing files:
 pixi run python scripts/maintain_config_archives.py --project-dir /path/to/case-output
 ```
 
-Add `--apply` to retain its available WF0–WF2 snapshots, create the readable settings
-view and remove completed launch/replacement bookkeeping. Source configurations,
+Add `--apply` to retain its available WF0–WF2 snapshots and remove completed
+launch/replacement bookkeeping. Source configurations,
 execution inputs, attempt history and scientific outputs are preserved. The command
 reports unavailable historical references; it cannot reconstruct records already deleted.
 It takes the project execution lock, so use it when the case is idle.

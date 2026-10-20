@@ -228,6 +228,18 @@ def test_diagnostic_edit_reuses_original_identity_without_mutating_intents(retai
     assert (retained, current) == before
 
 
+def test_removing_settings_summary_reuses_the_previous_archive_version(retained):
+    from blueearth_cst.experiment.simulation_reuse import _ARCHIVE_PREVIOUS
+
+    _, current = _archive_upgrade(retained)
+    previous = deepcopy(retained)
+    previous["documents"]["simulator_adapter_code"].extend(
+        {"path": path, "sha256": checksum}
+        for path, checksum in _ARCHIVE_PREVIOUS.items()
+    )
+    check_simulation_reuse(_rebuild(previous), current)
+
+
 @pytest.mark.parametrize(
     "component",
     [

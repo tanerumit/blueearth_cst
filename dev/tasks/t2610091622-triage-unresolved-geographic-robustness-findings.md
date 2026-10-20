@@ -20,7 +20,7 @@ updated: 2026-10-15
 
 ## Refs
 
-Source: `dev/records/reviews/geographic-robustness-2026-09-28.md`, retained unchanged during migration.
+Source: `dev/tasks/t2610091622/geographic-robustness-2026-09-28.md`, retained unchanged during migration.
 Current relevance is unverified; historical observations are not assumed to be current defects.
 Reconcile Liberia findings, Chuzaco acceptance evidence, and unmatched Libreville/SP2 diagnostics.
 Review current outputs and task coverage before admitting implementation work; no new case run is authorized here.

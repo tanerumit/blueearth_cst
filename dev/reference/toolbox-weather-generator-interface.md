@@ -38,6 +38,9 @@ the full input. The orography sidecar is outside `validate_wg1`.
 
 ## WG-2 — stress-test perturbation grid
 
+The current grid supports temperature and precipitation axes only; unsupported dimensions are rejected.
+Adding an axis requires updating the producer, lookup columns and downstream consumers together.
+
 The collection retains `perturbation_lookup.csv`. Its producer owns the closed column vocabulary;
 `validate_wg2` checks the ordered header, textual member IDs, uniform padding, ordered rows and twelve
 distinct months per member. Pass the independently expected member count to check completeness against

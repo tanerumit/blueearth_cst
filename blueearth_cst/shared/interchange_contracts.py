@@ -12,8 +12,10 @@ alternative implementation:
   configuration pointer is checked by HM-4, not file existence) + the relational
   ``validate_hm_gauge_column_identity``.
 
-Source of record: ``dev/records/milestones/p32b/interchange-contracts-design.md`` (ACCEPTED
-2026-07-24, §5.5) and the two seam docs ``dev/reference/{toolbox-weather-generator,toolbox-hydrological-model}-interface.md``.
+Current guidance: ``dev/reference/toolbox-weather-generator-interface.md`` and
+``dev/reference/toolbox-hydrological-model-interface.md``. The design section
+IDs below identify historical rationale in
+``dev/records/milestones/p32b/interchange-contracts-design.md``, not additional requirements.
 
 Design invariants this module obeys (do not relax without a design change):
 

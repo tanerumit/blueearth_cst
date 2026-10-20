@@ -7,6 +7,9 @@ and evidence documents. Narrative and rationale live in
 These folders retain milestone evidence, including earlier accepted designs that may not be implemented.
 The `Sealed` column describes preservation status, not runtime adoption. New proposals belong with tasks;
 [current guidance](../../reference/README.md) owns effective rules and implementation descriptions.
+Statements such as “source of record”, “normative” or “maintained-current” inside retained designs
+describe their original phase. They do not override current references. For the output-schema package,
+its [README](post-r12/output-schema/README.md) maps the preserved design to current owners.
 
 These folders moved here from the `dev/` root on 2026-08-02. That was a path
 change only — no file was renamed, split, or edited beyond its path prefix, and
@@ -46,7 +49,8 @@ flexibility, complete 2026-07-25); `r07` is Phase 4 (Layout consolidation);
 `r08` is Phase 5 (Workflow rework); `r09` is Phase 6 (Project tree redesign);
 `r10` is Phase 7 (Naming coherence); `r11`–`r12` are Phase 8 (WF3 rework, open —
 R11 sealed, R12 registered); `r13` is Phase 9 (Configuration modularization,
-design accepted 2026-08-21, not yet implemented).
+design accepted 2026-08-21). These phase labels describe the historical roadmap, not implementation
+status in this checkout.
 
 **Phase 3's folders are named `p3x`, not `rNN`, and that is not an anomaly.**
 Phase 3 milestones carry `P3-x` identifiers in `roadmap.md` (§ P3-1, P3-2a,
@@ -62,8 +66,8 @@ Historical R12 and successor review paths are resolved by the
 [legacy migration context](../migrations/legacy-development-migration-2026-10-09.md).
 It preserves the original run identities and archived citation context without rewriting review reports.
 
-- A milestone folder is the default home for that milestone's **promoted
-  working notes** — see [promotion](../../reference/record-lifecycle.md#promotion).
+- A milestone folder retains selected milestone evidence — see
+  [promotion and retention](../../reference/dev-record-lifecycle.md#proposed-changes-and-promotion).
   `r08/` is the fullest example: eighteen falsifier and validation notes, cited
   from shipped modules and tests.
 - Filenames vary by era and are grandfathered. Later milestones converge on

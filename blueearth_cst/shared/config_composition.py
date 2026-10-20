@@ -4,9 +4,10 @@ The project file carries closed ``{enabled, config_path}`` workflow stanzas;
 each workflow file holds that workflow's settings. This module validates the
 boundary and composes the files for existing consumers.
 
-Source of record: ``dev/records/milestones/r13/config-tiers-design.md`` (ACCEPTED
-2026-08-21). Section references below are to that document; every ``D-`` tag is
-one of its decisions.
+Current guidance: ``dev/reference/toolbox-architecture.md``, configuration
+and execution records. This module owns the exact schema and composition.
+Section references and ``D-`` tags below identify historical rationale in
+``dev/records/milestones/r13/config-tiers-design.md``, not additional requirements.
 
 **The composition invariant (D-8.1) is the whole point.** ``compose_config``
 returns a mapping whose shape is identical to the pre-split ``config`` dict:

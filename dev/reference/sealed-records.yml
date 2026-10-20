@@ -50,14 +50,14 @@ sealed_records:
       are unchanged. Its own banner proposed `dev/reference/`, but a superseded
       problem statement belongs with historical evidence, not current rules.
     sha256: 0d755c4203873e7bfc6ba25a6cacfab2140d861cc345e627b52faabac6bf0fd4
-  - path: dev/reference/workflows/climate_projections.md
+  - path: dev/records/milestones/r04/climate_projections.md
     sealed: 2026-07-31
     superseded_by: R8 WF2 rework
     current_truth: dev/reference/workflows/rule-index.md
     why: the baseline the R4 commits were checked against
     sha256: 203c94cc4b0bc1d61c279c285e8c16381f2819987ed6a46116ac2105228e67dd
 
-  - path: dev/reference/workflows/climate_experiment.md
+  - path: dev/records/milestones/r05/climate_experiment.md
     sealed: 2026-08-05
     superseded_by: P3-1, R7 and R9
     current_truth: dev/reference/workflows/rule-index.md

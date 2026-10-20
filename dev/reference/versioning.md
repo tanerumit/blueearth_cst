@@ -1,5 +1,7 @@
 # Toolbox versioning policy
 
+Last updated: 2026-10-13
+
 The toolbox uses manual Semantic Versioning. Only an explicit owner release
 request opens release preparation; ordinary commits and milestone seals do not
 create releases or bump a version.

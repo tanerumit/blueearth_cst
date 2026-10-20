@@ -1,7 +1,8 @@
 # WF0 figure filename rule
 
-> **Status:** Four-field grammar retained; canonical WF0 diagnostic contexts updated
-> following Gate 1 approval, 2026-10-06. WF1 retains its existing plotting contract.
+Last updated: 2026-10-20
+
+This grammar applies to WF0 diagnostic figures. WF1 retains its own plotting contract.
 
 ## Rule
 

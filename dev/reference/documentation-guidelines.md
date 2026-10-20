@@ -1,5 +1,7 @@
 # Documentation guidelines
 
+Last updated: 2026-09-30
+
 These guidelines apply to new and revised BlueEarth CST documentation.
 
 ## Write for the reader

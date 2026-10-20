@@ -1,30 +1,9 @@
-"""Report drift between the activation record and what is actually on disk.
+"""Check activation links against the tracked manifest and reference navigation.
 
-`dev/reference/agent-activation.md` is the TRACKED record of which agent roles
-and skills are active here; `.agent-system/agent-manifest.yml` is the tracked
-source that `brain refresh --agent-system` materializes into symlink farms
-(`.claude/agents/`, `.claude/skills/`, `.agents/skills/`). The manifest and the reference are both tracked. This script checks that the
-record still describes the materialized trees. It was written after an audit
-found a 14-versus-9 skill mismatch and the wrong frontmatter key.
-
-Three checks, all report-only:
-
-  names       the roles and skills the record NAMES, against the linked trees
-  links       every relative Markdown link in dev/reference/*.md resolves
-  dangling    no symlink under .claude/ or .agents/ points at nothing
-
-Deliberately NOT a test. The trees are gitignored per-user state that a bare
-checkout does not have, so a CI gate on them would fail on every fresh clone
-for the wrong reason. `links` is the one check that holds on a bare checkout,
-and it is the one `tests/test_activation_links.py` pins.
-
-    python dev/scripts/check_activation.py [--json]
-
-Exit 0 when clean, 1 when something drifted, and 0 with a SKIPPED line when the
-symlink farms are simply absent -- the bare-checkout case, which is not a
-defect. The role-binding side (a bound skill that resolves neither in the
-catalog nor under the brain's skills root) is already covered upstream by
-`claude_fallback_gaps`; this does not duplicate it.
+The manifest owns role/skill declarations. Reference prose explains their use,
+without repeating an inventory. Runtime link checks are report-only and skip
+when local activation trees are absent; Markdown links also hold on bare clones.
+Role-derived skill expansion remains the infrastructure activation check's job.
 """
 
 from __future__ import annotations
@@ -35,86 +14,43 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
-RECORD = REPO_ROOT / "dev" / "reference" / "agent-activation.md"
+MANIFEST = REPO_ROOT / ".agent-system" / "agent-manifest.yml"
 REFERENCE_DIR = REPO_ROOT / "dev" / "reference"
 
-# The record states each set as a bulleted `- **<Label> (n):** `a`, `b`, ...`
-# line. Parsing the NAMES rather than the count is deliberate: a swap that keeps
-# the total the same is exactly the drift that goes unnoticed.
-_SET_LINE = re.compile(
-    r"^- \*\*(?P<label>[^*(]+?)\s*\((?P<count>\d+)\)[:*]*\*?\*?:?\s*(?P<body>.+)$",
-    re.M,
-)
-_BACKTICKED = re.compile(r"`([^`]+)`")
 # Inline links only; reference-style and bare URLs are out of scope.
 _MD_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 
-# Phase A retained these verification citations. They block pruning under
-# dev/README.md's retention rule; new reference links to reviews are refused.
+# Existing plot verification blocks pruning under record-lifecycle.md.
+# New reference links to prunable reviews are refused.
 _RETAINED_REVIEW_LINKS = {
     (
         "dev/reference/plot-style.md",
         "dev/records/reviews/plot-improvements/verification.md",
     ),
-    (
-        "dev/reference/migration_plot_paths.md",
-        "dev/records/reviews/plot-improvements/verification.md",
-    ),
 }
 
 
-def _bullets(text: str) -> list[str]:
-    """Markdown bullets, each rejoined from its wrapped continuation lines.
-
-    The sets are long enough to wrap, and a per-line regex silently reads only
-    the first line -- which looks like a set that shrank.
-    """
-    joined: list[str] = []
-    open_bullet = False
-    for line in text.splitlines():
-        if line.startswith("- "):
-            joined.append(line)
-            open_bullet = True
-        elif open_bullet and line.startswith("  ") and line.strip():
-            joined[-1] += " " + line.strip()
-        else:
-            # Anything else ends the bullet -- a blank line, a heading, or an
-            # unindented paragraph. Without this the accumulator would swallow
-            # an indented block that merely FOLLOWS a list, and names picked
-            # out of prose would look like set members.
-            open_bullet = False
-    return joined
-
-
-def _named_sets(text: str) -> dict[str, list[str]]:
-    """Map each `- **Label (n):** ...` bullet to the backticked names in it."""
-    found: dict[str, list[str]] = {}
-    for bullet in _bullets(text):
-        m = _SET_LINE.match(bullet)
-        if not m:
-            continue
-        label = m.group("label").strip().lower()
-        names = _BACKTICKED.findall(m.group("body"))
-        if names:
-            found[label] = sorted(names)
-    return found
-
-
-def _stated_counts(text: str) -> dict[str, int]:
-    """The `(n)` each set bullet declares, whether or not it lists names.
-
-    The Claude-scope bullet states a delta ("those 10 + `testing-policy`")
-    rather than a list, so its count is the only checkable form -- and it is
-    the number that went stale last time (the record said 19 where 10 were
-    linked). Checking names alone would leave exactly that claim unverified.
-    """
-    counts: dict[str, int] = {}
-    for bullet in _bullets(text):
-        m = _SET_LINE.match(bullet)
-        if m:
-            counts[m.group("label").strip().lower()] = int(m.group("count"))
-    return counts
+def _declared_sets() -> dict[str, list[str]]:
+    """Read nonempty role/skill lists from the authoritative manifest."""
+    document = yaml.safe_load(MANIFEST.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise ValueError("activation manifest must be a mapping")
+    result = {}
+    for key, label in (("roles", "roles"), ("skills", "manifest-explicit")):
+        entries = document.get(key)
+        if (
+            not isinstance(entries, list)
+            or not entries
+            or any(not isinstance(entry, str) or not entry.strip() for entry in entries)
+        ):
+            raise ValueError(
+                f"activation manifest {key} must be a nonempty list of names"
+            )
+        result[label] = sorted(entries)
+    return result
 
 
 def _linked(directory: Path) -> list[str]:
@@ -124,70 +60,37 @@ def _linked(directory: Path) -> list[str]:
 
 
 def check_names() -> tuple[list[str], bool]:
-    """Compare the record's named sets against the materialized trees."""
-    problems: list[str] = []
+    """Compare manifest declarations with the locally materialized trees."""
     roles_dir = REPO_ROOT / ".claude" / "agents"
     skills_dir = REPO_ROOT / ".claude" / "skills"
     codex_dir = REPO_ROOT / ".agents" / "skills"
     if not roles_dir.is_dir() or not skills_dir.is_dir():
-        return problems, False  # not activated on this machine; not a defect
-
-    sets = _named_sets(RECORD.read_text(encoding="utf-8"))
-    # Only the two sets the record enumerates by name are checked exactly. The
-    # Codex root catalog is the manifest-explicit set by definition, and the
-    # Claude scope bullet states a delta ("those N + `x`") rather than a list;
-    # the latter is checked as a superset below.
-    expectations = [
-        ("roles", roles_dir, _linked(roles_dir)),
-        ("manifest-explicit", codex_dir, _linked(codex_dir)),
-    ]
-    for label, directory, actual in expectations:
-        stated = sets.get(label)
-        if stated is None:
-            problems.append(
-                f"the record names no '{label}' set -- has it been renamed?"
-            )
-            continue
+        return [], False
+    try:
+        sets = _declared_sets()
+    except (OSError, ValueError, yaml.YAMLError) as error:
+        return [f"cannot read activation manifest: {error}"], True
+    problems = []
+    for label, directory in (("roles", roles_dir), ("manifest-explicit", codex_dir)):
         if not directory.is_dir():
             continue
-        missing = sorted(set(stated) - set(actual))
-        extra = sorted(set(actual) - set(stated))
+        expected, actual = set(sets[label]), set(_linked(directory))
+        missing, extra = expected - actual, actual - expected
         if missing:
             problems.append(
-                f"{label}: the record names {', '.join(missing)}, "
-                f"not linked under {directory.relative_to(REPO_ROOT)}"
+                f"{label}: manifest entries missing under {directory.relative_to(REPO_ROOT)}: "
+                + ", ".join(sorted(missing))
             )
         if extra:
             problems.append(
-                f"{label}: {', '.join(extra)} is linked under "
-                f"{directory.relative_to(REPO_ROOT)} but the record does not name it"
+                f"{label}: links absent from the manifest under {directory.relative_to(REPO_ROOT)}: "
+                + ", ".join(sorted(extra))
             )
-
-    claude = set(_linked(skills_dir))
-    stated_explicit = set(sets.get("manifest-explicit", []))
-    if stated_explicit and not stated_explicit <= claude:
+    missing = set(sets["manifest-explicit"]) - set(_linked(skills_dir))
+    if missing:
         problems.append(
             "manifest-explicit skills missing from .claude/skills/: "
-            + ", ".join(sorted(stated_explicit - claude))
-        )
-
-    # The Claude scope is explicit + every promoting `always` binding, so it
-    # moves when a ROLE changes even though nothing in the manifest did. Its
-    # count is the record's only claim about that, and nothing above touches
-    # it: drop `testing-policy: always` from the roles that carry it and every
-    # other check here still passes.
-    counts = _stated_counts(RECORD.read_text(encoding="utf-8"))
-    stated_scope = counts.get("claude main-thread scope")
-    if stated_scope is None:
-        problems.append(
-            "the record states no 'Claude main-thread scope (n)' -- "
-            "has the bullet been renamed?"
-        )
-    elif stated_scope != len(claude):
-        problems.append(
-            f"claude main-thread scope: the record says {stated_scope}, "
-            f".claude/skills/ holds {len(claude)} "
-            f"({', '.join(sorted(claude))})"
+            + ", ".join(sorted(missing))
         )
     return problems, True
 
@@ -283,9 +186,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if failed:
         print(
-            "\nThe record is dev/reference/agent-activation.md. If the trees are "
-            "right and the record is stale, update the tracked manifest and "
-            "activation reference together.",
+            "\nDeclarations live in .agent-system/agent-manifest.yml. Resolve "
+            "manifest/tree drift through activation setup; see "
+            "dev/reference/agent-activation.md.",
             file=sys.stderr,
         )
         return 1

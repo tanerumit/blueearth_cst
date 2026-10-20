@@ -1,5 +1,7 @@
 # Validation ladder — tiering, configs, and CI
 
+Last updated: 2026-10-20
+
 The ladder table lives in `AGENTS.md` § Validation ladder. This file holds what does not fit there: how the tiers are drawn, which config a run takes, and how to read CI.
 
 ## Planning and reusing verification
@@ -281,12 +283,6 @@ qualification claim; neither label requires repeating applicable execution evide
 It writes nowhere under `test_case/`, so it cannot disturb the baseline tree, and
 nothing an earlier run left behind can make it pass. It skips by name when a
 prerequisite is missing; a skip is no evidence, so read the reason (`-rs` is on).
-
-Until 2026-10-04 (t2610041227) this layer was three per-workflow smoke tests
-behind the same flag, and nothing scheduled them, so they drifted until none
-could test anything: two pointed at pre-R9 paths, one force-rebuilt the standing
-baseline tree, and one drove WF3 with bare Snakemake. An opt-in test with no
-trigger decays silently; the ladder row is its trigger.
 
 ## Which config to run
 

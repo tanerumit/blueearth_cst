@@ -1,3 +1,6 @@
+> **Historical design record.** Acceptance and implementation statements below describe the recorded
+> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+
 Status: superseded by 0006-retire-subcatchment-climate-plots.md (2026-08-09)
 Date: 2026-07-21
 Deciders: Ümit Taner

@@ -1,47 +1,57 @@
-# dev/reference/
+# Current development and toolbox reference
 
-Rules the code must obey, and the durable descriptions of how it is put together. Consulted while working; rewritten rarely and deliberately.
+Last updated: 2026-10-20
 
-This is the **stays-true** tier. Historical evidence lives in `../records/milestones/` and
-`../records/decisions/`; live task material is under `../tasks/`, indexed by `../TODO.md` on main.
-Dated review snapshots live in `../records/reviews/` and follow the
-[record lifecycle](record-lifecycle.md).
+This is the shared source of current guidance for developers and agents: what applies in this checkout,
+how the toolbox is organized, and where to check compliance. Use this map to find the owning document
+before writing. Update that document for revisions; do not create a separate file per decision or task.
 
-| Path | Holds |
+## Development practices
+
+| When the change concerns | Update or consult |
 |---|---|
-| [development-workflow.md](development-workflow.md) | Shared task, board, worktree, and handoff procedures |
-| [record-lifecycle.md](record-lifecycle.md) | Promotion, retention, supersession, and closure-ledger rules |
-| `roadmap.md` | The phase narrative: what each milestone set out to do and how it landed. Moved from the `dev/` root on 2026-10-05 |
-| `naming.md` | Prescriptive style guide for identifiers and files, with `MUST` / `SHOULD` / `MAY` normative force |
-| `documentation-guidelines.md` | Audience, placement, accuracy, and review rules for user-facing documentation |
-| `wf0-figure-filename-rule.md` | The WF0 figure filename grammar (`<dataset_scope>_<variable>_<plot_context>_<spatial_scope>`), agreed 2026-08-17. Promoted out of `../working/` on 2026-08-19 — two Snakefiles, a shipped module and a test cite it |
-| `indicator-glossary.md` | Every spelling of every WF4 output variable — config label, CSDMS name, csv code, token, table, indicator — plus the indicator vocabulary. **Derived** from the code's dicts and checked against them by `tests/test_indicator_glossary.py` |
-| `agent-activation.md` | How roles and skills become available to Claude Code and Codex here, and why the two runtimes differ |
-| `git-conventions.md` | Durable-ref inventory, plus the branching, tagging, and commit-message conventions |
-| `repo-layout.md` | The parts of the tree `AGENTS.md` § Repo Map does not cover: the `config/` bins, the `test_case/` tracking rules, what a bare-checkout CI run cannot gate, and the three-homes split |
-| `task-lanes.md` | **Parked, deliberately unreferenced.** Lane mechanics that belong in the `git-workflow` skill, plus CST-specific worktree rules that do not. Raw material for a skill revision; cite nothing from it |
-| `validation-ladder.md` | How the test tiers are drawn, which `--configfile` a run takes, and how to read a CI run |
-| `contracts/` | The two substitution seams — hydrological model, weather generator — pinned as machine-checked contracts (P3-2b) |
-| `workflows/` | Per-workflow contract docs for wf1 / wf2 / wf3, plus the CMIP6 member inventories, and `wf2-cmip6-store-readability.md` — which CMIP6 stores this toolbox can read (grid geometry, published-version multiplicity), promoted from two board items on 2026-08-20 |
+| Task admission, sessions, board coordination or handoffs | [Development workflow](development-workflow.md) |
+| Repository placement, config directories or local scratch | [Repository layout](repo-layout.md) |
+| Documentation authority, promotion, retention or sealing | [Record lifecycle](record-lifecycle.md) |
+| File, identifier or output naming | [Naming](naming.md) |
+| Verification, evidence reuse, landing or CI | [Validation ladder](validation-ladder.md) |
+| Git branch, tag or commit conventions | [Git conventions](git-conventions.md) |
+| Release/version decisions | [Versioning](versioning.md) |
+| User documentation structure and authoring | [Documentation guidelines](documentation-guidelines.md) |
+| Project agent activation and diagnostics | [Agent activation](agent-activation.md) |
 
-## Two things to know before editing
+## Architecture and implementation
 
-- **These paths are cited from shipped code.** Measured, not assumed — `git grep -n "dev/reference/" -- ':!dev/'` is the check, and it is the only one there is, since a path in a comment resolves nowhere and no test fails when it rots:
+| When the change concerns | Update or consult |
+|---|---|
+| Workflow boundaries, configuration ownership or retained handoffs | [Toolbox architecture](toolbox-architecture.md) |
+| Shared regions, spatial identities or map ownership | [Spatial foundation](spatial-foundation.md) |
+| Wflow construction, constant parameters or model-root ordering | [Model construction](workflows/model_creation.md) |
+| Forcing catalog admission and unit interpretation | [Forcing units](contracts/forcing-units.md) |
+| Weather-generator or hydrological-model substitution | [Interchange contracts](contracts/README.md) |
+| A rule's inputs, outputs, ordering or consumers | [Rule index](workflows/rule-index.md) |
+| CMIP6 grid handling or source-version selection | [CMIP6 readability](workflows/wf2-cmip6-store-readability.md) |
+| Output-variable names and indicator terminology | [Indicator glossary](indicator-glossary.md) |
 
-  | Path | Cited from |
-  |---|---|
-  | `naming.md` | `AGENTS.md`, all four `*.smk`, `shared/snake_utils.py`, `scripts/run_workflows.py` |
-  | `contracts/` | `shared/interchange_contracts.py`, `indicator_tables.py`, `spatial_geoms_parity.py`, `surface_axes.py`, `snake_utils.py`, `tests/test_interchange_contracts.py`, `docs/notebooks/Climate Stress Test.ipynb` |
-  | `wf0-figure-filename-rule.md` | `analyze_climate.smk`, `build_model.smk`, `climate_analysis/figure_naming.py`, `climate_analysis/climate_figures.py`, `tests/test_figure_naming.py` |
-  | `indicator-glossary.md` | `experiment/indicator_plan.py`, `shared/indicator_tables.py`, `tests/test_indicator_glossary.py` |
-  | `workflows/` | the three `*.smk` (rule-index), `model/write_outlet_index.py`, `shared/indicator_tables.py`, `config/templates/README.md`, two `docs/migration-*.md`; `wf2-cmip6-store-readability.md` from `projections/fetch_gcm_raw.py`, `projections/series_identity.py`, `tests/test_series_identity.py`, `dev/scripts/probe_cmip6_grids.py`, `dev/scripts/stage_cmip6.py` |
-  | `repo-layout.md` | `AGENTS.md` |
-  | `validation-ladder.md` | `AGENTS.md` |
-  | `sealed-records.yml` | `AGENTS.md`, `pyproject.toml` |
-  | `git-conventions.md` | `README.md` |
-  | `roadmap.md` | `README.md`, `.github/workflows/ci.yml`, `test_case/project_config_baseline_linux.yml` |
+## Plotting and presentation
 
-Renaming a file here means updating those citations in the same commit.
-- **`workflows/` is not `.github/workflows/`.** This one holds prose contracts; that one holds CI definitions. A third, `config/workflows/`, was retired on 2026-08-10 (`7f776c4`) — every `--configfile` target now sits beside the project it writes into, under `test_case/`.
+| When the change concerns | Update or consult |
+|---|---|
+| Scientific figure appearance, export or review practice | [Plot style](plot-style.md) |
+| WF0 diagnostic figure filename grammar | [WF0 figure filenames](wf0-figure-filename-rule.md) |
+| A reusable report or comparison interface | [Templates and usage](../templates/README.md) |
 
-Everything here moved from the `dev/` root on 2026-08-02 — a path change only, no file renamed, split, or edited beyond the prefix. `conventions/` was flattened into this folder (it held two files); `contracts/` and `workflows/` kept their folders because each is a coherent multi-file unit.
+## How to maintain this collection
+
+Keep the main folder flat; `contracts/` and `workflows/` retain their coherent technical groups.
+A new file needs a distinct reader question and maintenance boundary, not merely a new task or decision.
+Add its ownership to this map and remove any duplicate account in the same change.
+
+Exact defaults, schemas, inventories and checks remain with their executable owners. References explain
+meaning and relationships and point to those owners. If code and guidance disagree, resolve the discrepancy
+before claiming compliance; acceptance of a historical design does not prove implementation.
+
+Proposals belong with `dev/tasks/`, reusable artifacts in `dev/templates/`, and dated evidence in
+[records](../records/README.md). [sealed-records.yml](sealed-records.yml) is active preservation metadata.
+Keep revision histories, superseded specifications and session progress out of this folder.
+The [record lifecycle](record-lifecycle.md) owns the detailed maintenance policy.

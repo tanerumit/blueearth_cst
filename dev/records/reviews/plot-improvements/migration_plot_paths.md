@@ -81,7 +81,7 @@ records and the stale numerical baseline manifest remain unchanged.
 ## JSON placement
 
 This migration placed machine plot manifests in `plots/_engine/` and internal analysis records in
-`analysis/_engine/`. The subsequently approved [output naming rule](naming.md#generated-outputs-under-project_dir)
+`analysis/_engine/`. The subsequently approved [output naming rule](../../../reference/naming.md#generated-outputs-under-project_dir)
 adopts one root `_engine/` per cohesive output unit. WF2 now consolidates both records under
 `data/climate/projections/cmip6/_engine/`; WF0 consolidation is pending.
 
@@ -119,7 +119,7 @@ and numerical baseline checks are outside this confined metadata-path change.
 ## Verification status
 
 Final integration verification is recorded in
-[`../records/reviews/plot-improvements/verification.md`](../records/reviews/plot-improvements/verification.md), including
+[`../records/reviews/plot-improvements/verification.md`](verification.md), including
 WF0 source/comparison and optional subbasin paths, WF2 availability-to-output mappings, caption manifests,
 and affected workflow declarations. Earlier deferral applied only to visual iteration.
 

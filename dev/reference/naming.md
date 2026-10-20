@@ -1,5 +1,7 @@
 # Naming conventions
 
+Last updated: 2026-10-20
+
 Prescriptive style guide for naming identifiers and files in `blueearth_cst`. `MUST` / `SHOULD` / `MAY` carry their usual normative weight.
 
 **Grandfathered today, applied tomorrow.** This guide governs *new* code. Existing non-conforming names stay until the milestone that owns them refactors them — do not rename an identifier just to conform. Renaming a *contract* surface needs a migration note (§7).
@@ -144,7 +146,7 @@ their own engine directory. Document the base directory used to resolve relative
 Generated graphics use `plots/`. Readable captions belong to `plots/figure_captions.md`, while
 user-facing JSON data and provenance remain with their data products. WF0 and WF2
 figure names follow dataset/variable/context/spatial fields; WF2's controlled mapping lives in
-`projection_figures.FIGURE_FILENAMES`. See [plot path migration](migration_plot_paths.md).
+`projection_figures.FIGURE_FILENAMES`; that mapping owns the current names.
 
 WF2 uses `data/climate/projections/cmip6/_engine/` for `stage_b_settings.json`, `analysis_record.json`
 and `figure_captions.json`; manifest figure paths resolve relative to the sibling `plots/` directory.
@@ -215,7 +217,7 @@ Two properties hold:
 - **Contiguous** within each workflow, from `W.01`. Target rules (`all`, WF4's `simulations_only` and `simulations_and_indicators`) carry no number: they do no work, and a numbered target reads as a pipeline step.
 - **Every dependency points from a lower number to a higher one**, checked against each rule's `input:` block — **`ancient()` included**. `ancient()` suppresses the timestamp rerun-trigger, not the DAG edge.
 
-**Numbers are REUSED, so a stale reference resolves to a different rule.** Read every `W.NN` in `dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` and the dated migration records **as of its date**, and translate through `dev/reference/workflows/rule-index.md` § *What changed*. Do not rewrite those archives to current numbers.
+**Numbers are REUSED, so a stale reference resolves to a different rule.** Read every `W.NN` in `dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` and the dated migration records **as of its date**, and translate through `dev/records/milestones/r10/rule-numbering-crosswalks.md`. Do not rewrite those archives to current numbers.
 
 Rules:
 

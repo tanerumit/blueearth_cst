@@ -1,3 +1,6 @@
+> **Historical design record.** Acceptance and implementation statements below describe the recorded
+> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+
 ADR 0005 — Adopt `ruff format`, in two stages split on the Snakemake code rerun trigger
 
 Status: accepted (stage 1 landed 2026-08-09; stage 2 landed 2026-08-11)

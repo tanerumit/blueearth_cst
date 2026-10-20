@@ -2,11 +2,11 @@
 
 One folder per milestone, holding its design, plan, review, migration,
 and evidence documents. Narrative and rationale live in
-[the roadmap](../../reference/roadmap.md); this is the file index.
+[the roadmap](roadmap.md); this is the file index.
 
-Most folders here are sealed milestones. A folder is also created when a
-milestone is **registered** — its design accepted but not yet implemented — so
-the accepted design has a durable home. The `Sealed` column says which is which.
+These folders retain milestone evidence, including earlier accepted designs that may not be implemented.
+The `Sealed` column describes preservation status, not runtime adoption. New proposals belong with tasks;
+[current guidance](../../reference/README.md) owns effective rules and implementation descriptions.
 
 These folders moved here from the `dev/` root on 2026-08-02. That was a path
 change only — no file was renamed, split, or edited beyond its path prefix, and

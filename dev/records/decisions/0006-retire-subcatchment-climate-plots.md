@@ -1,3 +1,6 @@
+> **Historical design record.** Acceptance and implementation statements below describe the recorded
+> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+
 Status: accepted
 Date: 2026-08-09
 Deciders: Ümit Taner

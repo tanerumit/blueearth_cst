@@ -1,5 +1,7 @@
 # Repository layout
 
+Last updated: 2026-10-20
+
 `AGENTS.md` § Repo Map carries the summary. This file covers the rest of the tree.
 
 ## blueearth_cst/
@@ -63,6 +65,10 @@ The [development workflow](development-workflow.md#task-admission-and-the-board)
 task admission, rendering, and coordination. The [record lifecycle](record-lifecycle.md) owns promotion
 and retention. `dev/README.md` is the folder map and contributor entry point.
 
+Use `dev/reference/README.md` to find the existing topic owner for current rules and architecture.
+Reusable report/review artifacts and their usage guides live in `dev/templates/`.
+Keep proposals with tasks and dated evidence under records; neither supplies current compliance rules.
+
 The wrapper gives Item and Area / Origin up to 110 and 44 characters. The `#`
 column comes from each todo note's `queue`: lower numbers come first, with newer
 IDs first within a shared rank. Rank correctness risks and work that unblocks
@@ -72,7 +78,7 @@ Watch items remain unnumbered after the work queue. Priority edits belong in
 the notes and require a render; they do not change lifecycle status.
 
 Pre-board item IDs cited by code, tests and Snakefiles are recoverable from
-commit `45e3a564`; see [historical recovery](record-lifecycle.md#historical-evidence-and-recovery).
+commit `45e3a564`; see [historical recovery](record-lifecycle.md#milestone-records-and-historical-recovery).
 
 ### Task temporary material
 

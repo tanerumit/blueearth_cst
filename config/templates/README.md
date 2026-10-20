@@ -85,7 +85,7 @@ GISS-E2-1-H, IPSL-CM6A-LR (ssp434/460), MCM-UA-1-0 and NorESM2-LM (ssp245) — f
 those, narrow `members.preference` to the one label the model shares across your
 scenarios, or name it in `members.overrides`.
 
-Per-model member counts: `dev/reference/workflows/wf2-cmip6-monthly-members.csv`.
+Per-model member counts: `dev/records/milestones/r08/wf2-cmip6-monthly-members.csv`.
 
 ### `models` — every CMIP6 model with a historical member
 

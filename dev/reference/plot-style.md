@@ -1,5 +1,7 @@
 # Scientific plot style and visual review
 
+Last updated: 2026-10-20
+
 This shared reference records the agreed WF0, WF1 and WF2 styles and defaults for subsequent figure
 revisions. Apply relevant defaults across plot types; preserve the explicit exceptions below. New visual
 decisions belong here, alongside changes to the plotting code. A style decision does not authorize changing
@@ -28,7 +30,7 @@ WF2 uses the ensemble root's `_engine/`, with manifest figure paths relative to 
 Existing WF0 `plots/_engine/` paths await explicit migration. JSON containing user-facing data stays with
 its owning data product. Generated filenames and directories use lowercase snake_case, including
 `full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
-with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the rename mapping.
+with canonical `precip` and `temp` stems. See [naming](naming.md) for current filename conventions.
 
 ## Shared colour defaults
 
@@ -355,10 +357,10 @@ in this visual review.
 
 - Begin each new plot-group review with scientific, methodological and publication-readability
   suggestions before applying changes. Distinguish visual revisions from changes to calculations.
-- Confirm the authoritative baseline and its data provenance before revising. Use the newer WF2 lab
-  outputs and retained tables for this session; older production renders can carry superseded styles.
-- Start from the tracked `dev/reference/figure-comparison.html` template. See
-  `dev/reference/figure-comparison.md` for setup and figure-record fields. Keep session data in scratch;
+- Confirm the authoritative baseline and its data provenance before revising. Select retained inputs
+  appropriate to the review; older production renders can carry superseded styles.
+- Start from the tracked `dev/templates/figure-comparison.html` template. See
+  `dev/templates/figure-comparison.md` for setup and figure-record fields. Keep session data in scratch;
   update the tracked template when improvements to the review interface are approved.
 - Keep the disposable HTML review in `.tmp/tasks/<id>/`; follow `repo-layout.md` for closure cleanup.
 - Show only the plot group currently under review, with existing and revised versions side by side.

@@ -76,7 +76,7 @@ The schema is a prototype authoring convention, not a stable workflow output con
 - Link findings to evidence. Significance, source ranking and causality need more than visual appearance.
 - Embed retained figures unchanged and retain meaningful captions; report omitted products explicitly.
 - Keep caveats relevant to the decision. Execution success alone does not establish model quality.
-- Follow [plot-style.md](plot-style.md) when revising the scientific figures themselves.
+- Follow [plot-style.md](../reference/plot-style.md) when revising the scientific figures themselves.
 
 ## Reuse across workflows
 
@@ -94,14 +94,3 @@ WF2 contextualizes projection plausibility; it does not drive WF3 scenario gener
 WF3 and model construction are independent prerequisites for WF4. Do not imply all workflows were run
 merely because the template supports them. A future adapter should read retained outputs and metadata
 without recomputing scientific analysis in the presentation layer.
-
-## Current preview and next decision
-
-The first populated WF0 preview is a disposable, self-contained HTML file under this session's scratch.
-It embeds all nine top-level retained ERA5 plots for the 2000–2016 demonstration extraction; subbasin
-plots and raw data are omitted. It labels the figures as older exports, captions as descriptive preview
-text, and findings as draft visual interpretations. It is not an executed current-WF0 report.
-
-Review the reading order, method detail, figure browser and print presentation first. Automatic generation,
-report output locations, and binding to current workflow metadata require a subsequent design once this
-template is accepted. No workflow report is emitted automatically yet.

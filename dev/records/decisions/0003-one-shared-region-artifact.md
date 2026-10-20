@@ -1,3 +1,6 @@
+> **Historical design record.** Acceptance and implementation statements below describe the recorded
+> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+
 Status: accepted (§1–12, implemented 2026-08-06); baseline re-recorded
         `ea5ac59` — see *Landed state (§12)*.
 Date: 2026-08-02

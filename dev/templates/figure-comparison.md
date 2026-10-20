@@ -8,7 +8,7 @@ Copy it into the owning task's temporary folder from the worktree root (replace 
 
 ```powershell
 New-Item -ItemType Directory -Force '.tmp/tasks/<id>/figure-review'
-Copy-Item dev/reference/figure-comparison.html '.tmp/tasks/<id>/figure-review/comparison.html'
+Copy-Item dev/templates/figure-comparison.html '.tmp/tasks/<id>/figure-review/comparison.html'
 ```
 
 Edit the copy's `<title>` and `<h1>` for the active plot group. Replace `const items=[]` with a JSON array
@@ -60,5 +60,5 @@ supports holding Space or Enter. The focused wipe divider supports Left/Right an
 Review state is not persisted. The layout stacks the pair on narrow screens.
 
 Keep figure images and populated pages untracked in scratch. Preserve approved interface improvements
-in the template, and preserve scientific style decisions in [plot-style.md](plot-style.md). This template
+in the template, and preserve scientific style decisions in [plot-style.md](../reference/plot-style.md). This template
 is a development aid and is not part of workflow outputs.

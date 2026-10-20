@@ -1,3 +1,6 @@
+> **Historical design record.** Acceptance and implementation statements below describe the recorded
+> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+
 # ADR 0009 — Split scenario generation and system simulation
 
 - **Status:** accepted and implemented; P3 validation passed on 2026-09-12

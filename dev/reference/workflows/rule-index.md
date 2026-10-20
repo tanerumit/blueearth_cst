@@ -1,5 +1,7 @@
 # Rule index — every Snakemake rule
 
+Last updated: 2026-10-20
+
 Every rule in `analyze_climate.smk`, `build_model.smk`, `analyze_projections.smk`,
 `generate_scenarios.smk` and `simulate_system.smk`: what each one does, what it writes, and how they connect.
 
@@ -15,17 +17,16 @@ WF0–WF2 Python plotting rules also track `config/plotting/colors.yml` and `sty
 renderer params. Palette edits schedule those jobs without entering scientific configuration identity.
 
 Rule numbers are reused, so any `W.NN` written before 2026-09-24 may name a
-different rule — translate through [What changed](#what-changed) before reading one in
+different rule — translate through [historical translations](../../records/milestones/r10/rule-numbering-crosswalks.md) before reading one in
 `dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` or a dated migration record.
 
 ## On the numbers
 
-### R12 generation/simulation split
+### Generation and simulation
 
 WF3 publishes a ready collection; WF4 consumes it through the mandatory
 simulation runner and publishes retained responses and indicator sets. The final
-rule tables below replace the combined workflow's numbering. Historical tables
-in “What changed” retain the numbers in force at their stated dates.
+rule tables below replace the combined workflow's numbering. Use the historical translations only to interpret older citations.
 
 `W.NN` is the rule's position in its workflow's **logical order**: data first,
 then model build, then run, then records. Numbering is contiguous within each
@@ -34,132 +35,11 @@ rule can never depend on something numbered after it.
 
 **"Every dependency low→high" is checked against `input:`, `ancient()`
 included.** `ancient()` suppresses the timestamp rerun-trigger; it does not
-remove the DAG edge. Two rules move further than a reader of the previous map
-would expect for exactly this reason — see the note under the WF1 table.
+remove the DAG edge. Use the declared dependency graph when assigning rule order.
 
 **Going forward: do not renumber to insert a rule.** Use a letter suffix
 (`1.09b`) until the next deliberate sweep. Renumbering is a migration, not an
 edit.
-
-## What changed
-
-Dated translations for historical citations. Current WF3/WF4 numbering is in their tables below.
-
-### Domain names and contiguous numbers — 2026-09-24
-
-Every workflow was renamed and renumbered from `W.01`, and target rules lost
-their numbers. The old → new table for all five workflows is in
-[`migration_domain-rule-names.md`](../../records/milestones/post-r12/migration_domain-rule-names.md).
-The older tables below use the names and numbers of their date.
-
-### Renumbering — 2026-08-06 historical map
-
-Read this table before interpreting any `W.NN` in a document written before
-2026-08-06. 47 declarations: 18 in WF1, 10 in WF2, 19 in WF3. The `was`
-column carries the old name too wherever the rename and the renumber coincide,
-so one lookup answers both.
-
-
-**WF1** — `build_model.smk`
-
-| new | rule | was |
-|---|---|---|
-| 1.00 | `all` | 1.00 |
-| 1.01 | pre-parse archive publication (launcher, no rule) | 1.01 `snapshot_config` |
-| 1.02 | `delineate_region` | 1.01b |
-| 1.03 | `delineate_spatial_units` | 1.01c |
-| 1.04 | `extract_historical_climate` | 1.10 `extract_climate_grid` |
-| 1.05 | `plot_climate_source` | 1.15 |
-| 1.06 | `prepare_spatial_maps` | 1.02 |
-| 1.07 | `build_wflow_model` | 1.03 |
-| 1.08 | `add_reservoirs_lakes_glaciers` | 1.04 |
-| 1.09 | `declare_wflow_outputs` | 1.05 `add_gauges_and_outputs` |
-| 1.10 | `add_climate_forcing` | 1.08 `add_forcing` (+ 1.07, merged in) |
-| 1.11 | `write_outlet_index` | 1.06 |
-| 1.12 | `plot_basin_map` | 1.12 `plot_map` |
-| 1.13 | `plot_forcing` | 1.13 |
-| 1.14 | `run_wflow` | 1.09 |
-| 1.15 | `plot_wflow_evaluation` | 1.11 `plot_results` |
-| 1.16 | `gather_benchmarks` | 1.14 |
-| 1.17 | `gather_logs` | 1.16 |
-
-> **Two rules moved further than the previous draft of this table had them, and
-> not because of the new rule.** `write_outlet_index` and `plot_basin_map` both
-> declare `ancient(<model>/.model_final)`, and that sentinel is written by
-> `add_climate_forcing` — so both are downstream of it, and the earlier map,
-> which placed them at 1.07 and 1.10 against `add_climate_forcing` at 1.11, had
-> two dependencies pointing high→low. The cause is ADR 0004, which moved the
-> model root's terminal anchor onto the forcing rule after that map was drawn.
-> `ancient()` is why it was easy to miss: it hides the rerun-trigger, not the
-> edge.
-
-**WF2** — `analyze_projections.smk`
-
-| new | rule | was |
-|---|---|---|
-| 2.00 | `all` | 2.00 |
-| 2.01 | pre-parse archive publication (launcher, no rule) | 2.03 `snapshot_config` |
-| 2.02 | `delineate_region` | 2.03b |
-| 2.03 | `delineate_spatial_units` | 2.03c |
-| 2.04 | `fetch_gcm_slice` | 2.01 `fetch_gcm_raw` |
-| 2.05 | `reduce_gcm_series` | 2.02 |
-| 2.06 | `derive_change_factors` | 2.04 |
-| 2.07 | `plot_gcm_timeseries` | 2.06 `plot_climate_proj_timeseries` |
-| 2.08 | `gather_benchmarks` | 2.10 |
-| 2.09 | `gather_logs` | 2.07 |
-
-> **WF2's two gather rules swap relative order**, which is the one cell in this
-> table that is a convention choice rather than a derivation. The two are
-> parallel leaves — identical `input:` sets, neither consumes the other — so no
-> dependency decides it. WF1 and WF3 both define benchmarks first; WF2 defined
-> logs first, and nothing recorded why. Ruled 2026-08-06 to follow the other two
-> workflows, so the three read alike and `gather_logs` is the last-numbered rule
-> everywhere.
-
-**WF3** — `run_stress_test.smk`
-
-| new | rule | was |
-|---|---|---|
-| 3.00 | `all` | 3.00 |
-| 3.01 | `check_project_consistency` | 3.00b |
-| 3.02 | `snapshot_config` | 3.01 |
-| 3.03 | `delineate_region` | 3.01b |
-| 3.04 | `delineate_spatial_units` | 3.01f |
-| 3.05 | `write_model_reference` | 3.01c |
-| 3.06 | `check_model_reference` | 3.01d |
-| 3.08 | `extract_historical_climate` | 3.02 `extract_climate_grid` |
-| 3.09 | `prepare_stress_test_grid` | 3.03 `climate_stress_parameters` |
-| 3.10 | `prepare_weathergen_config` | 3.04 `prepare_weagen_config` |
-| 3.11 | `generate_weather_realizations` | 3.06 `generate_weather_realization` |
-| 3.12 | `perturb_climate_realization` | 3.07 `generate_climate_stress_test` |
-| 3.13 | `write_climate_data_catalog` | 3.08 `climate_data_catalog` |
-| 3.14 | `downscale_climate_realization` | 3.09 |
-| 3.15 | `run_wflow_batch_<b>` | 3.10 |
-| 3.16 | `derive_wflow_indicators` | 3.11 |
-| 3.17 | `gather_benchmarks` | 3.12 |
-| 3.18 | `gather_logs` | 3.13 |
-
-> **`3.01f` is gone, and that is what the renumber was for.** The vector rule
-> answered to `3.01f` only because `3.01c`–`3.01e` were already taken, so a rule
-> that belongs beside `delineate_region` sorted five letters away from it. It is
-> now `3.04`, adjacent to `3.03` in all three workflows.
-
-### Twelve renames
-
-| rule | was |
-|---|---|
-| `declare_wflow_outputs` | `add_gauges_and_outputs` |
-| `add_climate_forcing` | `add_forcing` |
-| `extract_historical_climate` | `extract_climate_grid` |
-| `plot_wflow_evaluation` | `plot_results` |
-| `plot_basin_map` | `plot_map` |
-| `fetch_gcm_slice` | `fetch_gcm_raw` |
-| `plot_gcm_timeseries` | `plot_climate_proj_timeseries` |
-| `prepare_stress_test_grid` | `climate_stress_parameters` |
-| `prepare_weathergen_config` | `prepare_weagen_config` |
-| `generate_weather_realizations` | `generate_weather_realization` |
-| `perturb_climate_realization` | `generate_climate_stress_test` |
-| `write_climate_data_catalog` | `climate_data_catalog` |
 
 ## Conventions
 
@@ -1025,21 +905,3 @@ Indicators-only requires `operation: indicators-only` with
 `--target simulations_and_indicators` (`indicators` is accepted for one release) and
 retained simulation/response records. It cannot schedule generation, preparation
 or Julia. Mixed or inconsistent targets are refused by the runner.
-
-## R12 numbering crosswalk
-
-| Former combined-WF3 rule | Successor |
-|---|---|
-| 3.03 region | 3.01 |
-| 3.08 climate extraction | 3.02 |
-| 3.09 perturbation lookup | 3.03 |
-| 3.11 generation | 3.07 |
-| 3.12 perturbation | 3.08 |
-| 3.14 downscaling | 4.04 |
-| 3.15 Wflow batches | 4.05 |
-| 3.16 legacy table reduction | 4.08–4.10 retained indicator planning/publication |
-
-See [workflow migration](../../../dev/records/milestones/r12/migration-workflow-names.md),
-[post-R12 project-tree migration](../../../dev/records/milestones/post-r12/migration-project-tree.md),
-[weather-generator seam](../contracts/weather-generator-seam.md), and
-[hydrological-model seam](../contracts/hydrological-model-seam.md).

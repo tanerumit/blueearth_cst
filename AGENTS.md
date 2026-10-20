@@ -77,6 +77,9 @@ remove that setting when diagnosing why a job reran.
 
 ## Conventions
 
+- Use `dev/reference/README.md` to find the current topic owner before changing guidance. Update that
+  document in place; records provide historical evidence, not current instructions. Templates belong in
+  `dev/templates/`. Follow `dev/reference/record-lifecycle.md` for promotion and the simple reference format.
 - Keep detailed guidance in one authoritative document. Elsewhere, use a pointer and a short explanation
   of when to read it; update the owning document instead of repeating its rules.
 - Follow `dev/reference/naming.md`; existing names are grandfathered. Contract renames need a

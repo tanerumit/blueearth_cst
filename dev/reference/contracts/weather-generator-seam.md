@@ -1,13 +1,11 @@
 # Contract: weather-generator seam (WG-1 .. WG-6)
 
-> **Genre:** dev-facing interchange contract. **Audience:** a future *swapper* —
-> someone replacing `weathergenr` with an alternative weather generator, or the
-> R6 model-flexibility work — read end-to-end. Not an end-user doc (hence `dev/`,
-> not `docs/`; precedent `dev/reference/workflows/climate_experiment.md`).
-> **Source of record:** `dev/records/milestones/p32b/interchange-contracts-design.md` (ACCEPTED
-> 2026-07-24, §5.2 / §5.4 / §5.6 / §5.5). Every load-bearing fact below cites a
-> Snakefile line, a script line, or an observed fixture artifact; do not add a
-> contract fact that is not so grounded.
+Last updated: 2026-10-20
+
+Use this contract when replacing the corresponding engine or changing its interface.
+Preserve its stable contract IDs and ground changed claims in the owning code, validators and inputs.
+The original design is retained as evidence under `dev/records/milestones/p32b/`;
+this document owns the maintained interface description.
 
 ## Scope and method
 

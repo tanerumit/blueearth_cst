@@ -1,3 +1,6 @@
+> **Historical design record.** Acceptance and implementation statements below describe the recorded
+> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+
 # ADR 0010 — Check the reviewed variables, not the catalog's shape
 
 - **Status:** accepted

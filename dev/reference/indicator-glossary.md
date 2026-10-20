@@ -1,5 +1,7 @@
 # Indicator glossary — every spelling of every WF4 output variable
 
+Last updated: 2026-10-20
+
 One output variable carries **five names** by the time it reaches a result table,
 and they are not interchangeable. This file is the one place all five sit in one
 row, so "what is `gwr`?" and "which of these do I put in a config?" have an
@@ -62,13 +64,8 @@ something, it was not taken:
 | `overland_flow` | `qof` | no canonical short name exists, and `qof` is opaque in a filename |
 | `aet` | `et` | `pet` is already canonical here; one letter apart in the same file is a misreading waiting to happen |
 
-**The consequence that has bitten twice, stated plainly:** a reducer that uses
-the *token* as a csv column prefix reads `aet` and `gwr` and silently finds
-nothing for the other three. It must match on `CODES`. This is exactly how
-8bd51de wrote two indicator tables as a header and zero rows with every rule
-green. The predecessor reducer then raised `MissingOutputColumnError` instead;
-it was removed on 2026-09-25, and WF4 reduces the series its response inventory
-names.
+Match CSV columns using their owning code mapping, not filename tokens. WF4 reduces the
+series named by its retained response inventory; similar-looking spellings are not interchangeable.
 
 ### Two more spellings, for figures
 

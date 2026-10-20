@@ -13,6 +13,10 @@ Revisions:
   - 2026-07-28: revision r3 applying owner arbitration of external review round 2 (findings ext2-1 … ext2-7). Publication is made token-atomic through content-addressed objects and a single inventory compare-and-set, namespace claims exclude overlapping namespaces, the bottom-up claim is narrowed to declarative auditability, and five arbitrated findings are recorded as known limitations rather than closed by mechanism.
 ---
 
+> **Retained design, not a claim of runtime adoption.** Consult the
+> [decision-to-reference map](index.md) for current implementation boundaries.
+
+
 <!--
 Relocated from the brain knowledge repository on 2026-09-22.
 Source: brain @ fdfda23c, path dev/records/decisions/0022-cst-capability-slots-and-run-contract.md

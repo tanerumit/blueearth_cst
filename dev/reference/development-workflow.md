@@ -1,5 +1,7 @@
 # Development workflow
 
+Last updated: 2026-10-20
+
 Shared procedures for developers and agents coordinating repository work. This reference owns task
 admission, board location, worktree coordination, and handoffs. Placement and scratch rules live in
 [repo-layout.md](repo-layout.md); preservation rules live in [record-lifecycle.md](record-lifecycle.md).
@@ -21,7 +23,7 @@ A board note is a `todo-item` for work or a `watch-item` for a condition worth t
 action. A watch item carries the trigger that would turn it into work. Queue ordering is described in
 [repo-layout.md](repo-layout.md#dev).
 
-Set `origin:` only from recorded lineage, using the IDs in [roadmap.md](roadmap.md). If the source item's
+Set `origin:` only from recorded lineage, using the IDs in [roadmap.md](../records/milestones/roadmap.md). If the source item's
 ID or migration record does not establish an origin, leave it blank and explain the gap in `## Refs`.
 Do not infer lineage from similar prose.
 

@@ -1,278 +1,77 @@
-# Workflow: build_model
+# Model construction and historical simulation
 
-Contract for `build_model.smk` (workflow 1). Format per
-`dev/records/milestones/r01/modularity-contracts-design.md` §4. Records current behavior
-and is grounded in `build_model.smk`, the templates under
-`config/templates/`, and the rule-called modules under `blueearth_cst/model/`
-and `blueearth_cst/spatial/`.
+Last updated: 2026-10-20
 
-## Owned config keys (`workflows.build_model.*`)
+Current development contract for `build_model.smk` (WF1). Use this when changing model configuration,
+build ordering or consumers of the mutable Wflow model. [The rule index](rule-index.md) owns per-rule
+inputs/outputs; [the user guide](../../../docs/site/toolbox-reference/workflow-build-model.qmd) owns execution.
 
-In this workflow's own config file, reached through its
-`config_path:` stanza.
+## Configuration ownership
 
-- `engine.build_config` — path to the hydromt build config
-  (default `config/defaults/wflow_build_model.yml`).
-- `engine.waterbodies_config` — path to the reservoirs/lakes/glaciers
-  update config (default `config/defaults/wflow_update_waterbodies.yml`).
-- `observations` — optional observed series for `plot_model_evaluation`,
-  **per variable**: `{'river discharge': <path>}`. A variable named here
-  that `model.outvars` does not ask for is refused at parse time — an
-  observed series with no modelled counterpart has nothing to be
-  compared against. Default `None`.
-- `simulation_window` — `{start, end}`, INCLUSIVE calendar years.
+The project file supplies `project`, `basin`, `climate` and `model` settings; WF1-specific settings are
+composed from its `config_path` file into `workflows.build_model`.
 
-`model.outvars` is **no longer owned here**: R14 `C-19` moved it to the
-project file, because WF4 reads it too and a key two workflows read has
-to have one home.
+- `project` owns the output root and data catalogs.
+- `basin` owns region, resolution, controls and shared spatial settings.
+- `climate.window` bounds the historical record and `climate.selected` selects forcing.
+- `model.outvars` is shared with WF4 and belongs in the project file.
+- WF1 owns its engine build/waterbody configs, observations and simulation window.
 
-## Reads from `shared`
+Use the closed schemas and resolvers in `blueearth_cst/shared/config_composition.py` and
+`blueearth_cst/spatial/config.py` for exact admitted fields/defaults. `resolve_simulation_window` validates
+the simulation period against the climate record. Do not copy an old `shared.*` configuration shape from
+historical specifications. The current scaffolds are under `config/templates/`.
 
-- `shared.basin.region`, `shared.basin.resolution` — basin delineation + model resolution.
-- `shared.basin.output_locations` — optional canonical gauge/control-point file.
-  The former `workflows.build_model.output_locations` key is accepted for
-  one compatibility release; conflicting populated values fail at parse time.
-- `shared.basin.automatic_subbasins.max_count` — global automatic-fallback
-  ceiling (default 20; valid range 1–99).
-- `shared.basin.gauge_snap_tolerance_m` — point-to-river snapping tolerance
-  (default 10,000 m).
-- `shared.basin.river_uparea_km2` — analysis river threshold (default 32 km²).
-- `shared.basin.spatial_sources.{rivers,lulc,lai,soil}` — catalog entries for
-  the model-neutral thematic products.
-- `shared.historical_window.starttime`, `shared.historical_window.endtime` — how
-  much climate record to EXTRACT (rule 1.03, the climate store, the climate
-  figures). Subject to `MIN_HISTORICAL_YEARS`, which is weathergenr's floor.
-- `workflows.build_model.simulation_window` — the period the model is RUN
-  over (rule 1.09): the forcing prepared for it and the wflow TOML's `[time]`
-  window, which are necessarily the same span. **Required**; declare inclusive
-  `{start, end}` years explicitly, even when they equal `climate.window`.
-  Must sit INSIDE the record: rule 1.09 builds the forcing from the
-  extracted store, so a simulation period outside it has no data behind it.
-  (This was unconstrained when the key shipped, while the forcing still came
-  from the data catalog.) No length floor applies — the ≥16-year minimum is
-  weathergenr's, on the record.
-- `shared.climate.selected` — historical climate source (e.g. `era5`).
+## Spatial and model ownership
 
-## Reads from `project`
+The [spatial foundation](../spatial-foundation.md) owns model-neutral region and vector products.
+WF1 adds thematic land/soil products and builds Wflow under `models/hydrology/wflow`.
+Do not introduce a model-root dependency into the shared region or climate-extraction producers.
 
-- `project.project_dir` — output root
-  (`basin_dir = {project_dir}/models/hydrology/wflow`,
-  `spatial_dir = {project_dir}/data/spatial`).
-- `project.catalog` — hydromt data-catalog YAML (passed to
-  `hydromt build/update -d`).
+Use HydroMT/hydromt_wflow/Wflow names and setup methods directly. The build template
+`config/defaults/wflow_build_model.yml` owns the constant-parameter values and CSDMS spellings.
+The `setup_constant_pars` values land as `input.static.<name>.value` TOML scalars; do not assume they are
+maps in `staticmaps.nc`. Preserve explicit reference choices until their scientific effect has been
+assessed; template values are not evidence of local calibration.
 
-`project.static_dir` is gone (`C-07`): the two engine configs it used to
-prefix are named by full path in this workflow's own file.
+The retained landing/precedence evidence is under
+`dev/records/decisions/0001-restore-wflow-constant-parameters/`. Inspect the resulting TOML and active
+upstream reader when changing those bindings; the old verification does not certify a new build.
 
-## Rules 1.02 and 1.05: engine-neutral spatial foundation
+## Mutable model-root ordering
 
-`prepare_land_and_soil_maps` is a no-wildcard target and can be requested directly:
+HydroMT build/update steps rewrite a model directory in place. Declaring a file written by the initial
+build does not order a reader after later mutations. WF1 readers of model-root contents must depend on
+the terminal `.model_final` sentinel produced by the final model-writing step.
 
-```powershell
-snakemake prepare_land_and_soil_maps -c 1 -s build_model.smk --configfile <config.yml>
-```
+`ancient()` suppresses timestamp-triggered reruns; it does not remove the dependency edge. If a later
+rule begins mutating the model root, move the terminal completion point and update affected readers.
+Keep this ordering concern separate from whether an artifact should trigger a rerun.
 
-It resolves every parent feature independently, snaps configured gauge/control
-points to the analysis river network, and uses internal controls where present.
-An outlet-only or absent control set selects deterministic automatic
-partitioning for that parent. The configured `automatic_subbasins.max_count`
-is one global ceiling shared between fallback parents. Automatic outlets are
-restricted to cells in the configured P1 river mask, so the result may contain
-fewer units than the ceiling. Incremental subbasins do not overlap; the
-separate catchment layer contains each control point's full contributing area
-and therefore may overlap or nest.
+Waterbody setup, output declaration and forcing preparation retain separate failure/retry boundaries.
+Avoid merging those steps based on one small-basin timing observation.
 
-The analysis grid comes from `shared.basin.hydrography` at the requested
-resolution (native or an integer upscale). Flow direction is ArcGIS D8, not a
-Wflow LDD map. Elevation and slope use average resampling; LULC uses nearest;
-LAI and soil variables use average. Each raster records its catalog source,
-resampling where applicable, resolution, units, nodata, and CRS.
+## Outputs and consumers
 
-The rule's freshness boundary is the workflow config, the catalog YAML file(s),
-and the optional gauge file, all declared as Snakemake inputs. A change to a
-data file hidden behind an unchanged catalog URI is not detectable by
-Snakemake; touch/update the catalog or force this rule when refreshing such a
-source. The generated catalog uses relative URIs, so the complete
-`data/spatial/` directory is portable as a unit.
+The persisted spatial registry owns stable location identifiers; `staticgeoms/outlet_index.csv` maps
+model outlet positions to those identities. Positional `wflow_1` labels are model-output conveniences,
+not replacements for basin/subbasin/location IDs.
 
-Targeting this rule directly does not schedule Wflow or create
-`models/hydrology/wflow/`. In the full DAG, rule 1.02 declares all nine spatial
-products as inputs. Wflow constants and derived parameter maps remain outside
-this product.
+`blueearth_cst/model/setup_gauges_and_outputs.py` and the shared Wflow output mappings own variable
+translation and gauge configuration. Use [the indicator glossary](../indicator-glossary.md) to navigate
+semantic names, CSDMS names, CSV codes and tokens; do not maintain another translation table here.
 
-The Gate 1 adapter proof selected a project-owned adapter over another
-`setup_basemaps` call. In the pinned `hydromt_wflow` version,
-`setup_basemaps` delineates from a hydrography source and would therefore
-repeat P1. The proof instead reads only `spatial_catalog.yml`, converts the
-neutral ArcGIS D8 map to Wflow LDD at the adapter boundary, loads the neutral
-base layers through the public `staticmaps.set`/`geoms.set` component APIs,
-and then uses public `setup_config`, `set_flwdir`, `setup_gauges`,
-`setup_outlets`, and `write` methods. A write/reopen check preserves the P1
-grid and current subbasin/location IDs and produces the standard Wflow
-`staticmaps.nc`, `wflow_sbm.toml`, and `staticgeoms/region.geojson` triplet.
+Observation admission checks registry membership and duplicate IDs before HydroMT reads the table.
+The baseline discharge reader uses the outlet index to select its deterministic outlet when additional
+gauges produce multiple discharge columns.
 
-## Rule 1.06: Wflow-SBM build
+Historical climate diagnostics use their shared model-free producers. Model evaluation consumes model
+responses and optional observations; do not restore a duplicate subcatchment climate-plotting pipeline.
+WF4 consumes the validated model through its own runner and retained-response contract.
 
-`build_wflow_model` consumes the complete P1 contract through
-`spatial_catalog.yml`; it cannot run `setup_basemaps`. The adapter converts D8
-to LDD, initializes Wflow static maps and geometries, and then invokes the
-public Wflow-specific river, LULC, LAI, soil, and constant-parameter methods.
-P1 rivers/LULC/LAI are passed directly. The pinned `setup_soilmaps` API accepts
-only a catalog source name, so Wflow soil pedotransfer continues to read
-`soilgrids` from `project.data_sources`.
+## Verification entry points
 
-The subcatchment map is populated before `setup_outlets`, so outlet IDs inherit
-P1 subbasin IDs. Gauges use explicit `wflow_id` values with the fixed basename
-`locations`. After writing, the adapter reopens the model and validates the
-triplet, grid, subcatchment IDs, gauge IDs, and outlet IDs. The `.model_built`
-sentinel retains the existing in-place TOML/staticmaps mutation cascade for
-waterbodies, outputs, runtime, and forcing.
-
-## Input contract (external data — catalog sources required in `data_sources`)
-
-- **Spatial foundation**: `shared.basin.hydrography` and optional basin index,
-  plus the configured river, LULC, LAI, and soil sources.
-- **Wflow build** (`wflow_build_model.yml`): all generated P1 catalog entries;
-  `soilgrids` for the pinned public soil-pedotransfer API; the plugin's
-  `vito_mapping_default` parameter table.
-- **Waterbodies** (`wflow_update_waterbodies.yml`): `hydro_reservoirs` (GRanD),
-  `jrc` (reservoir timeseries), `hydro_lakes` (HydroLAKES), `rgi` (glaciers).
-  Any source may be legitimately absent for a basin — the
-  `add_reservoirs_lakes_glaciers` rule catches per-method `NoDataException`.
-- **Forcing**: `shared.climate.selected` source (e.g. `era5`) over the
-  historical window.
-
-## Output contract (by role — not all are `rule all` targets)
-
-**Direct `rule all` targets** (named statically by this workflow's `rule all`):
-- `{basin_dir}/evaluation/plots/hydro_wflow_1.png` (the run)
-- `{basin_dir}/plots/elevation_basin.png` (the model)
-- `{basin_dir}/forcing/plots/forcing_precip_map.png` (model inputs)
-- `{project_dir}/config/build_model/run_record.yml` (launcher archive; published before the DAG)
-- `{project_dir}/data/spatial/spatial_catalog.yml` (representative target for the
-  complete rule-1.02 spatial product)
-
-*There is no project-level `plots/` tree: a figure attaches to what it DEPICTS,
-beside the subtree whose artifacts it shows.*
-
-**Downstream-contract artifacts** (produced by intermediate rules; consumed by
-workflows 2/3; not in this `rule all`):
-- `{basin_dir}/staticmaps.nc`
-- `{basin_dir}/staticgeoms/region.geojson`
-- `{basin_dir}/staticgeoms/outlets.geojson`
-- `{basin_dir}/wflow_sbm.toml`
-- `{basin_dir}/forcing/inmaps_historical.nc`
-
-*`{basin_dir}/run_default/output.csv` was listed here and is not a
-downstream-contract artifact: `dev/scripts/cross_workflow_inputs.py` stages only
-the TOML, `.outputs_configured` and `region.geojson`, so no WF2/WF4 rule ever
-consumed it. Rule 1.13 declares it `temp()`, so a successful run does not leave
-it at all — the readable per-variable tables (rule 1.14) are what
-`run_default/` holds.*
-
-**Spatial-foundation contract** (`blueearth-cst-spatial-v1`):
-
-- `{project_dir}/data/spatial/spatial_maps.nc`
-- `{project_dir}/data/spatial/geoms/{basins,subbasins,catchments,rivers,locations}.geojson`
-- `{project_dir}/data/spatial/geoms/region.geojson` — a **sixth** layer in the
-  same directory, written by rule 1.01 `delineate_region` (ADR 0003) rather
-  than by 1.06. Listed separately because the producer differs: enumerating
-  five layers here is what let R9's migration map miss it (P1 finding F1a).
-- `{project_dir}/data/spatial/location_registry.csv`
-- `{project_dir}/data/spatial/spatial_catalog.yml`
-- `{project_dir}/data/spatial/spatial_report.yml`
-
-The raster, vector, and registry identifiers are relational: basin IDs are
-`1..N`; subbasin IDs use `basin_id * 100 + local_number`; each primary location
-inherits its subbasin ID as `wflow_id`. The generated `spatial_catalog.yml`
-exposes every artifact through HydroMT without containing Wflow configuration.
-
-**Side-effect artifacts** (bookkeeping / traceability; no downstream reader):
-- `{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt` — waterbodies sentinel.
-- `{basin_dir}/staticgeoms/outlet_index.csv` — deterministic compatibility,
-  basin, subbasin, location, station, and Wflow-ID crosswalk.
-- `logs/<execution>/_parts/wf1-<child-id>/{logs,benchmarks}/1.NN_{rule}.{log,tsv}`.
-  `gather_logs` merges logs into `logs/<execution>/wf1.log` via
-  `blueearth_cst/shared/merge_logs.py`; `gather_benchmarks` writes adjacent
-  `wf1-benchmarks.md` and `.tsv` via `merge_benchmarks.py`. Successful gathers remove
-  merged parts; failed attempts retain their partial measurements. The Markdown overview groups jobs
-  by rule and distinguishes measured workflow elapsed time from summed job durations.
-  — ephemeral run artifacts (R3 §6); not manifest targets, not committed. The
-  `1.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9). The
-  spatial and Wflow-build rules use `1.05_prepare_land_and_soil_maps` and
-  `1.06_build_wflow_model`.
-
-## Downstream consumers
-
-- **Workflow 2** (`analyze_projections.smk`) reads
-  `staticgeoms/region.geojson` (as an `ancient(...)` input to
-  `monthly_stats_hist`/`_fut`).
-- **Workflow 4** (`simulate_system.smk` through `scripts/simulate_system.py`) reads the built model,
-  its `wflow_sbm.toml`, and the forcing layout.
-
-## Outlet-naming convention (R3 §4 decision)
-
-Outlet stations use the **positional `wflow_{1..N}`** convention (not the
-basin-derived subcatchment IDs hydromt_wflow 1.x assigns). The real
-subcatchment IDs are preserved in `staticgeoms/outlet_index.csv` alongside
-`basin_code`, `subbasin_code`, `location_code`, `station_name`, and `wflow_id`.
-The compatibility label is surfaced in plot titles as a human aid. Rationale:
-static `rule all` /
-manifest paths must be basin-independent (see design §4). The CSV column
-`Q_outlets` is upstream hydromt_wflow vocabulary, kept as-is.
-
-## `model.outvars` output set (known discrepancy — documented, not fixed in R3)
-
-- Canonical `config/project_config_model_test.yml`: `['river discharge']` — the
-  minimal set (outlet Q only).
-- Pytest fixture `tests/project_config_model_test.yml`: all six mapped variables
-  (`river discharge`, `precipitation`, `overland flow`,
-  `actual evapotranspiration`, `groundwater recharge`, `snow`).
-
-The two seed configs carry different output sets. Enabling the complete plot
-suite (climate panels in `plot_results.py`) would require the fuller set but
-**moves the baseline**, so it is a followup, not an R3 change (design §7.3).
-
-## `model.outvars` → CSDMS mapping (`WFLOW_VARS`, `setup_gauges_and_outputs.py`)
-
-Semantic name → Wflow.jl 1.x CSDMS Standard Name → reporting unit. Units are
-the conventional Wflow 1.x output units; the header/param/unit pairings are
-confirmed in the R3 §7.2 gauges audit (commit 7).
-
-| Semantic name              | CSDMS name                                               | Unit      |
-| -------------------------- | -------------------------------------------------------- | --------- |
-| river discharge            | `river_water__volume_flow_rate`                          | m³ s⁻¹    |
-| precipitation              | `atmosphere_water__precipitation_volume_flux`            | mm Δt⁻¹   |
-| overland flow              | `land_surface_water__volume_flow_rate`                   | m³ s⁻¹    |
-| actual evapotranspiration  | `land_surface__evapotranspiration_volume_flux`           | mm Δt⁻¹   |
-| groundwater recharge       | `soil_water_saturated_zone_top__net_recharge_volume_flux`| mm Δt⁻¹   |
-| snow                       | `snowpack_liquid_water__depth`                           | mm        |
-
-`river discharge` is always emitted at outlets (`setup_outlets`, header `Q`);
-discharge and precipitation are emitted at registry locations (headers `Q`
-and `P`);
-remaining entries become basin-average timeseries (`{name}_basavg`, mean
-reducer over `subcatchment`).
-
-When observations are configured, rule 1.10 declares
-`data/spatial/location_registry.csv` as an input and validates the raw semicolon-
-separated header before HydroMT parses the table. Duplicate or registry-unknown
-IDs fail explicitly. Every user-provided control/observation location must have
-one column; synthetic automatic outlets are optional.
-
-The baseline discharge reader uses `staticgeoms/outlet_index.csv` to select
-the deterministic `wflow_1`/`subcatchment_id` outlet when registry gauges add
-multiple `Q_*` columns to raw `output.csv`. Do not assume discharge is the only
-Q column.
-
-## Model write isolation
-
-Rules 1.07, 1.08 and 1.09 each write the model directory. On the rapid fixture,
-the read plus full write in the later rules costs about 1.7 seconds each; the
-larger apparent delay in a concurrent run log was contended and overstated it.
-The split remains deliberate: waterbody methods can fail on external catalog
-lookups, while repeating rule 1.07's basin-scaled parameterization would grow
-cost with basin size. The fixed seconds saved by merging do not justify coupling
-those failure paths. Reconsider only if a production-root measurement shows
-round-trips taking minutes; the decision rationale is in
-`blueearth_cst/model/setup_reservoirs_lakes_glaciers.py`.
+Use `tests/test_spatial_units_rule.py`, `tests/test_cross_workflow_inputs.py`,
+`tests/test_check_baseline_discharge.py`, and the model/config tests for the affected contract.
+The [validation ladder](../validation-ladder.md) selects DAG, consumer and numerical checks when behavior
+changes; the old restoration measurements do not validate a newly changed build.

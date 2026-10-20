@@ -1,3 +1,6 @@
+> **Historical design record.** Acceptance and implementation statements below describe the recorded
+> state. Use the [decision-to-reference map](index.md) for current requirements and implementation.
+
 # Atomic task lanes and worktrees
 
 The worktree rules live in `AGENTS.md` § Worktrees; the lane conventions are owned by the `git-workflow` skill. This file is the long form behind both — slot mechanics, scope declaration, the lifecycle, and the worktree seeding rules with their measurements. Lifted from `AGENTS.md` @ 46f9df2 during the 2026-08-20 slim-down, unedited except for this header and the section heading that joins the two source blocks.

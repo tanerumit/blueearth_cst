@@ -1,16 +1,4 @@
-"""The half of the activation check that holds on a bare checkout.
-
-`dev/scripts/check_activation.py` compares the tracked activation record
-against the agent symlink farms. Those farms are gitignored per-user state a
-fresh clone does not have, so only two of its three checks can be a CI gate:
-the Markdown links under `dev/reference/`, and the set parser itself.
-
-The parser is tested on synthetic input rather than on the real record. The
-2026-08-14 rename lesson applies directly: three tests globbed a pattern that
-matched nothing after a rename and kept passing while checking an empty set. A
-parser proven only against a document that currently happens to parse would do
-the same the moment the document is reformatted.
-"""
+"""Check manifest-owned activation and current-reference navigation."""
 
 from __future__ import annotations
 
@@ -29,65 +17,51 @@ def test_reference_docs_have_no_broken_relative_links():
     assert not problems, "\n".join(problems)
 
 
-def test_the_record_still_names_the_sets_the_checker_looks_for():
-    """A rename of the record's headings must not silently disable the check.
-
-    Without this, reformatting the bullets would make `check_names` find no
-    sets to compare and report "ok" while comparing nothing.
-    """
-    sets = ca._named_sets(ca.RECORD.read_text(encoding="utf-8"))
-    assert "roles" in sets
-    assert "manifest-explicit" in sets
-    assert len(sets["roles"]) >= 9
-    assert len(sets["manifest-explicit"]) >= 9
+def test_manifest_is_the_only_declaration_source(tmp_path, monkeypatch):
+    manifest = tmp_path / "manifest.yml"
+    manifest.write_text("roles: [alpha]\nskills: [beta]\n", encoding="utf-8")
+    monkeypatch.setattr(ca, "MANIFEST", manifest)
+    assert ca._declared_sets() == {"roles": ["alpha"], "manifest-explicit": ["beta"]}
+    manifest.write_text("roles: [gamma]\nskills: [delta]\n", encoding="utf-8")
+    assert ca._declared_sets() == {"roles": ["gamma"], "manifest-explicit": ["delta"]}
 
 
-def test_wrapped_bullets_are_read_whole():
-    """A set long enough to wrap must not be read as only its first line."""
-    doc = (
-        "- **Roles (3):** `alpha`, `beta`,\n"
-        "  `gamma`.\n"
-        "- **Manifest-explicit (1):** `delta`.\n"
-    )
-    sets = ca._named_sets(doc)
-    assert sets["roles"] == ["alpha", "beta", "gamma"]
-    assert sets["manifest-explicit"] == ["delta"]
+@pytest.mark.parametrize(
+    "document", ["[]", "roles: []\nskills: [beta]", "roles: [3]\nskills: [beta]"]
+)
+def test_malformed_manifest_is_not_an_empty_success(tmp_path, monkeypatch, document):
+    manifest = tmp_path / "manifest.yml"
+    manifest.write_text(document, encoding="utf-8")
+    monkeypatch.setattr(ca, "MANIFEST", manifest)
+    with pytest.raises(ValueError):
+        ca._declared_sets()
 
 
-def test_an_indented_block_after_a_list_is_not_absorbed_into_it():
-    """Continuation stops at the first non-indented, non-bullet line.
-
-    Otherwise a code block or wrapped paragraph placed after a list would have
-    its backticked words read as members of the last bullet's set.
-    """
-    doc = (
-        "- **Roles (1):** `alpha`.\n"
-        "\n"
-        "Prose in between.\n"
-        "\n"
-        "  `not-a-role` appears in an indented block.\n"
-    )
-    assert ca._named_sets(doc)["roles"] == ["alpha"]
-
-
-def test_the_claude_scope_count_is_stated_and_matches_the_farm():
-    """The one claim no name comparison covers.
-
-    Claude scope is explicit + every promoting `always` binding, so it moves
-    when a ROLE changes and the manifest does not. The record states it only
-    as a count; if that count stops being parseable the check goes quiet.
-    """
-    counts = ca._stated_counts(ca.RECORD.read_text(encoding="utf-8"))
-    assert "claude main-thread scope" in counts
-    assert counts["claude main-thread scope"] >= counts["manifest-explicit"]
-
-
-def test_a_broken_link_is_reported(tmp_path, monkeypatch):
-    """The link check must fail on a bad link, not just pass on a good tree."""
-    (tmp_path / "a.md").write_text("see [x](./nope.md)", encoding="utf-8")
-    monkeypatch.setattr(ca, "REFERENCE_DIR", tmp_path)
+def test_activation_reports_drift_from_manifest(tmp_path, monkeypatch):
+    manifest = tmp_path / "manifest.yml"
+    manifest.write_text("roles: [alpha]\nskills: [beta]\n", encoding="utf-8")
+    for directory, names in {
+        ".claude/agents": ["wrong.md"],
+        ".claude/skills": ["role-only"],
+        ".agents/skills": ["extra"],
+    }.items():
+        parent = tmp_path / directory
+        parent.mkdir(parents=True)
+        for name in names:
+            (parent / name).touch()
+    monkeypatch.setattr(ca, "MANIFEST", manifest)
     monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
-    assert ca.check_links() == ["a.md: broken link -> ./nope.md"]
+    problems, checked = ca.check_names()
+    assert checked
+    assert any("alpha" in problem for problem in problems)
+    assert any("beta" in problem for problem in problems)
+    assert any("wrong" in problem for problem in problems)
+    assert any("extra" in problem for problem in problems)
+
+
+def test_activation_skips_absent_runtime_trees(tmp_path, monkeypatch):
+    monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
+    assert ca.check_names() == ([], False)
 
 
 @pytest.mark.parametrize(
@@ -120,7 +94,7 @@ def test_retained_review_citations_still_require_their_target(tmp_path, monkeypa
     target = tmp_path / "dev/records/reviews/plot-improvements/verification.md"
     target.parent.mkdir(parents=True)
     target.write_text("Retained verification", encoding="utf-8")
-    for name in ("plot-style.md", "migration_plot_paths.md"):
+    for name in ("plot-style.md",):
         (reference / name).write_text(
             "[verification](../records/reviews/plot-improvements/verification.md)",
             encoding="utf-8",
@@ -129,7 +103,7 @@ def test_retained_review_citations_still_require_their_target(tmp_path, monkeypa
     monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
     assert ca.check_links() == []
     target.unlink()
-    assert len(ca.check_links()) == 2
+    assert len(ca.check_links()) == 1
     assert all("broken link" in problem for problem in ca.check_links())
 
 

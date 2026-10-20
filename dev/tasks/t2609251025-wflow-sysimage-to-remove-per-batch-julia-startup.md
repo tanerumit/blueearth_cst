@@ -7,7 +7,7 @@ area: runtime
 origin: t2608222155 owner ruling (2026-09-25)
 queue: 13
 created: 2026-09-25
-updated: 2026-10-15
+updated: 2026-10-20
 ---
 
 > [!note] Overview
@@ -17,4 +17,8 @@ updated: 2026-10-15
 
 ## Progress
 
-- [ ] Check whether the condition in What it takes has happened
+- [ ] Check whether the runtime-upgrade or packaging review trigger has happened.
+- [ ] Profile WF1 package loading, model construction, first-use compilation and timestepping separately.
+- [ ] Assess a PackageCompiler sysimage trained on a representative Wflow construction and timestep workload.
+- [ ] Measure isolated before/after wall and CPU time; verify numerical outputs and record rebuild costs.
+- [ ] Recommend adoption or deferral, including Julia/dependency compatibility checks and fallback behavior.

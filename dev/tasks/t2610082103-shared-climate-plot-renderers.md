@@ -38,7 +38,7 @@ completeness, units, reporting years and PET handling. Keep specialist compositi
 
 Compare pre/post prepared values under matched inputs. Check missing cells, constant fields, units and
 reporting-year boundaries. Inspect real WF0/WF1 figures and all affected WF2 products. Preserve inventories
-and provenance. Follow dev/reference/validation-ladder.md; reuse rapid outputs and record config, tested
+and provenance. Follow dev/reference/dev-validation.md; reuse rapid outputs and record config, tested
 commit, output root and numerical/visual findings. Escalate gates if runtime or non-figure consumers change.
 
 

@@ -86,6 +86,7 @@ not by re-reading the table above.
 
 ## Refs
 
-- `dev/reference/workflows/rule-index.md` §0.02 — the shared `region_rule`.
+- `dev/reference/toolbox-workflow-map.md` — current shared-producer navigation; the quoted
+  §0.02 above describes the historical rule index.
 - `AGENTS.md` — the five entry points and the convenience order.
 - Roadmap "Candidate milestones" carries the direction; this item is the scoping.

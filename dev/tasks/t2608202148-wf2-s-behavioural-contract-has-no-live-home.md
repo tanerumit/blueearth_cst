@@ -19,6 +19,11 @@ updated: 2026-10-15
 
 - [ ] Check whether the condition in What it takes has happened
 
+Current navigation: `dev/reference/toolbox-workflow-map.md` and
+`dev/records/sealed-records.yml`. The sealed specification is now
+`dev/records/milestones/r04/climate_projections.md`; paths in the measured history below retain
+their original spelling. This relocation does not establish closure of the behavioural-documentation gap.
+
 ## Cause: measured
 
 Measured 2026-08-20, not inferred. `climate_projections.md` is entry 1 of

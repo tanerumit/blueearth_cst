@@ -133,6 +133,8 @@ def main(argv=None):
                 record["configuration"]["archive_state"] = "not_applicable"
             environment.update(context.environment())
             environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
+            started = record_path.with_suffix(".snakemake-started")
+            environment["CST_SIMULATION_STARTED"] = str(started)
             if record.get("resources", {}).get("directory"):
                 environment[resource_tracking.DIRECTORY_ENV] = record["resources"][
                     "directory"
@@ -149,6 +151,7 @@ def main(argv=None):
             resource_tracking.phase(record_path, "finalization")
             if (
                 not preview
+                and (result == 0 or started.is_file())
                 and selection.indicators
                 and current_targets(args.target) != ["simulations_only"]
             ):
@@ -160,6 +163,7 @@ def main(argv=None):
                 # Per-set completion, still under project execution ownership:
                 # every ready set publishes even when another set's job failed,
                 # and the invocation is nonzero unless every set is current.
+                # A parse/DAG refusal started no jobs and must not attempt exports.
                 experiment_root = root / "experiments" / context.name
                 resource_tracking.phase(record_path, "indicator_exports")
                 outcomes = publish_selected_sets(

@@ -25,6 +25,34 @@ REPO = Path(__file__).resolve().parents[1]
 HARNESS = REPO / "scripts/simulate_system.py"
 
 
+@pytest.mark.parametrize("started", [False, True])
+def test_failed_launch_publishes_sets_only_after_workflow_execution_started(
+    carrier_state, monkeypatch, started
+):
+    config, root, _ = carrier_state
+    spec = importlib.util.spec_from_file_location("failed_carrier_runner", HARNESS)
+    harness = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(harness)
+
+    def launch(command, **kwargs):
+        if started:
+            Path(kwargs["env"]["CST_SIMULATION_STARTED"]).write_text("started\n")
+        return 1
+
+    monkeypatch.setattr(harness, "run_project_child", launch)
+    from blueearth_cst.experiment import indicator_export
+
+    exports = []
+    monkeypatch.setattr(
+        indicator_export,
+        "publish_selected_sets",
+        lambda *args: exports.append(args) or [],
+    )
+    monkeypatch.setattr(indicator_export, "report_publication", lambda *args: True)
+    assert harness.main(["--config", str(config), "--target", "indicators"]) == 1
+    assert bool(exports) == started
+
+
 @pytest.fixture(scope="module")
 def built(tmp_path_factory):
     """One retained experiment and its scoped gwr targets, relative to it.

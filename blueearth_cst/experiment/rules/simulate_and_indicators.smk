@@ -112,10 +112,10 @@ def _live_simulation_inputs():
 
 _simulation_complete = False
 if Path(f"{exp_dir}/_engine/simulation.json").exists():
-    stored = read_simulation_v2(exp_dir)
+    read_simulation_v2(exp_dir)
     current = _live_simulation_inputs()
-    if current["simulation_id"] != stored["simulation_id"]:
-        raise SimulationFrozenError("simulation inputs changed; use a new experiment name")
+    from blueearth_cst.experiment.simulation_reuse import check_simulation_reuse
+    check_simulation_reuse(read_simulation_intent_v2(exp_dir), current)
     _simulation_complete = True
 
 def _frozen_simulation(wc):

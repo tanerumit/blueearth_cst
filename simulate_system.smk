@@ -260,6 +260,10 @@ def _header():
 
 
 onstart:
+    # The owned runner distinguishes pre-execution refusals from partial job
+    # failures, for which completed indicator sets can still be published.
+    if os.environ.get("CST_SIMULATION_STARTED"):
+        Path(os.environ["CST_SIMULATION_STARTED"]).write_text("started\n", encoding="utf-8")
     # Restyle Snakemake's own console output into this toolbox's grammar (one
     # line per job start and end). Here and not at parse time: the logging
     # stack does not exist yet then. Fail-open; see install_console_style.

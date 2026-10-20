@@ -5,6 +5,10 @@ Closure ledger. One row per board item closed since the board was adopted
 `45e3a564`; this file is deliberately not backfilled with IDs the board never
 issued.
 
+Historical path citations are resolved by the
+[reference transition map](records/migrations/dev-reference-transition-2026-10-20.md)
+and its linked review-retirement and decision-history maps.
+
 > **A row is at most three short sentences in plain language: what closed, why,
 > and where anything durable now lives.** A finding worth keeping —
 > a measurement, an owner ruling, a defect class, a tolerance — goes to its own

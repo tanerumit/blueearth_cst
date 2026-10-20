@@ -163,7 +163,7 @@ The offline report consumes figures/captions; report assembly does not own scien
 
 ## 7. Acceptance and verification plan
 
-Follow `dev/reference/validation-ladder.md`; match each claim to an input case and reusable output root.
+Follow `dev/reference/dev-validation.md`; match each claim to an input case and reusable output root.
 
 | Claim | Check | Inputs / reusable output |
 |---|---|---|

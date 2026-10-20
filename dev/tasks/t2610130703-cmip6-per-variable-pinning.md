@@ -35,4 +35,4 @@ Expected runtime effects of per-variable reads are inferred, not measured.
 - `blueearth_cst/projections/series_identity.py`
 - `blueearth_cst/projections/fetch_gcm_raw.py`
 - `tests/test_fetch_gcm_raw.py`
-- `dev/reference/validation-ladder.md`
+- `dev/reference/dev-validation.md`

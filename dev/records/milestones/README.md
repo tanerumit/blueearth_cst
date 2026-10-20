@@ -59,7 +59,7 @@ as *scoped 2026-07-24*, so the date column is left blank rather than guessed.
 ## Conventions
 
 Historical R12 and successor review paths are resolved by the
-[legacy migration context](../reviews/legacy-development-migration-2026-10-09.md).
+[legacy migration context](../migrations/legacy-development-migration-2026-10-09.md).
 It preserves the original run identities and archived citation context without rewriting review reports.
 
 - A milestone folder is the default home for that milestone's **promoted

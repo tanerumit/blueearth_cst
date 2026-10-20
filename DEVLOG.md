@@ -1,5 +1,10 @@
 # DEVLOG: feat/wf2-cmip6-improvements
 
+Historical task handoff. Retained results and qualifications now live in
+[wf2-suite-integration.md](dev/records/validation/wf2-suite-integration.md);
+the [retirement map](dev/records/migrations/review-retirement-2026-10-20.md) resolves old design citations.
+The resume and landing instructions below describe the original task, not the current session.
+
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.

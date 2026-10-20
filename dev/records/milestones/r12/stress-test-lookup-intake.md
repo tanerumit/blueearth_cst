@@ -24,7 +24,7 @@ Run state: `status.md`.
 
 > Continue working on the item from the previous session t2608152230 — the
 > lookup-table redesign. […] Design and six[ rulings are in]
-> `dev/records/reviews/wf3-scenario-generation-trace-2026-08-15/stress-test-design-and-surface-axes.md`.
+> `dev/records/milestones/r12/stress-test-design-and-surface-axes-2026-08-15.md`.
 
 and, after the alias precondition was run and the R12 boundary ruled:
 
@@ -54,7 +54,7 @@ perturbation was imposed, and what the system did) and **the response surface**
    to police the drift between them.
 
 The design conversation that opened these questions is
-`dev/records/reviews/wf3-scenario-generation-trace-2026-08-15/stress-test-design-and-surface-axes.md`.
+`dev/records/milestones/r12/stress-test-design-and-surface-axes-2026-08-15.md`.
 It carries **six owner rulings plus two same-day revisions** and states plainly
 that it is *"not an accepted design and not a task brief"*. This run closes that
 gap: the contested questions are ruled, the mechanism is largely unwritten.
@@ -200,7 +200,7 @@ enum value, per `run-artifacts.md`.
 ## Seeding
 
 Stage 1 seeds from
-`dev/records/reviews/wf3-scenario-generation-trace-2026-08-15/stress-test-design-and-surface-axes.md`
+`dev/records/milestones/r12/stress-test-design-and-surface-axes-2026-08-15.md`
 rather than re-authoring owner-ruled content. **Structural checks fail** — the note
 is a design *conversation record*: it has no `## Alternatives considered` section
 and no genre sections. So the seed takes the restructure path (author spawn scoped

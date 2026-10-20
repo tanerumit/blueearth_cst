@@ -66,7 +66,7 @@ pixi run python dev/scripts/inspect_era5_zarr_geometry.py --store <era5-zarr-dir
 
 The optional `--probe-current` performs a read-only 30-day Ntoum HydroMT read. The nine case-specific
 transfer probes remain historical measurement evidence, described by the
-[retained migration context](../records/reviews/legacy-development-migration-2026-10-09.md).
+[retained migration context](../records/migrations/legacy-development-migration-2026-10-09.md).
 
 | Script | What it does |
 |---|---|

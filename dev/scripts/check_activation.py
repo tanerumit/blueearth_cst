@@ -23,14 +23,7 @@ REFERENCE_DIR = REPO_ROOT / "dev" / "reference"
 # Inline links only; reference-style and bare URLs are out of scope.
 _MD_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 
-# Existing plot verification blocks pruning under dev-record-lifecycle.md.
-# New reference links to prunable reviews are refused.
-_RETAINED_REVIEW_LINKS = {
-    (
-        "dev/reference/toolbox-plot-style.md",
-        "dev/records/reviews/plot-improvements/verification.md",
-    ),
-}
+_RETIRED_REVIEW_DIRS = ("dev/records/reviews", "dev/records/review")
 
 
 def _declared_sets() -> dict[str, list[str]]:
@@ -101,6 +94,11 @@ def check_links() -> list[str]:
     Holds on a bare checkout, which is why it is the half a test can pin.
     """
     problems: list[str] = []
+    for retired in _RETIRED_REVIEW_DIRS:
+        if (REPO_ROOT / retired).exists():
+            problems.append(
+                f"retired review directory: {retired}; keep reviews with their task"
+            )
     for doc in sorted(REFERENCE_DIR.rglob("*.md")):
         for target in _MD_LINK.findall(doc.read_text(encoding="utf-8")):
             target = target.split("#", 1)[0].strip()
@@ -114,13 +112,12 @@ def check_links() -> list[str]:
                     "promote cited evidence before linking from a reference"
                 )
                 continue
-            if (
-                resolved.is_relative_to(REPO_ROOT / "dev/records/reviews")
-                and (source, resolved.relative_to(REPO_ROOT).as_posix())
-                not in _RETAINED_REVIEW_LINKS
+            if any(
+                resolved.is_relative_to(REPO_ROOT / retired)
+                for retired in _RETIRED_REVIEW_DIRS
             ):
                 problems.append(
-                    f"{source}: link to prunable review material -> {target}; "
+                    f"{source}: link to retired review material -> {target}; "
                     "use a durable evidence home"
                 )
                 continue

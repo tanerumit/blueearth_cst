@@ -431,4 +431,4 @@ baseline. The annual overview, trajectories, change strips, split seasonal produ
 member-ratio comparison, change cloud, sign agreement and coverage table have been reviewed and their
 approved styles implemented in the toolbox. Trajectories use the prepared model median, not the model mean.
 Keep baseline selection separate from validation of the current toolbox. Final integration evidence lives
-in [`../records/reviews/plot-improvements/verification.md`](../records/reviews/plot-improvements/verification.md).
+in [`../records/validation/plot-improvements/verification.md`](../records/validation/plot-improvements/verification.md).

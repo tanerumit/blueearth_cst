@@ -1,2 +1,0 @@
-✨ Pixi task (format-check): ruff format --check .: (Fail if anything in the formatter's scope is unformatted; the CI gate)
-432 files already formatted

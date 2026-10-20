@@ -1,5 +1,7 @@
 # Development documentation lifecycle
 
+Last updated: 2026-10-20
+
 This reference owns the boundary between current guidance, proposed changes, reusable templates and
 retained evidence. File placement and scratch cleanup are detailed in [repository layout](dev-repository-layout.md);
 task coordination is in [development workflow](dev-task-and-session-workflow.md).
@@ -68,13 +70,18 @@ move it unchanged and update the registry path; never rewrite its body or recalc
 an edited record pass. Update editable consumers and record old-to-new paths for immutable citations.
 Keep intentionally historical IDs and anchors resolvable.
 
-Reviews are routinely prunable when the conditions above hold. Approved skill or role changes must also
-reach their canonical infrastructure repository before discarding the only evidence. Decisions and
-milestone evidence receive the same citation review, with sealing taking precedence.
+Reviews belong with their task on main; disposable drafts and renders follow the scratch policy.
+At closure, retain only unresolved findings with their follow-up task, current requirements in their
+owning reference, and measurements or acceptance evidence with an identified future use under
+`dev/records/validation/` or the relevant milestone. Do not promote entire review bundles as an archive.
+Approved skill or role changes must reach their canonical infrastructure repository before discarding
+their only evidence. Decisions and milestone evidence receive the same citation review, with sealing
+taking precedence.
 
-`dev/scripts/check_activation.py` checks current-reference links and rejects new dependencies on transient
-tasks or prunable reviews. The retained plot-style verification citation is an explicit exception and
-blocks deletion of its evidence until both the reference and checker are updated.
+`dev/records/reviews/` and `dev/records/review/` are retired and must not be recreated.
+`dev/scripts/check_activation.py` rejects those directories and current-reference links to them,
+as well as dependencies on transient tasks. The
+[retirement map](../records/migrations/review-retirement-2026-10-20.md) resolves historical citations.
 
 ## Closure-ledger entries
 

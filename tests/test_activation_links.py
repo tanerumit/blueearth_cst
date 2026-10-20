@@ -66,7 +66,11 @@ def test_activation_skips_absent_runtime_trees(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize(
     ("home", "reason"),
-    [("tasks", "transient"), ("records/reviews", "prunable")],
+    [
+        ("tasks", "transient"),
+        ("records/reviews", "retired"),
+        ("records/review", "retired"),
+    ],
 )
 @pytest.mark.parametrize("exists", [False, True])
 def test_reference_links_reject_unstable_homes(
@@ -84,19 +88,20 @@ def test_reference_links_reject_unstable_homes(
     monkeypatch.setattr(ca, "REFERENCE_DIR", reference)
     monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
     problems = ca.check_links()
-    assert len(problems) == 1
-    assert reason in problems[0]
+    assert any(reason in problem for problem in problems)
 
 
-def test_retained_review_citations_still_require_their_target(tmp_path, monkeypatch):
+def test_retained_validation_citations_still_require_their_target(
+    tmp_path, monkeypatch
+):
     reference = tmp_path / "dev/reference"
     reference.mkdir(parents=True)
-    target = tmp_path / "dev/records/reviews/plot-improvements/verification.md"
+    target = tmp_path / "dev/records/validation/plot-improvements/verification.md"
     target.parent.mkdir(parents=True)
     target.write_text("Retained verification", encoding="utf-8")
     for name in ("toolbox-plot-style.md",):
         (reference / name).write_text(
-            "[verification](../records/reviews/plot-improvements/verification.md)",
+            "[verification](../records/validation/plot-improvements/verification.md)",
             encoding="utf-8",
         )
     monkeypatch.setattr(ca, "REFERENCE_DIR", reference)
@@ -110,17 +115,29 @@ def test_retained_review_citations_still_require_their_target(tmp_path, monkeypa
 def test_durable_links_and_similarly_named_homes_are_allowed(tmp_path, monkeypatch):
     reference = tmp_path / "dev/reference"
     reference.mkdir(parents=True)
-    for home in ("records/decisions", "tasks-archive", "records/reviews-archive"):
+    for home in ("records/decisions", "tasks-archive", "records/validation"):
         target = tmp_path / "dev" / home / "evidence.md"
         target.parent.mkdir(parents=True)
         target.write_text("Durable evidence", encoding="utf-8")
     (reference / "guide.md").write_text(
         "[decision](../records/decisions/evidence.md#claim)\n"
         "[archive](../tasks-archive/evidence.md)\n"
-        "[review archive](../records/reviews-archive/evidence.md)\n"
+        "[validation](../records/validation/evidence.md)\n"
         "[external](https://example.org/) [section](#claim)",
         encoding="utf-8",
     )
     monkeypatch.setattr(ca, "REFERENCE_DIR", reference)
     monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
     assert ca.check_links() == []
+
+
+@pytest.mark.parametrize("home", ["reviews", "review"])
+def test_retired_review_directory_is_rejected_without_links(
+    tmp_path, monkeypatch, home
+):
+    (tmp_path / "dev/records" / home).mkdir(parents=True)
+    monkeypatch.setattr(ca, "REFERENCE_DIR", tmp_path / "dev/reference")
+    monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
+    assert ca.check_links() == [
+        f"retired review directory: dev/records/{home}; keep reviews with their task"
+    ]

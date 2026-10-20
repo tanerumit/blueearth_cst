@@ -27,7 +27,8 @@ dataset/environment bundle is not required.
 Replace the separate composed snapshot with one generated `run_record.yml` and
 a `sources/` archive of exact source files. Keep records owned by their workflow
 or scientific artifact. The owner accepted the reviewed P0 contract on
-2026-09-21; [the selected schema](../../working/complete-run-output-schema.md#10-selected-p0-contract)
+2026-09-21;
+[the selected schema](../milestones/post-r12/output-schema/complete-run-output-schema.md#10-selected-p0-contract)
 governs versions, digests, path resolution, publication and recovery. The
 implementation has not yet been completed.
 

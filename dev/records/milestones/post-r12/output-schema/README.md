@@ -14,5 +14,11 @@ checks. Read those citations in the pinned source context described by the
 That record preserves exact source identities and retrieval routes; moving a report does not rerun or
 broaden its scientific acceptance.
 
-The working complete-run schema stays at its held location until its stale implementation status and
-references are reconciled. Do not infer a current contract from the historical phase sketches alone.
+The [accepted P0 contract](complete-run-output-schema.md) is retained here as historical evidence.
+Its implementation-status statements and relative links describe its original context, not the current
+repository. Current output placement is described in
+[repository layout](../../../../reference/repo-layout.md#outputs), with detailed contracts owned by
+the shipped writers and their tests. Do not maintain a second current schema in this historical record.
+
+The [working-folder retirement record](../../../reviews/working-folder-retirement-2026-10-20.md)
+pins the source revision and explains how to resolve its original citations.

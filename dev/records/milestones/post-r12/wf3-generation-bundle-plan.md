@@ -9,7 +9,7 @@ Items: `t2609241323` (3.09 copy step), `t2609241251` (rule renames),
 ## Dependencies and open decisions
 
 - **Session-1 draft schema.** `refactor/wf3-static-planning` carries
-  `dev/working/complete-run-output-schema.md` (docs only, unmerged). It keeps
+  `dev/records/milestones/post-r12/output-schema/complete-run-output-schema.md` (docs only, unmerged). It keeps
   generator netCDFs `temp()` under `weathergenr/output/run_<id>.nc` and a
   separately retained `series/run_<id>.nc` "with different lifetimes". Step 1
   contradicts that: decide it with the schema, not against it.

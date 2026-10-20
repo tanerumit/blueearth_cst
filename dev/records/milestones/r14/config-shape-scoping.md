@@ -63,14 +63,14 @@ R13 fixed *which file* a key lives in. It did not touch *which section*, or
   because no section boundary distinguishes "changes the numbers" from "changes
   only the wall-clock".
 
-These are P3 and P4 of `dev/working/parameter-placement.md` (DRAFT, 2026-08-12),
+These are P3 and P4 of `dev/records/milestones/r14/parameter-placement.md` (DRAFT, 2026-08-12),
 still open. This document is the live proposal that note's §5–§6 deferred.
 
 ## Relationship to prior records
 
 | record | status | relationship |
 |---|---|---|
-| `dev/working/parameter-placement.md` | DRAFT, not agreed | Inventory (§1–§3) is measured and reused. Its **M1** = `C-07`, **M2** = `C-35`, **M3** = `C-36`, **M4** ≈ `C-10`…`C-15`. Its §6 cost columns are **stale**: written 2026-08-12, before R13 landed. Re-measure. |
+| `dev/records/milestones/r14/parameter-placement.md` | DRAFT, not agreed | Inventory (§1–§3) is measured and reused. Its **M1** = `C-07`, **M2** = `C-35`, **M3** = `C-36`, **M4** ≈ `C-10`…`C-15`. Its §6 cost columns are **stale**: written 2026-08-12, before R13 landed. Re-measure. |
 | `dev/milestones/r13/config-tiers-design.md` | ACCEPTED 2026-08-21 | Owns `T1_TOP_LEVEL` (D-9.5), the seam checks (D-9.1/9.2/9.3/9.6), the composition invariant (D-8.1) and the `wflow_outvars` hoist (D-9.7). Every change here that moves a top-level section **amends** an accepted decision and cannot be a quiet edit. |
 | `run_stress_test.smk:100` | live code comment | Cites M1 as the reason `static_dir` was not deleted outright. `C-07` is what discharges it. |
 

@@ -16,7 +16,6 @@ This README is the entry point for contributors; linked policies apply to develo
 | `records/reviews/` | Review snapshots, subject to the retention policy |
 | [scripts/](scripts/README.md) | Repository maintenance and inspection tools |
 | `baseline/` | Replication fingerprints and reference series |
-| `working/` | Held legacy sources; no new material |
 
 The [repository layout](reference/repo-layout.md) explains placement across the whole repository,
 including task scratch, tool state, and runtime outputs.
@@ -43,10 +42,9 @@ These entries are deliberate exceptions to `project-system`'s development-folder
 |---|---|---|---|
 | `baseline/` | Replication validation | Replace only with a recorded successor | `check_baseline.py` |
 | `00-current-board-main/` | Old branch hooks | Remove the legacy junction locally | `.gitignore` |
-| `working/` | Repository owner | Migrate held sources as citations move | `sealed-records.yml` |
 
-The full paths of the exception consumers are `dev/scripts/check_baseline.py`,
-`dev/reference/sealed-records.yml`, and root `.gitignore`. Baseline paths also have workflow and config
+The exception consumers are `dev/scripts/check_baseline.py` and root `.gitignore`.
+Baseline paths also have workflow and config
 consumers; inspect them before moving the directory. Legacy junction removal is documented in
 [navigation setup](reference/development-workflow.md#local-scratch-and-navigation).
 
@@ -54,6 +52,8 @@ consumers; inspect them before moving the directory. Legacy junction removal is 
 
 See [promotion](reference/record-lifecycle.md#promotion) for preserving cited material and updating its
 consumers before task closure or legacy cleanup.
+The [working-folder retirement record](records/reviews/working-folder-retirement-2026-10-20.md)
+maps the final legacy sources to their retained homes.
 
 ## The retention rule
 

@@ -18,8 +18,7 @@ needed material in its durable home and update editable citations together.
 | Review snapshots with an identified future reader | `dev/records/reviews/` |
 | Unfinished work | Its live board note and optional task sidecar on main |
 
-Do not leave the only copy of needed evidence in disposable scratch. Existing `dev/working/` sources
-remain until their citations and owners can move together; no new material belongs there.
+Do not leave the only copy of needed evidence in disposable scratch.
 Where citations span board files on main and branch-owned files, coordinate their separate commits
 through [development-workflow.md](development-workflow.md) before removing the source.
 

@@ -26,7 +26,7 @@ ID or migration record does not establish an origin, leave it blank and explain 
 Do not infer lineage from similar prose.
 
 Substantial task documents belong in the live item's `dev/tasks/<id>/` sidecar on main, linked from its
-note. Do not create `dev/drafts/` or add to `dev/working/`. The bannered pre-board record
+note. `dev/drafts/` and `dev/working/` are retired locations; do not recreate them. The pre-board record
 `dev/tasks/2026-07-21_pre-r6-followups.md` is a historical exception; it has no board `type:`.
 
 ## Worktree coordination

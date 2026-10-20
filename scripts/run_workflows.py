@@ -1152,12 +1152,30 @@ def run(
 class _PreparationHeartbeat(_Heartbeat):
     """Keep startup progress aligned with the runner's introductory text."""
 
+    def start(self) -> _PreparationHeartbeat:
+        if self._interactive:
+            self._emit("0:00:00 elapsed", redraw=True)
+        else:
+            print(f"  {self._label}...", file=self._stream, end="", flush=True)
+        return super().start()
+
+    def _tick(self, now: float) -> None:
+        if self._interactive:
+            super()._tick(now)
+
     def _emit(
         self, text: str, code: str | None = None, *, redraw: bool = False
     ) -> None:
+        if redraw and not self._interactive:
+            return
+        prefix = (
+            f"{_line_reset(self._stream)}  {self._label}..."
+            if self._interactive
+            else ""
+        )
         with suppress(OSError, ValueError):
             print(
-                f"{_line_reset(self._stream)}  {self._label}... ({text})",
+                f"{prefix} ({text})",
                 file=self._stream,
                 end="" if redraw else "\n",
                 flush=True,
@@ -1176,10 +1194,7 @@ def _preparation_progress(enabled: bool):
     try:
         print("\n" + "\n".join(_banner("run_workflows")), flush=True)
         if enabled:
-            print(
-                "\n  Preparing configuration and experiment checks... (0:00:00 elapsed)",
-                flush=True,
-            )
+            print(file=sys.stderr, flush=True)
             heartbeat = _PreparationHeartbeat(
                 "Preparing configuration and experiment checks", sys.stderr
             ).start()

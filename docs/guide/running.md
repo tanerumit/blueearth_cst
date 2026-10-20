@@ -222,6 +222,7 @@ and journal without scheduling the metadata rule or relabelling reused outputs.
 Initial runner preparation messages use two-space indentation without timestamps or module labels,
 including elapsed-time updates such as
 `  Preparing configuration and experiment checks... (0:00:15 elapsed)` and the final check duration.
+The timer updates on one terminal row; captured output contains one row with the final duration.
 Reused WF3 collections use the same green `Up to date` verdict
 as the other workflows, without separate scenario-request or reuse rows.
 WF2 shows reference-period warnings when executing an analysis, and omits them on up-to-date runs.

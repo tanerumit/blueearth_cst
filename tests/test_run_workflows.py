@@ -188,7 +188,8 @@ def test_preparation_is_announced_before_experiment_imports(
 
     def observe_import(name, *args, **kwargs):
         if name == "blueearth_cst.experiment.reservation_context":
-            before_import.append(capsys.readouterr().out)
+            captured = capsys.readouterr()
+            before_import.append(captured.out + captured.err)
         return original_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", observe_import)
@@ -234,13 +235,36 @@ def test_preparation_progress_reports_elapsed_time_in_the_introductory_row(
     monkeypatch.setattr(rw.time, "monotonic", lambda: clock[0])
     with rw._preparation_progress(True):
         initial = capsys.readouterr()
-        assert initial.out.endswith(
-            "  Preparing configuration and experiment checks... (0:00:00 elapsed)\n"
-        )
+        assert initial.err == "\n  Preparing configuration and experiment checks..."
         clock[0] += 22
-    assert capsys.readouterr().err == (
-        "  Preparing configuration and experiment checks... (0:00:22 elapsed)\n"
-    )
+    assert capsys.readouterr().err == " (0:00:22 elapsed)\n"
+
+
+@pytest.mark.parametrize("interactive", [False, True])
+def test_preparation_timer_uses_one_row(monkeypatch, interactive):
+    from io import StringIO
+
+    stream = StringIO()
+    monkeypatch.setattr(stream, "isatty", lambda: interactive)
+    monkeypatch.setenv("CST_HEARTBEAT_SECS", "0")
+    clock = [100.0]
+    monkeypatch.setattr(rw.time, "monotonic", lambda: clock[0])
+    timer = rw._PreparationHeartbeat(
+        "Preparing configuration and experiment checks", stream
+    ).start()
+    for elapsed in (15, 30):
+        clock[0] = 100 + elapsed
+        timer._tick(clock[0])
+    assert "\n" not in stream.getvalue()
+    clock[0] = 143
+    timer.stop()
+    output = stream.getvalue()
+    expected = "  Preparing configuration and experiment checks... (0:00:43 elapsed)\n"
+    assert output.count("\n") == 1
+    if interactive:
+        assert output.split("\r")[-1] == "\033[2K" + expected
+    else:
+        assert output == expected
 
 
 @pytest.mark.parametrize("failure", ["banner", "watchdog_start", "watchdog_stop"])

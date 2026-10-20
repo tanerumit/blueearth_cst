@@ -32,18 +32,24 @@ context for the tested changes and never supply the generated scenarios.
 
 ## Create an external case
 
-For a new external case, create its configuration set from the cases repository's
-`templates/example-basin/` starter. From the toolbox root:
+For a new external case, create its configuration set from this toolbox checkout's
+`config/templates/example-basin/` starter. The cases repository needs an
+`applications/` directory; it does not need a template copy. From the toolbox root:
 
 ```powershell
 pixi run create-case my-basin --cases-root C:/path/to/cst-cases --longitude 12.5 --latitude -3 --purpose "First-order basin assessment" --dry-run
 ```
 
+Earlier toolbox versions read `cst-cases/templates/example-basin/`. The starter
+now lives at `blueearth_cst:config/templates/example-basin/`; update manual-copy
+procedures to use that path. The current scaffolder ignores external template copies.
+
 The starter defaults to `config/catalogs/deltares_data_pdrive.yml` and
 data under `P:/wflow_global/hydromt`; mount the Deltares P-drive before
 running. Its basin sources use `rivers: hydro_rivers_lin` and
 `lulc: globcover`. The scaffold inherits the catalog and source settings
-from the cases repository's template.
+from the toolbox-owned starter, so new cases use the template shipped with the
+toolbox version being run. Existing application configs are not updated automatically.
 
 Remove `--dry-run` after reviewing the preview. The command creates
 `applications/my-basin/`, sets absolute input and output paths, replaces the

@@ -57,14 +57,12 @@ def test_an_explicit_window_wins_over_the_historical_one():
 
 
 def test_scaffold_declares_a_shorter_model_run_inside_the_climate_record():
-    templates = Path(__file__).resolve().parents[1] / "config/templates"
+    templates = Path(__file__).resolve().parents[1] / "config/templates/example-basin"
     project = yaml.safe_load(
-        (templates / "project_config.template.yml").read_text(encoding="utf-8")
+        (templates / "project_config.yml").read_text(encoding="utf-8")
     )
     model = yaml.safe_load(
-        (templates / "project_config.build_model.template.yml").read_text(
-            encoding="utf-8"
-        )
+        (templates / "project_config_build_model.yml").read_text(encoding="utf-8")
     )
     window = resolve_simulation_window(project["climate"], model)
     record = project["climate"]["window"]

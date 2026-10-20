@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Report — and optionally write — the bounding box of the project's region.
 
 **Why this exists rather than reading the model.** The built Wflow tree already
@@ -18,7 +19,7 @@ write round-trips at zero, and ``hydromt.writers.write_region`` is a plain
 precision of the file as written rather than a different rectangle.
 
 Reads ``data/spatial/geoms/region.geojson`` — the delineated basin, and the one
-project region artifact (ADR 0003) — never the model's ``staticgeoms/``. That
+project region artifact — never the model's ``staticgeoms/``. That
 direction is the repo's stance, not this script's preference:
 ``blueearth_cst/spatial/delineate_region.py`` states the same rule for the
 extraction ("never from a built model's ``staticmaps.nc`` or
@@ -55,7 +56,7 @@ from shapely.geometry import box  # noqa: E402
 
 from blueearth_cst.spatial.delineate_region import read_region  # noqa: E402
 
-#: The delineated basin, project-root-relative (ADR 0003's one region artifact).
+#: The delineated basin, project-root-relative.
 REGION_PATH = "data/spatial/geoms/region.geojson"
 
 #: Where ``--out`` puts the box when given no value: beside the basin it came

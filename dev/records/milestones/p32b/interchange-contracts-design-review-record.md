@@ -544,7 +544,7 @@ findings:
     section: "5.4 Contract-doc placement / OQ-2"
     finding: >
       The design places the two seam docs in a NEW `dev/reference/contracts/` subdir
-      (verified absent today) and cites `dev/reference/workflows/climate_experiment.md` as
+      (verified absent today) and cites `dev/records/milestones/r05/climate_experiment.md` as
       the one-file-per-workflow precedent. The actual precedent dir is
       `dev/reference/workflows/` (contains `model_creation.md`, `climate_projections.md`,
       `climate_experiment.md`). Introducing `dev/reference/contracts/` is defensible (the

@@ -4,24 +4,10 @@
 
 > [!NOTE]
 > **Fork status.** This is a personal fork of
-> [Deltares/blueearth_cst](https://github.com/Deltares/blueearth_cst). Three
-> planned phases are complete:
->
-> - **Phase 1 — Foundation** (sealed, `v0.2.0-alpha`): replication baseline,
->   pixi-based env, library upgrades (hydromt 1.x, Wflow.jl 1.0.x), unit-test
->   coverage.
-> - **Phase 2 — Refactor** (sealed 2026-07-23, R1–R6): modularity contracts,
->   naming conventions, one milestone per workflow, then the structural refactor
->   that moved `src/` to the `blueearth_cst` package and split `config/` into
->   `workflows` / `catalogs` / `templates`.
-> - **Phase 3 — Usability & flexibility** (sealed 2026-07-25, P3-1…P3-3):
->   project/experiment structure, model-independent climate analysis, model-swap
->   interchange contracts, and performance work (the wf3 stress-test sweep is
->   ~35 % faster, value-identical).
->
-> Phase 4 is open; CI was its first item. `dev/reference/roadmap.md` is the authoritative
-> status record — this note summarises it and may lag. See also `CHANGELOG.md`,
-> which tracks releases rather than milestones.
+> [Deltares/blueearth_cst](https://github.com/Deltares/blueearth_cst).
+> [Current development guidance](dev/reference/README.md) describes the applicable practices and design.
+> [Milestone history](dev/records/milestones/roadmap.md) preserves phase lineage;
+> `CHANGELOG.md` tracks releases and `dev/TODO.md` tracks active work.
 
 The BlueEarth Climate Stress Test toolbox (`blueearth_cst`) is a free,
 open-source toolkit for interactive climate risk assessment based on bottom-up
@@ -109,7 +95,7 @@ pixi shell
 ### Docker
 
 Not supported. The pixi-based toolbox ships no Docker image; Docker returns with the deferred Linux
-replication work (see `dev/reference/roadmap.md`). The v0.1.0-alpha conda-based image remains at
+replication work (see `dev/records/milestones/roadmap.md`). The v0.1.0-alpha conda-based image remains at
 `containers.deltares.nl/CST/cst_workflows:0.1.0`.
 
 ## Running
@@ -365,10 +351,10 @@ User-facing:
 
 Fork-specific (development):
 
-- `dev/reference/roadmap.md` — milestone roadmap: what each phase set out to do and how it
+- `dev/records/milestones/roadmap.md` — milestone roadmap: what each phase set out to do and how it
   landed.
-- `dev/reference/git-conventions.md` — branch / tag inventory plus the
-  branching, tagging, and commit-message conventions.
+- `dev/reference/README.md` — topic map for current development practices and toolbox architecture.
+- `dev/reference/dev-git-conventions.md` — branching, tagging, and commit-message conventions.
 - `docs/site/setup/install.md` — step-by-step install walkthrough.
 - `dev/records/milestones/phase-1/` — sealed foundation milestone artifacts (audits,
   plans, baseline diffs).
@@ -378,9 +364,9 @@ Fork-specific (development):
 - `dev/records/milestones/p31/`, `dev/records/milestones/p32a/`, `dev/records/milestones/p32b/`,
   `dev/records/milestones/p33/` — sealed Phase 3 milestone designs, review records and
   evidence notes.
-- `dev/tasks/` — the open backlog, with closed items retained and dated.
+- `dev/tasks/` — active work and proposed changes; closure outcomes are linked from `dev/LOG.md`.
 - `CHANGELOG.md` — release history (release-level; milestone detail lives in
-  `dev/reference/roadmap.md`).
+  `dev/records/milestones/roadmap.md`).
 
 ## License
 

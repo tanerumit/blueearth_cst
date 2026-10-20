@@ -1,8 +1,7 @@
 # Quarto project for the BlueEarth CST documentation site.
 #
 # Rooted at docs/site/, so repository-only sources stay outside the render
-# scope. Design and phasing:
-# dev/working/2026-08-19_quarto-docs-site/design.md
+# scope. Documentation layout and authoring entry point: docs/README.md.
 #
 # PHASE 3, in progress (t2608202351b). The site publishes the landing page,
 # setup guide and user guide. The scientific approach and toolbox reference summarize current methods and interfaces

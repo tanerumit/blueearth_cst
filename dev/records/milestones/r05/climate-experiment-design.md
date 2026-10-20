@@ -177,9 +177,9 @@ indicators.
 Beyond the inherited hygiene, R5 delivers four workflow-3-specific items the
 roadmap names (`dev/roadmap.md` § R5, reproduced in intake.md):
 
-1. The **`dev/reference/workflows/climate_experiment.md` contract doc** (deferred from R1;
+1. The **`dev/records/milestones/r05/climate_experiment.md` contract doc** (deferred from R1;
    format per `dev/milestones/r01/modularity-contracts-design.md` §4, mirroring
-   `dev/reference/workflows/model_creation.md` and `dev/reference/workflows/climate_projections.md`).
+   `dev/reference/workflows/model_creation.md` and `dev/records/milestones/r04/climate_projections.md`).
 2. The **`CyclicGraphException` resolution** — the workflow-3 `test_cli` ratchet
    that R3 deferred to R5, paired with the `st_num2 → st_num` wildcard fold that
    `dev/reference/naming.md` §4 assigns to R5. This flips a **live** ratchet, so
@@ -260,7 +260,7 @@ schema, and R3 moved it onto the shared `get_config` import + `sys.path` bootstr
 get_config`, and `config_path = workflow.configfiles[0]` at line 14). But everything
 else in workflow 3 predates the Phase-2 discipline:
 
-- **No per-workflow contract doc** — `dev/reference/workflows/climate_experiment.md` was
+- **No per-workflow contract doc** — `dev/records/milestones/r05/climate_experiment.md` was
   deferred from R1 to R5's opening act (roadmap R5 deliverables).
 - **Zero `log:`/`benchmark:` directives** on any rule in
   `Snakefile_climate_experiment` (verified: the file has none). The exhaustive M1
@@ -302,7 +302,7 @@ R-layer and cycle work.
 Same contract-first, behavior-preserving discipline R3/R4 used, applied to workflow
 3:
 
-1. **Contract before code.** `dev/reference/workflows/climate_experiment.md` (format per
+1. **Contract before code.** `dev/records/milestones/r05/climate_experiment.md` (format per
    `dev/milestones/r01/modularity-contracts-design.md` §4, mirroring the two sibling contract
    docs) is R5's first commit, written against **current** behavior. Code commits
    then change behavior against a recorded contract, not from memory.
@@ -344,10 +344,10 @@ Same contract-first, behavior-preserving discipline R3/R4 used, applied to workf
 
 ## What changes
 
-### 1. Contract doc `dev/reference/workflows/climate_experiment.md` (opening act)
+### 1. Contract doc `dev/records/milestones/r05/climate_experiment.md` (opening act)
 
 Format per `dev/milestones/r01/modularity-contracts-design.md` §4, mirroring
-`dev/reference/workflows/climate_projections.md`, target < 130 lines (wf3 has more rules).
+`dev/records/milestones/r04/climate_projections.md`, target < 130 lines (wf3 has more rules).
 Content grounded in `Snakefile_climate_experiment` and
 `config/snake_config_model_test.yml`:
 
@@ -1385,7 +1385,7 @@ plan (no intentional-change commit).
 
 ## Commit plan (roadmap `r05:` prefix; one logical change per commit; tag `r05-experiment`)
 
-1. `r05: add dev/reference/workflows/climate_experiment.md contract doc`
+1. `r05: add dev/records/milestones/r05/climate_experiment.md contract doc`
    (current behavior; owned keys, the `historical_window` gap flag, plausibility-
    overlay/method-invariant note, `temp()`/manifest-slice honesty, the `st_num2`
    inconsistency note).

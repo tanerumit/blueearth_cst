@@ -166,7 +166,7 @@ def scope_caveat(caveat: Optional[str], spatial_scope: str, mask) -> Optional[st
 def _legacy_figure_name(dataset: str, var: str, kind: str) -> str:
     """``<dataset>_<variable>_<kind>.png`` — the pre-grammar spelling.
 
-    Retained for the FORCING family only. ``wf0-figure-filename-rule.md`` stages
+    Retained for the FORCING family only. ``wf0-figure-naming.md`` stages
     the new grammar at WF0 first, and the forcing figures have their own
     consumers and their own directory; migrating them is a separate step with
     its own rename sweep.

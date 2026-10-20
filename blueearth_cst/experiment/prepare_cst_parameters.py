@@ -217,8 +217,9 @@ def prep_cst_parameters(
             f"stress_test carries unsupported axes {unknown_axes}: this module "
             f"enumerates exactly {list(_KNOWN_AXES)} (plus the non-axis keys "
             f"{list(_NON_AXIS_KEYS)}). Adding a dimension means adding a lookup "
-            f"column, and that needs a C28 ruling; "
-            f"see dev/records/milestones/r09/wf3-change-requests.md."
+            f"column and updating the producer and consumers together (C28); "
+            f"see dev/reference/toolbox-weather-generator-interface.md"
+            f"#wg-2--stress-test-perturbation-grid."
         )
 
     # Grid step counts + total via the shared helper (single source of truth,

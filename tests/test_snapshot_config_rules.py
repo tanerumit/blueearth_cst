@@ -164,7 +164,7 @@ def test_every_workflow_registers_all_three_lifecycle_handlers(snakefile_name):
 def test_the_sidecar_rule_is_numbered_in_sequence():
     """WF1's run-metadata sidecar sits between the evaluation and the gathers.
 
-    It took the letter suffix `1.15b` when added, since naming.md forbids
+    It took the letter suffix `1.15b` when added, since dev-naming-conventions.md forbids
     renumbering to insert a rule; the 2026-09-24 rule-naming migration then
     renumbered WF1 deliberately, so the sequence is contiguous again.
     """

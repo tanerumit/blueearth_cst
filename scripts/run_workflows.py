@@ -121,7 +121,7 @@ PER_WORKFLOW_FLAGS = {
 # log names in blueearth_cst/shared/merge_logs.py carry the same ids.
 #
 # 0 for analyze_climate because it runs BEFORE model creation; `W` is a workflow
-# id, not a position (dev/reference/naming.md §9).
+# id, not a position (dev/reference/dev-naming-conventions.md §9).
 WORKFLOW_ID = {
     "analyze_climate": "wf0",
     "build_model": "wf1",

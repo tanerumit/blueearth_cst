@@ -5,11 +5,9 @@
 # [project] table, nothing is installed from it, and `blueearth_cst` remains a
 # plain importable directory rather than an installed distribution.
 #
-# That restraint is the point. Real packaging (O-14 decision 2) would reverse a
-# reviewed decision recorded in dev/records/milestones/r06/structural-refactor-design.md:368-376,
-# so it needs a superseding record in dev/records/decisions/ rather than arriving as a
-# side effect of wanting pytest settings. Decision 1 -- this file -- costs one
-# root file, adds no dependency, and reverses no contract.
+# Packaging policy is owned by dev/reference/toolbox-architecture.md.
+# A packaging change requires an explicit policy change, not a side effect of
+# wanting pytest settings.
 #
 # Also deliberately absent: [tool.pixi]. `pixi.toml` stays the pixi manifest
 # (verified: pixi still resolves pixi.toml with this file present). Migrating
@@ -23,7 +21,7 @@
 testpaths = ["tests"]
 
 # Tests load dev.scripts.pytest_temp through conftest: unique run directories
-# live beside this reusable cache. See dev/reference/validation-ladder.md.
+# live beside this reusable cache. See dev/reference/dev-validation.md.
 cache_dir = ".tmp/pytest/cache"
 
 # Repo root on sys.path. This is the supported declarative replacement for the
@@ -167,7 +165,7 @@ quote-style = "double"
 # stays linted.
 #   *.md            ruff formats fenced Python inside Markdown, which would
 #                   rewrite documents hash-frozen in
-#                   dev/reference/sealed-records.yml. Permanent.
+#                   dev/records/sealed-records.yml. Permanent.
 #   console.py      VENDORED verbatim from the `console-formatting` skill and
 #                   carrying a `__version__` that says which release it is a
 #                   copy of. Formatting it here would make every re-vendor a

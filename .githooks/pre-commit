@@ -36,6 +36,10 @@ branch=$(git symbolic-ref --quiet --short HEAD || true)
 if [ "$branch" != main ]; then
     if git diff --cached --quiet --no-renames -- dev/tasks/ dev/TODO.md dev/LOG.md; then
         :
+    elif git rev-parse --verify --quiet MERGE_HEAD >/dev/null &&
+        git diff --cached --quiet --no-renames main -- dev/tasks/ dev/TODO.md dev/LOG.md; then
+        # Synchronizing a session may import canonical task state unchanged.
+        :
     else
         echo "pre-commit: REJECTED. Task documents and board state belong to main."
         echo "Use main's dev/tasks/ (open .tmp/navigation/main-dev.lnk)."

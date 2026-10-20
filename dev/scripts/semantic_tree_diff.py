@@ -1,3 +1,5 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
+# Current guidance: dev/reference/wf1-model-construction.md
 """Milestone full-tree semantic diff for the R06 structural refactor (design §9).
 
 Walks a `project_dir` output tree and compares every file against a reference
@@ -292,7 +294,7 @@ def build_project_tree_rules(
     (`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md` §6a). What remains
     is the question that outlives any migration: **does this tree hold anything
     nobody declared?** That is the property that caught `region.geojson` (R9
-    phase-1 F1a) and that the ADR 0003 §8a seam intermediate needed a row for.
+    phase-1 F1a) and that the hydrography grid seam needed a row for.
 
     Every rule maps a path to ITSELF, so a covered path classifies as IDENTITY
     and an unknown one still classifies as UNMAPPED. That distinction only
@@ -435,12 +437,12 @@ def build_project_tree_rules(
         "spatial_catalog.yml",
         "spatial_report.yml",
         "location_registry.csv",
-        # ADR 0003 §8a seam intermediate.
+        # Hydrography grid seam.
         "hydrography.nc",
     ):
         same(f"data/spatial/{leaf}")
     same("data/spatial/geoms/")
-    # ADR 0007: elevation_basin depicts elevation, so it is drawn from the spatial
+    # elevation_basin depicts elevation, so it is drawn from the spatial
     # foundation and lands beside it rather than inside the model tree.
     same("data/spatial/plots/")
     # The climate store is keyed by <clim_source>_<window>; the key is a CACHE
@@ -479,7 +481,7 @@ def build_project_tree_rules(
         "hydromt_data.yml",
         ".model_built",
         ".outputs_configured",
-        # ADR 0004's terminal build sentinel.
+        # Terminal model-build sentinel.
         ".model_final",
         "config/build_historical_forcing.yml",
         # The one-entry catalog pointing hydromt at the climate store — a
@@ -517,7 +519,7 @@ def build_project_tree_rules(
         "evaluation/",
     ):
         same(f"{wflow}/{directory}")
-    # `{wflow}/plots/` is deliberately absent: ADR 0007 moved its only member,
+    # `{wflow}/plots/` is deliberately absent: the basin-map relocation moved its only member,
     # elevation_basin, to `data/spatial/plots/`. A leftover directory there is stale
     # output from a pre-0007 run and SHOULD report as undeclared.
 

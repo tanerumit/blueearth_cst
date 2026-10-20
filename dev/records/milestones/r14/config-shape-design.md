@@ -59,7 +59,7 @@ A third consequence follows from the first: the experiment guard's key list is
 maintained by hand, because no section boundary distinguishes "changes the
 numbers" from "changes only the wall-clock".
 
-These are P3 and P4 of `dev/working/parameter-placement.md`, open since
+These are P3 and P4 of `dev/records/milestones/r14/parameter-placement.md`, open since
 2026-08-12.
 
 ## 2. Goals / Non-goals

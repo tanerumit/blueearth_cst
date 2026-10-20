@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 import os
 import sys
 import time
@@ -19,7 +20,7 @@ from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 from blueearth_cst.shared.map_reference import historical_map_reference_rule, require_wf0_completeness, source_map_inputs
 
 # --- figure filenames ---------------------------------------------------------
-# WF0's figures follow `dev/reference/wf0-figure-filename-rule.md`:
+# WF0's figures follow `dev/reference/wf0-figure-naming.md`:
 #   <dataset_scope>_<variable>_<plot_context>_<spatial_scope>.png
 # built by `climate_analysis.figure_naming`, never spelled here. The wflow
 # FORCING family (rule 1.12) keeps its own names -- the rule stages WF0 first.
@@ -174,7 +175,7 @@ CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configu
     referenced_inputs_for_digest(CONFIG_REFERENCES),
 )
 
-# --- The one project region artifact (ADR 0006) -------------------------------
+# --- The one project region artifact -------------------------------
 # Splatted into rule 0.01 below, byte-identical to 1.01 / 2.01 / 3.03 except
 # message/log/benchmark. tests/test_region_rule.py parses every workflow and
 # fails on ANY other difference.
@@ -186,9 +187,9 @@ REGION = region_rule(
     basin_index=basin_index,
 )
 
-# --- The shared vector foundation (ADR 0006 §8) -------------------------------
-# `parse_spatial_config(basin_cfg)` WITHOUT `my_cfg`: §8b requires the shared
-# rule's params to be a pure function of `project` + `shared.basin`, so a
+# --- The shared vector foundation -------------------------------
+# `parse_spatial_config(basin_cfg)` WITHOUT `my_cfg`: the shared
+# rule's params must depend only on shared project and basin settings, so a
 # workflow-local key cannot feed it and the four declarations stay identical.
 SPATIAL_UNITS = spatial_units_rule(
     project_dir=project_dir,
@@ -244,7 +245,7 @@ CLIMATE_STORES = {
 
 # --- rule numbering -----------------------------------------------------------
 # `W.NN` = the rule's position in this workflow's LOGICAL order. `W` is a
-# workflow ID, not a position (dev/reference/naming.md §9), and IDs need not
+# workflow ID, not a position (dev/reference/dev-naming-conventions.md §9), and IDs need not
 # start at 1: this workflow is 0 because it precedes model creation, so
 # `ls logs/` sorts wf0, wf1, wf2, wf3 in execution order without renumbering
 # the three that already exist.
@@ -358,7 +359,7 @@ rule all:
     input:
         WF0_TARGETS,
 
-# 0.01  delineate_region — the one project region artifact (ADR 0006).
+# 0.01  delineate_region — the one project region artifact.
 # Byte-identical to 1.01, 2.01 and 3.03 except message/log/benchmark; everything
 # else is splatted from REGION so the four cannot drift.
 rule delineate_region:
@@ -375,7 +376,7 @@ rule delineate_region:
         DELINEATE_REGION.benchmark(),
     script: REGION.script
 
-# 0.02  delineate_subbasins_and_rivers — the shared vector foundation (ADR 0006 §8).
+# 0.02  delineate_subbasins_and_rivers — the shared vector foundation.
 # Byte-identical to 1.02, 2.02 and 3.04 except message/log/benchmark.
 #
 # The VECTOR half only, as in WF2: the raster half (rule 1.05) stays WF1-only,

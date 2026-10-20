@@ -225,7 +225,7 @@ an internal tidy.
 | `cst_data` (R local), `_cst_df` / `_read_cst_csvs` (test helpers), `test_the_cst_index_…`, `_cst_pss_shim`, `cst_test_lib` | pure identifiers. None is a path or a key, so none is part of this migration; carried as a named residual for a later decision |
 | `dev/scripts/semantic_tree_diff.py`, `tests/test_r09_path_map.py`, `tests/test_semantic_tree_diff.py` | they encode the P3-1 / R07 / R9 migration maps, whose eras used `cst_` on **both** sides. Renaming their expectations would make them assert a migration that never happened |
 | `tests/test_wflow_log_attribution.py` | consumes `.cst_runs/r09_p2_post`, an R9-era tree outside the repo. Renaming its `MEMBER` regex and globs would match zero files and turn the test vacuous |
-| every `dev/milestones/**`, `dev/reviews/**`, `docs/migration-r08-wf2.md`, `dev/reference/workflows/climate_experiment.md` | records of what was true when written (`AGENTS.md`, Conventions). `climate_experiment.md` is in `sealed-records.yml` |
+| every `dev/milestones/**`, `dev/reviews/**`, `docs/migration-r08-wf2.md`, `dev/records/milestones/r05/climate_experiment.md` | records of what was true when written (`AGENTS.md`, Conventions). `climate_experiment.md` is in `sealed-records.yml` |
 | inline comments naming a PAST era — the R07 stem `cst_<m>`, the R07 batch tag, the retired C29 `weathergen_config_rlz_<n>_cst_<m>.yml` | they name files that existed under that token and, in C29's case, no longer exist at all. Renaming them invents a filename no tree ever held |
 
 ## Zero-padded member indices (R11 P2, commit 2)

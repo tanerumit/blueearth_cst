@@ -915,7 +915,7 @@ def test_pinned_uri_takes_the_newest_when_a_variable_records_several():
     stay visible. What it actually produced was a glob that opened every version
     at once and died inside xarray's combine, so those sources never staged --
     182 of 2426 member combinations (measured in
-    dev/reference/workflows/wf2-cmip6-store-readability.md, section 2).
+    dev/records/milestones/r08/cmip6-readability-measurements.md, section 2).
     """
     uri = "gs://cmip6/CMIP6/CMIP/CAS/CAS-ESM2-0/historical/{member}/Amon/{variable}/*/*"
     pins = {

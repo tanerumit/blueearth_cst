@@ -95,7 +95,7 @@ def slugify(variable: str) -> str:
     Wflow headers carry the SEMANTIC label verbatim, spaces included -- a config
     asking for ``groundwater recharge`` yields columns named
     ``groundwater recharge_basavg_101``. Left alone that produces a filename with
-    a space in it, which contradicts naming.md and is awkward on every shell.
+    a space in it, which contradicts dev-naming-conventions.md and is awkward on every shell.
     """
     return re.sub(r"[^a-z0-9]+", "_", str(variable).lower()).strip("_")
 

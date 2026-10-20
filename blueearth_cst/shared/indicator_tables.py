@@ -28,7 +28,7 @@ implementation detail.
 The rule for minting future tokens, so they are not chosen ad hoc: **where the
 repo already has a canonical short name, use it; only mint where none exists; and
 disambiguate against names already in use.** Its four consequences are why
-``precip`` is not ``p`` (``naming.md`` §6 tier 2 declares ``precip`` canonical, and
+``precip`` is not ``p`` (``dev-naming-conventions.md`` §6 tier 2 declares ``precip`` canonical, and
 ``p`` would be a seventh spelling), why ``aet`` is not ``et`` (``pet`` is already
 canonical here and one letter apart in the same file is a misreading waiting to
 happen), why ``snow`` is not ``swe`` (the CSDMS name is
@@ -43,7 +43,7 @@ instead of choosing between two new ones; see ``OUTPUT_CODES`` below, where the
 token and the code now coincide for this variable.
 
 The published table of all of these, one row per variable and one column per
-spelling, is ``dev/reference/indicator-glossary.md``. It is DERIVED from the
+spelling, is ``dev/reference/toolbox-indicator-glossary.md``. It is DERIVED from the
 dicts here and in ``wflow_outputs`` — ``tests/test_indicator_glossary.py`` parses
 it and fails when the two disagree — so extend the dicts first and the glossary
 second, never the reverse.
@@ -57,7 +57,7 @@ from blueearth_cst.shared.wflow_outputs import CODES as _WFLOW_CODES
 #: → short token used in filenames and in the composite ``indicator``.
 #:
 #: Authoritative source for the semantic names: the ``WFLOW_VARS`` map in
-#: ``dev/reference/workflows/model_creation.md``. **Six entries, not five** —
+#: ``blueearth_cst/model/setup_gauges_and_outputs.py``. **Six entries, not five** —
 #: ``precipitation`` is one of them, emitted at registry locations with header
 #: ``P`` when a ``location_registry`` is configured.
 VARIABLE_TOKENS = {
@@ -423,7 +423,7 @@ def variable_token(outvar: str) -> str:
             f"wflow_outvars names {outvar!r}, which has no indicator-table token. "
             f"Known variables: {known}. Add the variable to VARIABLE_TOKENS in "
             f"blueearth_cst/shared/indicator_tables.py AND to the seam contract "
-            f"dev/reference/contracts/hydrological-model-seam.md, which is where "
+            f"dev/reference/toolbox-hydrological-model-interface.md, which is where "
             f"this mapping is published."
         ) from None
 

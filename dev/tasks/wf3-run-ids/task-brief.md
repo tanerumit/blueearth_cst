@@ -2,7 +2,7 @@
 
 ### Context
 
-Governing rules: `AGENTS.md` and `dev/reference/validation-ladder.md`.
+Governing rules: `AGENTS.md` and `dev/reference/dev-validation.md`.
 Date: 2026-10-10. Lifecycle: temporary task brief. Branch: `feat/wf3-run-ids`.
 
 - The user approved prefixed run IDs, independent `group_01` IDs, separate metric tables,

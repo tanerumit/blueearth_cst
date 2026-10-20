@@ -55,7 +55,7 @@ R13 fixed *which file* a key lives in. It did not touch *which section*, or
   boundary distinguishes "changes the numbers" from "changes only the
   wall-clock".
 
-These are P3 and P4 of `dev/working/parameter-placement.md`, still open.
+These are P3 and P4 of `dev/records/milestones/r14/parameter-placement.md`, still open.
 
 ## Confirmed scoping rulings (owner, 2026-08-22 and 2026-08-24)
 

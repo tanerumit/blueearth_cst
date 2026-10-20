@@ -1,22 +1,10 @@
-"""Delineate the shared vector foundation once per project (ADR 0003 §8).
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
+"""Delineate the shared vector foundation once per project.
 
-Rule ``delineate_subbasins_and_rivers``'s script — the SINGLE producer of
-``spatial/geoms/{basins,subbasins,catchments,rivers,locations}.geojson``,
-``spatial/location_registry.csv`` and the hydrography grid seam, declared
-identically in all three workflows (``1.01c`` / ``2.03c`` / ``3.01f``) from
-``snake_utils.spatial_units_rule``.
-
-Before this split the layers were by-products of rule 1.01, whose real product
-is ``spatial_maps.nc`` and the thematic raster stack behind it. WF2 and WF3
-want basin and subbasin boundaries for figures and indicators; declaring the
-unsplit rule would have made a projections-only run resample ``vito``,
-``modis_lai`` and ``soilgrids`` to draw a subbasin outline — the same trade
-ADR 0003 exists to have removed, one level down. Measured 2026-08-06, the split
-avoids ~71% of what the unsplit alternative would add.
-
-Model-free by construction, the property R07 B1 bought and this must not spend:
-the inputs are the data catalog, the shared region polygon, and the optional
-gauge-point file. Nothing here reads a built model.
+The shared ``spatial_units_rule`` declaration produces vector layers, the
+location registry and the hydrography grid seam from the catalog, project
+region and optional gauge points. Model-free consumers obtain these products
+without resampling the thematic land/soil layers needed only by WF1.
 """
 
 # NO `from __future__ import annotations` here, deliberately: Snakemake's
@@ -61,7 +49,7 @@ def run_delineate_spatial_units(
 
     Every keyword is a ``shared.basin`` field resolved by
     ``parse_spatial_config`` in the declaring Snakefile — spelled out one by
-    one because ADR 0003 §8b requires the rule's params to be a pure function
+    one because the spatial contract requires the rule's params to be a pure function
     of ``project`` + ``shared.basin``. In particular the deprecated
     ``workflows.build_model.output_locations`` fallback CANNOT feed this
     rule: the five projections-only configs carry no ``workflows.build_model``

@@ -137,8 +137,8 @@ isn't justified until a 4th workflow appears.
 > mostly mechanical config migration. Roadmap updated accordingly.
 
 New: `dev/reference/workflows/model_creation.md`,
-`dev/reference/workflows/climate_projections.md`,
-`dev/reference/workflows/climate_experiment.md`. Each is short (target < 100
+`dev/records/milestones/r04/climate_projections.md`,
+`dev/records/milestones/r05/climate_experiment.md`. Each is short (target < 100
 lines) and includes:
 
 ```markdown

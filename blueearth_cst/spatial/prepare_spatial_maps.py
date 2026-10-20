@@ -1,6 +1,7 @@
+# Current guidance: dev/reference/toolbox-spatial-foundation.md
 """Snakemake entry point for Workflow 1's thematic spatial map stack.
 
-The RASTER half of ADR 0003 §8, and WF1 only: it exists to parameterise Wflow.
+The thematic raster stage is WF1-only: it exists to parameterise Wflow.
 The vector layers and the location registry it used to produce alongside
 ``spatial_maps.nc`` now come from rule ``delineate_subbasins_and_rivers``, which all
 three workflows declare — this rule consumes them, adds the LULC/LAI/soil
@@ -47,7 +48,7 @@ def run_prepare_spatial_maps(
     """Fold the thematic layers onto the seam grid, then reopen and validate.
 
     ``hydrography_fn`` is the seam intermediate rule
-    ``delineate_subbasins_and_rivers`` wrote (ADR 0003 §8a) — the grid stack that used
+    ``delineate_subbasins_and_rivers`` wrote — the grid stack that used
     to cross this boundary in memory. The three vector paths are that rule's
     declared outputs, read back for the thematic clip geometry and the report.
     """

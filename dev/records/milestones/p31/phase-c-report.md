@@ -156,7 +156,7 @@ Procedure in the mandated order:
 - Stale-layout doc sweep (`climate_experiment/`, `run_climate_`,
   `climate_historical/raw_data` over README.rst / AGENTS.md / docs/ /
   dev/reference/workflows/): README.rst and AGENTS.md were already layout-clean; the
-  single stale surface was `dev/reference/workflows/climate_experiment.md` (R5 contract
+  single stale surface was `dev/records/milestones/r05/climate_experiment.md` (R5 contract
   doc) — three layout edits (exp_dir definition + validation note, config-
   snapshot target, logs/benchmarks side-effects), pre-existing stale `src/*`
   line-number references left as-is (R6-era, not layout).

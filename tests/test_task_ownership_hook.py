@@ -82,3 +82,29 @@ def test_main_task_changes_and_feature_code_remain_allowed(repository):
     (root / "implementation.txt").write_text("Implementation\n", encoding="utf-8")
     git("add", ".")
     git("commit", "-m", "Implement on feature")
+
+
+@pytest.mark.parametrize("edit_after_merge", [False, True])
+def test_merge_imports_canonical_tasks_without_allowing_edits(
+    repository, edit_after_merge
+):
+    root, git, task = repository
+    git("switch", "-c", "feature")
+    (root / "implementation.txt").write_text("Implementation\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-m", "Implement on feature")
+    git("switch", "main")
+    task.write_text("Canonical update\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-m", "Update on main")
+    git("switch", "feature")
+    git("merge", "--no-ff", "--no-commit", "main")
+    if edit_after_merge:
+        task.write_text("Unauthorized session edit\n", encoding="utf-8")
+        git("add", ".")
+    result = git("commit", "-m", "Synchronize main", check=False)
+    assert (result.returncode != 0) == edit_after_merge
+    if edit_after_merge:
+        assert "Task documents and board state belong to main" in result.stderr
+    else:
+        assert task.read_text(encoding="utf-8") == "Canonical update\n"

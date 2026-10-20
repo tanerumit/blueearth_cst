@@ -1,3 +1,4 @@
+# Current guidance: dev/reference/wf1-model-construction.md
 """Relationship contract between our spatial foundation and wflow's staticgeoms.
 
 A built project carries two directories of GeoJSON with SIX COLLIDING
@@ -30,7 +31,7 @@ It also lives in ``dev/scripts/``, which is never part of a run.
 
 **Why a relationship rather than a rerun rule.** Temporal drift is already
 structurally impossible: ``data/spatial/`` is upstream of the model build, and
-ADR 0004 makes rule 1.09 the terminal writer of the whole model root, so a
+the model-root ordering contract makes rule 1.09 the terminal writer of the whole model root, so a
 partially-failed build cannot leave one tree ahead of the other. What is NOT
 guaranteed is that hydromt keeps deriving its ``region`` the way it does today
 -- ``GridComponent._region_data`` returns ``box(*self.bounds)``
@@ -40,7 +41,7 @@ break the containment with nothing watching. This module is the watcher.
 
 Board item ``t2608071203`` (R9-1). The authority question -- which tree answers
 which question -- is documented in
-``dev/reference/contracts/hydrological-model-seam.md``.
+``dev/reference/toolbox-hydrological-model-interface.md``.
 
 Design invariants, mirroring ``interchange_contracts``:
 

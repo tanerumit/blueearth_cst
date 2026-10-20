@@ -8,7 +8,7 @@ drifted out of step with the configs that are exercised on every run.
 **These are unmaintained examples, not supported entry points.** They are kept
 because an ISIMIP3 or CMIP5 run is a reasonable thing to want and rewriting one
 of these from scratch is harder than repairing it. Expect to reconcile a config
-here against `../project_config.template.yml` before using it — the R01 sectioned
+here against `../example-basin/project_config.yml` before using it — the R01 sectioned
 schema has moved since these were last run, and a stale key fails at parse time
 rather than being ignored.
 
@@ -34,7 +34,7 @@ the current schema, which is why the reconciliation above is on you.
 
 ## Live configs
 
-`../project_config.template.yml` is the clean starting point;
+`../example-basin/project_config.yml` is the clean starting point;
 `../../../test_case/project_config_baseline.yml` is the tracked baseline seed and
 the worked example. Neither is a single-workflow config: both carry a `workflows:`
 section

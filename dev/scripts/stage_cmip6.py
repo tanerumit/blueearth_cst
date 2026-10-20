@@ -732,7 +732,7 @@ def _unreadable(error):
     latitude axis, which hydromt's `.raster` accessor refuses with
     `ValueError: The 'raster' accessor only applies to regular grids` -- is now
     handled inside `fetch_raw_slice`, which re-reads unclipped and applies the
-    bbox itself (`dev/reference/workflows/wf2-cmip6-store-readability.md`
+    bbox itself (`dev/reference/wf2-cmip6-source-readability.md`
     section 1). That was 27 of 67 models, including CanESM5 and every
     EC-Earth3 variant.
 
@@ -765,7 +765,7 @@ def _ambiguous_versions(error):
     Reported separately because the action differs from every other bucket: the
     source EXISTS and is readable, and what is missing is a decision about which
     published version the assessment uses. See
-    `dev/reference/workflows/wf2-cmip6-store-readability.md` section 2.
+    `dev/reference/wf2-cmip6-source-readability.md` section 2.
     """
     return AMBIGUOUS_VERSION_PHRASE in error
 

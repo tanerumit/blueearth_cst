@@ -1,7 +1,7 @@
 # blueearth_cst/.agent-system/agent-manifest.yml
 #
 # TRACKED project activation source. Record the rationale for changes in
-# dev/reference/agent-activation.md.
+# dev/reference/dev-agent-activation.md.
 roles:
   - cst-architect
   - cst-case-manager
@@ -13,7 +13,11 @@ roles:
   - dataviz-designer
   - python-engineer
   - git-steward
-  - technical-writer        # README.rst, install/user guides, doc-drift checks
+  - technical-writer        # user journeys, guides, and documentation integration
+  - academic-writer         # scientific method pages and substantial technical notes
+  - academic-researcher     # bounded scientific evidence gaps before drafting
+  - academic-reviewer       # manuscript-style review of substantial technical notes
+  - api-documenter          # CLI, configuration, and output-contract reference
   - r-developer             # 2026-09-06: four R workflow scripts under
                             # blueearth_cst/weathergen/ and three under dev/scripts/
                             # had no active specialist. python-engineer excludes R,

@@ -29,7 +29,7 @@ import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
-REGISTRY = REPO / "dev" / "reference" / "sealed-records.yml"
+REGISTRY = REPO / "dev" / "records" / "sealed-records.yml"
 
 #: Lines of the document head the banner must appear within. A seal banner
 #: belongs at the top: the failure it prevents is a reader (or a grep-driven

@@ -74,4 +74,4 @@ Missing or stale routine selection names the exact generation command; simulatio
 never rebuilds a collection or falls back to a different one. An explicit
 `scenario_collection: {manifest_path: ...}` validates retained preparation inputs
 without their original sources. See [retained handoffs](../../../../docs/site/toolbox-reference/retained-handoffs.qmd)
-and [ADR 0009](../../decisions/0009-split-scenario-generation-and-system-simulation.md).
+and [ADR 0009](../../decision-history/0009-split-scenario-generation-and-system-simulation.md).

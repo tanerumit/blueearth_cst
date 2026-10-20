@@ -307,7 +307,7 @@ a swap is not over-constrained by a property no consumer reads (R1).
 **Placement: `dev/`, not `docs/`.** The audience is future *swappers* and
 dev-process (a model/generator author, the R6 model-flexibility work), not the
 tool's end user — squarely the `dev/` side of the AGENTS.md `dev/`-vs-`docs/`
-boundary. Precedent: the R5 contract doc `dev/reference/workflows/climate_experiment.md`
+boundary. Precedent: the R5 contract doc `dev/records/milestones/r05/climate_experiment.md`
 records current-behavior contracts under `dev/reference/workflows/`.
 
 **One file per seam** (two docs — matching the `dev/reference/workflows/*.md`
@@ -966,7 +966,7 @@ statement, referenced, never re-quoted):
   `staticmaps.nc`; the base vs per-cst `wflow_sbm.toml` diff (the 8-field
   rewrite surface + the `cold_start__flag=true` warm-state finding); the
   weathergen R scripts (read-only); the rule-3.08 catalog YAML; the stress-test /
-  output / Qstats / basin CSVs; and `dev/reference/workflows/climate_experiment.md` (contract-doc
+  output / Qstats / basin CSVs; and `dev/records/milestones/r05/climate_experiment.md` (contract-doc
   precedent). Key grounded corrections to the intake's hints: (1) **warm-state is
   an unconsumed named sink, not a chaining invariant** (cold_start stays true; no
   `instates` input on rule 3.10) — HM-6; (2) **`output.csv` column identity is

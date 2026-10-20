@@ -1160,6 +1160,9 @@ class _Tee:
         self._closed = False
 
     def write(self, text, _redraw=False):
+        # An empty replay from captured_output is not console activity.
+        if not text:
+            return 0
         if self._on_activity is not None:
             self._on_activity()
         out = _relativize_paths(
@@ -1251,7 +1254,8 @@ class _Tee:
 
     def flush(self):
         # Flush the sinks but NOT ``_pending``: emitting a mid-progress fragment
-        # would re-clutter the log with every partial redraw.        self._live.flush()
+        # would re-clutter the log with every partial redraw.
+        self._live.flush()
         # Same reasoning as ``write``: ``logging.shutdown`` flushes every handler
         # at exit, so a handler left pointing here must not raise.
         if not self._closed:

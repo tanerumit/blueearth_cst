@@ -1291,6 +1291,44 @@ class _LiveConsole:
         return self._buffer.getvalue()
 
 
+@pytest.mark.parametrize("closed", [False, True])
+def test_tee_flush_publishes_live_output_without_draining_partial_log(closed):
+    class BufferedConsole(io.StringIO):
+        visible = ""
+
+        def flush(self):
+            self.visible = self.getvalue()
+
+    live = BufferedConsole()
+    logfile = io.StringIO()
+    tee = su._Tee(live, logfile)
+    if closed:
+        tee.close()
+        logfile.close()
+    tee.write("partial")
+    assert live.visible == ""
+    tee.flush()
+    assert live.visible == "partial"
+    if not closed:
+        assert logfile.getvalue() == ""
+
+
+def test_empty_tee_replays_do_not_postpone_heartbeat(monkeypatch):
+    clock = [0.0]
+    monkeypatch.setattr(log_core.time, "monotonic", lambda: clock[0])
+    monkeypatch.delenv("CST_HEARTBEAT_SECS", raising=False)
+    console = io.StringIO()
+    heartbeat = _Heartbeat("plot_climate_diagnostics", console, interval=15)
+    tee = su._Tee(console, io.StringIO(), on_activity=heartbeat.touch)
+    for seconds in (15.0, 30.0, 45.0):
+        clock[0] = seconds
+        # Successful captured_output() replays an empty string between figures.
+        assert tee.write("") == 0
+        heartbeat._tick(seconds)
+    assert console.getvalue().count("elapsed") == 3
+    assert "0:00:45 elapsed" in console.getvalue()
+
+
 def _drive_a_bar(live, logfile):
     """Exactly what ``shared.progress`` emits: frames, then a closing newline."""
     tee = su._Tee(live, logfile)

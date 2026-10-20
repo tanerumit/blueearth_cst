@@ -77,6 +77,8 @@ remove that setting when diagnosing why a job reran.
 
 ## Conventions
 
+- Keep detailed guidance in one authoritative document. Elsewhere, use a pointer and a short explanation
+  of when to read it; update the owning document instead of repeating its rules.
 - Follow `dev/reference/naming.md`; existing names are grandfathered. Contract renames need a
   migration note. Update every live old path/key/command reference, including docs and comments.
   Only records with a `SUPERSEDED` banner and entry in `dev/reference/sealed-records.yml` are frozen;
@@ -181,6 +183,8 @@ workflow execution, state affected consumers and omitted workflows; rapid must n
 ## References
 
 - `README.md`: workflow execution and pipeline; start here.
+- `dev/reference/development-workflow.md`: before board coordination, worktree handoff, or task closure.
+- `dev/reference/record-lifecycle.md`: before promoting, shortening, superseding, or deleting dev records.
 - `dev/reference/plot-style.md`: before scientific plots/review pages; preserve defaults/exceptions and
   record newly approved styles. `dev/reference/versioning.md`: before release/version decisions.
 - `docs/references/cst-toolbox-technical-note-2025.md`: methodology; code/current references win on stale

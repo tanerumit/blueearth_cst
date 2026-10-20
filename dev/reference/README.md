@@ -9,6 +9,8 @@ This is the **stays-true** tier. Historical evidence lives in `../records/milest
 
 | Path | Holds |
 |---|---|
+| [development-workflow.md](development-workflow.md) | Shared task, board, worktree, and handoff procedures |
+| [record-lifecycle.md](record-lifecycle.md) | Promotion, retention, supersession, and closure-ledger rules |
 | `roadmap.md` | The phase narrative: what each milestone set out to do and how it landed. Moved from the `dev/` root on 2026-10-05 |
 | `naming.md` | Prescriptive style guide for identifiers and files, with `MUST` / `SHOULD` / `MAY` normative force |
 | `documentation-guidelines.md` | Audience, placement, accuracy, and review rules for user-facing documentation |

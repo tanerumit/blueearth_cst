@@ -48,7 +48,8 @@ both legs, so an import-time error fails the suite.
 Open `.tmp/navigation/main-dev.lnk` to view the board; edit through `todoboard.py` or main's own path.
 Navigation preview makes no writes. Apply sparse exclusion with `-Apply -ExcludeSnapshots -Worktree
 session-N`; selected roots are preflighted before writing, failures are reported while valid roots
-continue, and stale shortcuts are retained. See [coordination](../README.md#worktree-coordination)
+continue, and stale shortcuts are retained. See
+[coordination](../reference/development-workflow.md#worktree-coordination)
 for ownership and safe legacy junction removal with non-recursive `cmd /c rmdir`, never `git clean`.
 
 ## Data staging and catalogs

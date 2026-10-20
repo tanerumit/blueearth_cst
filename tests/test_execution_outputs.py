@@ -24,7 +24,7 @@ def _start(root, **kwargs):
         entry_point="test",
         command=["test"],
         targets=["all"],
-        mode="execute",
+        mode=kwargs.pop("mode", "execute"),
         contract_mode="new_schema",
         **kwargs,
     )
@@ -115,11 +115,14 @@ def test_managed_children_keep_live_formatting_and_plain_logs(
 def test_retry_directories_and_child_parts_are_isolated(tmp_path, monkeypatch):
     monkeypatch.setattr(invocation_history, "_now", lambda: "2026-10-19T12:00:00Z")
     first, parent = _start(tmp_path, workflow=None)
-    assert parent["execution_directory"].startswith("logs/20261019T120000Z-")
+    assert parent["execution_directory"] == "logs/2026-10-19_12-00-00Z__workflows"
     child_path, child = _start(tmp_path, parent_invocation_id=parent["invocation_id"])
     second, retry = _start(tmp_path, workflow=None)
     assert child["execution_directory"] == parent["execution_directory"]
     assert retry["execution_directory"] != parent["execution_directory"]
+    assert retry["execution_directory"] == (
+        parent["execution_directory"] + f"__{retry['invocation_id'][:12]}"
+    )
     for key, value in outputs.environment(child_path, child).items():
         monkeypatch.setenv(key, value)
     paths = outputs.workflow_paths(
@@ -131,6 +134,43 @@ def test_retry_directories_and_child_parts_are_isolated(tmp_path, monkeypatch):
     assert "_parts" in paths.benchmark_parts
     assert paths.gather_targets == {}
     assert first != child_path != second
+
+
+@pytest.mark.parametrize(
+    ("workflow", "selected", "mode", "label"),
+    [
+        ("analyze_climate", [], "dry_run", "analyze-climate__dry-run"),
+        ("simulate_system", [], "execute", "simulate-system"),
+        (None, list(outputs.WORKFLOWS), "execute", "all-workflows"),
+        (None, list(outputs.WORKFLOWS), "dry_run", "all-workflows__dry-run"),
+        (None, ["build_model"], "execute", "build-model"),
+        (None, ["simulate_system", "build_model"], "execute", "wf1-wf4"),
+    ],
+)
+def test_directory_names_describe_selected_scope(
+    tmp_path, monkeypatch, workflow, selected, mode, label
+):
+    monkeypatch.setattr(invocation_history, "_now", lambda: "2026-10-20T11:21:55.452Z")
+    path, record = _start(
+        tmp_path, workflow=workflow, requested_workflows=selected, mode=mode
+    )
+    assert record["execution_directory"] == f"logs/2026-10-20_11-21-55Z__{label}"
+    assert (tmp_path / record["execution_directory"] / "summary.md").is_file()
+    assert (
+        json.loads(path.read_text())["execution_directory"]
+        == record["execution_directory"]
+    )
+    invocation_history.finish(path, record, exit_code=0)
+
+
+def test_children_keep_recorded_legacy_directory(tmp_path):
+    path, parent = _start(tmp_path, workflow=None)
+    original = tmp_path / parent["execution_directory"]
+    parent["execution_directory"] = "logs/20261019T120000Z-abcdef012345"
+    original.rename(tmp_path / parent["execution_directory"])
+    invocation_history.update(path, parent)
+    _, child = _start(tmp_path, parent_invocation_id=parent["invocation_id"])
+    assert child["execution_directory"] == parent["execution_directory"]
 
 
 @pytest.mark.parametrize("nested", [False, True])

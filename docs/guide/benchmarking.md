@@ -3,7 +3,7 @@ title: "Run summaries and WF4 benchmarking"
 ---
 
 Every supported workflow launcher writes a readable summary at
-`<project>/logs/<timestamp>-<invocation-id>/summary.md`. An all-workflow run has one parent summary
+`<project>/logs/<UTC timestamp>__<workflow scope>/summary.md`. An all-workflow run has one parent summary
 covering its explicitly linked children; a standalone workflow has its own summary.
 Different attempts keep separate folders. The runner's closing output links to the report.
 See [execution logs and benchmarks](running.md#execution-logs-and-benchmarks) for the folder layout.

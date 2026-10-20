@@ -216,7 +216,7 @@ Every supported launcher attempt gets a new directory, including dry runs and st
 when the project root is known:
 
 ```text
-logs/<UTC timestamp>-<short invocation ID>/
+logs/2026-10-20_11-21-55Z__all-workflows/
   summary.md
   console.log
   wf0.log ... wf4.log
@@ -225,6 +225,14 @@ logs/<UTC timestamp>-<short invocation ID>/
   wf4-indicators.log
   _parts/
 ```
+
+Folder names use `YYYY-MM-DD_HH-MM-SSZ__<scope>`, with `Z` denoting UTC.
+The scope describes the selected workflows: `all-workflows`, a single name such as
+`analyze-climate`, or ordered workflow IDs such as `wf1-wf4` for a subset.
+Dry runs append `__dry-run`. When no workflows are selected or configuration fails before
+selection is known, the scope is `workflows`. A same-second name collision appends a short invocation ID.
+Outcomes remain in the summary so paths stay stable. New attempts use this naming scheme;
+existing folders and their recorded paths remain unchanged.
 
 Open `summary.md` first. It links the canonical invocation records, workflow logs, benchmarks and
 resource diagnostics. `console.log` retains launcher and child output in observed order, without

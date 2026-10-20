@@ -63,7 +63,10 @@ def test_unobserved_hard_termination_stays_running(tmp_path):
     assert "unfinished (last observed running)" in summary_path(path).read_text()
 
 
-def test_parent_capture_failure_records_no_fabricated_child(tmp_path, monkeypatch):
+@pytest.mark.parametrize("explicit_root", [False, True])
+def test_parent_capture_failure_records_no_fabricated_child(
+    tmp_path, monkeypatch, explicit_root
+):
     config = tmp_path / "project_config_test.yml"
     root = tmp_path / "project"
     config.write_text(
@@ -80,12 +83,15 @@ def test_parent_capture_failure_records_no_fabricated_child(tmp_path, monkeypatc
 
     monkeypatch.setattr(workflow_archive_launch, "prepare_workflow", refuse)
     with pytest.raises(ValueError, match="pre-parse capture failed"):
-        run_workflows.run(str(config), cores=1, extra=[])
+        run_workflows.run(
+            str(config), cores=1, extra=[], project_dir=root if explicit_root else None
+        )
     (parent,) = _records(root)
     assert parent["workflow"] is None
     assert parent["status"] == "failed"
     assert parent["children"] == []
     assert parent["launch_failures"][0]["workflow"] == "analyze_climate"
+    assert parent["execution_directory"].endswith("__analyze-climate")
     report = next((root / "logs").glob("*/summary.md")).read_text()
     assert "launch failed (no child record)" in report
     assert "Stop boundary:" in report
@@ -101,6 +107,7 @@ def test_explicit_root_records_config_failure_before_child(tmp_path):
     assert parent["status"] == "failed"
     assert parent["children"] == []
     assert parent["error"]["type"] == "ConfigError"
+    assert parent["execution_directory"].endswith("__workflows")
     assert (root / parent["execution_directory"] / "summary.md").is_file()
 
 
@@ -153,7 +160,10 @@ def reporting_run(tmp_path, monkeypatch):
     monkeypatch.setattr(
         workflow_archive_launch,
         "prepare_workflow",
-        lambda _name, path, _root, **kwargs: (path, path),
+        lambda _name, path, _root, **kwargs: (
+            path,
+            _root / "config/_engine/execution-configs/launch-test.json",
+        ),
     )
     monkeypatch.setattr(run_workflows, "_bind_workflow_archive", lambda *args: None)
     monkeypatch.setattr(

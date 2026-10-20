@@ -1101,29 +1101,41 @@ def run(
 ) -> int:
     """Hold project ownership and record explicit-root validation failures."""
     history_pair = None
-    if project_dir is not None:
-        supplied_root = Path(project_dir).resolve()
-        history_pair = invocation_history.start(
-            supplied_root,
-            workflow=None,
-            entry_point="scripts/run_workflows.py",
-            command=sanitize_argv(
-                [
-                    "run_workflows",
-                    "--config",
-                    config_path,
-                    "--cores",
-                    str(cores),
-                    *extra,
-                ]
-            ),
-            targets=["all"],
-            mode="dry_run" if "--dry-run" in extra or "-n" in extra else "execute",
-            contract_mode="new_schema",
-        )
     try:
-        cfg = _read_config(config_path)
-        flags = _enabled_flags(cfg, config_path)
+        flags = None
+        try:
+            cfg = _read_config(config_path)
+            flags = _enabled_flags(cfg, config_path)
+        finally:
+            # Name the attempt from its selection when available, while still
+            # retaining explicit-root failures that cannot read configuration.
+            if project_dir is not None:
+                supplied_root = Path(project_dir).resolve()
+                history_pair = invocation_history.start(
+                    supplied_root,
+                    workflow=None,
+                    entry_point="scripts/run_workflows.py",
+                    command=sanitize_argv(
+                        [
+                            "run_workflows",
+                            "--config",
+                            config_path,
+                            "--cores",
+                            str(cores),
+                            *extra,
+                        ]
+                    ),
+                    targets=["all"],
+                    mode="dry_run"
+                    if "--dry-run" in extra or "-n" in extra
+                    else "execute",
+                    contract_mode="new_schema",
+                    requested_workflows=(
+                        [name for name in WORKFLOW_ORDER if flags[name]]
+                        if flags is not None
+                        else None
+                    ),
+                )
         resolved_root = _project_dir(cfg, config_path)
         if project_dir is not None and resolved_root != supplied_root:
             raise ConfigError("--project-dir differs from composed project root")

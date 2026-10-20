@@ -283,7 +283,8 @@ See [experiment selection and recovery](docs/guide/running.md#select-resume-or-c
 ### Logs and DAGs
 
 Each launcher attempt keeps its summary, console transcript, workflow logs and
-benchmark reports together under `logs/<timestamp>-<invocation-id>/`.
+benchmark reports together under `logs/<UTC timestamp>__<workflow scope>/`
+(for example, `2026-10-20_11-21-55Z__all-workflows`; dry runs append `__dry-run`).
 Retries receive a new folder; an all-workflow run shares one folder with its children.
 Structured invocation records remain under `config/_engine/invocations/`.
 See [execution logs and benchmarks](docs/guide/running.md#execution-logs-and-benchmarks)

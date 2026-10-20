@@ -48,7 +48,7 @@ use a directory outside the toolbox checkout.
       group_metadata.csv        group_id,st_id,is_reference
       <token>_run_indicators.csv    indicator,location,run_id,value
       <token>_group_indicators.csv  indicator,location,group_id,value
-  logs/<UTC timestamp>-<short invocation ID>/
+  logs/<UTC timestamp>__<workflow scope>/
     summary.md                  execution summary and links
     console.log                 chronological launcher/child transcript
     wfN.log                     detailed messages grouped by rule/member
@@ -125,7 +125,7 @@ in place; the smaller extent applies when climate inputs are regenerated.
 
 ## Check whether a run finished
 
-Open `logs/<timestamp>-<invocation-id>/summary.md`, linked by the runner's closing output.
+Open `logs/<UTC timestamp>__<workflow scope>/summary.md`, linked by the runner's closing output.
 The same execution folder holds `console.log`, `wf0.log`–`wf4.log` for invoked workflows,
 and their `wfN-benchmarks.md` reports with raw `.tsv` measurements.
 The summary reads the structured parent and child invocation records and lists elapsed time,

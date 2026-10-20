@@ -36,6 +36,32 @@ WORKFLOWS = {
 }
 
 
+def _directory_name(record: dict[str, Any]) -> str:
+    """Describe the requested scope, independently of the eventual outcome."""
+    stamp = (
+        record["started_at_utc"]
+        .split(".")[0]
+        .removesuffix("Z")
+        .replace("T", "_")
+        .replace(":", "-")
+        + "Z"
+    )
+    selected = (
+        [record["workflow"]]
+        if record.get("workflow")
+        else record.get("requested_workflows", [])
+    )
+    if set(selected) == set(WORKFLOWS):
+        scope = "all-workflows"
+    elif len(selected) == 1 and selected[0] in WORKFLOWS:
+        scope = selected[0].replace("_", "-")
+    else:
+        scope = "-".join(WORKFLOWS[name] for name in WORKFLOWS if name in selected)
+        scope = scope or "workflows"
+    mode = "__dry-run" if record["mode"] == "dry_run" else ""
+    return f"{stamp}__{scope}{mode}"
+
+
 def bind_directory(path: Path, record: dict[str, Any]) -> None:
     """Allocate a root attempt directory or inherit its explicit parent's."""
     root = path.parents[3]
@@ -49,16 +75,12 @@ def bind_directory(path: Path, record: dict[str, Any]) -> None:
             relative = f"logs/{parent}"
             (root / relative).mkdir(parents=True, exist_ok=True)
     else:
-        stamp = (
-            record["started_at_utc"]
-            .split(".")[0]
-            .removesuffix("Z")
-            .replace("-", "")
-            .replace(":", "")
-            + "Z"
-        )
-        relative = f"logs/{stamp}-{record['invocation_id'][:12]}"
-        (root / relative).mkdir(parents=True, exist_ok=False)
+        relative = f"logs/{_directory_name(record)}"
+        try:
+            (root / relative).mkdir(parents=True, exist_ok=False)
+        except FileExistsError:
+            relative += f"__{record['invocation_id'][:12]}"
+            (root / relative).mkdir(parents=True, exist_ok=False)
     directory = (root / relative).resolve()
     if not directory.is_relative_to((root / "logs").resolve()):
         raise ValueError("execution directory must be beneath project logs")

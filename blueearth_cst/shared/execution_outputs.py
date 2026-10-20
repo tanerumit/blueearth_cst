@@ -108,6 +108,18 @@ class WorkflowPaths:
     benchmark: str
     log_parts: str
     benchmark_parts: str
+    managed: bool = False
+
+    @property
+    def gather_targets(self) -> dict[str, str]:
+        """Require gathered files only when no launcher will finalize diagnostics.
+
+        Managed diagnostics belong to a fresh directory on every invocation.
+        Requiring them in the DAG would schedule gather jobs on an unchanged run.
+        """
+        if self.managed:
+            return {}
+        return {"workflow_log": self.log, "benchmarks": self.benchmark}
 
 
 def workflow_paths(
@@ -137,6 +149,7 @@ def workflow_paths(
         (base / f"{workflow}-benchmarks.md").as_posix(),
         (parts / "logs").as_posix(),
         (parts / "benchmarks").as_posix(),
+        managed=True,
     )
 
 
@@ -261,11 +274,12 @@ def finalize(path: Path, record: dict[str, Any]) -> None:
 
     directory = path.parents[3] / record["execution_directory"]
     parts = directory / "_parts" / f"{workflow}-{record['invocation_id']}"
+    remove_parts = record["status"] == "succeeded"
     logs = parts / "logs"
     output = directory / f"{workflow}.log"
     if logs.is_dir():
         labels = [item.stem if item.is_file() else item.name for item in logs.iterdir()]
-        merge_logs(sorted(labels), str(output), str(logs), remove_parts=False)
+        merge_logs(sorted(labels), str(output), str(logs), remove_parts=remove_parts)
     report = directory / f"{workflow}-benchmarks.md"
     benchmark_parts = parts / "benchmarks"
     if report.with_suffix(".tsv").is_file():
@@ -282,7 +296,7 @@ def finalize(path: Path, record: dict[str, Any]) -> None:
             workflow[-1],
             str(report),
             invocation_path=path,
-            remove_parts=False,
+            remove_parts=remove_parts,
         )
     artifacts = record.setdefault("artifacts", [])
     for candidate in (

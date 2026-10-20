@@ -896,8 +896,7 @@ WF2_TARGETS = {
     # alongside four rules writing logs/2.NN_*.log directly -- five files a
     # reader had to open in the right order to follow one run). Every rule
     # now logs into logs/_parts/ and rule 2.08 merges the lot.
-    "workflow_log": WORKFLOW_LOG_PATH,
-    "benchmarks": BENCHMARK_OUTPUT_PATH,
+    **_paths.gather_targets,
 }
 
 rule all:

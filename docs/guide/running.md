@@ -211,6 +211,10 @@ terminal colours or repeated progress redraws. Workflow logs retain the detailed
 Only collected outputs appear: dry runs and reused steps need not produce rule logs or benchmarks.
 Missing measurements are not zero costs, and unknown reuse remains labelled unknown.
 
+Managed launches merge rule logs and benchmarks when the invocation finishes. These diagnostic files
+are not required DAG targets, so a fresh execution folder does not schedule gather rules when all
+scientific outputs are up to date. Direct Snakemake runs retain their gather targets.
+
 Benchmark Markdown starts with the recorded workflow elapsed time and a table grouped by rule:
 job/sample counts, summed job time, median, slowest job and peak individual-job RAM. Expand the
 individual-job section for CPU and I/O measurements; the adjacent TSV retains precise samples.

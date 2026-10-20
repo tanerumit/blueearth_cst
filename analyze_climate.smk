@@ -348,8 +348,7 @@ WF0_TERMINALS.append(SPATIAL_UNITS.outputs["basins"])
 WF0_TARGETS = [
     *WF0_TERMINALS,
     *([RUN_RECORD] if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else []),
-    WORKFLOW_LOG_PATH,
-    BENCHMARK_OUTPUT_PATH,
+    *_paths.gather_targets.values(),
 ]
 
 # all — target aggregator: the canonical climate figure set per source

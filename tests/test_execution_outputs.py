@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -128,6 +129,7 @@ def test_retry_directories_and_child_parts_are_isolated(tmp_path, monkeypatch):
     assert Path(paths.log).name == "wf1.log"
     assert child["invocation_id"] in paths.log_parts
     assert "_parts" in paths.benchmark_parts
+    assert paths.gather_targets == {}
     assert first != child_path != second
 
 
@@ -187,7 +189,8 @@ def test_transcript_streams_child_stdout_stderr_and_keeps_only_final_redraw(
     assert sys.stdout is not None
 
 
-def test_failure_merges_only_owned_parts_and_preserves_them(tmp_path):
+@pytest.mark.parametrize("exit_code", [0, 7])
+def test_finalizer_merges_only_owned_parts_and_retains_failures(tmp_path, exit_code):
     path, record = _start(tmp_path)
     directory = tmp_path / record["execution_directory"]
     parts = directory / "_parts" / f"wf1-{record['invocation_id']}"
@@ -200,12 +203,15 @@ def test_failure_merges_only_owned_parts_and_preserves_them(tmp_path):
     stale = tmp_path / "logs/_parts/1.01_delineate_region.log"
     stale.parent.mkdir(parents=True)
     stale.write_text("previous attempt", encoding="utf-8")
-    invocation_history.finish(path, record, exit_code=7)
+    invocation_history.finish(path, record, exit_code=exit_code)
     assert "failure detail" in (directory / "wf1.log").read_text()
     assert "previous attempt" not in (directory / "wf1.log").read_text()
-    assert log.is_file() and benchmark.is_file() and stale.is_file()
+    assert log.is_file() == (exit_code != 0)
+    assert benchmark.is_file() == (exit_code != 0)
+    assert stale.is_file()
     assert (directory / "wf1-benchmarks.tsv").is_file()
-    assert "failed" in (directory / "wf1-benchmarks.md").read_text()
+    status = "failed" if exit_code else "succeeded"
+    assert status in (directory / "wf1-benchmarks.md").read_text()
     assert json.loads(path.read_text())["artifacts"]
 
 
@@ -217,8 +223,68 @@ def test_unowned_parse_keeps_legacy_paths_and_rejects_foreign_execution(
         tmp_path, "wf0", "old.log", "old.md", "parts", "benchparts"
     )
     assert paths.log == f"{tmp_path}/logs/old.log"
+    assert paths.gather_targets == {
+        "workflow_log": paths.log,
+        "benchmarks": paths.benchmark,
+    }
     monkeypatch.setenv(outputs.DIRECTORY_ENV, str(tmp_path.parent / "other/logs/run"))
     with pytest.raises(ValueError, match="another project"):
         outputs.workflow_paths(
             tmp_path, "wf0", "old.log", "old.md", "parts", "benchparts"
         )
+
+
+@pytest.mark.process_isolation
+def test_new_execution_does_not_schedule_gathers_for_existing_outputs(tmp_path):
+    """Fresh diagnostics must not turn an unchanged scientific DAG into work."""
+    repo = Path(__file__).resolve().parents[1]
+    snakefile = tmp_path / "Snakefile"
+    snakefile.write_text(
+        "from pathlib import Path\n"
+        f"import sys; sys.path.insert(0, {str(repo)!r})\n"
+        "from blueearth_cst.shared.execution_outputs import workflow_paths\n"
+        "paths = workflow_paths(Path.cwd(), 'wf0', 'wf0.log', 'wf0.md', 'logs', 'benchmarks')\n"
+        "rule all:\n"
+        "    input: 'result.txt', *paths.gather_targets.values()\n"
+        "rule calculate:\n"
+        "    output: 'result.txt'\n"
+        "    log: paths.log_parts + '/0.01_calculate.log'\n"
+        "    benchmark: paths.benchmark_parts + '/0.01_calculate.tsv'\n"
+        "    run:\n"
+        "        Path(output[0]).write_text('result')\n"
+        "        Path(log[0]).write_text('calculated\\n')\n"
+        "rule gather_logs:\n"
+        "    input: 'result.txt'\n"
+        "    output: paths.log\n"
+        "    run: raise AssertionError('launcher owns log gathering')\n"
+        "rule gather_benchmarks:\n"
+        "    input: 'result.txt'\n"
+        "    output: paths.benchmark\n"
+        "    run: raise AssertionError('launcher owns benchmark gathering')\n",
+        encoding="utf-8",
+    )
+    first_diagnostics = None
+    for attempt in range(2):
+        path, record = _start(tmp_path, workflow="analyze_climate")
+        result = subprocess.run(
+            ["snakemake", "--snakefile", str(snakefile), "--cores", "1"],
+            cwd=tmp_path,
+            env={**os.environ, **outputs.environment(path, record)},
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        invocation_history.finish(path, record, exit_code=result.returncode)
+        directory = tmp_path / record["execution_directory"]
+        if attempt == 0:
+            first_diagnostics = directory
+            assert "calculated" in (directory / "wf0.log").read_text()
+            assert (directory / "wf0-benchmarks.tsv").is_file()
+            modified = (tmp_path / "result.txt").stat().st_mtime_ns
+        else:
+            assert "Nothing to be done" in result.stdout + result.stderr
+            assert (tmp_path / "result.txt").stat().st_mtime_ns == modified
+            assert directory != first_diagnostics
+            assert not (directory / "wf0.log").exists()
+            assert not (directory / "wf0-benchmarks.tsv").exists()

@@ -132,10 +132,8 @@ rule all:
         f"{engine_dir}/response_inventory.json",
         lambda wc: _indicator_plan_paths(wc),
         lambda wc: _selected_indicator_outputs(wc),
-        # The gathers were declared but requested by nothing, so no WF4 run
-        # merged its log or benchmark parts.
-        WORKFLOW_LOG_PATH,
-        BENCHMARK_OUTPUT_PATH,
+        # Managed invocations merge diagnostics in the launcher's finalizer.
+        *_paths.gather_targets.values(),
 
 if not _simulation_complete:
     # 4.01  write_model_fingerprint

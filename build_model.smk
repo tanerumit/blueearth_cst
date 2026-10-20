@@ -549,12 +549,11 @@ WF1_TERMINALS = [
 #
 # Hoisted into a list so `message:` can print one target per line without
 # restating them. Snakemake flattens a list argument, so `input: WF1_TARGETS`
-# declares the terminals, optional launcher record and two gathered artifacts.
+# declares terminals, the optional launcher record and unowned diagnostic targets.
 WF1_TARGETS = [
     *WF1_TERMINALS,
     *([RUN_RECORD] if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else []),
-    WORKFLOW_LOG_PATH,
-    BENCHMARK_OUTPUT_PATH,
+    *_paths.gather_targets.values(),
 ]
 
 rule all:

@@ -94,6 +94,11 @@ only selected calculation packages and their imported dependencies, alongside sh
 Adding or editing an unrelated set does not invalidate existing selections. Changes to shared code or
 reused formulas still invalidate dependent selections. Legacy statistic adaptation uses fixed owners so a
 new package cannot replace an existing calculation through discovery order.
+WF4 stops source traversal at upstream records, configuration resolution and logging helpers.
+Their resolved simulation, response, selection and water-year values remain checked identity inputs.
+The inventory still includes native response interpretation, grouping, shared calculations and the
+formatter that determines stored value precision. Plot/export presentation and upstream generation or
+simulation implementation do not invalidate calculations over unchanged retained responses.
 Compatibility imports remain in `experiment.indicator_registry` and `experiment.gev_lmoments`.
 `experiment.response_series` remains byte-identical for retained-response reader identity; its existing
 instances satisfy this module's structural input contract.

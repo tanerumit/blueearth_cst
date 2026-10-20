@@ -362,7 +362,11 @@ def _calculation_sets(declarations) -> tuple[str, ...]:
 
 
 def _indicator_code_inventory(set_ids):
-    """Observe shared execution code and the selected dynamic set closure."""
+    """Observe calculation dependencies; resolved upstream inputs are sealed.
+
+    Snakemake owns scheduling. This inventory guards immutable calculation reuse,
+    not invocation logging, configuration capture or upstream implementation.
+    """
     repo = Path(__file__).resolve().parents[2]
     indicator_root = repo / "blueearth_cst/indicators"
     sources = ["blueearth_cst/experiment/indicator_plan.py"]
@@ -371,10 +375,23 @@ def _indicator_code_inventory(set_ids):
     )
     # Independent checkers have fresh attribution in verification receipts.
     excluded = [
+        # Readers still validate retained simulation/collection identities and
+        # bytes. Their producers cannot change a calculation over those inputs.
+        "blueearth_cst/experiment/simulation_record.py",
+        "blueearth_cst/shared/workflow_config_snapshot.py",
+        # Selection, experiment and water-year configuration enter the request
+        # as resolved values. Changes to those values still change its identity.
+        "blueearth_cst/experiment/reservation_context.py",
+        "blueearth_cst/shared/config_composition.py",
+        # Used for logging, naming and the resolved water-year anchor above.
+        # Reducers receive the anchor explicitly; no default is consulted.
+        "blueearth_cst/shared/snake_utils.py",
+    ]
+    excluded.extend(
         path.relative_to(repo).as_posix()
         for path in indicator_root.rglob("*.py")
         if path.name in {"checks.py", "checking.py"}
-    ]
+    )
     return repository_code_inventory(repo, sources, excluded=excluded)
 
 

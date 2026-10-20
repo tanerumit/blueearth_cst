@@ -230,6 +230,31 @@ def test_request_identity_tracks_only_contributing_sets(tmp_path, monkeypatch, s
         )
 
     before = request()
+    for relative in (
+        "plotting/export.py",
+        "shared/snake_utils.py",
+        "shared/config_composition.py",
+        "shared/workflow_config_snapshot.py",
+        "experiment/reservation_context.py",
+        "experiment/generation_plan.py",
+        "experiment/simulator_adapter.py",
+        "experiment/simulation_record.py",
+    ):
+        unrelated = tmp_path / "blueearth_cst" / relative
+        unrelated.write_bytes(unrelated.read_bytes() + b"\n# unrelated edit\n")
+        assert request() == before, relative
+
+    for relative in (
+        "experiment/indicator_groups.py",
+        "experiment/wflow_response_reader.py",
+        "experiment/export_wflow_results.py",
+    ):
+        scientific = tmp_path / "blueearth_cst" / relative
+        original = scientific.read_bytes()
+        scientific.write_bytes(original + b"\n# contributing edit\n")
+        assert request() != before, relative
+        scientific.write_bytes(original)
+
     root = tmp_path / "blueearth_cst/indicators"
     new_set = root / "sets/new_unrelated_set"
     new_set.mkdir()
@@ -303,7 +328,11 @@ def test_the_fixture_is_a_ready_v2_experiment_wherever_it_is_copied(experiment):
     assert [item["run_id"] for item in marker["series"]] == list(RUN_IDS)
 
 
-def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(experiment):
+def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(
+    experiment, monkeypatch
+):
+    from blueearth_cst.experiment import indicator_plan
+
     root = experiment.root
     plan = _plan(root)
     assert plan["schema_version"] == "indicator-request/4"
@@ -325,6 +354,30 @@ def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(experimen
     files = sorted(p for p in marker.parent.rglob("*") if p.is_file())
     before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
     assert read_indicator_set(root, marker) == manifest
+
+    repo = Path(indicator_plan.__file__).resolve().parents[2]
+    changed = {
+        repo / "blueearth_cst" / relative
+        for relative in (
+            "plotting/export.py",
+            "shared/snake_utils.py",
+            "shared/config_composition.py",
+            "experiment/generation_plan.py",
+            "experiment/simulator_adapter.py",
+        )
+    }
+    read_bytes = Path.read_bytes
+
+    def edited_bytes(path):
+        data = read_bytes(path)
+        return data + b"\n# unrelated edit\n" if path in changed else data
+
+    monkeypatch.setattr(Path, "read_bytes", edited_bytes)
+    monkeypatch.setattr(
+        indicator_plan,
+        "reduce_indicator_plan",
+        lambda *args, **kwargs: pytest.fail("ready reuse must not reduce again"),
+    )
     assert publish_indicator_set(root, _plan(root)) == manifest
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
 

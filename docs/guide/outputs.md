@@ -220,9 +220,15 @@ or authored citations refreshes `indicators.csv` without recomputing values.
 
 Calculation identities include the selected calculation packages, their imported dependencies and shared
 execution code. Adding or editing an unrelated indicator set leaves existing selections reusable; changing
-a reused formula invalidates its dependent selections. The change from the former all-set code inventory
-changes existing request identities once: the first indicator run after this update recalculates selected
+a reused formula invalidates its dependent selections. Upstream implementation, logging and presentation
+edits do not change calculation identity over unchanged retained responses. Resolved selections and
+water-year settings, native response interpretation, grouping and stored value precision remain covered.
+Snakemake continues to schedule the jobs; immutable publication guards still verify retained artifacts.
+Narrowing the former all-set and workflow-wide inventory changes existing request identities once:
+the first indicator run after this update recalculates selected
 sets from retained responses. Saved publications remain readable, and model simulations are unaffected.
+Original publication identifiers and provenance are preserved; old results are not relabelled as newly
+qualified calculations.
 
 Wait for workflow completion before reading an export: replacement is atomic per file, not across the
 folder. Ordinary export I/O failures roll back the replaced files. Dry-runs and `simulations_only` do not

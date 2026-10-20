@@ -274,11 +274,8 @@ CONFIG_REFERENCES = [
 EFFECTIVE_CONFIG_DIGEST = CAPTURE_DIGESTS[0] if CAPTURE_DIGESTS else effective_config_digest(
     config, ADVANCED_SETTINGS, CONFIG_PROJECTION
 )
-# Threaded through rule 1.01's params: below. Snakemake's params rerun-trigger
-# then re-executes it whenever ANY component moves -- a new commit, a dirty
-# flip, a lock-file change, an in-place catalog edit. Without this the record
-# would keep the previous commit after a code-only change, which is the defect
-# both design reviewers found independently.
+# Full provenance includes Git state. The sidecar's refresh trigger below
+# excludes it: a new commit alone does not produce new scientific outputs.
 CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configuration_inputs_digest(
     EFFECTIVE_CONFIG_DIGEST,
     toolbox_identity(),
@@ -1156,8 +1153,14 @@ rule write_run_metadata:
         model_final = ancient(f"{basin_dir}/.model_final"),
     params:
         workflow_name = "build_model",
+        config_path = config_path,
         effective_config_sha256 = EFFECTIVE_CONFIG_DIGEST,
-        configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
+        refresh_digest = configuration_inputs_digest(
+            EFFECTIVE_CONFIG_DIGEST,
+            {},
+            CAPTURE_RECORD["environment"] if CAPTURE_RECORD else environment_file_hashes(),
+            CAPTURE_RECORD["referenced_inputs"] if CAPTURE_RECORD else referenced_inputs_for_digest(CONFIG_REFERENCES),
+        ),
     output:
         run_metadata = f"{basin_dir}/run_metadata.json",
     script:

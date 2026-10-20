@@ -215,6 +215,10 @@ Managed launches merge rule logs and benchmarks when the invocation finishes. Th
 are not required DAG targets, so a fresh execution folder does not schedule gather rules when all
 scientific outputs are up to date. Direct Snakemake runs retain their gather targets.
 
+WF1's output metadata refreshes when settings, referenced-file contents, environment files or upstream
+products change. A toolbox commit or Git dirty-state change alone is recorded in the invocation archive
+and journal without scheduling the metadata rule or relabelling reused outputs.
+
 Initial runner preparation messages use two-space indentation without timestamps or module labels,
 including elapsed-time updates such as `  Workflow preparation 0:00:15 elapsed`.
 

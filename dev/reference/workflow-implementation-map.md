@@ -43,7 +43,8 @@ numbered citations. Numbers are labels, not a substitute for inspecting dependen
 | CMIP6 grid readability and source-version admission | [CMIP6 readability](wf2-cmip6-source-readability.md) |
 | Projection windows, reductions and diagnostic availability | [WF2 guide][wf2-guide] |
 | Scenario collections, retained responses and indicator sets | [Retained handoffs][handoffs] |
-| Replacement weather generators or hydrological models | [Interchange contracts](contracts/README.md) |
+| Replacement weather generators | [Generator interface](weather-generator-interface.md) |
+| Replacement hydrological models | [Model interface](hydrological-model-interface.md) |
 | Figure ownership, annotation and export conventions | [Plot style](plot-style.md) |
 | Supported execution and log interpretation | [Workflow guide][workflow-guide] |
 

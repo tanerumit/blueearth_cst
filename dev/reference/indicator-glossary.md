@@ -44,9 +44,9 @@ Column by column, with the dict that owns it:
   (`<code>_subcatchment`), rule 1.14's derived tables, and figure filenames.
 - **token** — the short name in the result **filename** and in the composite
   indicator. Owned by
-  `blueearth_cst/shared/indicator_tables.py::VARIABLE_TOKENS`. Published as a
-  contract in `contracts/hydrological-model-seam.md` §HM-7, which is the
-  authority for this column; the row above is a copy of it.
+  `blueearth_cst/shared/indicator_tables.py::VARIABLE_TOKENS`.
+  [HM-7](hydrological-model-interface.md#hm-7--retained-indicator-sets) describes its interface context;
+  the code owns the exact mapping.
 - **table / indicator** — derived from the token by `indicator_table_filename` and
   `basin_indicator_name`; no dict of its own.
 
@@ -174,7 +174,7 @@ return levels retain pooled estimation from member-local blocks.
 
 Axis columns are derived at reporting time rather than stored in the indicator
 tables. `precip_change` in the perturbation lookup is a percent. HM-7 in
-`dev/reference/contracts/hydrological-model-seam.md` defines the current
+`dev/reference/hydrological-model-interface.md` defines the current
 contract; `blueearth_cst/shared/surface_axes.py` supplies monthly axis calculations.
 Keep identifiers as text; their scope is the owning collection or indicator set.
 

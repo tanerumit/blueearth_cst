@@ -15,7 +15,7 @@ when policy or implementation changes. New work does not require another numbere
 | [0007 — Basin-area maps](0007-draw-basin-area-from-the-spatial-foundation.md) | [Spatial foundation](../../reference/spatial-foundation.md#basin-maps) |
 | [0008 — Repository-based distribution](0008-ship-blueearth-cst-unpackaged.md) | [Toolbox architecture](../../reference/toolbox-architecture.md#implementation-ownership) |
 | [0009 — Generation/simulation split](0009-split-scenario-generation-and-system-simulation.md) | [Toolbox architecture](../../reference/toolbox-architecture.md#workflow-boundaries) |
-| [0010 — Forcing admission](0010-check-the-reviewed-variables-not-the-catalog-shape.md) | [Forcing units](../../reference/contracts/forcing-units.md) |
+| [0010 — Forcing admission](0010-check-the-reviewed-variables-not-the-catalog-shape.md) | [Forcing units](../../reference/forcing-units.md) |
 | [0011 — Configuration archives](0011-preserve-config-sources-with-run-records.md) | [Configuration and records](../../reference/toolbox-architecture.md#configuration-and-execution-records); original pending label is historical, not a current implementation assessment |
 | [0022 — Scheduler-neutral run contract](0022-cst-capability-slots-and-run-contract.md) | Retained accepted design; no blanket runtime-adoption claim. Consult the current launcher boundaries in toolbox architecture |
 | [Experiment numbering evidence](experiment-numbering-2026-10-10/implementation-evidence.md) | [Repository layout](../../reference/repo-layout.md#scripts) |

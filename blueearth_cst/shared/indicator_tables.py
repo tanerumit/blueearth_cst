@@ -423,7 +423,7 @@ def variable_token(outvar: str) -> str:
             f"wflow_outvars names {outvar!r}, which has no indicator-table token. "
             f"Known variables: {known}. Add the variable to VARIABLE_TOKENS in "
             f"blueearth_cst/shared/indicator_tables.py AND to the seam contract "
-            f"dev/reference/contracts/hydrological-model-seam.md, which is where "
+            f"dev/reference/hydrological-model-interface.md, which is where "
             f"this mapping is published."
         ) from None
 

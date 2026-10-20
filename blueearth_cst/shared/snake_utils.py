@@ -680,7 +680,7 @@ class SpatialUnitsRule:
 
     **Name the next one ``<thing>_rule``.** ``_contract`` was rejected — this
     repo uses "contract" for interchange surfaces
-    (``dev/reference/contracts/``, ``SPATIAL_CONTRACT_VERSION``,
+    (the engine-interface references, ``SPATIAL_CONTRACT_VERSION``,
     ``test_climate_store_contract.py``) and overloading it would be worse than
     the jargon it replaced; ``_definition`` was the runner-up, rejected on
     verbosity at the call sites.

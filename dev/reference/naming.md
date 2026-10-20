@@ -67,7 +67,8 @@ A suffix means EITHER a filesystem path OR a loaded object, never both.
 
 **`_rule` — a shared Snakemake rule definition.** A helper returning a frozen dataclass that holds a rule's `script`, `inputs`, `outputs` and `params` — everything content- or execution-determining, leaving only `message` / `log` / `benchmark` workflow-local — so one rule can be splatted into more than one Snakefile without the declarations drifting. Function and dataclass both carry it: `region_rule` → `RegionRule`, `climate_store_rule` → `ClimateStoreRule`, `spatial_units_rule` → `SpatialUnitsRule`.
 
-Do not spell this `_contract`: this repo reserves "contract" for interchange surfaces (`dev/reference/contracts/`, `SPATIAL_CONTRACT_VERSION`).
+Do not spell this `_contract`: this repo reserves "contract" for interchange surfaces
+(the engine-interface references and `SPATIAL_CONTRACT_VERSION`).
 
 ## 6. Domain identifiers — three tiers
 

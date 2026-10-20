@@ -24,6 +24,6 @@ source and catalog/extraction hashes. Keep exact conversion values and revision 
 Review the arithmetic before changing them; source attributes alone do not prove the values' units.
 
 `tests/test_prepare_climate_data_catalog.py` exercises admission and rejection.
-[The retained forcing-unit investigation](../../records/milestones/r12/implementation/evidence/p1-forcing-units.md)
-preserves the numerical/source evidence. Apply the [validation ladder](../validation-ladder.md) when a change
+[The retained forcing-unit investigation](../records/milestones/r12/implementation/evidence/p1-forcing-units.md)
+preserves the numerical/source evidence. Apply the [validation ladder](validation-ladder.md) when a change
 can alter values.

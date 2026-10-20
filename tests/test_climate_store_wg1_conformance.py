@@ -12,8 +12,8 @@ float64, carrying nothing but its bbox, which is exactly what the chirps branch
 produced — clears the dtype and metadata diffs while its absent companions
 remain reported, and an era5-shaped store that already conforms is left alone.
 
-The real-data magnitude witness in `dev/reference/contracts/weather-generator-
-seam.md` established unchanged CHIRPS daily depths. The producer now corrects
+The witness in `dev/records/milestones/r12/implementation/evidence/chirps-unit-verification-2026-09-27.md`
+established unchanged CHIRPS daily depths. The producer now corrects
 the `mm` label to `mm d**-1` for both CHIRPS names without rescaling values;
 the parametrized guard below checks that narrow correction and its controls.
 """

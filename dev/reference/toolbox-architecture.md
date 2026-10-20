@@ -26,7 +26,9 @@ must not cause model or simulation production. Use the owned runners for WF3/WF4
 operation/target contract is part of the boundary, not an optional shell convenience.
 
 See [retained handoffs](../../docs/site/toolbox-reference/retained-handoffs.qmd) for the supported artifact
-interface and [interchange contracts](contracts/README.md) for replacement-engine obligations.
+interface. The [weather-generator interface](weather-generator-interface.md) and
+[hydrological-model interface](hydrological-model-interface.md) describe replacement-engine obligations
+and current adapter requirements.
 
 ![Scenario generation and retained-response handoffs](../assets/diagrams/scenario-response-handoffs.svg)
 

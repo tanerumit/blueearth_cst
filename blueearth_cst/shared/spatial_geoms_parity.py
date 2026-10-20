@@ -40,7 +40,7 @@ break the containment with nothing watching. This module is the watcher.
 
 Board item ``t2608071203`` (R9-1). The authority question -- which tree answers
 which question -- is documented in
-``dev/reference/contracts/hydrological-model-seam.md``.
+``dev/reference/hydrological-model-interface.md``.
 
 Design invariants, mirroring ``interchange_contracts``:
 

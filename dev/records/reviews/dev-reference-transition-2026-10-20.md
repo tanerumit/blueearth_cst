@@ -12,6 +12,10 @@ Editable branch-owned consumers were updated. Sealed specifications moved withou
 | Former path | Retained destination |
 |---|---|
 | `dev/reference/sealed-records.yml` | `dev/records/sealed-records.yml` |
+| `dev/reference/contracts/README.md` | `dev/reference/README.md` (interface topic rows) |
+| `dev/reference/contracts/weather-generator-seam.md` | `dev/reference/weather-generator-interface.md` |
+| `dev/reference/contracts/hydrological-model-seam.md` | `dev/reference/hydrological-model-interface.md` |
+| `dev/reference/contracts/forcing-units.md` | `dev/reference/forcing-units.md` |
 | `dev/reference/workflows/model_creation.md` | `dev/reference/wf1-model-construction.md` |
 | `dev/reference/workflows/rule-index.md` | `dev/reference/workflow-implementation-map.md` |
 | `dev/reference/workflows/wf2-cmip6-store-readability.md` | `dev/reference/wf2-cmip6-source-readability.md` |
@@ -35,6 +39,10 @@ Editable branch-owned consumers were updated. Sealed specifications moved withou
 
 ## Mixed documents
 
+- WG/HM identifiers remain in the current interface references. Their old section headings are historical;
+  use the contract ID to find the current account. The CHIRPS closure witness is retained in
+  `dev/records/milestones/r12/implementation/evidence/chirps-unit-verification-2026-09-27.md`; other removed interface narrative is
+  recoverable from commit `ed406a81`. Current descriptions distinguish adapter requirements and validator limits.
 - Git branch/tag inventory moved to `dev/records/milestones/git-ref-inventory.md`; conventions stay current.
 - Historical rule-numbering maps moved to `dev/records/milestones/r10/rule-numbering-crosswalks.md`.
 - CMIP6 measured readability history moved to `dev/records/milestones/r08/cmip6-readability-measurements.md`;

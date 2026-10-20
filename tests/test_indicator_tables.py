@@ -69,7 +69,7 @@ def test_an_unknown_variable_raises_rather_than_being_skipped():
     # The error must say where to fix it -- both places, since the mapping is a
     # published contract and not only code.
     assert "indicator_tables.py" in message
-    assert "hydrological-model-seam.md" in message
+    assert "hydrological-model-interface.md" in message
 
 
 def test_tokens_are_distinct_so_two_variables_cannot_share_a_table():

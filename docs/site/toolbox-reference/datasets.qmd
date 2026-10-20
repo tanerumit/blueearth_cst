@@ -3,7 +3,7 @@ title: "Datasets"
 format: html
 ---
 
-The toolbox reads external gridded data through HydroMT catalogs. The project names catalogs and source entries; the data files are not distributed with the workflow code. The [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/references/cst-toolbox-technical-note-2025.md) describes the recommended global datasets and their scientific roles. The table below adapts that inventory to the [current project template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/project_config.template.yml), [data catalog](https://github.com/tanerumit/blueearth_cst/blob/main/config/catalogs/deltares_data.yml), and [projection template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/project_config.analyze_projections.template.yml). It is a source-role guide, not a claim that every listed source is enabled or locally available.
+The toolbox reads external gridded data through HydroMT catalogs. The project names catalogs and source entries; the data files are not distributed with the workflow code. The [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/references/cst-toolbox-technical-note-2025.md) describes the recommended global datasets and their scientific roles. The table below adapts that inventory to the [current project template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/example-basin/project_config.yml), [data catalog](https://github.com/tanerumit/blueearth_cst/blob/main/config/catalogs/deltares_data.yml), and [projection template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/example-basin/project_config_analyze_projections.yml). It is a source-role guide, not a claim that every listed source is enabled or locally available.
 
 ## Spatial data for the basin and model
 
@@ -35,7 +35,7 @@ The historical extraction window must cover the historical model run and provide
 
 WF2 reads configured **CMIP6** model, scenario, ensemble-member, reference-window, and future-window selections. It summarizes changes in precipitation and temperature for each combination. The results provide an overlay on the stress-test response surface, not forcing for WF3. Changing the CMIP6 ensemble or windows therefore changes the plausibility comparison, not an already generated scenario collection. Align its relative precipitation changes and absolute temperature changes with the stress-test axes before plotting them together.
 
-The [projection settings template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/project_config.analyze_projections.template.yml) shows example selections; it is not a prescribed ensemble for every basin. The number of available models and members, spatial resolution, and variable coverage depend on the catalog. Ensemble spread describes differences among those available projections, not a calibrated probability distribution for basin-scale outcomes.
+The [projection settings template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/example-basin/project_config_analyze_projections.yml) shows example selections; it is not a prescribed ensemble for every basin. The number of available models and members, spatial resolution, and variable coverage depend on the catalog. Ensemble spread describes differences among those available projections, not a calibrated probability distribution for basin-scale outcomes.
 
 ## Choosing, replacing, and recording sources
 

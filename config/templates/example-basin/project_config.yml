@@ -1,23 +1,11 @@
-# =============================================================================
-#  example-basin -- PROJECT config
-# =============================================================================
-#
-# Example configuration for a new external case. Review every basin, climate,
-# catalog, and machine-specific path before running; see README.md here.
-#
-# PATH RULES -- the thing that bites in an external case:
-#   `config_path:` resolves against THIS file's directory.
-#   Every other path resolves against the directory you run Snakemake from
-#   (the blueearth_cst repo root), so it MUST be absolute here, or it will
-#   silently resolve inside the repo and find nothing.
-#
-# Exception: `catalog:` stays repo-relative. Catalogs are tracked repo files
-# and `cmip6_data.yml` is generated into `config/catalogs/`. A basin needing
-# new local datasets registers them in the repo's `config/catalogs/*_data*.yml`.
-#
-# Run it from the blueearth_cst repo root:
-#   Run from the toolbox root; see this folder's README for current commands.
+# Example basin project: copy the whole directory or use scripts/create_case.py.
+# Review basin, climate, catalog and absolute case paths before running.
+# Keep this project file beside its five project_config_<workflow>.yml files.
+# config_path resolves beside this file; other relative paths use the toolbox root.
+# Commented YAML entries are optional settings or examples.
+# See README.md here and config/templates/README.md for setup and rationale.
 
+# Identify the project configuration schema. Options: 2.
 schema_version: 2
 
 
@@ -25,69 +13,156 @@ schema_version: 2
 #  PROJECT
 # -----------------------------------------------------------------------------
 
+# Define shared project storage and data access. Input: mapping.
 project:
-  # ABSOLUTE, under the cases repository's ignored runs/. Set by create_case.py.
-  project_dir: /path/to/cst-cases/runs/example-basin
-  catalog: config/catalogs/deltares_data_pdrive.yml   # repo-relative on purpose
+  # Store project inputs and generated outputs. Input: absolute directory path outside repository.
+  project_dir: "/path/to/cst-cases/runs/example-basin"
+  # This template's default catalog requires the Deltares P-drive.
+  # Locate source datasets by catalog name. Input: HydroMT catalog YAML path.
+  catalog: config/catalogs/deltares_data_pdrive.yml
 
 
 # -----------------------------------------------------------------------------
 #  BASIN
 # -----------------------------------------------------------------------------
 
+# Define basin geometry and spatial inputs. Input: mapping.
 basin:
-  # Coordinates are longitude, latitude (x, y), in decimal degrees.
-  # Replace both coordinates for each case. Review uparea (km2) for the site;
-  # 100 is the Ntoum example's upstream-area threshold, not a universal value.
+  # hydromt region, in quotes. This form: the basin draining to a point
+  # (lon, lat), at least 100 km2 upstream. Other forms:
+  # docs/references/hydromt-user-guide/models/model_region.md
+  # Select the HydroMT basin region. Input: quoted HydroMT region dictionary.
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+  # Set model grid cell size. Input: positive degrees; 0.00833333 is 30 arc-seconds.
   resolution: 0.00833
 
-  # Source names in the Deltares P-drive catalog.
-  sources:
-    rivers: hydro_rivers_lin
-    lulc: globcover
+  # Points where the model reports results. Each `control` point also closes
+  # a subbasin. Columns: output_locations_template.csv. null = outlets only.
+  # Define reporting and subbasin control locations. Input: output-locations CSV path or null.
+  output_locations: "/path/to/cst-cases/applications/example-basin/data/output_locations.csv"
 
-  # ABSOLUTE. Per-case sidecar, not the repo's shared test_data copy.
-  # The CSV uses x=longitude, y=latitude. Replace its example outlet.
-  output_locations: /path/to/cst-cases/applications/example-basin/data/output_locations.csv
+  # How the basin is split into subbasins.
+  # Configure automatic subbasin delineation. Input: mapping.
+  #delineation:
+  # Minimum upstream area defining river cells. Input: positive square kilometres.
+  #  river_uparea_km2: 32
+  # Maximum distance for snapping points to rivers. Input: positive metres.
+  #  snap_tolerance_m: 10000
+  # Limit generated subbasins per basin. Input: positive integer.
+  #  max_subbasins: 11
+
+  # Datasets used to build the basin, by catalog entry name.
+  # Select spatial datasets from the catalog. Input: dataset-role-to-catalog-entry mapping.
+  sources:
+  # Select flow direction and elevation dataset. Input: catalog entry matching setup_basemaps.
+  #  hydrography: merit_hydro_ihu
+  # Select indexed basin boundaries. Input: catalog entry matching setup_basemaps.
+  #  basin_index: merit_hydro_index
+    # Select river network geometry. Input: catalog entry name.
+    rivers: hydro_rivers_lin
+    # Select land use and land cover. Input: catalog entry name.
+    lulc: globcover
+  # Select leaf area index dataset. Input: catalog entry name.
+  #  lai: modis_lai
+  # Select soil properties dataset. Input: catalog entry name.
+  #  soil: soilgrids
 
 
 # -----------------------------------------------------------------------------
 #  CLIMATE
 # -----------------------------------------------------------------------------
 
+# Define historical climate data and calendar. Input: mapping.
 climate:
+  # Datasets to consider, and the one the model runs on. `selected` must be
+  # in `sources`. You may leave `selected` empty while only analyze_climate
+  # is enabled: run it, read the comparison, then choose.
+  # Select historical climate datasets to assess. Input: list of supported climate source names.
   sources: [era5, chirps]
+  # Choose forcing for model and scenario generation. Input: name from sources; null for WF0-only assessment.
   selected: era5
+
+  # Years of record to extract, inclusive. At least 16. This is not the model
+  # run period; see `simulation_window` in the build_model file.
+  # Select inclusive historical water years. Input: year mapping spanning at least 16 years.
   window:
+    # First historical water year. Input: integer year, <= end.
     start: 2000
+    # Last historical water year. Input: integer year, >= start.
     end: 2016
+
+  # First month of the water year. Changes every annual statistic.
+  # Set the first water-year month. Input: three-letter month abbreviation, Jan–Dec.
+  #water_year_start: Jan
+
+  # Optional shared historical map policy. WF0 diagnostic tolerances must match.
+  # Monthly tolerance is an integer from 0 to 27; annual tolerance is nonnegative.
+  # Set shared historical map completeness tolerances. Input: mapping matching WF0 diagnostics.
+  #map_reference:
+  # Allow missing days per month. Input: integer, 0–27.
+  #  max_missing_days_month: 3
+  # Allow missing days per year. Input: nonnegative integer.
+  #  max_missing_days_year: 15
 
 
 # -----------------------------------------------------------------------------
 #  MODEL
 # -----------------------------------------------------------------------------
 
+# Select shared hydrological model outputs. Input: mapping.
 model:
-  outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
+  # Any of: river discharge, overland flow, actual evapotranspiration,
+  # groundwater recharge, snow. Observations can only be given for these.
+  # Select variables retained from model runs. Input: list of river discharge | overland flow | actual evapotranspiration | groundwater recharge | snow.
+  outvars: ["river discharge", "actual evapotranspiration", "groundwater recharge"]
+
+
+# -----------------------------------------------------------------------------
+#  PLOTTING
+# -----------------------------------------------------------------------------
+
+# Configure shared Python figure presentation. Input: mapping.
+plotting:
+  # Python workflow figures only; R/weathergenr figures retain their own style.
+  # Place explanatory annotations on figures. Options: none | caption | title.
+  annotation: none
 
 
 # -----------------------------------------------------------------------------
 #  WORKFLOWS
 # -----------------------------------------------------------------------------
+#
+# Run WF0 alone first; then disable it before enabling downstream workflows.
 
+# Enable workflows and locate their configuration files. Input: workflow-name-to-settings mapping.
 workflows:
+  # Configure WF0 historical climate diagnostics. Input: workflow settings mapping.
   analyze_climate:
+    # Include this workflow in the project run. Options: true | false.
     enabled: true
+    # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
+    config_path: "project_config_analyze_climate.yml"
+  # Configure WF1 model construction and historical simulation. Input: workflow settings mapping.
   build_model:
+    # Include this workflow in the project run. Options: true | false.
     enabled: false
-    config_path: project_config_build_model.yml
+    # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
+    config_path: "project_config_build_model.yml"
+  # Configure WF2 projection plausibility analysis. Input: workflow settings mapping.
   analyze_projections:
+    # Include this workflow in the project run. Options: true | false.
     enabled: false
-    config_path: project_config_analyze_projections.yml
+    # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
+    config_path: "project_config_analyze_projections.yml"
+  # Configure WF3 weather scenario generation. Input: workflow settings mapping.
   generate_scenarios:
+    # Include this workflow in the project run. Options: true | false.
     enabled: false
-    config_path: project_config_generate_scenarios.yml
+    # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
+    config_path: "project_config_generate_scenarios.yml"
+  # Configure WF4 simulation and indicator calculation. Input: workflow settings mapping.
   simulate_system:
+    # Include this workflow in the project run. Options: true | false.
     enabled: false
-    config_path: project_config_simulate_system.yml
+    # Locate this workflow's configuration. Input: YAML path relative to this file or absolute.
+    config_path: "project_config_simulate_system.yml"

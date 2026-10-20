@@ -7,10 +7,12 @@ The settings are stored in a project file and a separate file for each
 workflow. Give the project file to a runner with `--config`; it names the other
 files. A direct Snakemake command uses `--configfile` instead.
 
-Start from the six current `project_config*.template.yml` files in
-`config/templates/`. Copy them into the directory where you will keep your
-project settings, and update the `config_path` values in the project file to
-match the copied filenames.
+Start from `config/templates/example-basin/`, the single maintained starter.
+Use the [case scaffolder](running.qmd#create-an-external-case) to set case paths
+and outlet coordinates, or copy the whole directory and follow its README.
+It contains `project_config.yml` plus five workflow files, including commented
+examples of optional parameters. Keep the filenames so the `config_path` links
+continue to work, or update those links if you rename the files.
 `test_case/project_config_baseline.yml` is a filled-in worked example, and
 `test_case/project_config_rapid.yml` is the same basin sized for a quick
 end-to-end run.

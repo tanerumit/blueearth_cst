@@ -16,6 +16,11 @@ basin region and outlet, and starts fresh notes. Register the case in the
 application inventory after the workflows complete.
 Review the remaining choices below before running.
 
+This directory is the single maintained configuration starter: `project_config.yml`
+and one `project_config_<workflow>.yml` per workflow. Optional parameters are
+documented beside the active settings in those files; background on the defaults
+is in [the templates reference](../README.md).
+
 For manual setup, copy this folder to `applications/<basin-kebab>/` in your
 cases repository, then make
 these edits before running:

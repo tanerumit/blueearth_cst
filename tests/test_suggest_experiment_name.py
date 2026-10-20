@@ -161,7 +161,7 @@ def test_subprocess_missing_config_refuses_without_any_writes(tmp_path, missing)
 
 def test_template_leaves_experiment_name_for_numbered_execution_selection():
     template = load_composed_config(
-        SNAKEDIR / "config/templates/project_config.template.yml"
+        SNAKEDIR / "config/templates/example-basin/project_config.yml"
     )
     assert "experiment_name" not in template["workflows"]["simulate_system"]
 
@@ -177,11 +177,11 @@ def test_test_fixtures_deliberately_keep_a_fixed_name():
 
 
 def test_shipped_template_set_previews_without_modifying_any_copied_file(tmp_path):
-    templates = SNAKEDIR / "config/templates"
-    source = templates / "project_config.template.yml"
+    templates = SNAKEDIR / "config/templates/example-basin"
+    source = templates / "project_config.yml"
     config = tmp_path / source.name
     shutil.copyfile(source, config)
-    for sibling in templates.glob("project_config.*.template.yml"):
+    for sibling in templates.glob("project_config_*.yml"):
         shutil.copyfile(sibling, tmp_path / sibling.name)
     original = load_composed_config(config)["project"]["project_dir"]
     project = tmp_path / "Gabon"

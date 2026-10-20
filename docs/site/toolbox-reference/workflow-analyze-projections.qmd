@@ -44,7 +44,7 @@ Fetching fans out by configured model, scenario, member, and variable before mon
 
 The project file supplies `project.catalog`, `basin.region`, and `basin.resolution`. Its `workflows.analyze_projections` stanza enables the workflow and points to its YAML file through `config_path`.
 
-The workflow file, `test_case/project_config_rapid_analyze_projections.yml`, sets `catalog` (the CMIP6 catalog), `ensemble` (output namespace), `models` and `scenarios` (the ensemble subset), `members.preference` (member selection order), and `variables` (source mapping, canonical rate or state, units, and relative or absolute change). `reference_window` supplies historical years; each `future_windows` entry supplies years and an output `name`. The template at `config/templates/project_config.analyze_projections.template.yml` also documents optional `members.selection`, `members.overrides`, and `stats`.
+The workflow file, `test_case/project_config_rapid_analyze_projections.yml`, sets `catalog` (the CMIP6 catalog), `ensemble` (output namespace), `models` and `scenarios` (the ensemble subset), `members.preference` (member selection order), and `variables` (source mapping, canonical rate or state, units, and relative or absolute change). `reference_window` supplies historical years; each `future_windows` entry supplies years and an output `name`. The template at `config/templates/example-basin/project_config_analyze_projections.yml` also documents optional `members.selection`, `members.overrides`, and `stats`.
 
 ```yaml
 catalog: config/catalogs/cmip6_data.yml

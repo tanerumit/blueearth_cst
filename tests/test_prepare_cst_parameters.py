@@ -408,7 +408,7 @@ def _is_project_config(path: str) -> bool:
 _SHIPPED_CONFIGS = [
     path
     for path in sorted(glob.glob(str(REPO_ROOT / "test_case" / "project_config_*.yml")))
-    + [str(REPO_ROOT / "config" / "templates" / "project_config.template.yml")]
+    + [str(REPO_ROOT / "config/templates/example-basin/project_config.yml")]
     if _is_project_config(path)
 ]
 

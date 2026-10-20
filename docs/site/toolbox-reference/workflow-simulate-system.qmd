@@ -43,7 +43,7 @@ Indicators alone start from existing retained responses and proceed through the 
 
 ## Configuration
 
-The project file supplies the `model` context and `workflows.simulate_system.enabled` and `.config_path`; the latter resolves the workflow YAML beside the project file. The WF4 file, `test_case/project_config_rapid_simulate_system.yml`, sets `experiment_name` (the output namespace), `operations` and `indicator_sets`. The template at `config/templates/project_config.simulate_system.template.yml` also describes the optional `compute` block: `julia_threads`, `max_parallel_batches`, `batch_size_max`, `batch_size`, and `disk_headroom_gb`.
+The project file supplies the `model` context and `workflows.simulate_system.enabled` and `.config_path`; the latter resolves the workflow YAML beside the project file. The WF4 file, `test_case/project_config_rapid_simulate_system.yml`, sets `experiment_name` (the output namespace), `operations` and `indicator_sets`. The template at `config/templates/example-basin/project_config_simulate_system.yml` also describes the optional `compute` block: `julia_threads`, `max_parallel_batches`, `batch_size_max`, `batch_size`, and `disk_headroom_gb`.
 
 ```yaml
 experiment_name: experiment_rapid

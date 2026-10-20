@@ -39,7 +39,7 @@ Read the 2025 technical note in References before changing what a workflow compu
   file; other paths resolve from the run directory. Cross-workflow keys belong in the project file's
   owning `basin:`, `climate:`, `model:` section or top level, never in workflow files.
 - `config/defaults/` changes runs; `config/templates/` contains scaffolds only. Keep
-  the `config/templates/example-basin/` starter and other affected config templates current in the same
+  the single `config/templates/example-basin/` configuration starter current in the same
   change as parameter/schema/default changes; `scripts/create_case.py` scaffolds external cases from this checkout.
   Do not maintain a second starter in `cst-cases`. Keep the
   `project_config_` prefix on new seed configs or Git's glob silently excludes them.

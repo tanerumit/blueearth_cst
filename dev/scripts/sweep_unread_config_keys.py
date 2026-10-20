@@ -6,11 +6,11 @@ It is also the only remaining answer to design question `P2` — R14 found its
 misplaced keys by hand and zero by machine, and a config shape that does not
 make this check feasible has not solved the problem with consequences.
 
-**What it asks.** A user copies the five templates in `config/templates/` and
-fills them in. Every key there — live, or commented at its default, which the
-template header says is how an optional setting is shown — is a promise that
-setting it does something. A key no code reads is a promise the toolbox does not
-keep, and it is invisible: the run succeeds and the setting changes nothing.
+**What it asks.** A user scaffolds from `config/templates/example-basin/` and
+edits the copied configs. Every key there — live, or commented with an optional example
+value — is a promise that setting it does something. A key no code reads is a
+promise the toolbox does not keep, and it is invisible: the run succeeds and the
+setting changes nothing.
 
 **And its mirror** (t2609070015): a key a shipped seed under `test_case/` sets
 that no template documents. The seeds are declared too, so their keys also need
@@ -57,11 +57,11 @@ from dev.scripts.sweep_common import (  # noqa: E402
 #: The declared side: the templates a user copies. `config/defaults/` is NOT
 #: here — those are build configs a rule reads wholesale and hands to hydromt,
 #: whose vocabulary is hydromt's rather than ours (AGENTS.md, Hard Constraints).
-#: Nor is `config/templates/archive/`, which the glob's `project_config*` prefix
-#: excludes anyway: its README withholds support and says a stale key there
+#: Nor is `config/templates/archive/`, which is outside the starter directory:
+#: its README withholds support and says a stale key there
 #: fails at parse time rather than being ignored.
 #:
-TEMPLATE_GLOB = "config/templates/project_config*.template.yml"
+TEMPLATE_GLOB = "config/templates/example-basin/project_config*.yml"
 
 #: The shipped seeds are declared too (t2609070015). A green run once certified
 #: the templates only, while the seeds carried keys the templates did not name;
@@ -72,8 +72,7 @@ TEMPLATE_GLOB = "config/templates/project_config*.template.yml"
 #: and the untracked personal `test*.yml` configs are nobody's promise.
 SEED_GLOB = "test_case/project_config_*.yml"
 
-#: A YAML key line, live or commented at its default. The template header says
-#: "Lines starting with `#` are optional settings, shown at their default", so a
+#: A YAML key line, live or commented with an optional example value, so a
 #: commented key is a DECLARATION — arguably the more important half, since an
 #: unread live key at least shows up in a filled-in config someone reads.
 _KEY_LINE = re.compile(
@@ -149,7 +148,7 @@ FLOORS = (
         count=79,
         measured="2026-09-25, seeds declared (t2609070015)",
         why=(
-            "the five templates are the config surface a user copies; a "
+            "the starter configs are the config surface a user copies; a "
             "collapse means the glob or the key matcher stopped seeing them, "
             "and an empty declared side reports a clean bill while knowing "
             "nothing"

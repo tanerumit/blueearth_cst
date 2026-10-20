@@ -10,26 +10,29 @@ what it held; see `config/defaults/README.md`.
 | File | Purpose |
 | --- | --- |
 | `example-basin/` | Worked external-case starter consumed by `scripts/create_case.py`; review its README before running. |
-| `project_config.template.yml` | The project file: what every workflow shares, and which workflows run. Start here. |
-| `project_config.analyze_climate.template.yml` | wf0: historical diagnostics and optional subbasin figures |
-| `project_config.build_model.template.yml` | wf1: observations, run period, engine configs |
-| `project_config.analyze_projections.template.yml` | wf2: models, scenarios, variables, windows |
-| `project_config.generate_scenarios.template.yml` | wf3: weather generation and perturbation grid |
-| `project_config.simulate_system.template.yml` | wf4: simulations, indicator sets and compute |
-| `indicator_set.template.yml` | Optional named selection of registered WF4 indicators |
+| `indicator_set.template.yml` | Optional named selection of registered WF4 indicators. |
 | `output_locations_template.csv` | Header-only schema for output locations |
 | `observed_daily_discharge_template.csv` | Header-only schema for observed discharge |
 | `archive/` | Unmaintained single-workflow configs; see its own README |
 
-The six project YAML files are one set. Copy all six into your project folder and
-pass the project file to `--configfile`; its `config_path:` lines name the other
-five. A filled-in worked example is `test_case/project_config_rapid.yml` with
-its siblings.
+`example-basin/` contains the single maintained configuration set: the project
+file and five workflow files, with optional parameters documented in place.
+To scaffold an external application, prefer `scripts/create_case.py`, which
+copies that directory and sets case paths and outlet coordinates. For manual
+setup, copy the whole directory and follow its [checklist](example-basin/README.md).
+The `config_path:` links already match the copied filenames.
+A filled-in rapid test example is `test_case/project_config_rapid.yml` with
+its siblings; `docs/guide/configuration.md` walks through the layout.
 
 Each parameter has a short definition immediately above it, followed by `Input:`
 for the expected format or `Options:` for fixed choices. Commented settings are
 optional examples: uncomment their YAML lines to enable them, retaining the
 explanatory comments. Longer notes explain scientific choices and dependencies.
+
+The former top-level `project_config*.template.yml` files are consolidated into
+`example-basin/project_config.yml` and `example-basin/project_config_<workflow>.yml`.
+Update copy scripts and links to use these paths; workflow configuration remains
+split into one file per workflow.
 
 The project template uses `config/catalogs/deltares_data_pdrive.yml`, backed
 by `P:/wflow_global/hydromt`. Mount the Deltares P-drive before running.

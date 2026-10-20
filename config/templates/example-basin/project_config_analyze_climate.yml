@@ -11,15 +11,15 @@ subbasin_figures: false
 # Select reference water years. Input: inclusive year mapping.
 #  reference_period:
 # First reference water year. Input: integer year, <= end.
-#    start: 1991
+#    start: 2000
 # Last reference water year. Input: integer year, >= start.
-#    end: 2020
+#    end: 2016
 # Select comparison water years. Input: inclusive year mapping.
 #  comparison_period:
 # First comparison water year. Input: integer year, <= end.
-#    start: 1991
+#    start: 2000
 # Last comparison water year. Input: integer year, >= start.
-#    end: 2020
+#    end: 2016
 # Allow missing days per month. Input: integer, 0–27; match climate.map_reference.
 #  max_missing_days_month: 3
 # Allow missing days per year. Input: nonnegative integer; match climate.map_reference.

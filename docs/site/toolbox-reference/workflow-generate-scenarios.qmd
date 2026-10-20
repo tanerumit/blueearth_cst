@@ -43,7 +43,7 @@ The wrapper stages run before the generation DAG. Generation and perturbation fa
 
 The project file supplies `project.catalog`, the `basin` definition, and `climate.selected` and `climate.window`. Its `workflows.generate_scenarios` stanza enables the workflow and points to its YAML file through `config_path`.
 
-The workflow file, `test_case/project_config_rapid_generate_scenarios.yml`, sets `n_realizations`, `simulation_window.start` and `.end`, and `seed` (integer or `auto`). `climate_perturbations.temp` and `.precip` define monthly `mean.min` and `.max`, `n_levels`, and `trajectory`; precipitation can also set monthly `variance.min` and `.max`. `climate_perturbations.spell_factors.dry` and `.wet` modify spell lengths without adding grid axes. The template at `config/templates/project_config.generate_scenarios.template.yml` also shows optional `unit_id_capacity`.
+The workflow file, `test_case/project_config_rapid_generate_scenarios.yml`, sets `n_realizations`, `simulation_window.start` and `.end`, and `seed` (integer or `auto`). `climate_perturbations.temp` and `.precip` define monthly `mean.min` and `.max`, `n_levels`, and `trajectory`; precipitation can also set monthly `variance.min` and `.max`. `climate_perturbations.spell_factors.dry` and `.wet` modify spell lengths without adding grid axes. The template at `config/templates/example-basin/project_config_generate_scenarios.yml` also shows optional `unit_id_capacity`.
 
 ```text
 n_realizations: 2

@@ -10,6 +10,7 @@ wherever a test plans against it, because publication re-observes it.
 import csv
 import shutil
 from copy import deepcopy
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -155,7 +156,8 @@ def test_named_requests_share_provenance_but_new_observations_detect_drift(
         calls["environment"] += 1
         return {"revision": calls["environment"]}
 
-    def code():
+    def code(set_ids):
+        assert set_ids == ("default",)
         calls["code"] += 1
         return [{"path": "indicator.py", "sha256": str(calls["code"]) * 64}]
 
@@ -183,6 +185,105 @@ def test_named_requests_share_provenance_but_new_observations_detect_drift(
     )
     assert calls == {"environment": 2, "code": 2}
     assert all(content_sha256(a) != content_sha256(b) for a, b in zip(requests, fresh))
+
+
+@pytest.mark.parametrize("set_id", ["default", "flow_regime", "flood_risk"])
+def test_request_identity_tracks_only_contributing_sets(tmp_path, monkeypatch, set_id):
+    from blueearth_cst.experiment import indicator_plan, return_level_validation
+    from blueearth_cst.indicators import loader
+
+    repo = Path(indicator_plan.__file__).resolve().parents[2]
+    shutil.copytree(
+        repo / "blueearth_cst",
+        tmp_path / "blueearth_cst",
+        ignore=shutil.ignore_patterns("__pycache__"),
+    )
+    monkeypatch.setattr(
+        indicator_plan,
+        "__file__",
+        str(tmp_path / "blueearth_cst/experiment/indicator_plan.py"),
+    )
+    execution_sources = loader.execution_sources
+
+    def copied_sources(set_ids=None):
+        return tuple(
+            tmp_path / path.relative_to(repo) for path in execution_sources(set_ids)
+        )
+
+    monkeypatch.setattr(loader, "execution_sources", copied_sources)
+    validation = return_level_validation.build_declaration()
+    path = indicator_sets.BUNDLED_ROOT / f"{set_id}.yml"
+
+    def request():
+        resolved = indicator_sets.resolve_set(
+            indicator_sets.SetSource(
+                set_id, path, True, path.read_text(encoding="utf-8")
+            ),
+            ["gwr"],
+        )
+        return indicator_plan.indicator_request(
+            "simulation",
+            indicator_sets.calculation_records(resolved.indicators),
+            "YE-DEC",
+            FIXTURE_ENVIRONMENT,
+            validation,
+        )
+
+    before = request()
+    for relative in (
+        "plotting/export.py",
+        "shared/snake_utils.py",
+        "shared/config_composition.py",
+        "shared/workflow_config_snapshot.py",
+        "experiment/reservation_context.py",
+        "experiment/generation_plan.py",
+        "experiment/simulator_adapter.py",
+        "experiment/simulation_record.py",
+    ):
+        unrelated = tmp_path / "blueearth_cst" / relative
+        unrelated.write_bytes(unrelated.read_bytes() + b"\n# unrelated edit\n")
+        assert request() == before, relative
+
+    for relative in (
+        "experiment/indicator_groups.py",
+        "experiment/wflow_response_reader.py",
+        "experiment/export_wflow_results.py",
+    ):
+        scientific = tmp_path / "blueearth_cst" / relative
+        original = scientific.read_bytes()
+        scientific.write_bytes(original + b"\n# contributing edit\n")
+        assert request() != before, relative
+        scientific.write_bytes(original)
+
+    root = tmp_path / "blueearth_cst/indicators"
+    new_set = root / "sets/new_unrelated_set"
+    new_set.mkdir()
+    (new_set / "__init__.py").write_text("", encoding="utf-8")
+    (new_set / "registry.py").write_text("INDICATORS = ()\n", encoding="utf-8")
+    assert request() == before
+
+    unselected = "flood_risk" if set_id != "flood_risk" else "flow_regime"
+    unrelated = root / f"sets/{unselected}/calculations.py"
+    unrelated.write_text(
+        unrelated.read_text(encoding="utf-8") + "\n# unrelated edit\n", encoding="utf-8"
+    )
+    assert request() == before
+
+    # Flow-regime aliases really depend on the default package as well.
+    selected = "default" if set_id == "flow_regime" else set_id
+    contributing = root / f"sets/{selected}/calculations.py"
+    contributing.write_text(
+        contributing.read_text(encoding="utf-8") + "\n# contributing edit\n",
+        encoding="utf-8",
+    )
+    assert request() != before
+
+    after_selected = request()
+    shared = root / "temporal.py"
+    shared.write_text(
+        shared.read_text(encoding="utf-8") + "\n# shared edit\n", encoding="utf-8"
+    )
+    assert request() != after_selected
 
 
 def test_simulations_only_does_not_resolve_indicator_requirements(
@@ -227,7 +328,11 @@ def test_the_fixture_is_a_ready_v2_experiment_wherever_it_is_copied(experiment):
     assert [item["run_id"] for item in marker["series"]] == list(RUN_IDS)
 
 
-def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(experiment):
+def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(
+    experiment, monkeypatch
+):
+    from blueearth_cst.experiment import indicator_plan
+
     root = experiment.root
     plan = _plan(root)
     assert plan["schema_version"] == "indicator-request/4"
@@ -249,6 +354,30 @@ def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(experimen
     files = sorted(p for p in marker.parent.rglob("*") if p.is_file())
     before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
     assert read_indicator_set(root, marker) == manifest
+
+    repo = Path(indicator_plan.__file__).resolve().parents[2]
+    changed = {
+        repo / "blueearth_cst" / relative
+        for relative in (
+            "plotting/export.py",
+            "shared/snake_utils.py",
+            "shared/config_composition.py",
+            "experiment/generation_plan.py",
+            "experiment/simulator_adapter.py",
+        )
+    }
+    read_bytes = Path.read_bytes
+
+    def edited_bytes(path):
+        data = read_bytes(path)
+        return data + b"\n# unrelated edit\n" if path in changed else data
+
+    monkeypatch.setattr(Path, "read_bytes", edited_bytes)
+    monkeypatch.setattr(
+        indicator_plan,
+        "reduce_indicator_plan",
+        lambda *args, **kwargs: pytest.fail("ready reuse must not reduce again"),
+    )
     assert publish_indicator_set(root, _plan(root)) == manifest
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in files}
 
@@ -425,6 +554,30 @@ def test_a_changed_native_response_byte_refuses_planning(experiment):
     assert native.read_bytes() != original
     with pytest.raises(ValueError, match="bytes differ"):
         _plan(experiment.root)
+
+
+@pytest.mark.parametrize("document", ["intent", "response_inventory", "collection"])
+def test_verified_metadata_still_requires_the_exact_referenced_bytes(
+    experiment, monkeypatch, document
+):
+    from blueearth_cst.experiment import indicator_plan
+
+    root = experiment.root
+    request = current_indicator_request(root, default_calculations(["gwr"]), "YS-JAN")
+    validate = indicator_plan.read_simulation_v2
+
+    def changed_after_validation(path):
+        ready = validate(path)
+        if document == "collection":
+            target = experiment.collection_marker
+        else:
+            target = root.parent.parent / ready[document]["path"]
+        target.write_bytes(target.read_bytes() + b"\n")
+        return ready
+
+    monkeypatch.setattr(indicator_plan, "read_simulation_v2", changed_after_validation)
+    with pytest.raises(ValueError, match="bytes differ|size differs"):
+        build_indicator_plan(root, request, _observed_code=request["code_inventory"])
 
 
 def test_a_tampered_published_table_is_refused_on_read(published):

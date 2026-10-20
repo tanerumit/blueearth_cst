@@ -5,15 +5,14 @@ from copy import deepcopy
 from datetime import date, datetime
 from pathlib import Path
 
-import yaml
-
+from blueearth_cst.experiment.catalog_identity import catalog_input
 from blueearth_cst.experiment.content_identity import content_sha256
 from blueearth_cst.shared.config_composition import (
     capture_configuration_sources,
     compose_captured_config,
 )
-from blueearth_cst.shared.output_capture import captured_output
 from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.yaml_documents import parse_yaml_document
 
 
 def _ordinary_file(locator: str | Path) -> Path:
@@ -45,19 +44,10 @@ def _json_value(value):
 
 
 def _catalog_value(path):
-    """Keep upstream resolution and raw adapter options that to_dict may omit."""
-    from hydromt import DataCatalog
-
+    """Capture source semantics and root context without loading HydroMT."""
     original = _ordinary_file(path)
-    raw = yaml.safe_load(original.read_bytes())
-    # Admission and every consumer recheck resolve metadata before the handoff.
-    # Keep routine HydroMT parsing chatter out of the runner's console while
-    # retaining warnings and the complete diagnostics on a failed resolution.
-    with captured_output():
-        resolved = DataCatalog(data_libs=[original.as_posix()]).to_dict()
-    # Raw semantic options preserve e.g. preprocess which HydroMT may omit on
-    # serialization. Upstream resolved sources carry catalog-relative anchors.
-    return _json_value({"document": raw, "resolved_sources": resolved})
+    raw = parse_yaml_document(original.read_bytes())
+    return _json_value(catalog_input(raw, original))
 
 
 def _local_inputs(basin):
@@ -157,9 +147,9 @@ def capture_request(
     from blueearth_cst.shared.workflow_config_snapshot import file_reference
 
     path = _ordinary_file(config_path)
-    raw = yaml.safe_load(path.read_bytes())
+    raw = parse_yaml_document(path.read_bytes())
     simulation_stanza = raw["workflows"]["simulate_system"]
-    simulation = yaml.safe_load(
+    simulation = parse_yaml_document(
         (path.parent / simulation_stanza["config_path"]).read_bytes()
     )
     need_generation = execute_generation or "scenario_collection" not in simulation
@@ -222,7 +212,7 @@ def capture_request(
         ):
             original = _ordinary_file(engine.get(key, default))
             data = original.read_bytes()
-            documents[key] = yaml.safe_load(data)
+            documents[key] = parse_yaml_document(data)
             captures.append((role, original, data))
         start, end = window_year_pair(
             resolve_simulation_window(config["climate"], model_settings),
@@ -280,7 +270,7 @@ def capture_request(
         manifest = file_reference(manifest_path, "project_root", root)
         mode = "explicit-manifest"
     request = {
-        "schema_version": "experiment-request/1",
+        "schema_version": "experiment-request/2",
         "generation": generated,
         "selection": {"mode": mode, "manifest": manifest},
         "input_catalogs": semantic_catalogs,

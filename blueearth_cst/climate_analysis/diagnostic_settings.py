@@ -62,6 +62,6 @@ def parse_settings(block, window, sources):
 
 def carries_temp(source):
     """Precipitation-only candidates never acquire borrowed temperature identity."""
-    from blueearth_cst.climate_analysis.climate_figures import source_climate_vars
+    from blueearth_cst.climate_analysis.source_capabilities import source_climate_vars
 
     return "temp" in source_climate_vars(source)

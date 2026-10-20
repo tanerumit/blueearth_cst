@@ -101,10 +101,31 @@ their consumed settings and dependency contents are unchanged. You can rename
 or move project/workflow configuration files, update their `config_path` links,
 or enable other workflows without rebuilding those steps. Paths to scientific
 data must still resolve to the same inputs. Each launch archives the original
-configuration files and paths separately from the stable execution view.
+configuration files and paths separately from the stable execution view. Identical
+captures reuse their original configuration snapshot; each launch still records its
+own command, timing and outcome. A changed capture creates an immutable snapshot,
+so earlier attempt references remain valid even when the latest configuration changes.
 Changing relevant settings or dependency contents still invalidates affected
 work. Existing runs may rebuild once after upgrading to this execution-view
 format; subsequent equivalent configurations reuse the staged inputs.
+
+Inspect the latest WF0–WF2 settings in the exact captured files under the named workflow
+folders; immutable snapshots and stable execution inputs live under `config/_engine/`.
+WF3 and WF4 retain their existing collection/experiment configuration records.
+Completed replacement directories and per-launch contexts are removed after their
+contents or outcomes have been retained. These operational files do not provide run history.
+
+For an existing case, inspect configuration maintenance without changing files:
+
+```bash
+pixi run python scripts/maintain_config_archives.py --project-dir /path/to/case-output
+```
+
+Add `--apply` to retain its available WF0–WF2 snapshots and remove completed
+launch/replacement bookkeeping. Source configurations,
+execution inputs, attempt history and scientific outputs are preserved. The command
+reports unavailable historical references; it cannot reconstruct records already deleted.
+It takes the project execution lock, so use it when the case is idle.
 
 To preview the enabled workflows, add `-- --dry-run` to the command. A dry run
 may show only part of a workflow until inputs from an earlier step exist.
@@ -141,8 +162,9 @@ Update saved `--target` commands; log and benchmark parts use the new name. Outp
 paths are unchanged. Historical log parts are retained under their original names.
 
 Retain the diagnostic tables/map fields, projection-analysis tables, forcing and spatial inputs.
-WF1 evaluation also needs `<model>/run_default/output.csv`; a missing file can require another
-historical simulation. Use `--notemp` on the original model run to retain it.
+WF1 retains `<model>/run_default/output.csv` by default, so evaluation and table exports can reuse
+the full-precision native responses. Older projects where this file was deleted require one historical
+simulation to restore it; rounded exported tables cannot replace it.
 
 Currently, WF0 comparison recomputes its statistics from retained daily series, WF1 forcing recomputes
 plotting summaries, and WF1 evaluation recomputes indicators. These are combined calculation/rendering
@@ -201,7 +223,7 @@ Every supported launcher attempt gets a new directory, including dry runs and st
 when the project root is known:
 
 ```text
-logs/<UTC timestamp>-<short invocation ID>/
+logs/2026-10-20_11-21-55Z__all-workflows/
   summary.md
   console.log
   wf0.log ... wf4.log
@@ -211,11 +233,51 @@ logs/<UTC timestamp>-<short invocation ID>/
   _parts/
 ```
 
+Folder names use `YYYY-MM-DD_HH-MM-SSZ__<scope>`, with `Z` denoting UTC.
+The scope describes the selected workflows: `all-workflows`, a single name such as
+`analyze-climate`, or ordered workflow IDs such as `wf1-wf4` for a subset.
+Dry runs append `__dry-run`. When no workflows are selected or configuration fails before
+selection is known, the scope is `workflows`. A same-second name collision appends a short invocation ID.
+Outcomes remain in the summary so paths stay stable. New attempts use this naming scheme;
+existing folders and their recorded paths remain unchanged.
+
 Open `summary.md` first. It links the canonical invocation records, workflow logs, benchmarks and
 resource diagnostics. `console.log` retains launcher and child output in observed order, without
 terminal colours or repeated progress redraws. Workflow logs retain the detailed rule/member view.
 Only collected outputs appear: dry runs and reused steps need not produce rule logs or benchmarks.
 Missing measurements are not zero costs, and unknown reuse remains labelled unknown.
+
+Managed launches merge rule logs and benchmarks when the invocation finishes. These diagnostic files
+are not required DAG targets, so a fresh execution folder does not schedule gather rules when all
+scientific outputs are up to date. Direct Snakemake runs retain their gather targets.
+
+WF1's output metadata refreshes when settings, referenced-file contents, environment files or upstream
+products change. A toolbox commit or Git dirty-state change alone is recorded in the invocation archive
+and journal without scheduling the metadata rule or relabelling reused outputs.
+
+Initial runner preparation messages use two-space indentation without timestamps or module labels,
+including elapsed-time updates such as
+`  Preparing configuration and experiment checks... (0:00:15 elapsed)` and the final check duration.
+The timer updates on one terminal row; captured output contains one row with the final duration.
+Reused WF3 collections use the same green `Up to date` verdict
+as the other workflows, without separate scenario-request or reuse rows.
+WF2 shows reference-period warnings when executing an analysis, and omits them on up-to-date runs.
+
+Change checks across WF0–WF4 use the canonical configuration, file-content, code-inventory and
+environment helpers. Each workflow compares its consumed inputs; reusable observations are shared
+within a checking phase, with no persistent check cache or alternate fingerprint format.
+
+WF4 observes scientific inputs afresh on each invocation. A completed simulation reuses its frozen
+native output layout after model, code, environment, preparation, settings and selected runs pass
+their checks, avoiding Julia startup for layout reconstruction. Indicator sets share fresh code and
+environment observations within each planning or publication phase; execution still checks independently.
+
+WF4 retains an experiment's original simulation identity and provenance when only execution-diagnostic
+code changes. Existing experiments also accept the audited configuration-archive lifecycle upgrade;
+compatibility is restricted to the exact reviewed code versions and does not exempt future launcher edits.
+Scientific input or simulation-code changes still require a new experiment. A refusal
+before workflow execution skips indicator publication; partial job failures still allow completed
+indicator sets to publish independently.
 
 Benchmark Markdown starts with the recorded workflow elapsed time and a table grouped by rule:
 job/sample counts, summed job time, median, slowest job and peak individual-job RAM. Expand the

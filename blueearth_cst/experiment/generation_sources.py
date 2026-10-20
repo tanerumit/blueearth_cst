@@ -3,8 +3,6 @@
 from pathlib import Path
 from typing import Sequence
 
-import hydromt
-
 from blueearth_cst.experiment.forcing_descriptor import UnitInterpretation
 from blueearth_cst.shared.provenance import file_sha256
 
@@ -46,6 +44,8 @@ def generation_interpretation(
     catalogs: Sequence[str | Path], climate: str
 ) -> UnitInterpretation:
     """Resolve only WF3-consumed units; refuse changed extraction arithmetic."""
+    import hydromt
+
     paths = [str(Path(path).resolve()) for path in catalogs]
     entries = hydromt.DataCatalog(data_libs=paths).to_dict()
     hybrid = climate in {"chirps", "chirps_global"}

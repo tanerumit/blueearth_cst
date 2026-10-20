@@ -72,7 +72,9 @@ it does not establish daily cadence, numeric validity or complete requested cove
 The response reader maps native headers using the shared output vocabulary and an independent response
 request. Retained inventories must represent the requested series; result tables cannot define their
 own expected locations. Native header order and persisted ordinals preserve reference selection.
-WF1's raw simulation CSV is temporary; WF4 native responses are retained for later reduction.
+WF1's raw simulation CSV and WF4 native responses are retained for later reduction.
+WF1 exports, evaluation and baseline checks reuse the full-precision native responses;
+older trees where temporary-output cleanup removed them need one simulation to restore them.
 The [indicator glossary](toolbox-indicator-glossary.md) owns variable/token terminology.
 
 ## HM-6a — WF1 final state

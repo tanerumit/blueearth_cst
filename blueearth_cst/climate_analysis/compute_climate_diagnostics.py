@@ -1,4 +1,4 @@
-"""Rule 0.04: source-owned retained diagnostics and annual native-grid fields."""
+"""Rule 0.04: source-owned retained numerical diagnostic tables."""
 
 from pathlib import Path
 
@@ -12,11 +12,6 @@ from blueearth_cst.climate_analysis.diagnostic_tables import (
     compute,
     daily_series,
     write_tables,
-)
-from blueearth_cst.climate_analysis.source_map_fields import prepare_source_map_fields
-from blueearth_cst.shared.map_reference import (
-    publish_source_fields,
-    source_spec_from_dict,
 )
 
 
@@ -39,16 +34,6 @@ def run(sm):
     )
     Path(paths["compute"]["daily"]).parent.mkdir(parents=True, exist_ok=True)
     daily.to_csv(paths["compute"]["daily"])
-    spec = source_spec_from_dict(sm.params.map_source_spec)
-    prepared = prepare_source_map_fields(spec, m0, dict(sm.params.map_completeness))
-    publish_source_fields(
-        paths["compute"]["maps"],
-        prepared.fields,
-        spec,
-        m0,
-        dict(sm.params.map_completeness),
-        prepared.preparation_identity,
-    )
     if settings["subbasin_figures"]:
         import geopandas as gpd
 
@@ -94,7 +79,7 @@ def run(sm):
     for warning in lineage["warnings"]:
         log_row(warning, module="diagnostics", level="WARNING")
     log_row(
-        f"Wrote tables and native-grid map fields for {source}",
+        f"Wrote diagnostic tables for {source}",
         module="diagnostics",
     )
 

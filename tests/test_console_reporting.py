@@ -37,7 +37,9 @@ def test_legacy_console_folds_arrows_without_corrupting_utf8_log(monkeypatch, te
         assert "Written → sample.csv" in log.getvalue()
 
 
-def test_indicator_details_survive_queued_cp1252_logging(tmp_path, monkeypatch, capsys):
+def test_indicator_details_survive_queued_cp1252_logging(
+    tmp_path, monkeypatch, capsys, caplog
+):
     """Snakemake's asynchronous file logger may use the Windows code page."""
     native_log = tmp_path / "snakemake.log"
     handler = logging.FileHandler(native_log, encoding="cp1252")
@@ -45,7 +47,8 @@ def test_indicator_details_survive_queued_cp1252_logging(tmp_path, monkeypatch, 
     listener = QueueListener(queue, handler)
     logger = logging.getLogger("snakemake.logging")
     monkeypatch.setattr(logger, "handlers", [QueueHandler(queue)])
-    monkeypatch.setattr(logger, "level", logging.INFO)
+    # Use setLevel (through caplog) to clear decisions cached by earlier tests.
+    caplog.set_level(logging.INFO, logger="snakemake.logging")
     monkeypatch.setattr(logger, "propagate", False)
     message = "Indicator set abc; manifest → C:/cases/café/水/indicators.json"
     listener.start()

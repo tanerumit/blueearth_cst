@@ -8,6 +8,9 @@ from pathlib import Path
 
 import pytest
 
+from blueearth_cst.shared.config_composition import load_composed_config
+from tests.conftest import parse_workflow, write_config
+
 REPO = Path(__file__).resolve().parents[1]
 SNAKEFILE = REPO / "build_model.smk"
 CONFIG = REPO / "tests" / "project_config_fixture.yml"
@@ -81,9 +84,93 @@ def test_prepare_spatial_maps_declares_the_raster_file_contract():
     assert "config_snake =" not in block
     assert "config_workflows =" not in block
     assert "basin_config = basin_cfg" in block
-    assert "model_config = my_cfg" in block
     assert "data_catalogs = DATA_SOURCES" in block
     assert "log:" in block and "benchmark:" in block
+
+
+@pytest.fixture(scope="module")
+def model_workflow():
+    return parse_workflow("build_model.smk", CONFIG)
+
+
+@pytest.mark.workflow_contract
+def test_evaluation_changes_preserve_thematic_parameters(tmp_path, model_workflow):
+    """Observation and figure settings must not rebuild the model foundation."""
+    cfg = load_composed_config(CONFIG)
+    cfg["workflows"]["build_model"].update(
+        observations={"river discharge": "tests/data/new_observations.csv"},
+        evaluation={"subbasin_plots": True},
+    )
+    changed = parse_workflow("build_model.smk", write_config(tmp_path, cfg))
+    original_rule = model_workflow.get_rule("prepare_land_and_soil_maps")
+    changed_rule = changed.get_rule("prepare_land_and_soil_maps")
+    assert dict(changed_rule.params.items()) == dict(original_rule.params.items())
+    assert set(changed_rule.params.model_config) <= {"output_locations"}
+    original_evaluation = model_workflow.get_rule("plot_model_evaluation")
+    changed_evaluation = changed.get_rule("plot_model_evaluation")
+    assert changed_evaluation.params.subbasin_plots is True
+    assert changed_evaluation.input != original_evaluation.input
+
+
+@pytest.mark.workflow_contract
+def test_thematic_parameter_projection_preserves_legacy_gauge_rejection(tmp_path):
+    cfg = load_composed_config(CONFIG)
+    cfg["basin"]["output_locations"] = "tests/data/canonical_gauges.csv"
+    cfg["workflows"]["build_model"]["output_locations"] = "tests/data/other_gauges.csv"
+    with pytest.raises(ValueError, match="'output_locations' belongs in the project"):
+        parse_workflow("build_model.smk", write_config(tmp_path, cfg))
+
+
+@pytest.mark.workflow_contract
+def test_native_simulation_csv_is_retained_for_evaluation(model_workflow):
+    simulation = model_workflow.get_rule("run_historical_simulation")
+    evaluation = model_workflow.get_rule("plot_model_evaluation")
+    tables = model_workflow.get_rule("export_simulation_tables")
+    assert simulation.output.csv_path not in simulation.temp_output
+    assert simulation.output.csv_path in evaluation.input
+    assert simulation.output.csv_path in tables.input
+
+
+@pytest.mark.workflow_contract
+@pytest.mark.parametrize(
+    "rule_name,expected",
+    [
+        (
+            "prepare_land_and_soil_maps",
+            {
+                "spatial/config.py",
+                "spatial/products.py",
+            },
+        ),
+        (
+            "add_climate_forcing",
+            {
+                "climate_analysis/prepare_climate_data_catalog.py",
+                "shared/setup_time_horizon.py",
+                "shared/climate_window.py",
+            },
+        ),
+        ("add_reservoirs_lakes_glaciers", {"shared/wflow_write.py"}),
+        (
+            "run_historical_simulation",
+            {"model/run_wflow.jl", "shared/wflow_progress.jl"},
+        ),
+        (
+            "declare_gauges_and_outputs",
+            {"shared/wflow_write.py", "shared/wflow_outputs.py"},
+        ),
+    ],
+)
+def test_model_producers_track_their_scientific_helpers(
+    model_workflow, rule_name, expected
+):
+    rule = model_workflow.get_rule(rule_name)
+    declared = {
+        str(path).replace("\\", "/").split("blueearth_cst/", 1)[1]
+        for path in rule.input.scientific_code
+    }
+    assert declared == expected
+    assert all((REPO / "blueearth_cst" / path).is_file() for path in declared)
 
 
 def test_the_vector_artifacts_have_exactly_one_producing_rule():

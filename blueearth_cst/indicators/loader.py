@@ -189,7 +189,9 @@ def local_declaration(indicator: IndicatorDeclaration) -> IndicatorDeclaration:
     """Adapt the legacy registry's vocabulary without making it a dependency."""
     if indicator.calculation_set:
         return indicator
-    for set_id in available_sets():
+    # Legacy statistics have fixed owners. Discovering new sets here could
+    # silently redirect an existing statistic to a newly installed callable.
+    for set_id in ("default", "flow_regime"):
         for item in load(set_id).INDICATORS:
             if (item.statistic, item.input.variable) == (
                 indicator.statistic,

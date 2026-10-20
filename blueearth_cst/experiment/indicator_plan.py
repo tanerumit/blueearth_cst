@@ -48,6 +48,7 @@ from blueearth_cst.experiment.wflow_response_reader import (
     ResponseRequest,
     open_responses,
 )
+from blueearth_cst.indicators import loader
 from blueearth_cst.shared.snake_utils import log_row, plural
 
 #: The published return-level provenance beside each v2 indicator set's marker.
@@ -291,16 +292,19 @@ def current_indicator_requests(experiment_root, calculation_sets, anchor):
         )
     environment = resolve_indicator_environment()
     validation = return_level_validation.build_declaration()
-    code = _indicator_code_inventory()
+    code_by_sets = {}
     requests = []
     for calculations in calculation_sets:
+        contributing = _calculation_sets(declarations_for_calculations(calculations))
+        if contributing not in code_by_sets:
+            code_by_sets[contributing] = _indicator_code_inventory(contributing)
         request = indicator_request(
             record["simulation_id"],
             calculations,
             anchor,
             environment,
             validation,
-            code_inventory=code,
+            code_inventory=code_by_sets[contributing],
         )
         request["simulation_schema_version"] = schema
         requests.append(request)
@@ -328,7 +332,11 @@ def indicator_request(
     return_level_validation.verify_declaration(
         validation, return_level_validation.load_report_bytes()
     )
-    code = _indicator_code_inventory() if code_inventory is None else code_inventory
+    code = (
+        _indicator_code_inventory(_calculation_sets(registry))
+        if code_inventory is None
+        else code_inventory
+    )
     return {
         "schema_version": "indicator-request/4",
         "simulation_id": simulation_id,
@@ -344,27 +352,50 @@ def indicator_request(
     }
 
 
-def _indicator_code_inventory():
-    """Observe the full indicator execution closure, including dynamic sets."""
+def _calculation_sets(declarations) -> tuple[str, ...]:
+    """Resolve actual calculation owners, including legacy definitions."""
+    return tuple(
+        sorted(
+            {loader.local_declaration(item).calculation_set for item in declarations}
+        )
+    )
+
+
+def _indicator_code_inventory(set_ids):
+    """Observe calculation dependencies; resolved upstream inputs are sealed.
+
+    Snakemake owns scheduling. This inventory guards immutable calculation reuse,
+    not invocation logging, configuration capture or upstream implementation.
+    """
     repo = Path(__file__).resolve().parents[2]
     indicator_root = repo / "blueearth_cst/indicators"
     sources = ["blueearth_cst/experiment/indicator_plan.py"]
     sources.extend(
-        path.relative_to(repo).as_posix()
-        for path in indicator_root.rglob("*.py")
-        if path.name not in {"checks.py", "checking.py"}
+        path.relative_to(repo).as_posix() for path in loader.execution_sources(set_ids)
     )
     # Independent checkers have fresh attribution in verification receipts.
     excluded = [
+        # Readers still validate retained simulation/collection identities and
+        # bytes. Their producers cannot change a calculation over those inputs.
+        "blueearth_cst/experiment/simulation_record.py",
+        "blueearth_cst/shared/workflow_config_snapshot.py",
+        # Selection, experiment and water-year configuration enter the request
+        # as resolved values. Changes to those values still change its identity.
+        "blueearth_cst/experiment/reservation_context.py",
+        "blueearth_cst/shared/config_composition.py",
+        # Used for logging, naming and the resolved water-year anchor above.
+        # Reducers receive the anchor explicitly; no default is consulted.
+        "blueearth_cst/shared/snake_utils.py",
+    ]
+    excluded.extend(
         path.relative_to(repo).as_posix()
         for path in indicator_root.rglob("*.py")
         if path.name in {"checks.py", "checking.py"}
-    ]
+    )
     return repository_code_inventory(repo, sources, excluded=excluded)
 
 
 def _collection(simulation):
-    from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
     from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
 
     root = Path(simulation["_root"])
@@ -372,7 +403,9 @@ def _collection(simulation):
     path = resolve_file_reference(
         simulation["collection"]["manifest"], {"project_root": project}
     )
-    collection = read_collection_v2(path)
+    # read_simulation_v2 already validated this complete collection closure.
+    # Its content-addressed marker still has to match before reusing metadata.
+    collection = read_canonical_json(path)
     intent = read_canonical_json(
         resolve_file_reference(
             collection["intent"],
@@ -442,12 +475,24 @@ def _native_runs_v2(root, inventory):
     return result
 
 
-def build_indicator_plan(experiment_root, request):
-    """Resolve units, references and final identity from complete retained responses."""
+def build_indicator_plan(experiment_root, request, *, _observed_code=None):
+    """Resolve units, references and final identity from complete retained responses.
+
+    ``_observed_code`` is a fresh observation shared only within the caller's
+    current planning/publication phase. Execution callers omit it and recheck.
+    """
     root = Path(experiment_root).resolve()
     _require_v2(root)
     simulation = read_simulation_v2(root)
-    intent_v2 = read_simulation_intent_v2(root)
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+
+    # Readiness has just checked the full intent, collection and native response
+    # closure. Reuse those verified documents, checking their exact bytes against
+    # the readiness references instead of walking the same closures again.
+    anchors = {"project_root": root.parent.parent}
+    intent_v2 = read_canonical_json(
+        resolve_file_reference(simulation["intent"], anchors)
+    )
     simulation = {
         **simulation,
         "_root": root,
@@ -465,11 +510,14 @@ def build_indicator_plan(experiment_root, request):
         request["water_year_anchor"],
         request["indicator_environment"],
         request["return_level_validation"],
+        code_inventory=_observed_code,
     )
     live["simulation_schema_version"] = "simulation/3"
     if live != request:
         raise IndicatorPlanStale("indicator declarations or invoked code changed")
-    inventory = read_response_inventory_v2(root)
+    inventory = read_canonical_json(
+        resolve_file_reference(simulation["response_inventory"], anchors)
+    )
     collection, intent, rows = _collection(simulation)
     source_descriptors = [item["descriptor"] for item in collection["series"]]
     if any(
@@ -719,12 +767,12 @@ def _rebased_plan(stored, root, expected):
     return rebased
 
 
-def verify_indicator_plan(experiment_root, request):
+def verify_indicator_plan(experiment_root, request, *, _observed_code=None):
     """Validate existing plans even when timestamps would schedule no job."""
     root = Path(experiment_root).resolve()
     path = _indicator_request_path(root, content_sha256(request))
     stored = read_canonical_json(path)
-    expected = build_indicator_plan(root, request)
+    expected = build_indicator_plan(root, request, _observed_code=_observed_code)
     if _rebased_plan(stored, root, expected) != expected:
         raise IndicatorPlanStale(
             f"indicator request expected={expected['request_sha256']} "

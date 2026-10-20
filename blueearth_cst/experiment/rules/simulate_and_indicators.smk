@@ -34,7 +34,15 @@ SIM_WINDOW_START = _intent["scenario_spec"]["simulation_window"]["start"]
 SIM_WINDOW_END = _intent["scenario_spec"]["simulation_window"]["end"]
 RUN_IDS = selected_run_ids(COLLECTION, SELECTION["manifest_path"], include=include_unperturbed(my_cfg))
 _retained_selection = None
-if Path(f"{engine_dir}/simulation_intent.json").exists():
+stored = None
+if Path(f"{engine_dir}/simulation.json").exists():
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+    stored = read_simulation_v2(exp_dir)
+    # Readiness has checked the intent and full collection. Reuse its exact
+    # referenced metadata for selection and the subsequent live-input check.
+    _retained_selection = read_canonical_json(resolve_file_reference(
+        stored["intent"], {"project_root": Path(project_dir)}))["collection"]
+elif Path(f"{engine_dir}/simulation_intent.json").exists():
     _retained_selection = read_simulation_intent_v2(exp_dir)["collection"]
 elif Path(f"{engine_dir}/reservation.json").exists():
     from blueearth_cst.experiment.reservation import read_reservation
@@ -89,17 +97,20 @@ declare_project_root(project_dir)
 def _selected_collection(wc):
     return SELECTION["manifest_path"]
 
-def _live_simulation_inputs():
+def _current_preparation():
     catalogs = project["project"]["catalog"]
     catalogs = catalogs if isinstance(catalogs, list) else [catalogs]
     source = project["climate"]["selected"]
     # Warnings print under the run header, not above it (`defer_rows`).
     with captured_output(replay=defer_rows):
-        preparation = resolve_wf4_preparation(
+        return resolve_wf4_preparation(
             Path(project_dir), Path(exp_dir), climate_source=source,
             catalogs=catalogs,
             unit_interpretation=resolved_unit_interpretation(catalogs, source),
         )
+def _live_simulation_inputs():
+    preparation = _current_preparation()
+    with captured_output(replay=defer_rows):
         with tempfile.TemporaryDirectory(dir=project_dir) as directory:
             return live_simulation_inputs_v2(
                 exp_dir, project_root=project_dir, model_root=basin_dir,
@@ -111,11 +122,15 @@ def _live_simulation_inputs():
                 include_unperturbed=include_unperturbed(my_cfg))
 
 _simulation_complete = False
-if Path(f"{exp_dir}/_engine/simulation.json").exists():
-    stored = read_simulation_v2(exp_dir)
-    current = _live_simulation_inputs()
-    if current["simulation_id"] != stored["simulation_id"]:
-        raise SimulationFrozenError("simulation inputs changed; use a new experiment name")
+if stored is not None:
+    from blueearth_cst.experiment.simulation_reuse import check_completed_simulation_inputs
+    check_completed_simulation_inputs(
+        exp_dir, project_root=project_dir, model_root=basin_dir,
+        collection_path=SELECTION["manifest_path"], collection=COLLECTION,
+        resolution_mode=SELECTION["resolution_mode"], preparation=_current_preparation(),
+        simulation_window={"start": SIM_WINDOW_START, "end": SIM_WINDOW_END},
+        julia_command=shlex.split(julia_prefix(1)),
+        include_unperturbed=include_unperturbed(my_cfg), _ready_simulation=stored)
     _simulation_complete = True
 
 def _frozen_simulation(wc):
@@ -132,10 +147,8 @@ rule all:
         f"{engine_dir}/response_inventory.json",
         lambda wc: _indicator_plan_paths(wc),
         lambda wc: _selected_indicator_outputs(wc),
-        # The gathers were declared but requested by nothing, so no WF4 run
-        # merged its log or benchmark parts.
-        WORKFLOW_LOG_PATH,
-        BENCHMARK_OUTPUT_PATH,
+        # Managed invocations merge diagnostics in the launcher's finalizer.
+        *_paths.gather_targets.values(),
 
 if not _simulation_complete:
     # 4.01  write_model_fingerprint

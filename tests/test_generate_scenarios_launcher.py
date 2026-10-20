@@ -78,16 +78,18 @@ def test_success_and_ready_reuse_export_the_selected_collection(
         == exit_code
     )
     assert len(children) == (0 if ready else 1)
-    console = capsys.readouterr().out
-    assert "1 stochastic realization across 1 perturbation point" in console
-    assert "planned collection: 2 runs" in console
+    captured = capsys.readouterr()
+    console = captured.out
     if ready:
-        assert (
-            "Reusing scenario collection: 2 runs; no weather generation needed"
-            in console
-        )
+        assert captured.err == "\nUp to date\n"
+        assert "Scenario request" not in console
+        assert "Reusing scenario collection" not in console
         assert plan["collection_id"] not in console
         assert "_engine" not in console
+    else:
+        assert "1 stochastic realization across 1 perturbation point" in console
+        assert "planned collection: 2 runs" in console
+        assert "Up to date" not in captured.err
     assert exports == (
         [(tmp_path, tmp_path / plan["outputs"]["record_root"] / "collection.json")]
         if exit_code == 0

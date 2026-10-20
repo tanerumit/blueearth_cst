@@ -327,8 +327,8 @@ predecessor is at `blueearth_cst-artifacts/r12/predecessor-test_local-2026-09-15
 reuse: older seeds may still contain predecessor output. Re-seed or regenerate each affected worktree;
 repairing one does not repair the others. `project_dir` resolves from the run directory.
 
-Run WF1 with `--notemp` when feeding the baseline checker. Rule 1.13 otherwise removes its `temp()`
-target `run_default/output.csv`, which the manifest needs. Rounded `output_q.csv` is not a substitute.
+WF1 retains `run_default/output.csv`, which the baseline manifest needs. Older trees where it was
+deleted require a historical simulation to restore it. Rounded `output_q.csv` is not a substitute.
 
 ## Read the CI run after you push
 

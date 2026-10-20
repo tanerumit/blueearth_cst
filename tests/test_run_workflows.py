@@ -87,7 +87,7 @@ def capture_runs(monkeypatch):
     exits = {}  # index -> returncode override
     # These wrapper-only fixtures deliberately use minimal v1-shaped mappings.
     # Archive capture is exercised with a valid project set separately.
-    from blueearth_cst.shared import workflow_archive_launch
+    from blueearth_cst.shared import configuration_archive, workflow_archive_launch
 
     monkeypatch.setattr(
         workflow_archive_launch,
@@ -95,6 +95,11 @@ def capture_runs(monkeypatch):
         lambda _name, config, _root, **_kwargs: (Path(config), Path(config)),
     )
     monkeypatch.setattr(rw, "_bind_workflow_archive", lambda *_args: None)
+    # This orchestration-only fake returns its source path as a context. The
+    # lifecycle integration tests exercise cleanup of real private contexts.
+    monkeypatch.setattr(
+        configuration_archive, "remove_launch_context", lambda *_args: None
+    )
     monkeypatch.setattr(rw, "_capture_legacy_wf3_attempt", lambda *_args: "a" * 64)
 
     def fake_run(cmd, cwd=None, **kwargs):
@@ -176,6 +181,121 @@ def test_all_true_invokes_five_in_fixed_order(tmp_path, capture_runs):
         "generate_scenarios.smk",
         "simulate_system.smk",
     ]
+
+
+def test_preparation_is_announced_before_experiment_imports(
+    tmp_path, capture_runs, monkeypatch, capsys
+):
+    import builtins
+
+    original_import = builtins.__import__
+    before_import = []
+
+    def observe_import(name, *args, **kwargs):
+        if name == "blueearth_cst.experiment.reservation_context":
+            captured = capsys.readouterr()
+            before_import.append(captured.out + captured.err)
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", observe_import)
+    cfg = tmp_path / "c.yml"
+    _write_cfg(cfg, {name: "true" for name in rw.WORKFLOW_ORDER})
+    assert rw.run(str(cfg), cores=1, extra=[]) == 0
+    assert before_import
+    assert "Preparing configuration and experiment checks" in before_import[0]
+    output = "".join(before_import) + capsys.readouterr().out
+    assert output.count("\n  run_workflows\n") == 1
+
+
+def test_preparation_watchdog_stops_when_admission_fails(
+    tmp_path, capture_runs, monkeypatch
+):
+    from blueearth_cst.experiment import reservation_context
+
+    stopped = []
+    original_stop = rw._PreparationHeartbeat.stop
+
+    def stop(heartbeat):
+        original_stop(heartbeat)
+        stopped.append(not heartbeat._thread.is_alive())
+
+    def refuse(*args, **kwargs):
+        raise ValueError("changed request")
+
+    monkeypatch.setattr(rw._PreparationHeartbeat, "stop", stop)
+    monkeypatch.setattr(reservation_context, "admit_context_owned", refuse)
+    cfg = tmp_path / "c.yml"
+    _write_cfg(cfg, {name: "true" for name in rw.WORKFLOW_ORDER})
+    with pytest.raises(ValueError, match="changed request"):
+        rw.run(str(cfg), cores=1, extra=[])
+    assert stopped == [True]
+    assert _read_only_manifest(tmp_path / "project")["status"] == "failed"
+
+
+def test_preparation_progress_reports_elapsed_time_in_the_introductory_row(
+    monkeypatch, capsys
+):
+    monkeypatch.setenv("CST_HEARTBEAT_SECS", "0")
+    clock = [100.0]
+    monkeypatch.setattr(rw.time, "monotonic", lambda: clock[0])
+    with rw._preparation_progress(True):
+        initial = capsys.readouterr()
+        assert initial.err == "\n  Preparing configuration and experiment checks..."
+        clock[0] += 22
+    assert capsys.readouterr().err == " (0:00:22 elapsed)\n"
+
+
+@pytest.mark.parametrize("interactive", [False, True])
+def test_preparation_timer_uses_one_row(monkeypatch, interactive):
+    from io import StringIO
+
+    stream = StringIO()
+    monkeypatch.setattr(stream, "isatty", lambda: interactive)
+    monkeypatch.setenv("CST_HEARTBEAT_SECS", "0")
+    clock = [100.0]
+    monkeypatch.setattr(rw.time, "monotonic", lambda: clock[0])
+    timer = rw._PreparationHeartbeat(
+        "Preparing configuration and experiment checks", stream
+    ).start()
+    for elapsed in (15, 30):
+        clock[0] = 100 + elapsed
+        timer._tick(clock[0])
+    assert "\n" not in stream.getvalue()
+    clock[0] = 143
+    timer.stop()
+    output = stream.getvalue()
+    expected = "  Preparing configuration and experiment checks... (0:00:43 elapsed)\n"
+    assert output.count("\n") == 1
+    if interactive:
+        assert output.split("\r")[-1] == "\033[2K" + expected
+    else:
+        assert output == expected
+
+
+@pytest.mark.parametrize("failure", ["banner", "watchdog_start", "watchdog_stop"])
+def test_preparation_reporting_never_masks_admission_errors(monkeypatch, failure):
+    def unavailable(*args, **kwargs):
+        raise OSError("console unavailable")
+
+    class Watchdog:
+        def __init__(self, *args):
+            pass
+
+        def start(self):
+            if failure == "watchdog_start":
+                unavailable()
+            return self
+
+        def stop(self):
+            if failure == "watchdog_stop":
+                unavailable()
+
+    monkeypatch.setattr(rw, "_PreparationHeartbeat", Watchdog)
+    if failure == "banner":
+        monkeypatch.setattr(rw, "_banner", unavailable)
+    with pytest.raises(ValueError, match="admission failed"):
+        with rw._preparation_progress(True):
+            raise ValueError("admission failed")
 
 
 # --- §7(g) assertion 2: --keep-going on projections only (flag parity) -------

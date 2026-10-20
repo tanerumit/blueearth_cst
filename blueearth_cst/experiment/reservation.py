@@ -24,6 +24,7 @@ from typing import Any
 
 import yaml
 
+from blueearth_cst.experiment.catalog_identity import legacy_catalog_input
 from blueearth_cst.experiment.content_identity import (
     atomic_record,
     canonical_json_bytes,
@@ -41,6 +42,7 @@ from blueearth_cst.shared.workflow_config_snapshot import (
     resolve_file_reference,
     validate_archive,
 )
+from blueearth_cst.shared.yaml_documents import parse_yaml_document
 
 _ALLOCATION_PATH = "experiments/_engine/allocation.json"
 _TRANSACTIONS_PATH = "experiments/_engine/transactions"
@@ -228,7 +230,10 @@ def validate_request(request: dict, project_root: Path | str) -> dict:
         "request",
     )
     canonical_json_bytes(request)
-    if request["schema_version"] != "experiment-request/1":
+    if request["schema_version"] not in (
+        "experiment-request/1",
+        "experiment-request/2",
+    ):
         raise ValueError("unsupported reservation request")
     selection = _fields(request["selection"], {"mode", "manifest"}, "selection")
     if selection["mode"] not in {"project-generation", "explicit-manifest"}:
@@ -242,6 +247,12 @@ def validate_request(request: dict, project_root: Path | str) -> dict:
     catalogs = request["input_catalogs"]
     if type(catalogs) is not list or any(type(item) is not dict for item in catalogs):
         raise ValueError("input_catalogs must contain semantic catalog documents")
+    if request["schema_version"] == "experiment-request/2":
+        for catalog in catalogs:
+            _fields(catalog, {"document", "root"}, "catalog input")
+            if type(catalog["document"]) is not dict:
+                raise ValueError("catalog document must be a mapping")
+            _text(catalog["root"], "catalog root")
     generation = request["generation"]
     if generation is None and selection["mode"] == "project-generation":
         raise ValueError("unresolved project-generation requires generation request")
@@ -348,8 +359,34 @@ def validate_request(request: dict, project_root: Path | str) -> dict:
     return request
 
 
-def compare_request(retained: dict, requested: dict) -> None:
+def compare_request(retained: Any, requested: Any) -> None:
     """Refuse the first changed scientific field, preserving JSON types."""
+
+    # V2 keeps source YAML and root context, leaving adapter validation to the
+    # workflow that consumes the catalog. Compare legacy records through that
+    # explicit projection; their original request and digest remain immutable.
+    if (
+        isinstance(retained, dict)
+        and isinstance(requested, dict)
+        and (retained.get("schema_version"), requested.get("schema_version"))
+        in (
+            ("experiment-request/1", "experiment-request/2"),
+            ("experiment-request/2", "experiment-request/1"),
+        )
+    ):
+
+        def current_view(request: dict) -> dict:
+            if request["schema_version"] == "experiment-request/2":
+                return request
+            return {
+                **request,
+                "schema_version": "experiment-request/2",
+                "input_catalogs": [
+                    legacy_catalog_input(item) for item in request["input_catalogs"]
+                ],
+            }
+
+        retained, requested = current_view(retained), current_view(requested)
 
     def compare(old: Any, new: Any, path: str) -> None:
         if canonical_json_bytes(old) == canonical_json_bytes(new):
@@ -1162,7 +1199,7 @@ def _read_pair(
     data = metadata_path.read_bytes()
     if hashlib.sha256(data).hexdigest() != transaction["metadata_sha256"]:
         raise ValueError("experiment metadata bytes differ from immutable transaction")
-    metadata = yaml.safe_load(data)
+    metadata = parse_yaml_document(data)
     if canonical_json_bytes(_creation(metadata)) != canonical_json_bytes(
         transaction["metadata"]
     ):

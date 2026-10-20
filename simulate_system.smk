@@ -104,7 +104,8 @@ def _selected_indicator_outputs(wc):
         stored = read_canonical_json(Path(path))
         key = (identity, content_sha256(stored))
         if key not in _VERIFIED_INDICATOR_PLANS:
-            _VERIFIED_INDICATOR_PLANS[key] = verify_indicator_plan(exp_dir, request)
+            _VERIFIED_INDICATOR_PLANS[key] = verify_indicator_plan(
+                exp_dir, request, _observed_code=request["code_inventory"])
         plan = _VERIFIED_INDICATOR_PLANS[key]
         if Path(plan["targets"]["manifest"]).exists():
             read_indicator_set(exp_dir, Path(plan["targets"]["manifest"]))
@@ -260,6 +261,10 @@ def _header():
 
 
 onstart:
+    # The owned runner distinguishes pre-execution refusals from partial job
+    # failures, for which completed indicator sets can still be published.
+    if os.environ.get("CST_SIMULATION_STARTED"):
+        Path(os.environ["CST_SIMULATION_STARTED"]).write_text("started\n", encoding="utf-8")
     # Restyle Snakemake's own console output into this toolbox's grammar (one
     # line per job start and end). Here and not at parse time: the logging
     # stack does not exist yet then. Fail-open; see install_console_style.

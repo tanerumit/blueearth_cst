@@ -31,6 +31,7 @@ import textwrap
 import time
 import uuid
 from collections.abc import Mapping
+from contextlib import contextmanager, suppress
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -61,7 +62,11 @@ from blueearth_cst.shared.provenance import (  # noqa: E402
     file_sha256,
     toolbox_identity,
 )
-from blueearth_cst.shared.run_log_core import RUN_WARNING_TALLY_ENV  # noqa: E402
+from blueearth_cst.shared.run_log_core import (  # noqa: E402
+    RUN_WARNING_TALLY_ENV,
+    _Heartbeat,
+    _line_reset,
+)
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _ANSI_FAIL,
     ADVANCED_SETTINGS,
@@ -594,7 +599,11 @@ def _unusual_exit_diagnosis(exit_code: int | None) -> str | None:
 
 
 def _console_block(
-    head: str, groups: list[tuple[str, list[Any]]], *, close: bool = False
+    head: str,
+    groups: list[tuple[str, list[Any]]],
+    *,
+    close: bool = False,
+    include_banner: bool = True,
 ) -> str:
     """A banner, then labelled groups of rows.
 
@@ -613,7 +622,7 @@ def _console_block(
     """
     pairs = [row for _, rows in groups for row in rows if isinstance(row, tuple)]
     width = max((len(key) for key, _ in pairs), default=0)
-    lines = _banner(head)
+    lines = _banner(head) if include_banner else []
     for label, rows in groups:
         lines.extend(["", *_wrap_console(label, initial="  ", continuation="  ")])
         if rows and not any(isinstance(row, tuple) for row in rows):
@@ -873,6 +882,7 @@ def _opening_block(
     dry_run: bool,
     flags: Mapping[str, bool],
     experiment: tuple[str, str | None] | None = None,
+    include_banner: bool = True,
 ) -> str:
     """The start-of-invocation block: which run this is, and what will run.
 
@@ -928,7 +938,7 @@ def _opening_block(
         groups.append(
             (f"nothing to invoke -- 0 of {total} workflows are enabled here", [])
         )
-    return _console_block("run_workflows", groups)
+    return _console_block("run_workflows", groups, include_banner=include_banner)
 
 
 def _closing_block(
@@ -1091,29 +1101,41 @@ def run(
 ) -> int:
     """Hold project ownership and record explicit-root validation failures."""
     history_pair = None
-    if project_dir is not None:
-        supplied_root = Path(project_dir).resolve()
-        history_pair = invocation_history.start(
-            supplied_root,
-            workflow=None,
-            entry_point="scripts/run_workflows.py",
-            command=sanitize_argv(
-                [
-                    "run_workflows",
-                    "--config",
-                    config_path,
-                    "--cores",
-                    str(cores),
-                    *extra,
-                ]
-            ),
-            targets=["all"],
-            mode="dry_run" if "--dry-run" in extra or "-n" in extra else "execute",
-            contract_mode="new_schema",
-        )
     try:
-        cfg = _read_config(config_path)
-        flags = _enabled_flags(cfg, config_path)
+        flags = None
+        try:
+            cfg = _read_config(config_path)
+            flags = _enabled_flags(cfg, config_path)
+        finally:
+            # Name the attempt from its selection when available, while still
+            # retaining explicit-root failures that cannot read configuration.
+            if project_dir is not None:
+                supplied_root = Path(project_dir).resolve()
+                history_pair = invocation_history.start(
+                    supplied_root,
+                    workflow=None,
+                    entry_point="scripts/run_workflows.py",
+                    command=sanitize_argv(
+                        [
+                            "run_workflows",
+                            "--config",
+                            config_path,
+                            "--cores",
+                            str(cores),
+                            *extra,
+                        ]
+                    ),
+                    targets=["all"],
+                    mode="dry_run"
+                    if "--dry-run" in extra or "-n" in extra
+                    else "execute",
+                    contract_mode="new_schema",
+                    requested_workflows=(
+                        [name for name in WORKFLOW_ORDER if flags[name]]
+                        if flags is not None
+                        else None
+                    ),
+                )
         resolved_root = _project_dir(cfg, config_path)
         if project_dir is not None and resolved_root != supplied_root:
             raise ConfigError("--project-dir differs from composed project root")
@@ -1137,6 +1159,75 @@ def run(
                 history_pair[0], history_pair[1], exit_code=None, error=error
             )
         raise
+
+
+class _PreparationHeartbeat(_Heartbeat):
+    """Keep startup progress aligned with the runner's introductory text."""
+
+    def start(self) -> _PreparationHeartbeat:
+        if self._interactive:
+            self._emit("0:00:00 elapsed", redraw=True)
+        else:
+            print(f"  {self._label}...", file=self._stream, end="", flush=True)
+        return super().start()
+
+    def _tick(self, now: float) -> None:
+        if self._interactive:
+            super()._tick(now)
+
+    def _emit(
+        self, text: str, code: str | None = None, *, redraw: bool = False
+    ) -> None:
+        if redraw and not self._interactive:
+            return
+        prefix = (
+            f"{_line_reset(self._stream)}  {self._label}..."
+            if self._interactive
+            else ""
+        )
+        with suppress(OSError, ValueError):
+            print(
+                f"{prefix} ({text})",
+                file=self._stream,
+                end="" if redraw else "\n",
+                flush=True,
+            )
+
+    def stop(self, failed: bool = False) -> None:
+        super().stop(failed=failed)
+        if not failed:
+            self._emit(f"{format_elapsed(time.monotonic() - self._start)} elapsed")
+
+
+@contextmanager
+def _preparation_progress(enabled: bool):
+    """Announce the runner before experiment imports and report long waits."""
+    heartbeat = None
+    try:
+        print("\n" + "\n".join(_banner("run_workflows")), flush=True)
+        if enabled:
+            print(file=sys.stderr, flush=True)
+            heartbeat = _PreparationHeartbeat(
+                "Preparing configuration and experiment checks", sys.stderr
+            ).start()
+    except Exception as exc:  # noqa: BLE001 -- reporting must never prevent admission
+        with suppress(OSError, ValueError):
+            print(
+                f"(preparation output unavailable: {exc})", file=sys.stderr, flush=True
+            )
+    try:
+        yield
+    finally:
+        if heartbeat is not None:
+            try:
+                heartbeat.stop()
+            except Exception as exc:  # noqa: BLE001 -- preserve the admission outcome
+                with suppress(OSError, ValueError):
+                    print(
+                        f"(preparation status unavailable: {exc})",
+                        file=sys.stderr,
+                        flush=True,
+                    )
 
 
 @execution_outputs.capture_launch
@@ -1187,27 +1278,32 @@ def _run_owned(
     invocation_history.update(history_path, history)
     reservation_context = None
     try:
-        if not flags["simulate_system"]:
-            if new_experiment or note is not None or recover_reservation:
-                raise ValueError("experiment flags require enabled simulate_system")
-        else:
-            from blueearth_cst.experiment.reservation_context import admit_context_owned
-            from blueearth_cst.experiment.simulation_runner import simulation_command
+        with _preparation_progress(flags["simulate_system"]):
+            if not flags["simulate_system"]:
+                if new_experiment or note is not None or recover_reservation:
+                    raise ValueError("experiment flags require enabled simulate_system")
+            else:
+                from blueearth_cst.experiment.reservation_context import (
+                    admit_context_owned,
+                )
+                from blueearth_cst.experiment.simulation_runner import (
+                    simulation_command,
+                )
 
-            simulation_command(config_path, list(simulation_targets), cores, extra)
-            reservation_context = admit_context_owned(
-                Path(config_path),
-                REPO_ROOT,
-                project_dir,
-                history["invocation_id"],
-                execute_generation=flags["generate_scenarios"],
-                execute_model=flags["build_model"],
-                new_experiment=new_experiment,
-                note=note,
-                recover=recover_reservation,
-                preview=manifest["dry_run"] or "--unlock" in extra,
-                announce=False,
-            )
+                simulation_command(config_path, list(simulation_targets), cores, extra)
+                reservation_context = admit_context_owned(
+                    Path(config_path),
+                    REPO_ROOT,
+                    project_dir,
+                    history["invocation_id"],
+                    execute_generation=flags["generate_scenarios"],
+                    execute_model=flags["build_model"],
+                    new_experiment=new_experiment,
+                    note=note,
+                    recover=recover_reservation,
+                    preview=manifest["dry_run"] or "--unlock" in extra,
+                    announce=False,
+                )
     except BaseException as exc:
         invocation_history.finish(history_path, history, exit_code=None, error=exc)
         raise
@@ -1268,6 +1364,7 @@ def _run_owned(
                 experiment=(reservation_context.name, reservation_context.action)
                 if reservation_context is not None
                 else None,
+                include_banner=False,
             ),
             flush=True,
         )
@@ -1330,6 +1427,7 @@ def _run_owned(
             child_id = uuid.uuid4().hex
             child_path = history_path.with_name(f"{child_id}.json")
             child_record = None
+            capture_context = None
             wf3_source_hash = None
             warning_path = history_path.parent / f".{child_id}.warnings"
             try:
@@ -1591,6 +1689,12 @@ def _run_owned(
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))
                 raise
             finally:
+                if capture_context is not None:
+                    from blueearth_cst.shared.configuration_archive import (
+                        remove_launch_context,
+                    )
+
+                    remove_launch_context(project_dir, capture_context)
                 if previous_tally is None:
                     os.environ.pop(RUN_WARNING_TALLY_ENV, None)
                 else:
@@ -1743,7 +1847,9 @@ def _link_child(
 def _bind_workflow_archive(
     child_path: Path, child: dict[str, Any], project_dir: Path, workflow: str
 ) -> None:
-    """Bind a WF0--WF2 child to its checked current creator archive."""
+    """Bind a WF0--WF2 child to its immutable configuration generation."""
+    from blueearth_cst.shared.configuration_archive import retain_archive
+
     archive = read_archive(project_dir, workflow, f"config/{workflow}")
     projection = archive["configuration_projection"]
     child["configuration"].update(
@@ -1751,11 +1857,11 @@ def _bind_workflow_archive(
         effective_config_sha256=projection["effective_config_sha256"],
         configuration_inputs_sha256=projection["configuration_inputs_sha256"],
         run_record=file_reference(
-            project_dir / "config" / workflow / "run_record.yml",
+            retain_archive(project_dir, project_dir / "config" / workflow),
             "project_root",
             project_dir,
         ),
-        archive_state="latest",
+        archive_state="retained",
     )
     invocation_history.update(child_path, child)
 

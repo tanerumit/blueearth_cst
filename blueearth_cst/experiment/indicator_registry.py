@@ -147,13 +147,14 @@ def indicator_unit_index(
     return tuple(result)
 
 
-def _revision() -> str:
+def _revision(set_id: str = "default") -> str:
+    """Hash the legacy adapter and contributing calculation set only."""
     digest = hashlib.sha256()
     for module in (
         Path(__file__),
         Path(md.__file__),
         Path(tables.__file__),
-        *loader.execution_sources(),
+        *loader.execution_sources([set_id]),
     ):
         digest.update(module.read_bytes().replace(b"\r\n", b"\n"))
     return digest.hexdigest()
@@ -229,7 +230,7 @@ def declarations(tokens: Sequence[str]) -> tuple[IndicatorDeclaration, ...]:
 
 def optional_declarations() -> tuple[IndicatorDeclaration, ...]:
     """Declare the registered q indicators outside the ``current_default`` preset."""
-    revision = _revision()
+    revision = _revision("flow_regime")
     return tuple(
         _run_declaration(name, statistic, revision)
         for statistic, (name, _, _) in OPTIONAL_Q_CALCULATIONS.items()

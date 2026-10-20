@@ -129,8 +129,7 @@ V2_TARGET = (
 )
 WF3_TARGETS = SOURCE_TARGETS if SOURCE_ONLY else [
     V2_TARGET,
-    BENCHMARK_OUTPUT_PATH,
-    WORKFLOW_LOG_PATH,
+    *_paths.gather_targets.values(),
 ]
 
 # all

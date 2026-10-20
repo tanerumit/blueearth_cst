@@ -391,11 +391,9 @@ def live_simulation_inputs_v2(
     """Resolve all current scientific WF4 inputs into an immutable intent."""
     import tomllib
 
-    from blueearth_cst.experiment.content_identity import (
-        repository_code_inventory,
-        stage_environment,
-    )
+    from blueearth_cst.experiment.content_identity import stage_environment
     from blueearth_cst.experiment.forcing_window import forcing_window
+    from blueearth_cst.experiment.simulation_code import simulation_code_inventory
     from blueearth_cst.experiment.simulator_adapter import plan_native_response_request
     from blueearth_cst.experiment.wf4_ancillary_descriptor import (
         preparation_identity_v2,
@@ -429,17 +427,7 @@ def live_simulation_inputs_v2(
         timestep_seconds=model_config["time"]["timestepsecs"],
     )
     repo = Path(__file__).resolve().parents[2]
-    code = repository_code_inventory(
-        repo,
-        [
-            "blueearth_cst/experiment/simulator_adapter.py",
-            "blueearth_cst/experiment/downscale_climate_forcing.py",
-            "blueearth_cst/experiment/run_wflow_batch.jl",
-            "blueearth_cst/shared/wflow_progress.jl",
-            "blueearth_cst/shared/resource_timing.jl",
-            "blueearth_cst/shared/run_logged.py",
-        ],
-    )
+    code = simulation_code_inventory(repo)
     environment = stage_environment(
         ["hydromt-wflow", "xarray", "netCDF4", "pyproj"],
         julia_manifest=repo / "Manifest.toml",

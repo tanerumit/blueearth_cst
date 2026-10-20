@@ -9,11 +9,13 @@ and carries the same digests ``run_record.yml`` carries, so
 means the outputs predate the most recently recorded configuration and toolbox
 state -- and the journal then names the invocations on either side.
 
-Why the WIDE digest is the staleness test: ``effective_config_sha256`` moves
-only when the settings move, so a changed custom template, an in-place catalog
-edit, or a toolbox commit would leave stale outputs matching a fresh record and
-reading as current. Both fields are written -- the narrow one answers "same
-settings?", the wide one "same settings, code and inputs?".
+The wide digest includes the toolbox revision. It is read from the captured
+archive when this rule executes, rather than used as a scheduling parameter:
+a new commit or dirty-state change alone must not refresh the provenance of
+reused outputs. Settings, referenced-file contents, environment changes and
+updated upstream products still refresh this sidecar. A code-only invocation
+is recorded in the launcher archive and journal; the sidecar retains its
+previous digest until the outputs or their configuration inputs change.
 
 The sidecar is a separate declared output; it never adds metadata columns to
 scientific indicator tables or changes their retained numerical values.
@@ -66,11 +68,18 @@ def write_run_metadata(
 
 
 if __name__ == "__main__" and "snakemake" in globals():
+    from blueearth_cst.shared.workflow_archive_launch import require_capture
+
     sm = globals()["snakemake"]
+    record = require_capture(
+        sm.params.workflow_name, sm.params.config_path, dry_run=False
+    )
     write_run_metadata(
         path=sm.output.run_metadata,
         workflow=sm.params.workflow_name,
         effective_config_sha256=sm.params.effective_config_sha256,
-        configuration_inputs_sha256=sm.params.configuration_inputs_sha256,
+        configuration_inputs_sha256=record["configuration_projection"][
+            "configuration_inputs_sha256"
+        ],
         experiment=getattr(sm.params, "experiment", None),
     )

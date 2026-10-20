@@ -397,6 +397,11 @@ def test_changed_request_reports_nested_field_and_preserves_authority(api, prepa
         api.compare_request({"nested": {"value": 1}}, {"nested": {"value": True}})
 
 
+@pytest.mark.parametrize("value", [1, "JAN", [1, 2], {"nested": [True, 1]}])
+def test_request_comparison_accepts_matching_subfields(api, value):
+    api.compare_request(value, copy.deepcopy(value))
+
+
 @pytest.mark.parametrize(
     "record,field,value",
     [
@@ -880,6 +885,14 @@ def test_request_schema_is_closed_and_never_coerces_types(
     with pytest.raises(ValueError):
         api.validate_request(request, root)
     assert not root.exists()
+
+
+@pytest.mark.parametrize("version", ["experiment-request/3", None, [], {}])
+def test_request_rejects_invalid_schema_versions(api, prepared, version):
+    root, request, _ = prepared
+    request["schema_version"] = version
+    with pytest.raises(ValueError, match="unsupported reservation request"):
+        api.validate_request(request, root)
 
 
 def test_full_candidate_name_length_is_checked_without_truncation(api, tmp_path):

@@ -63,6 +63,12 @@ For optional or dynamically named products, inspect the producer's inventory and
 contract rather than assuming a fixed list of files. Gather rules must wait for all owned terminal work,
 including independent branches, before merging execution records.
 
+WF0 and WF1 share the native-grid map-field producer in
+`blueearth_cst/climate_analysis/rules/source_map_preparation.smk`. It seals
+`tables/annual_climatology.nc` separately from numerical diagnostic tables and display-reference
+preparation. Rendering changes must not rerun this numerical producer. Historical WF1 simulation
+responses in `run_default/output.csv` persist so exports and evaluation can rerun independently.
+
 Validate the affected configured graph with the supported runner's dry-run interface.
 [The DAG plotting tool](../../scripts/plot_workflow_dag.py) provides an executable graph view.
 Select consumer checks through the [validation ladder](dev-validation.md); examples include

@@ -276,11 +276,8 @@ CONFIG_REFERENCES = [
 EFFECTIVE_CONFIG_DIGEST = CAPTURE_DIGESTS[0] if CAPTURE_DIGESTS else effective_config_digest(
     config, ADVANCED_SETTINGS, CONFIG_PROJECTION
 )
-# Threaded through rule 1.01's params: below. Snakemake's params rerun-trigger
-# then re-executes it whenever ANY component moves -- a new commit, a dirty
-# flip, a lock-file change, an in-place catalog edit. Without this the record
-# would keep the previous commit after a code-only change, which is the defect
-# both design reviewers found independently.
+# Full provenance includes Git state. The sidecar's refresh trigger below
+# excludes it: a new commit alone does not produce new scientific outputs.
 CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configuration_inputs_digest(
     EFFECTIVE_CONFIG_DIGEST,
     toolbox_identity(),
@@ -496,6 +493,7 @@ EXTRACT_CLIMATE_DATASETS = RULES.logged("1.03", "extract_climate_datasets", summ
 if MAP_CANDIDATE_STORES:
     EXTRACT_MAP_CANDIDATES = RULES.logged("1.03b", "extract_map_candidates", summary="extract native candidate climate for the shared map reference")
 PRODUCE_MAP_REFERENCE = RULES.logged("1.03c", "produce_historical_map_reference", summary="prepare shared historical map display classes")
+PREPARE_SOURCE_MAPS = RULES.logged("1.03d", "prepare_historical_map_fields", summary="prepare shared native-grid map fields")
 PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps", summary="prepare shared terrain, land-cover, and soil layers")
 BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from the spatial foundation and global datasets")
 ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="apply configured reservoir, lake, and glacier setup")
@@ -551,12 +549,11 @@ WF1_TERMINALS = [
 #
 # Hoisted into a list so `message:` can print one target per line without
 # restating them. Snakemake flattens a list argument, so `input: WF1_TARGETS`
-# declares the terminals, optional launcher record and two gathered artifacts.
+# declares terminals, the optional launcher record and unowned diagnostic targets.
 WF1_TARGETS = [
     *WF1_TERMINALS,
     *([RUN_RECORD] if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else []),
-    WORKFLOW_LOG_PATH,
-    BENCHMARK_OUTPUT_PATH,
+    *_paths.gather_targets.values(),
 ]
 
 rule all:
@@ -619,13 +616,19 @@ rule prepare_land_and_soil_maps:
         river_attributes = SPATIAL_UNITS.outputs["river_attributes"],
         locations = SPATIAL_UNITS.outputs["locations"],
         location_registry = SPATIAL_UNITS.outputs["location_registry"],
+        scientific_code = [
+            "blueearth_cst/spatial/config.py",
+            "blueearth_cst/spatial/products.py",
+        ],
     output:
         spatial_maps = f"{spatial_dir}/spatial_maps.nc",
         spatial_catalog = f"{spatial_dir}/spatial_catalog.yml",
         spatial_report = f"{spatial_dir}/spatial_report.yml",
     params:
         basin_config = basin_cfg,
-        model_config = my_cfg,
+        # Only this legacy field is consumed by parse_spatial_config. Evaluation,
+        # observations and simulation settings must not rebuild thematic maps.
+        model_config = {key: my_cfg[key] for key in ("output_locations",) if key in my_cfg},
     log:
         PREPARE_LAND_AND_SOIL_MAPS.log(),
     benchmark:
@@ -686,7 +689,8 @@ rule add_reservoirs_lakes_glaciers:
         # plain input would re-trigger it on its own output. Ordering and
         # rebuild-detection come from the sentinel below instead (R7-1).
         basin_nc = ancient(f"{basin_dir}/staticmaps.nc"),
-        model_built = f"{basin_dir}/.model_built"
+        model_built = f"{basin_dir}/.model_built",
+        scientific_code = ["blueearth_cst/shared/wflow_write.py"],
     output:
         text_out = f"{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt",
         # The values each method was handed, plus whether it ran (R3). The
@@ -712,6 +716,10 @@ rule declare_gauges_and_outputs:
         # P2 already created gauge/outlet maps from this registry. This rule
         # only adds output declarations and verifies those identities.
         location_registry = f"{spatial_dir}/location_registry.csv",
+        scientific_code = [
+            "blueearth_cst/shared/wflow_write.py",
+            "blueearth_cst/shared/wflow_outputs.py",
+        ],
     output:
         configured = touch(f"{basin_dir}/.outputs_configured"),
     params:
@@ -770,6 +778,11 @@ rule add_climate_forcing:
         # it makes the reuse a DAG edge rather than a convention, and is why
         # `simulation_window` must now sit inside `historical_window`.
         climate_nc = CLIMATE_STORE.outputs["climate_nc"],
+        scientific_code = [
+            "blueearth_cst/climate_analysis/prepare_climate_data_catalog.py",
+            "blueearth_cst/shared/setup_time_horizon.py",
+            "blueearth_cst/shared/climate_window.py",
+        ],
     output:
         # Generated build YAML is provenance OF THE MODEL IT BUILT, so it lives
         # in the model's own config/ rather than a project-level generated/
@@ -838,29 +851,16 @@ rule run_historical_simulation:
         # correct because of what it declares, not because of a chain someone
         # has to re-derive.
         model_final = ancient(f"{basin_dir}/.model_final"),
+        scientific_code = [
+            "blueearth_cst/model/run_wflow.jl",
+            # This helper constructs Wflow.Config and invokes Wflow.run.
+            "blueearth_cst/shared/wflow_progress.jl",
+        ],
     output:
-        # temp() since 2026-08-10 (owner ruling). Wflow's raw csv is an
-        # INTERMEDIATE, not a deliverable: rule 1.14 derives the readable
-        # per-variable tables from it and rule 1.15 reads it for the evaluation
-        # indicators, but nothing downstream of those wants it and it left
-        # `run_default/` showing a 0.9 MB file at 21-character precision beside
-        # the 0.5 MB table meant to be read. Snakemake drops it once BOTH
-        # consumers have run, which is the ordering the ask describes ("removed
-        # after creating output_q.csv") expressed as a DAG property rather than
-        # as a delete in someone's script.
-        #
-        # Two costs, both real and neither a blocker:
-        #
-        # * Re-running 1.15 alone re-runs 1.13 -- the whole Wflow model -- since
-        #   its input no longer exists. Iterating on an evaluation FIGURE is
-        #   exactly that case, so use `--notemp` when doing it.
-        # * A baseline run needs `--notemp` too. `dev/baseline/manifest.json`
-        #   pins this file as the wf1 discharge target at FULL precision, and
-        #   check_baseline fails hard ("target missing on disk") without it.
-        #   The derived table is not a substitute: 5 decimals on discharge
-        #   running 1e-5..1e-1 is ~3 significant figures, which is coarser than
-        #   the drift the tolerance comparator exists to catch.
-        csv_path = temp(f"{basin_dir}/run_default/output.csv"),
+        # Retain full-precision native responses so evaluation and table exports
+        # can rerun without another historical simulation. Rounded exports are
+        # not a replacement for this input or for numerical baseline checks.
+        csv_path = f"{basin_dir}/run_default/output.csv",
         # Wflow's own log. DECLARED but no longer temp(): it is now the ONLY
         # copy of Wflow's records.
         #
@@ -996,8 +996,8 @@ _basavg_captions = (
 # `tidy_wflow_table.split_columns` matches exactly as it matches a gauge
 # column. So `write_tidy_tables` wrote `output_gwr.csv` -- and PRUNED it on a
 # later run -- while no rule declared it. Undeclared output is invisible to
-# Snakemake: nothing rebuilds it when deleted, and since rule 1.13's
-# `output.csv` became temp() the only way back was re-running the whole model.
+# Snakemake: nothing rebuilds an undeclared table when it is deleted.
+# Retained native responses now allow these declared exports to be regenerated.
 WFLOW_TABLE_PATHS = [f"{basin_dir}/run_default/output_q.csv"] + [
     f"{basin_dir}/run_default/output_{WFLOW_OUTPUT_CODES[var]}.csv"
     for var in wflow_outvars
@@ -1159,8 +1159,14 @@ rule write_run_metadata:
         model_final = ancient(f"{basin_dir}/.model_final"),
     params:
         workflow_name = "build_model",
+        config_path = config_path,
         effective_config_sha256 = EFFECTIVE_CONFIG_DIGEST,
-        configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
+        refresh_digest = configuration_inputs_digest(
+            EFFECTIVE_CONFIG_DIGEST,
+            {},
+            CAPTURE_RECORD["environment"] if CAPTURE_RECORD else environment_file_hashes(),
+            CAPTURE_RECORD["referenced_inputs"] if CAPTURE_RECORD else referenced_inputs_for_digest(CONFIG_REFERENCES),
+        ),
     output:
         run_metadata = f"{basin_dir}/run_metadata.json",
     script:
@@ -1234,6 +1240,8 @@ for _source, _spec in MAP_CANDIDATE_STORES.items():
         script: _spec.script
 
 # 1.03c  produce_historical_map_reference — also available with WF0 disabled.
+include: "blueearth_cst/climate_analysis/rules/source_map_preparation.smk"
+
 rule produce_historical_map_reference:
     message: PRODUCE_MAP_REFERENCE.banner()
     input: **MAP_REFERENCE.inputs,

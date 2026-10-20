@@ -262,6 +262,11 @@ def check_result(indicator, series, result, context, *, group=False):
 
 def test_new_set_median_and_nonannual_event_extension(tmp_path, monkeypatch):
     """Select a new installed fixture with unchanged orchestration and checker."""
+    from blueearth_cst.experiment import indicator_registry
+
+    existing = indicator_registry.declarations(["q", "gwr"])
+    optional = indicator_registry.optional_declarations()
+    local = declarations("default")
     package = tmp_path / "authoring_fixture"
     package.mkdir()
     for name, content in {
@@ -276,6 +281,9 @@ def test_new_set_median_and_nonannual_event_extension(tmp_path, monkeypatch):
     series = [response([0, 2, 3, 0, 5, 6, 7, 0])]
     median, event = declarations("authoring_fixture")
     assert "authoring_fixture" in loader.available_sets()
+    assert indicator_registry.declarations(["q", "gwr"]) == existing
+    assert indicator_registry.optional_declarations() == optional
+    assert declarations("default") == local
     for indicator in (median, event):
         result = evaluate(indicator, series, anchor="YE-SEP")
         expected = (

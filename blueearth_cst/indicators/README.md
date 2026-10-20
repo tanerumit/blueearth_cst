@@ -89,6 +89,16 @@ scalar, explanatory metadata and an empty table. The isolated authoring fixture 
 Implementation revisions hash actual contributing execution source bytes. Checker modules have separate
 hashes and do not change execution identity. The WF4 publication layer versions its exported schemas and
 retains historical readers. Moving code changes implementation identity even when numerical values match.
+Legacy declarations hash their fixed calculation owner (`default` or `flow_regime`); WF4 requests inventory
+only selected calculation packages and their imported dependencies, alongside shared execution code.
+Adding or editing an unrelated set does not invalidate existing selections. Changes to shared code or
+reused formulas still invalidate dependent selections. Legacy statistic adaptation uses fixed owners so a
+new package cannot replace an existing calculation through discovery order.
+WF4 stops source traversal at upstream records, configuration resolution and logging helpers.
+Their resolved simulation, response, selection and water-year values remain checked identity inputs.
+The inventory still includes native response interpretation, grouping, shared calculations and the
+formatter that determines stored value precision. Plot/export presentation and upstream generation or
+simulation implementation do not invalidate calculations over unchanged retained responses.
 Compatibility imports remain in `experiment.indicator_registry` and `experiment.gev_lmoments`.
 `experiment.response_series` remains byte-identical for retained-response reader identity; its existing
 instances satisfy this module's structural input contract.

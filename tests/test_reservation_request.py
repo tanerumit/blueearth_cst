@@ -1,5 +1,6 @@
 """Early attribution guards must work without WF3 or prepared model inputs."""
 
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -159,6 +160,48 @@ def test_catalog_relative_anchor_is_scientific(case):
     case[0].write_text(yaml.safe_dump(project), encoding="utf-8")
     after, _ = project_request(case)
     assert before["input_catalogs"] != after["input_catalogs"]
+
+
+def test_unchanged_catalog_bytes_still_resolve_current_roots(case):
+    document = yaml.safe_load(case[1].read_bytes())
+    preferred = case[1].parent / "preferred"
+    fallback = case[1].parent / "fallback"
+    fallback.mkdir()
+    document["meta"] = {"roots": [str(preferred), str(fallback)]}
+    document["elevation"]["uri"] = "elevation.tif"
+    case[1].write_text(yaml.safe_dump(document), encoding="utf-8")
+    before, _ = project_request(case)
+    preferred.mkdir()
+    after, _ = project_request(case)
+    assert (
+        before["input_catalogs"][0]["document"]
+        == after["input_catalogs"][0]["document"]
+    )
+    assert before["input_catalogs"] != after["input_catalogs"]
+
+
+@pytest.mark.parametrize("change", [None, "root", "document"])
+def test_legacy_catalog_request_comparison_preserves_records(case, change):
+    from blueearth_cst.experiment.reservation import compare_request, validate_request
+
+    current, _ = project_request(case)
+    retained = deepcopy(current)
+    retained["schema_version"] = "experiment-request/1"
+    for catalog in retained["input_catalogs"]:
+        root = catalog.pop("root")
+        catalog["resolved_sources"] = {"meta": {"root": root}, "elevation": {}}
+    original = deepcopy(retained)
+    validate_request(retained, case[0].parent / "project")
+    if change == "root":
+        current["input_catalogs"][0]["root"] += "/different"
+    elif change == "document":
+        current["input_catalogs"][0]["document"]["elevation"]["uri"] = "different.tif"
+    if change is None:
+        compare_request(retained, current)
+    else:
+        with pytest.raises(ValueError, match="input_catalogs"):
+            compare_request(retained, current)
+    assert retained == original
 
 
 def test_model_recipe_guard_precedes_model_existence(case):

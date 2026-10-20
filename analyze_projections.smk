@@ -264,8 +264,6 @@ future_horizons = _named_windows(_future_windows)
 from blueearth_cst.projections import reference_window as _rw
 
 REFERENCE_WINDOW = _rw.clip_reference_window(time_horizon_hist)
-for _line in _rw.window_warnings(REFERENCE_WINDOW):
-    defer_warning(_line, module="reference_window")
 
 # Record the GCM reference alone in provenance and the report.
 REFERENCE_RECORD = _rw.alignment_record(REFERENCE_WINDOW)
@@ -895,8 +893,7 @@ WF2_TARGETS = {
     # alongside four rules writing logs/2.NN_*.log directly -- five files a
     # reader had to open in the right order to follow one run). Every rule
     # now logs into logs/_parts/ and rule 2.08 merges the lot.
-    "workflow_log": WORKFLOW_LOG_PATH,
-    "benchmarks": BENCHMARK_OUTPUT_PATH,
+    **_paths.gather_targets,
 }
 
 rule all:
@@ -1463,6 +1460,9 @@ onstart:
     # line per job start and end). Here and not at parse time: the logging
     # stack does not exist yet then. Fail-open; see install_console_style.
     install_console_style()
+    # A reused analysis needs no repeated reference-period warning.
+    for _line in _rw.window_warnings(REFERENCE_WINDOW):
+        defer_warning(_line, module="reference_window")
     _header()
     _journal("started")
 

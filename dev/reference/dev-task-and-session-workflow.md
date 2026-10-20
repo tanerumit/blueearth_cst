@@ -56,7 +56,9 @@ The rest of `dev/`, including `records/` and the ledger snapshot, remains branch
 Primary-checkout maintenance is limited to `dev/tasks/`, `dev/TODO.md`, and `dev/LOG.md`. With
 `core.hooksPath .githooks`, the pre-commit hook rejects changes to those paths on other branches,
 including detached checkouts and renames out of those paths. The canonical-location rule applies even
-when hooks are bypassed. References and developer scripts are edited in the session branch.
+when hooks are bypassed. Synchronization merges may import these paths unchanged from `main`;
+the hook still rejects session edits to that imported task state.
+References and developer scripts are edited in the session branch.
 
 ### One task, one locator
 

@@ -185,6 +185,11 @@ pixi run python scripts/run_workflows.py --config test_case/project_config_rapid
 ```
 
 Preflights run immediately before their consumer, after preceding producers.
+When simulation is enabled, the runner announces experiment preparation and shows
+elapsed-time notices during long waits. Its change checks compare source YAML,
+catalog root locations and input/code identities without loading HydroMT. The
+consuming workflows perform HydroMT catalog and adapter validation. See
+[startup checks and compatibility](docs/site/toolbox-reference/retained-handoffs.qmd#startup-input-checks).
 Generation uses the owned all-workflow runner, which may be configured with only
 WF3 enabled. Simulation must use its dedicated runner or
 the all-workflow runner; bare `simulate_system.smk` invocation is unsupported.
@@ -264,7 +269,8 @@ See [experiment selection and recovery](docs/guide/running.md#select-resume-or-c
 ### Logs and DAGs
 
 Each launcher attempt keeps its summary, console transcript, workflow logs and
-benchmark reports together under `logs/<timestamp>-<invocation-id>/`.
+benchmark reports together under `logs/<UTC timestamp>__<workflow scope>/`
+(for example, `2026-10-20_11-21-55Z__all-workflows`; dry runs append `__dry-run`).
 Retries receive a new folder; an all-workflow run shares one folder with its children.
 Structured invocation records remain under `config/_engine/invocations/`.
 See [execution logs and benchmarks](docs/guide/running.md#execution-logs-and-benchmarks)

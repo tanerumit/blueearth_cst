@@ -48,7 +48,7 @@ use a directory outside the toolbox checkout.
       group_metadata.csv        group_id,st_id,is_reference
       <token>_run_indicators.csv    indicator,location,run_id,value
       <token>_group_indicators.csv  indicator,location,group_id,value
-  logs/<UTC timestamp>-<short invocation ID>/
+  logs/<UTC timestamp>__<workflow scope>/
     summary.md                  execution summary and links
     console.log                 chronological launcher/child transcript
     wfN.log                     detailed messages grouped by rule/member
@@ -70,6 +70,18 @@ Configuration archives are generated records. Edit the source configuration supp
 the archived `sources/` files preserve what an execution used. WF3 and WF4 retain their configuration
 inside the owning collection or experiment. The shared `experiments/_engine/` directory is reserved
 for allocation and creation recovery; it is not an experiment.
+
+Historical source-map fields live at
+`data/climate/historical/<source_window>/tables/annual_climatology.nc`.
+WF0 and WF1 share the same numerical producer. Diagnostic figures and the historical display
+reference consume its sealed fields, so changing rendering or display classes does not repeat
+annual-field preparation. Snakemake tracks the scientific inputs and implementation separately
+from display dependencies.
+
+Separating these dependencies changes preparation identities once. Existing fields and the display
+reference are regenerated at their existing paths on the first affected run; acquired climate inputs
+remain reusable. Scientific methods, defaults, payload corruption checks and environment qualification
+are unchanged. Older fields fail the current-identity guard until regenerated.
 
 Fresh collections and indicator sets keep their immutable data under `_engine/`. Readers still accept
 completed legacy data at `scenarios/<id>/`; their manifests retain those paths.
@@ -125,7 +137,7 @@ in place; the smaller extent applies when climate inputs are regenerated.
 
 ## Check whether a run finished
 
-Open `logs/<timestamp>-<invocation-id>/summary.md`, linked by the runner's closing output.
+Open `logs/<UTC timestamp>__<workflow scope>/summary.md`, linked by the runner's closing output.
 The same execution folder holds `console.log`, `wf0.log`–`wf4.log` for invoked workflows,
 and their `wfN-benchmarks.md` reports with raw `.tsv` measurements.
 The summary reads the structured parent and child invocation records and lists elapsed time,
@@ -205,6 +217,24 @@ publication: the immutable indicator set, the captured set definition, the dicti
 exported file's checksum. Sets publish independently: a failed set keeps its previous folder (the run
 summary names such mixed-age exports) and the command exits nonzero. Editing only titles, descriptions
 or authored citations refreshes `indicators.csv` without recomputing values.
+
+Calculation identities include the selected calculation packages, their imported dependencies and shared
+execution code. Adding or editing an unrelated indicator set leaves existing selections reusable; changing
+a reused formula invalidates its dependent selections. Upstream implementation, logging and presentation
+edits do not change calculation identity over unchanged retained responses. Resolved selections and
+water-year settings, native response interpretation, grouping and stored value precision remain covered.
+Snakemake continues to schedule the jobs; immutable publication guards still verify retained artifacts.
+Narrowing the former all-set and workflow-wide inventory changes existing request identities once:
+the first indicator run after this update recalculates selected
+sets from retained responses. Saved publications remain readable, and model simulations are unaffected.
+Original publication identifiers and provenance are preserved; old results are not relabelled as newly
+qualified calculations.
+
+WF1 retains its full-precision historical `run_default/output.csv` for evaluation and table exports.
+Changing evaluation settings does not rebuild thematic maps. Shared spatial preparation and WF1 model
+updates declare their scientific helper modules as Snakemake inputs, so helper edits schedule their
+producers without including logging or rendering modules. Adding these previously missing dependencies
+can cause one refresh of affected existing products. Their numerical methods and paths are unchanged.
 
 Wait for workflow completion before reading an export: replacement is atomic per file, not across the
 folder. Ordinary export I/O failures roll back the replaced files. Dry-runs and `simulations_only` do not
@@ -293,6 +323,20 @@ The `_engine/simulation.json` record ties an experiment to its collection,
 model, and simulation settings. Use a new experiment name when those inputs
 change. If you change only the indicators, `operation: indicators-only` creates a
 new indicator set from retained model responses without rerunning simulation.
+
+Simulation implementation identity follows the forcing preparation and Wflow
+execution sources, including their scientific helpers. Python logging, figure
+exports, generation implementation and configuration archive code are outside
+that boundary; selected collection contents and resolved simulation inputs
+remain checked separately. Snakemake continues to schedule jobs.
+
+Completed simulations accept the audited source transition from `040a8e61`
+without rewriting their identity or provenance. Both source inventories are
+pinned: an unknown historical implementation still requires a new experiment.
+Incomplete experiments retain their strict freeze checks. Changed scientific
+code, model inputs, settings, preparation, response requirements or relevant
+environment also require a new experiment. The Julia progress helper remains
+tracked because it invokes Wflow.
 
 For a reproducible comparison, keep the whole project output directory, not
 only the indicator CSVs. The model build settings used by HydroMT are recorded

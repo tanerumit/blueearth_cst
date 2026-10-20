@@ -88,13 +88,18 @@ def test_only_successful_exact_checkpoint_plans_are_reused(
     atomic_record(path, {"revision": 1})
     state = {"valid": False, "verifications": 0}
 
-    def verify(*_):
+    def verify(*_, _observed_code):
+        assert _observed_code == []
         state["verifications"] += 1
         if not state["valid"]:
             raise indicator_plan.IndicatorPlanStale("stale responses")
         return {"targets": {"manifest": str(marker)}}
 
-    monkeypatch.setitem(scheduling, "_current_indicator_requests", lambda _: {"id": {}})
+    monkeypatch.setitem(
+        scheduling,
+        "_current_indicator_requests",
+        lambda _: {"id": {"code_inventory": []}},
+    )
     monkeypatch.setitem(
         scheduling,
         "checkpoints",

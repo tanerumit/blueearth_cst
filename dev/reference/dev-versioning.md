@@ -59,7 +59,7 @@ the result change first, retaining the evidence needed to interpret it.
    whole-toolbox qualification, unless applicable evidence already covers it.
    Validate numerical changes with an independent oracle and affected consumers;
    use the baseline configuration for whole-tree reproducibility claims, with
-   WF1 produced using `--notemp`. Add `semantic_tree_diff.py` when claiming tree
+   WF1's native `run_default/output.csv` retained. Add `semantic_tree_diff.py` when claiming tree
    compatibility after shape changes. Render changed figures for inspection.
    Retain the commands, results and candidate/input identities with the evidence.
 4. With explicit tagging authorization, create an annotated `vX.Y.Z` tag on

@@ -198,15 +198,12 @@ Source diagnostics remain useful with one source; comparison exists only with mu
 The selected forcing remains a project configuration decision.
 
 ```text
-0.01 region ──┬── 0.02 subbasins/rivers ─────────────────────┐
-              └── 0.03 extract each source                  │
-                         │                                 │
-                         ▼                                 ▼
-                   0.04 compute ───────────────────► 0.04b render PNGs
-                         │
-                         └──► 0.05 compute/render comparison (>1 source)
-                                  │
-                    0.06 benchmarks · 0.07 logs
+0.01 region ──┬──► 0.02 subbasins/rivers (render inputs)
+              └──► 0.03 extract each source
+                         ├──► 0.03c fields ──► 0.03b display reference ──┐
+                         └──► 0.04 tables ──────────────────────────────┴──► 0.04b render PNGs
+                                    └──► 0.05 comparison (>1 source)
+                         0.06 benchmarks · 0.07 logs
 ```
 
 | Banner | Rule | Operation |
@@ -217,6 +214,7 @@ The selected forcing remains a project configuration decision.
 | 0.02 | `delineate_subbasins_and_rivers` | Shared vector foundation. |
 | 0.03 | `extract_climate_datasets_<source>` | Shared climate extraction, per source. |
 | 0.03b | `produce_historical_map_reference` | Shared frame, scales and verified native-field identities. |
+| 0.03c | `prepare_historical_map_fields_<source>` | Native-grid fields for WF0 and WF1. |
 | 0.04 | `compute_climate_diagnostics_<source>` | Numerical diagnostics, per source. |
 | 0.04b | `plot_climate_diagnostics_<source>` | PNGs and captions, per source. |
 | 0.05 | `plot_climate_comparison` | Common-period comparison, multiple sources only. |
@@ -246,12 +244,18 @@ Clips each configured source to its historical store, including `climate_nc` and
 `basin_cells`. WF1 retains the same extraction producer for its selected source.
 The source's own basin cells define its equally weighted averaging domain.
 
+#### 0.03c · `prepare_historical_map_fields_<source>`
+
+Writes sealed native-grid annual fields to `<store_dir>/tables/annual_climatology.nc`.
+WF1 declares the identical producer as 1.03d. Both the display reference and WF0 map rendering
+consume these fields; rendering changes do not rerun this numerical producer.
+
 #### 0.04 · `compute_climate_diagnostics_<source>`
 
 Reads the extracted store and retains coverage, valid years, annual indices,
 climatology, timing, SPI/fit checks/events, dry spells, persistence, trends,
 sensitivity, paired anomalies and homogeneity tables. Writes fixed-schema CSVs,
-`daily_basin.csv`, `annual_climatology.nc` and `_engine/diagnostics.json` beneath
+`daily_basin.csv` and `_engine/diagnostics.json` beneath
 `<store_dir>/`. Empty results retain headers and availability records.
 
 #### 0.04b · `plot_climate_diagnostics_<source>`
@@ -392,6 +396,7 @@ The store reaches WF1's evaluation (1.15), never its forcing.
 | 1.03 | `extract_climate_datasets` | The shared historical-climate store (= WF3 3.02). |
 | 1.03b | `extract_map_candidates_<source>` | Extra historical candidates for pooled map scales. |
 | 1.03c | `produce_historical_map_reference` | The same reference producer as WF0; independent of WF0. |
+| 1.03d | `prepare_historical_map_fields_<source>` | The same sealed-field producer as WF0. |
 | 1.05 | `prepare_land_and_soil_maps` | The thematic raster stack and the model-build interface. |
 | 1.06 | `build_wflow_model` | Parameterises Wflow-SBM, and where gauges enter the model. |
 | 1.07 | `add_reservoirs_lakes_glaciers` | Adds waterbodies. |

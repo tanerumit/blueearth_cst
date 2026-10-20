@@ -10,7 +10,7 @@ from blueearth_cst.shared.map_reference import (
 
 
 def run(sm: Any) -> None:
-    """Prepare independently from candidate stores and atomically publish JSON."""
+    """Read shared numerical fields and atomically publish the display reference."""
     expected = reference_arguments(sm.params)
     record = build_reference(**expected)
     publish_reference(sm.output.reference, record, **expected)

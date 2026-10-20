@@ -24,6 +24,19 @@ def test_reference_and_extra_extractions_are_identical_in_both_dags(tmp_path, se
     br = b.get_rule("produce_historical_map_reference")
     for name, signature in _COMPARED.items():
         assert signature(a, ar) == signature(b, br), name
+    for source in ("era5", "chirps"):
+        ar = a.get_rule(f"prepare_historical_map_fields_{source}")
+        br = b.get_rule(f"prepare_historical_map_fields_{source}")
+        for name, signature in _COMPARED.items():
+            assert signature(a, ar) == signature(b, br), (source, name)
+        diagnostic = a.get_rule(f"compute_climate_diagnostics_{source}")
+        assert set(ar.output).isdisjoint(diagnostic.output)
+        preparation_code = set(ar.input.preparation_code)
+        assert not any(
+            name in path
+            for path in preparation_code
+            for name in ("map_reference.py", "prepared_maps.py", "climate_figures.py")
+        )
     extra = "chirps" if selected == "era5" else "era5"
     ar = a.get_rule(f"extract_climate_datasets_{extra}")
     br = b.get_rule(f"extract_map_candidates_{extra}")

@@ -491,6 +491,7 @@ EXTRACT_CLIMATE_DATASETS = RULES.logged("1.03", "extract_climate_datasets", summ
 if MAP_CANDIDATE_STORES:
     EXTRACT_MAP_CANDIDATES = RULES.logged("1.03b", "extract_map_candidates", summary="extract native candidate climate for the shared map reference")
 PRODUCE_MAP_REFERENCE = RULES.logged("1.03c", "produce_historical_map_reference", summary="prepare shared historical map display classes")
+PREPARE_SOURCE_MAPS = RULES.logged("1.03d", "prepare_historical_map_fields", summary="prepare shared native-grid map fields")
 PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps", summary="prepare shared terrain, land-cover, and soil layers")
 BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from the spatial foundation and global datasets")
 ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="apply configured reservoir, lake, and glacier setup")
@@ -1234,6 +1235,8 @@ for _source, _spec in MAP_CANDIDATE_STORES.items():
         script: _spec.script
 
 # 1.03c  produce_historical_map_reference — also available with WF0 disabled.
+include: "blueearth_cst/climate_analysis/rules/source_map_preparation.smk"
+
 rule produce_historical_map_reference:
     message: PRODUCE_MAP_REFERENCE.banner()
     input: **MAP_REFERENCE.inputs,

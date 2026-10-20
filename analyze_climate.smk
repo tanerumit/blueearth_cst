@@ -16,7 +16,7 @@ from blueearth_cst.shared.workflow_archive_launch import captured_projection, re
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.climate_analysis.diagnostic_outputs import diagnostic_source_outputs, diagnostic_comparison_outputs
 from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
-from blueearth_cst.shared.map_reference import historical_map_reference_rule, require_wf0_completeness, source_map_inputs, source_spec_dict
+from blueearth_cst.shared.map_reference import historical_map_reference_rule, require_wf0_completeness, source_map_inputs
 
 # --- figure filenames ---------------------------------------------------------
 # WF0's figures follow `dev/reference/wf0-figure-filename-rule.md`:
@@ -306,7 +306,8 @@ DELINEATE_REGION = RULES.logged("0.01", "delineate_region", summary="delineate t
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
 EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="extract a basin climate grid")
 PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference", summary="prepare the shared historical map display reference")
-COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics", summary="compute source diagnostics and native-grid map fields")
+PREPARE_SOURCE_MAPS = RULES.logged("0.03c", "prepare_historical_map_fields", summary="prepare shared native-grid map fields")
+COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics", summary="compute source diagnostic tables")
 PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics", summary="render historical climate diagnostics")
 
 # Rule 0.05 exists only when there is more than one source to compare, so it
@@ -435,9 +436,11 @@ for _source in CANDIDATE_SOURCES:
 
     _diag = SOURCE_DIAGNOSTICS[_source]
     _compute_inputs = source_map_inputs(MAP_SOURCE_SPECS[_source])
-    if "oro_nc" in _spec.outputs:
-        _compute_inputs["oro_nc"] = _spec.outputs["oro_nc"]
+    # Orography is consumed by the separate native-grid PET preparation.
+    _compute_inputs.pop("orography_inputs")
+    _compute_inputs.pop("oro_nc", None)
     _compute_outputs = dict(_diag["compute"])
+    _compute_outputs.pop("maps")
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
         _compute_inputs["subbasins"] = SPATIAL_UNITS.outputs["subbasins"]
         _compute_outputs["subbasin_tables"] = directory(f"{_diag['root']}/tables/subbasins")
@@ -450,8 +453,6 @@ for _source in CANDIDATE_SOURCES:
         params:
             settings=DIAGNOSTIC_SETTINGS, source=_source, store_dir=_spec.store_dir,
             m0=DIAGNOSTIC_M0, data_sources=DATA_SOURCES,
-            map_source_spec=source_spec_dict(MAP_SOURCE_SPECS[_source]),
-            map_completeness=MAP_REFERENCE.params["completeness"],
             preparation_code_digest=MAP_REFERENCE.params["preparation_code_digest"],
             map_environment=MAP_REFERENCE.params["environment"],
         log: COMPUTE_DIAGNOSTICS.log(_source),
@@ -485,6 +486,8 @@ for _source in CANDIDATE_SOURCES:
         script: "blueearth_cst/climate_analysis/plot_climate_diagnostics.py"
 
 # 0.03b  produce_historical_map_reference — shared native-grid display contract.
+include: "blueearth_cst/climate_analysis/rules/source_map_preparation.smk"
+
 rule produce_historical_map_reference:
     message: PRODUCE_MAP_REFERENCE.banner()
     input: **MAP_REFERENCE.inputs,

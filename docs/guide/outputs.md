@@ -71,6 +71,18 @@ the archived `sources/` files preserve what an execution used. WF3 and WF4 retai
 inside the owning collection or experiment. The shared `experiments/_engine/` directory is reserved
 for allocation and creation recovery; it is not an experiment.
 
+Historical source-map fields live at
+`data/climate/historical/<source_window>/tables/annual_climatology.nc`.
+WF0 and WF1 share the same numerical producer. Diagnostic figures and the historical display
+reference consume its sealed fields, so changing rendering or display classes does not repeat
+annual-field preparation. Snakemake tracks the scientific inputs and implementation separately
+from display dependencies.
+
+Separating these dependencies changes preparation identities once. Existing fields and the display
+reference are regenerated at their existing paths on the first affected run; acquired climate inputs
+remain reusable. Scientific methods, defaults, payload corruption checks and environment qualification
+are unchanged. Older fields fail the current-identity guard until regenerated.
+
 Fresh collections and indicator sets keep their immutable data under `_engine/`. Readers still accept
 completed legacy data at `scenarios/<id>/`; their manifests retain those paths.
 The stable scenario export remains at `scenarios/`. Indicator sets publish one folder each at

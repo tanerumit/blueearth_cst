@@ -38,11 +38,16 @@ from blueearth_cst.climate_analysis.figure_naming import (
     figure_filename,
     map_spatial_scope,
 )
+from blueearth_cst.climate_analysis.source_capabilities import (
+    PRECIP_ONLY_SOURCES as PRECIP_ONLY_SOURCES,
+)
+from blueearth_cst.climate_analysis.source_capabilities import (
+    source_climate_vars as source_climate_vars,
+)
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared.plot_style import RASTER_DPI, align_caveat_to_plot_area
 from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
-    PRECIP_ONLY_SOURCES,
     flush_figure_bundles,
     log_row,
     save_figure,
@@ -113,24 +118,6 @@ MAP_EXTENT = {
 #: fraction of the modal timestep count it is dropped instead. A truncated first
 #: or last year otherwise draws a dip that looks like climate and is calendar.
 _COMPLETE_YEAR_FRACTION = 0.9
-
-
-def source_climate_vars(clim_source: str) -> tuple[str, ...]:
-    """The :data:`CLIMATE_VARS` keys ``clim_source`` can HONESTLY be drawn for.
-
-    A precipitation-only source (:data:`PRECIP_ONLY_SOURCES`) gets ``precip``
-    and nothing else. A selected forcing store borrows ERA5 companions, while a
-    wf0-only candidate omits them; either way they are not observations from
-    this source. Drawing borrowed fields under this source's name would answer
-    "how do the two sources differ?" with a
-    panel that cannot differ, in the one workflow whose job is that comparison.
-
-    Ruled 2026-08-16 (owner): a dataset missing a variable gets NO output for
-    it, rather than an output silently filled from another dataset.
-    """
-    if clim_source in PRECIP_ONLY_SOURCES:
-        return ("precip",)
-    return tuple(CLIMATE_VARS)
 
 
 #: Which ``plot_context`` token of the WF0 grammar each figure kind carries.

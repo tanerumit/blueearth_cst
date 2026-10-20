@@ -56,7 +56,7 @@ def prepare_source_map_fields(
     Precipitation-only sources retain any raw auxiliary arrays without becoming
     temperature/PET contributors. Completeness uses ``annual_fields`` unchanged.
     """
-    from blueearth_cst.shared.map_reference import preparation_identity
+    from blueearth_cst.shared.map_preparation import preparation_identity
 
     identity = preparation_identity(source_spec, m0, completeness)
     daily, lineage = daily_series(

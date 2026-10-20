@@ -29,6 +29,9 @@ from pathlib import Path
 
 import yaml
 
+from blueearth_cst.climate_analysis.source_capabilities import (
+    PRECIP_ONLY_SOURCES as PRECIP_ONLY_SOURCES,
+)
 from blueearth_cst.shared.advanced_settings import (
     _ADVANCED_SETTINGS_SCHEMA,
     _MONTH_ABBREVS,
@@ -657,8 +660,6 @@ def resolve_simulation_window(
         )
     return window
 
-
-PRECIP_ONLY_SOURCES = ("chirps", "chirps_global")
 
 SPATIAL_UNITS_SCRIPT = "blueearth_cst/spatial/delineate_spatial_units.py"
 

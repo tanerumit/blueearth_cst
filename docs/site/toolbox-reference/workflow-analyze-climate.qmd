@@ -97,6 +97,8 @@ Both WF0 and WF1 can produce `data/climate/historical/_engine/map_reference.json
 records frame/classes, source roles, completeness and current input/preparation identities. Existing
 `tables/annual_climatology.nc` products gain preparation and payload identities; older files must be
 regenerated before map rendering. A reference rebuild alone cannot validate stale retained fields.
+The renderer checks reference and field provenance once when loading its inputs; all figure exports use
+that loaded snapshot without repeating the checks for each PNG.
 After changing backing data without changing timestamps, force affected extraction when needed, then
 the affected `compute_climate_diagnostics_<source>` rules and `produce_historical_map_reference`, and
 rerender through the owned runner. Captions distinguish reference support, fields and unavailable scales.

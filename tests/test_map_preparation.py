@@ -1,6 +1,7 @@
 """Numerical preparation survives display changes and rejects stale/corrupt fields."""
 
 import hashlib
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -62,6 +63,7 @@ def prepared(tmp_path, monkeypatch):
         ("climate_analysis/source_capabilities.py", True),
         ("climate_analysis/plot_climate_source.py", True),
         ("shared/climate_parity.py", True),
+        ("shared/yaml_documents.py", True),
     ],
 )
 def test_source_edits_preserve_only_compatible_preparations(
@@ -129,3 +131,41 @@ def test_changed_input_and_corrupt_payload_are_refused(prepared):
     changed.to_netcdf(spec.climate_nc)
     with pytest.raises(ValueError, match="stale preparation"):
         mp.read_source_fields(spec, 1, policy)
+
+
+def test_environment_checks_read_current_lock_bytes_with_reused_yaml(
+    tmp_path, monkeypatch
+):
+    import yaml
+
+    from blueearth_cst.shared import yaml_documents
+
+    lock = tmp_path / "pixi.lock"
+    data = (
+        b"version: 7\nenvironments: {default: {packages: {win-64: [], linux-64: []}}}\n"
+    )
+    lock.write_bytes(data)
+    stamp = lock.stat()
+    monkeypatch.setattr(mp, "_repo_root", lambda: tmp_path)
+    yaml_documents._parse.cache_clear()
+    parsed = []
+    safe_load = yaml.safe_load
+
+    def counted(raw):
+        parsed.append(raw)
+        return safe_load(raw)
+
+    monkeypatch.setattr(yaml, "safe_load", counted)
+    try:
+        for _ in range(2):
+            # Only parsing is reused; environment qualification still runs.
+            with pytest.raises(ValueError, match="inconsistent with Pixi lock"):
+                mp.environment_identity()
+        changed = data.replace(b"version: 7", b"version: 8")
+        lock.write_bytes(changed)
+        os.utime(lock, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+        with pytest.raises(ValueError, match="requires Pixi lock schema 7"):
+            mp.environment_identity()
+        assert parsed == [data, changed]
+    finally:
+        yaml_documents._parse.cache_clear()

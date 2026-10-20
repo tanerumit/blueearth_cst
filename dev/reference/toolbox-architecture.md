@@ -3,7 +3,7 @@
 Last updated: 2026-10-20
 
 Use this reference when changing workflow responsibilities, configuration ownership or retained handoffs.
-The [implementation map](workflow-implementation-map.md) points to executable rules; execution instructions belong in
+The [implementation map](toolbox-workflow-map.md) points to executable rules; execution instructions belong in
 [the workflow guide](../../docs/site/toolbox-reference/workflows.qmd).
 
 ## Workflow boundaries
@@ -26,8 +26,8 @@ must not cause model or simulation production. Use the owned runners for WF3/WF4
 operation/target contract is part of the boundary, not an optional shell convenience.
 
 See [retained handoffs](../../docs/site/toolbox-reference/retained-handoffs.qmd) for the supported artifact
-interface. The [weather-generator interface](weather-generator-interface.md) and
-[hydrological-model interface](hydrological-model-interface.md) describe replacement-engine obligations
+interface. The [weather-generator interface](toolbox-weather-generator-interface.md) and
+[hydrological-model interface](toolbox-hydrological-model-interface.md) describe replacement-engine obligations
 and current adapter requirements.
 
 ![Scenario generation and retained-response handoffs](../assets/diagrams/scenario-response-handoffs.svg)
@@ -44,7 +44,7 @@ project file; ordinary run paths resolve from the run directory. The parser and 
 
 `config/advanced_settings.yml` is always loaded through its closed schema. `config/defaults/` affects
 runs; `config/templates/` supplies scaffolds. Keep shared values at their shared owner instead of copying
-them into workflow files. [Repository layout](repo-layout.md) owns repository placement details.
+them into workflow files. [Repository layout](dev-repository-layout.md) owns repository placement details.
 
 Supported WF0–WF2 launches capture original configuration bytes before Snakemake parses execution
 documents. `blueearth_cst/shared/workflow_archive_launch.py` owns admission and staging;
@@ -64,14 +64,14 @@ The toolbox is a repository-based Python/R/Julia workflow, with no API or fronte
 `blueearth_cst/` contains importable and rule-invoked modules, while `scripts/` provides user entry points.
 Do not add packaging tables or a build backend as a side effect of tooling changes.
 
-Model-neutral spatial products belong to the [spatial foundation](spatial-foundation.md).
+Model-neutral spatial products belong to the [spatial foundation](toolbox-spatial-foundation.md).
 Model construction and mutable model-root ordering belong to the [WF1 contract](wf1-model-construction.md).
 Historical climate figures belong to WF0/shared climate plotting, not a second subcatchment-climate
 plotting path inside model-result evaluation.
 
 ## Verification entry points
 
-Use the [validation ladder](validation-ladder.md) to select required coverage. The relevant contract
+Use the [validation ladder](dev-validation.md) to select required coverage. The relevant contract
 owners include `tests/test_run_workflows.py`, `tests/test_workflow_archive_launch.py`,
 `tests/test_invocation_history.py`, and the retained-artifact reader/runner tests.
 Test files define executable coverage; this list is navigation, not a separate mandatory gate.

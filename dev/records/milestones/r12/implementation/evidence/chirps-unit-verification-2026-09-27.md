@@ -2,8 +2,8 @@
 
 Historical evidence relocated from the weather-generator reference at commit ed406a81.
 This preserves the reported measurements; the relocation did not repeat the experiment.
-Current requirements: [forcing units](../../../../../reference/forcing-units.md) and
-[weather-generator interface](../../../../../reference/weather-generator-interface.md).
+Current requirements: [forcing units](../../../../../reference/toolbox-forcing-units.md) and
+[weather-generator interface](../../../../../reference/toolbox-weather-generator-interface.md).
 
 ### CHIRPS closure evidence (2026-09-27)
 

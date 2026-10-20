@@ -15,7 +15,7 @@ A replacement must implement preparation and execution appropriate to its engine
 matching the independent response request. It need not reproduce Wflow physics or every upstream file.
 
 [Model construction](wf1-model-construction.md) owns WF1 build and mutable-root ordering.
-[Spatial foundation](spatial-foundation.md) owns model-neutral regions and identities.
+[Spatial foundation](toolbox-spatial-foundation.md) owns model-neutral regions and identities.
 [Retained handoffs](../../docs/site/toolbox-reference/retained-handoffs.qmd) owns publication paths,
 ready inventories, named exports and reuse. Use those owners rather than copying their layouts here.
 
@@ -35,7 +35,7 @@ in `_HM2_VARS`, float32 variable dtypes, CRS and `grid_mapping` attributes.
 These variable names connect to the run TOML's forcing mappings.
 
 Unit attributes are checked against `_HM2_UNIT_ATTRS` only when present. Absence is accepted;
-that is not evidence of correct physical units. [Forcing units](forcing-units.md) owns source admission,
+that is not evidence of correct physical units. [Forcing units](toolbox-forcing-units.md) owns source admission,
 and the adapter owns prepared-value interpretation, calendar conversion and temporal compatibility.
 The structural validator does not compare actual coordinate arrays with HM-1 or prove daily cadence.
 WF1 forcing persists; WF4 prepared forcing is temporary and may be unavailable after a completed run.
@@ -73,7 +73,7 @@ The response reader maps native headers using the shared output vocabulary and a
 request. Retained inventories must represent the requested series; result tables cannot define their
 own expected locations. Native header order and persisted ordinals preserve reference selection.
 WF1's raw simulation CSV is temporary; WF4 native responses are retained for later reduction.
-The [indicator glossary](indicator-glossary.md) owns variable/token terminology.
+The [indicator glossary](toolbox-indicator-glossary.md) owns variable/token terminology.
 
 ## HM-6a — WF1 final state
 
@@ -110,7 +110,7 @@ current sets. Interchange checks do not establish scientific adequacy of an indi
 The interchange validators operate on parsed objects and return differences; they do not perform file I/O
 or automatically run at every workflow boundary. Actual admission also depends on adapter and retained-reader
 checks. Consult `tests/test_interchange_contracts.py` and the affected adapter, response-reader and publication
-tests through the [validation ladder](validation-ladder.md). Report fixture-dependent skips as unavailable
+tests through the [validation ladder](dev-validation.md). Report fixture-dependent skips as unavailable
 coverage, not compatibility passes.
 
 Replacing an engine requires its adapter, native-response translation and producer/consumer checks.

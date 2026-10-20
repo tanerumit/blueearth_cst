@@ -94,7 +94,7 @@ def test_retained_review_citations_still_require_their_target(tmp_path, monkeypa
     target = tmp_path / "dev/records/reviews/plot-improvements/verification.md"
     target.parent.mkdir(parents=True)
     target.write_text("Retained verification", encoding="utf-8")
-    for name in ("plot-style.md",):
+    for name in ("toolbox-plot-style.md",):
         (reference / name).write_text(
             "[verification](../records/reviews/plot-improvements/verification.md)",
             encoding="utf-8",

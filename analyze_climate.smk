@@ -19,7 +19,7 @@ from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 from blueearth_cst.shared.map_reference import historical_map_reference_rule, require_wf0_completeness, source_map_inputs, source_spec_dict
 
 # --- figure filenames ---------------------------------------------------------
-# WF0's figures follow `dev/reference/wf0-figure-filename-rule.md`:
+# WF0's figures follow `dev/reference/wf0-figure-naming.md`:
 #   <dataset_scope>_<variable>_<plot_context>_<spatial_scope>.png
 # built by `climate_analysis.figure_naming`, never spelled here. The wflow
 # FORCING family (rule 1.12) keeps its own names -- the rule stages WF0 first.
@@ -244,7 +244,7 @@ CLIMATE_STORES = {
 
 # --- rule numbering -----------------------------------------------------------
 # `W.NN` = the rule's position in this workflow's LOGICAL order. `W` is a
-# workflow ID, not a position (dev/reference/naming.md §9), and IDs need not
+# workflow ID, not a position (dev/reference/dev-naming-conventions.md §9), and IDs need not
 # start at 1: this workflow is 0 because it precedes model creation, so
 # `ls logs/` sorts wf0, wf1, wf2, wf3 in execution order without renumbering
 # the three that already exist.

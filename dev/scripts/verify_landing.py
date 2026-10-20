@@ -5,7 +5,7 @@ A successful command is not proof that required checks ran: the gate owner must
 inspect skips and mark wholly skipped commands with --skipped.
 For a reviewed follow-up, verify --delta-evidence and --delta-review combine
 unchanged claims from earlier evidence with passing checks on the new tree.
-This attests selective reuse, not a new full-suite pass. See validation-ladder.md.
+This attests selective reuse, not a new full-suite pass. See dev-validation.md.
 """
 
 from __future__ import annotations

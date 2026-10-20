@@ -13,7 +13,7 @@ alternative implementation:
   ``validate_hm_gauge_column_identity``.
 
 Source of record: ``dev/records/milestones/p32b/interchange-contracts-design.md`` (ACCEPTED
-2026-07-24, §5.5) and the two seam docs ``dev/reference/{weather-generator,hydrological-model}-interface.md``.
+2026-07-24, §5.5) and the two seam docs ``dev/reference/{toolbox-weather-generator,toolbox-hydrological-model}-interface.md``.
 
 Design invariants this module obeys (do not relax without a design change):
 
@@ -316,7 +316,7 @@ def validate_wg2(df: Any, st_num: int | None = None) -> list[str]:
 #: Renamed 2026-08-12 from the single ``generateWeatherSeries`` section: that
 #: function is not exported by weathergenr 1.2.0 and its dot.case keys matched
 #: no 1.2.0 argument, so the R hand-translated every one. The "upstream-spelled
-#: dot.case preserved verbatim" rationale this list used to carry (naming.md §2)
+#: dot.case preserved verbatim" rationale this list used to carry (dev-naming-conventions.md §2)
 #: is what the rename RESTORES — upstream now spells them snake_case.
 #:
 #: **weathergenr 2.0.0 (2026-08-17).** One key changed here: ``relax_priority``

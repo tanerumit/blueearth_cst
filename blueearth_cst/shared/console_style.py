@@ -1147,7 +1147,7 @@ def _console_wildcards(wildcards):
 
     A trailing ``_num`` is DROPPED from the key, and that is what makes the
     claim above true rather than merely intended. The wildcard is ``rlz_num``
-    because `dev/reference/naming.md` says a count-or-index field carries the
+    because `dev/reference/dev-naming-conventions.md` says a count-or-index field carries the
     suffix; every banner context in WF3 writes ``rlz {wildcards.rlz_num}``,
     dropping it because on a console the column header and the value are
     adjacent and the suffix says nothing the value does not. Until this, the
@@ -1183,7 +1183,7 @@ def _console_wildcard_key(key):
     and its banners write ``series {wildcards.series_key}``, so without this
     the START line said ``[series cmip6_...]`` and the FINISH line under it
     ``[series_key cmip6_...]`` -- the one-fact-two-spellings defect again, one
-    suffix along. All three suffixes are `dev/reference/naming.md` conventions
+    suffix along. All three suffixes are `dev/reference/dev-naming-conventions.md` conventions
     for what KIND of field a wildcard is, which is why they belong off a
     console that shows the value beside the name.
 

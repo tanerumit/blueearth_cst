@@ -31,10 +31,10 @@ Column by column, with the dict that owns it:
 
 - **`model.outvars` label** — what a **user writes in a config**, and the only
   spelling in this table that appears in one. Owned by
-  `blueearth_cst/model/setup_gauges_and_outputs.py::WFLOW_VARS`. A `naming.md` §6
+  `blueearth_cst/model/setup_gauges_and_outputs.py::WFLOW_VARS`. A `dev-naming-conventions.md` §6
   **tier-2** contract: grandfathered, renameable only with a migration note.
 - **CSDMS name** — the Wflow.jl 1.x standard name the model build writes into
-  `wflow_sbm.toml`. Same dict. `naming.md` §6 **tier 1**: upstream-owned, *not
+  `wflow_sbm.toml`. Same dict. `dev-naming-conventions.md` §6 **tier 1**: upstream-owned, *not
   renameable at all*, not even with a note.
 - **csv code** — the `[output.csv]` `header`, so the run csv column is
   `<code>_<subcatchment-or-gauge-id>` (`gwr_101`). Owned by
@@ -45,7 +45,7 @@ Column by column, with the dict that owns it:
 - **token** — the short name in the result **filename** and in the composite
   indicator. Owned by
   `blueearth_cst/shared/indicator_tables.py::VARIABLE_TOKENS`.
-  [HM-7](hydrological-model-interface.md#hm-7--retained-indicator-sets) describes its interface context;
+  [HM-7](toolbox-hydrological-model-interface.md#hm-7--retained-indicator-sets) describes its interface context;
   the code owns the exact mapping.
 - **table / indicator** — derived from the token by `indicator_table_filename` and
   `basin_indicator_name`; no dict of its own.
@@ -59,7 +59,7 @@ something, it was not taken:
 
 | token | rejected candidate | why |
 | --- | --- | --- |
-| `precip` | `p` | `naming.md` §6 tier 2 makes `precip` the canonical cross-tool stem; `p` would be a further spelling of a variable that already has enough |
+| `precip` | `p` | `dev-naming-conventions.md` §6 tier 2 makes `precip` the canonical cross-tool stem; `p` would be a further spelling of a variable that already has enough |
 | `snow` | `swe` | the CSDMS name is `snowpack_liquid_water__depth` — snowpack *liquid water*, not total water equivalent. `swe` would assert a physical claim upstream does not make |
 | `overland_flow` | `qof` | no canonical short name exists, and `qof` is opaque in a filename |
 | `aet` | `et` | `pet` is already canonical here; one letter apart in the same file is a misreading waiting to happen |
@@ -174,7 +174,7 @@ return levels retain pooled estimation from member-local blocks.
 
 Axis columns are derived at reporting time rather than stored in the indicator
 tables. `precip_change` in the perturbation lookup is a percent. HM-7 in
-`dev/reference/hydrological-model-interface.md` defines the current
+`dev/reference/toolbox-hydrological-model-interface.md` defines the current
 contract; `blueearth_cst/shared/surface_axes.py` supplies monthly axis calculations.
 Keep identifiers as text; their scope is the owning collection or indicator set.
 
@@ -188,7 +188,7 @@ would silently assume subcatchments tile rather than nest (Q11).
 
 ## Renaming anything here
 
-Every column in §1 except the CSDMS name is a `naming.md` §7 surface — old → new
+Every column in §1 except the CSDMS name is a `dev-naming-conventions.md` §7 surface — old → new
 mapping in a `dev/<milestone>/migration_<topic>.md` note. The CSDMS name is
 §6 tier 1 and cannot be renamed locally at all.
 

@@ -15,10 +15,10 @@ Developers and agents use the same guidance.
 | `baseline/` | Replication fingerprints and reference series |
 
 `dev/TODO.md` and `dev/tasks/` link to main in configured sessions. References, templates and records
-remain versioned with each branch's code. See [worktree coordination](reference/development-workflow.md)
+remain versioned with each branch's code. See [worktree coordination](reference/dev-task-and-session-workflow.md)
 before setup or handoff.
 
-Use [repository layout](reference/repo-layout.md) for file placement and local scratch,
-[record lifecycle](reference/record-lifecycle.md) for retention, and
-[validation ladder](reference/validation-ladder.md) for checks.
+Use [repository layout](reference/dev-repository-layout.md) for file placement and local scratch,
+[record lifecycle](reference/dev-record-lifecycle.md) for retention, and
+[validation ladder](reference/dev-validation.md) for checks.
 User-facing documentation belongs in `docs/`.

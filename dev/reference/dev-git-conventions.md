@@ -49,7 +49,7 @@ lands on `main` and is found through `dev/LOG.md`.
 - `origin` — the fork (`github.com/tanerumit/blueearth_cst`), where CI runs.
 - `upstream` — the original Deltares repo (`github.com/Deltares/blueearth_cst`), fetch-only.
 
-`gh` resolves to `upstream` until told otherwise — see `dev/reference/validation-ladder.md`.
+`gh` resolves to `upstream` until told otherwise — see `dev/reference/dev-validation.md`.
 
 The branch `upstream-deltares` freezes the upstream Deltares state the fork tracked at renaming time;
 never commit to it. `main` is the moving trunk and the GitHub default.
@@ -61,7 +61,7 @@ default; only stack PRs when maintainers explicitly agree to review them in seri
 
 ## Sealing a milestone
 
-Follow [record lifecycle](record-lifecycle.md#milestone-records-and-historical-recovery) for
+Follow [record lifecycle](dev-record-lifecycle.md#milestone-records-and-historical-recovery) for
 preserving superseded specifications and their seal metadata.
 
 ## Commit strategy
@@ -91,7 +91,7 @@ Examples, all from this repo's history:
 
 - `fix(wf2): refuse to attribute drift against a mismatched fixture`
 - `refactor(tests): read LOG_RULES from the parsed workflow, and retire the second parser`
-- `docs(ref): state the rules in naming.md, drop the archaeology`
+- `docs(ref): state the rules in dev-naming-conventions.md, drop the archaeology`
 - `chore(board): close t2608201134, and record the ruling`
 - `refactor(workflows)!: rename the workflows.<name> config keys and every derived path`
 

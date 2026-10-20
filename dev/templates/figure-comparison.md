@@ -60,5 +60,5 @@ supports holding Space or Enter. The focused wipe divider supports Left/Right an
 Review state is not persisted. The layout stacks the pair on narrow screens.
 
 Keep figure images and populated pages untracked in scratch. Preserve approved interface improvements
-in the template, and preserve scientific style decisions in [plot-style.md](../reference/plot-style.md). This template
+in the template, and preserve scientific style decisions in [toolbox-plot-style.md](../reference/toolbox-plot-style.md). This template
 is a development aid and is not part of workflow outputs.

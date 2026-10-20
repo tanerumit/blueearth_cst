@@ -25,5 +25,5 @@ Review the arithmetic before changing them; source attributes alone do not prove
 
 `tests/test_prepare_climate_data_catalog.py` exercises admission and rejection.
 [The retained forcing-unit investigation](../records/milestones/r12/implementation/evidence/p1-forcing-units.md)
-preserves the numerical/source evidence. Apply the [validation ladder](validation-ladder.md) when a change
+preserves the numerical/source evidence. Apply the [validation ladder](dev-validation.md) when a change
 can alter values.

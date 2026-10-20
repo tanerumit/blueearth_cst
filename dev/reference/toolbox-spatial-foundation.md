@@ -3,7 +3,7 @@
 Last updated: 2026-10-20
 
 Use this reference when changing spatial ownership, region reuse, location identities or basin maps.
-`blueearth_cst/spatial/` owns the implementation; the [implementation map](workflow-implementation-map.md) points
+`blueearth_cst/spatial/` owns the implementation; the [implementation map](toolbox-workflow-map.md) points
 to rule definitions and consumer checks.
 
 ## Ownership and dependency direction
@@ -43,11 +43,11 @@ copy of the geometry. Physical waterbody layers are clipped from catalog sources
 Empty layers and missing-source warnings follow that producer's implementation.
 
 `blueearth_cst/shared/plot_map.py` owns the map reader. Figure layout and export conventions belong in
-[plot style](plot-style.md), rather than being repeated here.
+[plot style](toolbox-plot-style.md), rather than being repeated here.
 
 ## Verification entry points
 
 Use `tests/test_spatial_identity.py`, `tests/test_spatial_config.py`, `tests/test_spatial_products.py`
 and `tests/test_spatial_units_rule.py` for their respective contracts.
 `tests/test_cross_workflow_inputs.py` checks workflow dependency boundaries.
-Select the applicable checks through the [validation ladder](validation-ladder.md).
+Select the applicable checks through the [validation ladder](dev-validation.md).

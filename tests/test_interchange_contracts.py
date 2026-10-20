@@ -19,7 +19,7 @@
   writes no per-run warm state, so only its synthetic pass/fail pair remains.
 
 Source of record: ``dev/records/milestones/p32b/interchange-contracts-design.md`` §5.5 and the two
-seam docs ``dev/reference/{weather-generator,hydrological-model}-interface.md``.
+seam docs ``dev/reference/{toolbox-weather-generator,toolbox-hydrological-model}-interface.md``.
 """
 
 import os

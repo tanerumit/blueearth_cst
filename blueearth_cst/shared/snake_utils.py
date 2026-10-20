@@ -395,7 +395,7 @@ def validate_experiment_name(name: str, project_dir) -> str:
 
     Grammar: ``^[a-z0-9][a-z0-9_]*$`` (lowercase alnum + underscore, must start
     with an alnum), nonempty, at most 64 chars — a strict subset of
-    ``dev/reference/naming.md``'s snake_case rule that deliberately excludes
+    ``dev/reference/dev-naming-conventions.md``'s snake_case rule that deliberately excludes
     hyphens and dots so the value can never introduce a path component or an
     extension. Uppercase is REJECTED (never silently lowercased). After the
     grammar, a containment assertion confirms the resolved target is a direct

@@ -4,7 +4,7 @@ Last updated: 2026-10-20
 
 Shared procedures for developers and agents coordinating repository work. This reference owns task
 admission, board location, worktree coordination, and handoffs. Placement and scratch rules live in
-[repo-layout.md](repo-layout.md); preservation rules live in [record-lifecycle.md](record-lifecycle.md).
+[dev-repository-layout.md](dev-repository-layout.md); preservation rules live in [dev-record-lifecycle.md](dev-record-lifecycle.md).
 
 ## Task admission and the board
 
@@ -21,7 +21,7 @@ pixi run python dev/scripts/todoboard.py render
 
 A board note is a `todo-item` for work or a `watch-item` for a condition worth tracking without current
 action. A watch item carries the trigger that would turn it into work. Queue ordering is described in
-[repo-layout.md](repo-layout.md#dev).
+[dev-repository-layout.md](dev-repository-layout.md#dev).
 
 Set `origin:` only from recorded lineage, using the IDs in [roadmap.md](../records/milestones/roadmap.md). If the source item's
 ID or migration record does not establish an origin, leave it blank and explain the gap in `## Refs`.
@@ -73,7 +73,7 @@ paths; resolve actual roots with `git worktree list`.
 - Owner: session-N; branch: <branch>; implementation commit: <SHA or uncommitted>.
 - Implementation: session-N :: <repo-relative paths>.
 - Coordination: main :: dev/tasks/<task-id>/ (when backing material is needed).
-- Scratch: <owning checkout> :: <path following repo-layout.md>.
+- Scratch: <owning checkout> :: <path following dev-repository-layout.md>.
 - Outputs: <configured project_dir; identify its owning checkout if relative>.
 - Verification: <tested SHA, command, result, environment, input/config, output root>.
 - Retention: <needed artifact, reason, event that permits cleanup>.
@@ -89,7 +89,7 @@ until the branch resumes or lands.
 
 ### Local scratch and navigation
 
-Follow [Task temporary material](repo-layout.md#task-temporary-material) for scratch placement, evidence
+Follow [Task temporary material](dev-repository-layout.md#task-temporary-material) for scratch placement, evidence
 retention, and safe cleanup. Tool state stays in its configured location.
 
 For a new session, exclude its snapshots while clean, then preview and create the canonical board links.
@@ -131,13 +131,13 @@ folders or scratch.
 
 ## Verification and closure
 
-Use the [validation ladder](validation-ladder.md) to choose checks and record exact commands, results,
+Use the [validation ladder](dev-validation.md) to choose checks and record exact commands, results,
 and material limitations in the existing task evidence or completion report.
 
 The board holds live work only. Before closing a task through `todo-board`, promote durable material
-under [record-lifecycle.md](record-lifecycle.md), preserve evidence still needed by consumers, and clean
-eligible task material under [repo-layout.md](repo-layout.md#task-temporary-material). Remove the closed
+under [dev-record-lifecycle.md](dev-record-lifecycle.md), preserve evidence still needed by consumers, and clean
+eligible task material under [dev-repository-layout.md](dev-repository-layout.md#task-temporary-material). Remove the closed
 note and eligible sidecar through the board workflow; do not move closed notes into the live board.
 
-Write closure entries using the [ledger rule](record-lifecycle.md#closure-ledger-entries). Log shipped
+Write closure entries using the [ledger rule](dev-record-lifecycle.md#closure-ledger-entries). Log shipped
 features in root `CHANGELOG.md`, linking durable detail rather than transient task material.

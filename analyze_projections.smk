@@ -772,7 +772,7 @@ def get_horizon(wildcards):
 # this file is not the number order and is not required to be.
 #
 # DO NOT RENUMBER TO INSERT A RULE. Use a letter suffix (2.05b) until the next
-# deliberate sweep. Convention: dev/reference/naming.md §9; historical translations:
+# deliberate sweep. Convention: dev/reference/dev-naming-conventions.md §9; historical translations:
 # dev/records/milestones/r10/rule-numbering-crosswalks.md.
 
 # --- log layout ---------------------------------------------------------------

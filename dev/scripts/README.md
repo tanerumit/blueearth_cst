@@ -43,14 +43,14 @@ both legs, so an import-time error fails the suite.
 | [`pixi_activate.bat`](pixi_activate.bat) | Activate the pixi env in a cmd shell. |
 | [Board view](setup-board-view.ps1) | Exclude session snapshots and link main's canonical board. |
 | [Navigation setup](setup-worktree-navigation.ps1) | Preview or create shortcuts; sparse targets must be named. |
-| [`check_activation.py`](check_activation.py) | Drift between `dev/reference/agent-activation.md` and the untracked agent manifest. |
+| [`check_activation.py`](check_activation.py) | Drift between `dev/reference/dev-agent-activation.md` and the untracked agent manifest. |
 
 Open `dev/TODO.md` or `dev/tasks/` in any configured session to see the canonical board.
-See [board setup](../reference/development-workflow.md#local-scratch-and-navigation) for installation.
+See [board setup](../reference/dev-task-and-session-workflow.md#local-scratch-and-navigation) for installation.
 Navigation preview makes no writes. Apply sparse exclusion with `-Apply -ExcludeSnapshots -Worktree
 session-N`; selected roots are preflighted before writing, failures are reported while valid roots
 continue, and stale shortcuts are retained. See
-[coordination](../reference/development-workflow.md#worktree-coordination)
+[coordination](../reference/dev-task-and-session-workflow.md#worktree-coordination)
 for ownership and safe legacy junction removal with non-recursive `cmd /c rmdir`, never `git clean`.
 
 ## Data staging and catalogs

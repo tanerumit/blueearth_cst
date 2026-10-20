@@ -122,7 +122,7 @@ be clean and committed. Before commit, stage the intended changes and use `recor
 unstaged changes and nonignored untracked files, and checks identity again after execution. Commit the
 same staged content, then `verify` proves the clean committed tree matches without executing the gate.
 Evidence and logs belong in `.tmp/tasks/<id>/`; substitute the owning task ID in the examples.
-Follow `repo-layout.md` § Task temporary material for retention and closure cleanup.
+Follow `dev-repository-layout.md` § Task temporary material for retention and closure cleanup.
 
 ```powershell
 pixi run python dev/scripts/verify_landing.py record --evidence .tmp/tasks/<id>/gates.json --gate test-fast --log .tmp/tasks/<id>/fast.log -- pixi run test-fast

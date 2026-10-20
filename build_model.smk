@@ -425,7 +425,7 @@ MAP_CANDIDATE_STORES = {
 #
 # DO NOT RENUMBER TO INSERT A RULE. Use a letter suffix (1.09b) until the next
 # deliberate sweep — renumbering is a migration, not an edit.
-# Convention: dev/reference/naming.md §9; historical translations:
+# Convention: dev/reference/dev-naming-conventions.md §9; historical translations:
 # dev/records/milestones/r10/rule-numbering-crosswalks.md.
 
 # --- log layout ---------------------------------------------------------------
@@ -1139,7 +1139,7 @@ rule plot_model_evaluation:
 # 1.16 write_run_metadata — the staleness sidecar (design §5.8).
 #
 # `1.16`, not `1.17`: that number is gather_benchmarks and `dev/reference/
-# naming.md` §9 forbids renumbering to insert a rule. Placed BEFORE the two
+# dev-naming-conventions.md` §9 forbids renumbering to insert a rule. Placed BEFORE the two
 # gather rules so its log part -- if it ever grows one -- is still gathered.
 #
 # It takes the indicators table as input rather than writing into it: that table

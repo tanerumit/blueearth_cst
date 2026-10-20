@@ -50,7 +50,7 @@ the result change first, retaining the evidence needed to interpret it.
 2. Prepare the dated changelog release entry on the task branch and leave an
    empty Unreleased section for subsequent work. Follow the existing branch
    validation and landing gates in `AGENTS.md` and
-   [the validation ladder](validation-ladder.md). Landing requires approval.
+   [the validation ladder](dev-validation.md). Landing requires approval.
 3. Verify coverage of the candidate main commit and the release delta using
    the validation ladder. Reuse applicable landing, CI and execution evidence;
    releasing or tagging the same content does not require another test run.

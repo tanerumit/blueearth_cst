@@ -32,20 +32,20 @@ For rule labels and log ordering, inspect each workflow's `RuleRegistry` registr
 [Naming][rule-numbering] owns numbering conventions and the pointer for interpreting old
 numbered citations. Numbers are labels, not a substitute for inspecting dependencies.
 
-[rule-numbering]: naming.md#9-rule-numbering-wnn-reference-scheme
+[rule-numbering]: dev-naming-conventions.md#9-rule-numbering-wnn-reference-scheme
 
 ## Find the current contract
 
 | Change concerns | Owning reference |
 |---|---|
-| Model-free regions, vectors and location identities | [Spatial foundation](spatial-foundation.md) |
+| Model-free regions, vectors and location identities | [Spatial foundation](toolbox-spatial-foundation.md) |
 | Model construction, forcing and mutable-root ordering | [Model construction](wf1-model-construction.md) |
 | CMIP6 grid readability and source-version admission | [CMIP6 readability](wf2-cmip6-source-readability.md) |
 | Projection windows, reductions and diagnostic availability | [WF2 guide][wf2-guide] |
 | Scenario collections, retained responses and indicator sets | [Retained handoffs][handoffs] |
-| Replacement weather generators | [Generator interface](weather-generator-interface.md) |
-| Replacement hydrological models | [Model interface](hydrological-model-interface.md) |
-| Figure ownership, annotation and export conventions | [Plot style](plot-style.md) |
+| Replacement weather generators | [Generator interface](toolbox-weather-generator-interface.md) |
+| Replacement hydrological models | [Model interface](toolbox-hydrological-model-interface.md) |
+| Figure ownership, annotation and export conventions | [Plot style](toolbox-plot-style.md) |
 | Supported execution and log interpretation | [Workflow guide][workflow-guide] |
 
 [wf2-guide]: ../../docs/site/toolbox-reference/workflow-analyze-projections.qmd
@@ -65,7 +65,7 @@ including independent branches, before merging execution records.
 
 Validate the affected configured graph with the supported runner's dry-run interface.
 [The DAG plotting tool](../../scripts/plot_workflow_dag.py) provides an executable graph view.
-Select consumer checks through the [validation ladder](validation-ladder.md); examples include
+Select consumer checks through the [validation ladder](dev-validation.md); examples include
 `tests/test_cross_workflow_inputs.py`, `tests/test_log_rules_contract.py` and the affected runner tests.
 These are navigation pointers, not an additional mandatory suite.
 

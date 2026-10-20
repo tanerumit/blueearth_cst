@@ -11,13 +11,30 @@ Editable branch-owned consumers were updated. Sealed specifications moved withou
 
 | Former path | Retained destination |
 |---|---|
+| `dev/reference/agent-activation.md` | `dev/reference/dev-agent-activation.md` |
+| `dev/reference/development-workflow.md` | `dev/reference/dev-task-and-session-workflow.md` |
+| `dev/reference/documentation-guidelines.md` | `dev/reference/dev-documentation.md` |
+| `dev/reference/git-conventions.md` | `dev/reference/dev-git-conventions.md` |
+| `dev/reference/naming.md` | `dev/reference/dev-naming-conventions.md` |
+| `dev/reference/record-lifecycle.md` | `dev/reference/dev-record-lifecycle.md` |
+| `dev/reference/repo-layout.md` | `dev/reference/dev-repository-layout.md` |
+| `dev/reference/validation-ladder.md` | `dev/reference/dev-validation.md` |
+| `dev/reference/versioning.md` | `dev/reference/dev-versioning.md` |
+| `dev/reference/forcing-units.md` | `dev/reference/toolbox-forcing-units.md` |
+| `dev/reference/hydrological-model-interface.md` | `dev/reference/toolbox-hydrological-model-interface.md` |
+| `dev/reference/indicator-glossary.md` | `dev/reference/toolbox-indicator-glossary.md` |
+| `dev/reference/plot-style.md` | `dev/reference/toolbox-plot-style.md` |
+| `dev/reference/spatial-foundation.md` | `dev/reference/toolbox-spatial-foundation.md` |
+| `dev/reference/weather-generator-interface.md` | `dev/reference/toolbox-weather-generator-interface.md` |
+| `dev/reference/workflow-implementation-map.md` | `dev/reference/toolbox-workflow-map.md` |
+| `dev/reference/wf0-figure-filename-rule.md` | `dev/reference/wf0-figure-naming.md` |
 | `dev/reference/sealed-records.yml` | `dev/records/sealed-records.yml` |
 | `dev/reference/contracts/README.md` | `dev/reference/README.md` (interface topic rows) |
-| `dev/reference/contracts/weather-generator-seam.md` | `dev/reference/weather-generator-interface.md` |
-| `dev/reference/contracts/hydrological-model-seam.md` | `dev/reference/hydrological-model-interface.md` |
-| `dev/reference/contracts/forcing-units.md` | `dev/reference/forcing-units.md` |
+| `dev/reference/contracts/weather-generator-seam.md` | `dev/reference/toolbox-weather-generator-interface.md` |
+| `dev/reference/contracts/hydrological-model-seam.md` | `dev/reference/toolbox-hydrological-model-interface.md` |
+| `dev/reference/contracts/forcing-units.md` | `dev/reference/toolbox-forcing-units.md` |
 | `dev/reference/workflows/model_creation.md` | `dev/reference/wf1-model-construction.md` |
-| `dev/reference/workflows/rule-index.md` | `dev/reference/workflow-implementation-map.md` |
+| `dev/reference/workflows/rule-index.md` | `dev/reference/toolbox-workflow-map.md` |
 | `dev/reference/workflows/wf2-cmip6-store-readability.md` | `dev/reference/wf2-cmip6-source-readability.md` |
 | `dev/reference/workflows/wf3-stage-flow.html` | `dev/assets/diagrams/scenario-response-handoffs.html` |
 | `dev/reference/workflows/wf3-stage-flow.svg` | `dev/assets/diagrams/scenario-response-handoffs.svg` |

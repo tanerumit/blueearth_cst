@@ -3,7 +3,7 @@
 Last updated: 2026-10-20
 
 Current development contract for `build_model.smk` (WF1). Use this when changing model configuration,
-build ordering or consumers of the mutable Wflow model. [The implementation map](workflow-implementation-map.md) points to
+build ordering or consumers of the mutable Wflow model. [The implementation map](toolbox-workflow-map.md) points to
 rule definitions; [the user guide](../../docs/site/toolbox-reference/workflow-build-model.qmd) owns execution.
 
 ## Configuration ownership
@@ -24,7 +24,7 @@ historical specifications. The current scaffolds are under `config/templates/`.
 
 ## Spatial and model ownership
 
-The [spatial foundation](spatial-foundation.md) owns model-neutral region and vector products.
+The [spatial foundation](toolbox-spatial-foundation.md) owns model-neutral region and vector products.
 WF1 adds thematic land/soil products and builds Wflow under `models/hydrology/wflow`.
 Do not introduce a model-root dependency into the shared region or climate-extraction producers.
 
@@ -60,7 +60,7 @@ model outlet positions to those identities. Positional `wflow_1` labels are mode
 not replacements for basin/subbasin/location IDs.
 
 `blueearth_cst/model/setup_gauges_and_outputs.py` and the shared Wflow output mappings own variable
-translation and gauge configuration. Use [the indicator glossary](indicator-glossary.md) to navigate
+translation and gauge configuration. Use [the indicator glossary](toolbox-indicator-glossary.md) to navigate
 semantic names, CSDMS names, CSV codes and tokens; do not maintain another translation table here.
 
 Observation admission checks registry membership and duplicate IDs before HydroMT reads the table.
@@ -75,5 +75,5 @@ WF4 consumes the validated model through its own runner and retained-response co
 
 Use `tests/test_spatial_units_rule.py`, `tests/test_cross_workflow_inputs.py`,
 `tests/test_check_baseline_discharge.py`, and the model/config tests for the affected contract.
-The [validation ladder](validation-ladder.md) selects DAG, consumer and numerical checks when behavior
+The [validation ladder](dev-validation.md) selects DAG, consumer and numerical checks when behavior
 changes; the old restoration measurements do not validate a newly changed build.

@@ -61,8 +61,8 @@ Planning, audits, design docs, conventions, roadmap, the baseline manifest, and 
 whose output identities require executed checkpoints; inspect a completed run
 with `snapshot_project_tree.py --config <config> --project-dir <root>` instead.
 
-The [development workflow](development-workflow.md#task-admission-and-the-board) owns board location,
-task admission, rendering, and coordination. The [record lifecycle](record-lifecycle.md) owns promotion
+The [development workflow](dev-task-and-session-workflow.md#task-admission-and-the-board) owns board location,
+task admission, rendering, and coordination. The [record lifecycle](dev-record-lifecycle.md) owns promotion
 and retention. `dev/README.md` is the folder map and contributor entry point.
 
 Use `dev/reference/README.md` to find the existing topic owner for current rules and architecture.
@@ -80,7 +80,7 @@ Watch items remain unnumbered after the work queue. Priority edits belong in
 the notes and require a render; they do not change lifecycle status.
 
 Pre-board item IDs cited by code, tests and Snakefiles are recoverable from
-commit `45e3a564`; see [historical recovery](record-lifecycle.md#milestone-records-and-historical-recovery).
+commit `45e3a564`; see [historical recovery](dev-record-lifecycle.md#milestone-records-and-historical-recovery).
 
 ### Task temporary material
 

@@ -48,10 +48,10 @@ Read the 2025 technical note in References before changing what a workflow compu
   separately. Never hand-edit generated `dev/TODO.md`. Save task documents in main's `dev/tasks/<id>/`;
   session `dev/TODO.md` and `dev/tasks/` link to main after board-view setup. Never use `git add --sparse`
   to create session-local task documents. Temporary material stays local under `.tmp/tasks/<id-or-purpose>/`;
-  see `dev/reference/repo-layout.md` for placement and cleanup.
+  see `dev/reference/dev-repository-layout.md` for placement and cleanup.
 - `docs/site/`: published documentation; `docs/notebooks/`: source notebooks; `docs/references/`:
   upstream guides. Historical migration guides live in `dev/records/milestones/`.
-  Do not mirror configs into docs. Full layout: `dev/reference/repo-layout.md`.
+  Do not mirror configs into docs. Full layout: `dev/reference/dev-repository-layout.md`.
 - `dev/scripts/console.py` is vendored: fix upstream in `console-formatting`, then re-copy.
   Ignored `.claude/`, `.codex/`, `.agents/` directories are linked into worktrees; absence downgrades,
   rather than fails, activation.
@@ -79,10 +79,10 @@ remove that setting when diagnosing why a job reran.
 
 - Use `dev/reference/README.md` to find the current topic owner before changing guidance. Update that
   document in place; records provide historical evidence, not current instructions. Templates belong in
-  `dev/templates/`. Follow `dev/reference/record-lifecycle.md` for promotion and the simple reference format.
+  `dev/templates/`. Follow `dev/reference/dev-record-lifecycle.md` for promotion and the simple reference format.
 - Keep detailed guidance in one authoritative document. Elsewhere, use a pointer and a short explanation
   of when to read it; update the owning document instead of repeating its rules.
-- Follow `dev/reference/naming.md`; existing names are grandfathered. Contract renames need a
+- Follow `dev/reference/dev-naming-conventions.md`; existing names are grandfathered. Contract renames need a
   migration note. Update every live old path/key/command reference, including docs and comments.
   Only records with a `SUPERSEDED` banner and entry in `dev/records/sealed-records.yml` are frozen;
   do not infer archival status from age.
@@ -100,7 +100,7 @@ remove that setting when diagnosing why a job reran.
 
 ## Validation ladder — match the check to the blast radius
 
-Read `dev/reference/validation-ladder.md` before planning verification, selecting gates, landing,
+Read `dev/reference/dev-validation.md` before planning verification, selecting gates, landing,
 or pushing. It owns acceptance-to-check/input/output mapping, evidence reuse, config provenance,
 `verify_landing.py`, and CI procedures. Execution success never replaces numerical/visual acceptance.
 
@@ -143,7 +143,7 @@ completion report; this rule requires no new checklist, document or approval ste
 The local E2E gate regenerates every downstream product from staged source inputs. Use focused fetching
 tests for acquisition changes; opt into live E2E when verifying catalog availability, addressing,
 windows, clipping or cache behavior. A release or milestone label alone does not require live fetching.
-See `dev/reference/validation-ladder.md` for bundle qualification and refresh.
+See `dev/reference/dev-validation.md` for bundle qualification and refresh.
 Use policy-tooling tests only when changing that tooling or its contracts, not merely using its verifier.
 
 Push exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root
@@ -186,15 +186,15 @@ workflow execution, state affected consumers and omitted workflows; rapid must n
 ## References
 
 - `README.md`: workflow execution and pipeline; start here.
-- `dev/reference/development-workflow.md`: before board coordination, worktree handoff, or task closure.
-- `dev/reference/record-lifecycle.md`: before promoting, shortening, superseding, or deleting dev records.
-- `dev/reference/plot-style.md`: before scientific plots/review pages; preserve defaults/exceptions and
-  record newly approved styles. `dev/reference/versioning.md`: before release/version decisions.
+- `dev/reference/dev-task-and-session-workflow.md`: before board coordination, worktree handoff, or task closure.
+- `dev/reference/dev-record-lifecycle.md`: before promoting, shortening, superseding, or deleting dev records.
+- `dev/reference/toolbox-plot-style.md`: before scientific plots/review pages; preserve defaults/exceptions and
+  record newly approved styles. `dev/reference/dev-versioning.md`: before release/version decisions.
 - `docs/references/cst-toolbox-technical-note-2025.md`: methodology; code/current references win on stale
   pipeline details, paths and artifacts.
-- `dev/reference/validation-ladder.md`: verification planning, affordability, unexpected gates and CI.
-- `dev/reference/repo-layout.md`, `dev/reference/naming.md`: placement and naming decisions.
-- `dev/reference/workflow-implementation-map.md`: before adding/editing rules.
+- `dev/reference/dev-validation.md`: verification planning, affordability, unexpected gates and CI.
+- `dev/reference/dev-repository-layout.md`, `dev/reference/dev-naming-conventions.md`: placement and naming decisions.
+- `dev/reference/toolbox-workflow-map.md`: before adding/editing rules.
 - `docs/site/setup/install.md`, `docs/site/setup/env-setup-notes.md`: Pixi/R/Julia setup problems.
 - `docs/references/hydromt-user-guide/00-index.md`, `docs/references/hydromt-architecture.md`:
   model-build config, catalogs and regions.

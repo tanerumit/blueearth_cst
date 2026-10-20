@@ -1,8 +1,8 @@
 # Development documentation lifecycle
 
 This reference owns the boundary between current guidance, proposed changes, reusable templates and
-retained evidence. File placement and scratch cleanup are detailed in [repository layout](repo-layout.md);
-task coordination is in [development workflow](development-workflow.md).
+retained evidence. File placement and scratch cleanup are detailed in [repository layout](dev-repository-layout.md);
+task coordination is in [development workflow](dev-task-and-session-workflow.md).
 
 ## Current guidance
 

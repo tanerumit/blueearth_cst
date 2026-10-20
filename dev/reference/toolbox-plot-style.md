@@ -25,12 +25,12 @@ Spatial maps and legacy climate figure adapters that have no caption inventory s
 
 Keep readable captions in
 `plots/figure_captions.md`. Machine plot manifests and internal analysis records belong in the cohesive
-output unit's single root `_engine/`, following [the output naming rule](naming.md#generated-outputs-under-project_dir).
+output unit's single root `_engine/`, following [the output naming rule](dev-naming-conventions.md#generated-outputs-under-project_dir).
 WF2 uses the ensemble root's `_engine/`, with manifest figure paths relative to `plots/`.
 Existing WF0 `plots/_engine/` paths await explicit migration. JSON containing user-facing data stays with
 its owning data product. Generated filenames and directories use lowercase snake_case, including
 `full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
-with canonical `precip` and `temp` stems. See [naming](naming.md) for current filename conventions.
+with canonical `precip` and `temp` stems. See [naming](dev-naming-conventions.md) for current filename conventions.
 
 ## Shared colour defaults
 
@@ -362,7 +362,7 @@ in this visual review.
 - Start from the tracked `dev/templates/figure-comparison.html` template. See
   `dev/templates/figure-comparison.md` for setup and figure-record fields. Keep session data in scratch;
   update the tracked template when improvements to the review interface are approved.
-- Keep the disposable HTML review in `.tmp/tasks/<id>/`; follow `repo-layout.md` for closure cleanup.
+- Keep the disposable HTML review in `.tmp/tasks/<id>/`; follow `dev-repository-layout.md` for closure cleanup.
 - Show only the plot group currently under review, with existing and revised versions side by side.
   Preserve a baseline before revising the group.
 - Keep the original page header. Put the selected figure name in each comparison heading, for example

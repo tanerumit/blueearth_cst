@@ -23,11 +23,11 @@ REFERENCE_DIR = REPO_ROOT / "dev" / "reference"
 # Inline links only; reference-style and bare URLs are out of scope.
 _MD_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 
-# Existing plot verification blocks pruning under record-lifecycle.md.
+# Existing plot verification blocks pruning under dev-record-lifecycle.md.
 # New reference links to prunable reviews are refused.
 _RETAINED_REVIEW_LINKS = {
     (
-        "dev/reference/plot-style.md",
+        "dev/reference/toolbox-plot-style.md",
         "dev/records/reviews/plot-improvements/verification.md",
     ),
 }
@@ -188,7 +188,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "\nDeclarations live in .agent-system/agent-manifest.yml. Resolve "
             "manifest/tree drift through activation setup; see "
-            "dev/reference/agent-activation.md.",
+            "dev/reference/dev-agent-activation.md.",
             file=sys.stderr,
         )
         return 1

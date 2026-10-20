@@ -30,7 +30,7 @@ The exact variable and native-label expectations belong to `_WG1_VARS_UNITS`.
 
 Native labels are not effective physical units. The validator checks `units` only when present;
 it does not establish daily cadence, value magnitudes or scientific suitability.
-[Forcing-unit admission](forcing-units.md) owns the reviewed interpretation and conversion policy.
+[Forcing-unit admission](toolbox-forcing-units.md) owns the reviewed interpretation and conversion policy.
 
 Selected CHIRPS includes ERA5 companions; comparison-only CHIRPS can contain precipitation alone and
 therefore report WG-1 differences without being unusable for WF0. Promotion to selected forcing requires
@@ -87,7 +87,7 @@ Machine-specific catalog URIs are not the collection's portability contract.
 ## WG-6 — prepared Wflow forcing
 
 The Wflow adapter prepares temporary model-grid forcing for execution.
-Its content contract is [HM-2](hydrological-model-interface.md#hm-2--prepared-forcing).
+Its content contract is [HM-2](toolbox-hydrological-model-interface.md#hm-2--prepared-forcing).
 `validate_wg6` delegates to `validate_hm2`; do not maintain a parallel forcing schema here.
 Temporal compatibility and preparation provenance remain adapter responsibilities.
 
@@ -97,7 +97,7 @@ The interchange validators accept parsed objects and return differences. They ar
 runtime admission gate: WF0 uses WG-1 for readiness reporting, while collection and simulator readers
 enforce their own contracts. A missing temporary artifact or skipped fixture test is an unavailable check.
 Use `tests/test_interchange_contracts.py`, the provider/publication tests and affected reader checks
-according to the [validation ladder](validation-ladder.md).
+according to the [validation ladder](dev-validation.md).
 
 Use the supported [WF3](../../docs/site/toolbox-reference/workflow-generate-scenarios.qmd) and
 [WF4](../../docs/site/toolbox-reference/workflow-simulate-system.qmd) launchers for execution.

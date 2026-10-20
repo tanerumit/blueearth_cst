@@ -91,7 +91,7 @@ from blueearth_cst.shared.config_composition import (  # noqa: E402
 # names in blueearth_cst/shared/merge_logs.py (logs/wf1_build_model.log ...).
 WORKFLOW_NUMBER = {
     # 0 because analyze_climate runs BEFORE model creation. `W` is a workflow
-    # id, not a position (naming.md §9), and ids need not start at 1 -- so the
+    # id, not a position (dev-naming-conventions.md §9), and ids need not start at 1 -- so the
     # newcomer takes 0 and `ls logs/` still sorts in execution order, which
     # renumbering the other three would have cost a migration to achieve.
     "analyze_climate.smk": 0,

@@ -21,7 +21,7 @@
 testpaths = ["tests"]
 
 # Tests load dev.scripts.pytest_temp through conftest: unique run directories
-# live beside this reusable cache. See dev/reference/validation-ladder.md.
+# live beside this reusable cache. See dev/reference/dev-validation.md.
 cache_dir = ".tmp/pytest/cache"
 
 # Repo root on sys.path. This is the supported declarative replacement for the

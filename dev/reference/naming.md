@@ -212,9 +212,11 @@ It exists in exactly two places:
   For wildcard rules the prefix goes on the subdirectory (`4.05_run_wflow_simulations/batch_{b}.log`).
   The `W` digit keeps rule labels disambiguated and sorts them by workflow then step within each namespace.
 
-Two properties hold:
+Numbering conventions:
 
-- **Contiguous** within each workflow, from `W.01`. Target rules (`all`, WF4's `simulations_only` and `simulations_and_indicators`) carry no number: they do no work, and a numbered target reads as a pipeline step.
+- **Logical order**, with gaps after removals and letter suffixes for insertions; do not close gaps by
+  renumbering surviving rules. Target rules (`all`, `simulations_only`, `simulations_and_indicators`)
+  carry no number: they aggregate work rather than execute a pipeline step.
 - **Every dependency points from a lower number to a higher one**, checked against each rule's `input:` block — **`ancient()` included**. `ancient()` suppresses the timestamp rerun-trigger, not the DAG edge.
 
 **Numbers are REUSED, so a stale reference resolves to a different rule.** Read every `W.NN` in `dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` and the dated migration records **as of its date**, and translate through `dev/records/milestones/r10/rule-numbering-crosswalks.md`. Do not rewrite those archives to current numbers.

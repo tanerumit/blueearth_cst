@@ -3,7 +3,7 @@
 Last updated: 2026-10-20
 
 Use this reference when changing workflow responsibilities, configuration ownership or retained handoffs.
-The [rule index](workflows/rule-index.md) owns rule-level detail; user execution instructions belong in
+The [implementation map](workflows/rule-index.md) points to executable rules; execution instructions belong in
 [the workflow guide](../../docs/site/toolbox-reference/workflows.qmd).
 
 ## Workflow boundaries
@@ -27,6 +27,11 @@ operation/target contract is part of the boundary, not an optional shell conveni
 
 See [retained handoffs](../../docs/site/toolbox-reference/retained-handoffs.qmd) for the supported artifact
 interface and [interchange contracts](contracts/README.md) for replacement-engine obligations.
+
+![Scenario generation and retained-response handoffs](workflows/wf3-stage-flow.svg)
+
+This is a conceptual view, not a numbered DAG. Edit the [HTML source](workflows/wf3-stage-flow.html)
+and regenerate its SVG with `dev/scripts/export_svg.py`; do not edit both copies independently.
 
 ## Configuration and execution records
 

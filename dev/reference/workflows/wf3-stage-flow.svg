@@ -18,37 +18,37 @@ svg { width: 960px; height: 540px; max-width: none; }
 <rect width="960" height="540" fill="white"/>
 <text x="32" y="40" class="heading">WF3 · Generate a reusable scenario collection</text>
 <rect x="32" y="68" width="280" height="108" rx="8" class="box"/>
-<text x="48" y="96" class="label">3.01–3.04 · Resolve sources</text>
+<text x="48" y="96" class="label">Resolve sources</text>
 <text x="48" y="121" class="detail">Region, historical climate and lookup</text>
 <text x="48" y="145" class="detail">Source content precedes identity</text>
 <path d="M312,122 H340" class="edge"/>
 <rect x="350" y="68" width="280" height="108" rx="8" class="box"/>
-<text x="366" y="96" class="label">3.05–3.08 · Generate rows</text>
+<text x="366" y="96" class="label">Generate scenarios</text>
 <text x="366" y="121" class="detail">Claim collection; generate roots</text>
 <text x="366" y="145" class="detail">Perturb declared descendants</text>
 <path d="M630,122 H658" class="edge"/>
 <rect x="668" y="68" width="260" height="108" rx="8" class="box"/>
-<text x="684" y="96" class="label">3.09–3.10 · Publish</text>
+<text x="684" y="96" class="label">Publish collection</text>
 <text x="684" y="121" class="detail">Retain forcing and preparation</text>
 <text x="684" y="145" class="detail">Validate; write ready marker last</text>
 <text x="32" y="210" class="detail">No model dependency · explicit scenario membership · durable forcing</text>
 <text x="32" y="261" class="heading">WF4 · Simulate and reduce retained responses</text>
 <path d="M798,176 V283 H172 V300" class="edge"/>
 <rect x="32" y="310" width="280" height="108" rx="8" class="box"/>
-<text x="48" y="338" class="label">4.01–4.05 · Simulate</text>
+<text x="48" y="338" class="label">Simulate</text>
 <text x="48" y="363" class="detail">Freeze collection + model identity</text>
 <text x="48" y="387" class="detail">Prepare forcing; run Wflow batches</text>
 <path d="M312,364 H340" class="edge"/>
 <rect x="350" y="310" width="280" height="108" rx="8" class="box"/>
-<text x="366" y="338" class="label">4.06–4.07 · Retain responses</text>
+<text x="366" y="338" class="label">Retain responses</text>
 <text x="366" y="363" class="detail">Native CSVs and complete inventory</text>
 <text x="366" y="387" class="detail">Independent expected series</text>
 <path d="M630,364 H658" class="edge"/>
 <rect x="668" y="310" width="260" height="108" rx="8" class="box"/>
-<text x="684" y="338" class="label">4.08–4.10 · Publish indicators</text>
+<text x="684" y="338" class="label">Publish indicators</text>
 <text x="684" y="363" class="detail">Resolve references and unit index</text>
-<text x="684" y="387" class="detail">Complete immutable indicator set</text>
-<text x="32" y="456" class="detail">Simulation runner validates operation and targets before one Snakemake invocation.</text>
+<text x="684" y="387" class="detail">Publish each requested indicator set</text>
+<text x="32" y="456" class="detail">The simulation runner validates operations, targets and retained inputs before execution.</text>
 <text x="32" y="483" class="detail">Indicators-only starts from retained responses; it has no model, preparation or Julia producer.</text>
-<text x="32" y="510" class="detail">3.11–3.12 / 4.11–4.12 collect scoped logs and benchmarks. CMIP6 is a terminal plausibility overlay.</text>
+<text x="32" y="510" class="detail">Each workflow collects its logs and benchmarks. CMIP6 informs plausibility, not generation.</text>
 </svg>

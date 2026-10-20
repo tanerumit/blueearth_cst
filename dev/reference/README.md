@@ -29,7 +29,7 @@ before writing. Update that document for revisions; do not create a separate fil
 | Wflow construction, constant parameters or model-root ordering | [Model construction](workflows/model_creation.md) |
 | Forcing catalog admission and unit interpretation | [Forcing units](contracts/forcing-units.md) |
 | Weather-generator or hydrological-model substitution | [Interchange contracts](contracts/README.md) |
-| A rule's inputs, outputs, ordering or consumers | [Rule index](workflows/rule-index.md) |
+| Rule definitions, dependencies and consumers | [Implementation map](workflows/rule-index.md) |
 | CMIP6 grid handling or source-version selection | [CMIP6 readability](workflows/wf2-cmip6-store-readability.md) |
 | Output-variable names and indicator terminology | [Indicator glossary](indicator-glossary.md) |
 

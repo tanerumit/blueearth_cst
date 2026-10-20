@@ -3,8 +3,8 @@
 Last updated: 2026-10-20
 
 Current development contract for `build_model.smk` (WF1). Use this when changing model configuration,
-build ordering or consumers of the mutable Wflow model. [The rule index](rule-index.md) owns per-rule
-inputs/outputs; [the user guide](../../../docs/site/toolbox-reference/workflow-build-model.qmd) owns execution.
+build ordering or consumers of the mutable Wflow model. [The implementation map](rule-index.md) points to
+rule definitions; [the user guide](../../../docs/site/toolbox-reference/workflow-build-model.qmd) owns execution.
 
 ## Configuration ownership
 
@@ -41,8 +41,10 @@ upstream reader when changing those bindings; the old verification does not cert
 ## Mutable model-root ordering
 
 HydroMT build/update steps rewrite a model directory in place. Declaring a file written by the initial
-build does not order a reader after later mutations. WF1 readers of model-root contents must depend on
-the terminal `.model_final` sentinel produced by the final model-writing step.
+build does not order a reader after later mutations. Downstream readers that require the completed model
+must depend on the terminal `.model_final` sentinel produced by the final model-writing step.
+Intermediate build/update steps instead depend on their preceding stage; making them depend on the
+terminal sentinel would create a cycle.
 
 `ancient()` suppresses timestamp-triggered reruns; it does not remove the dependency edge. If a later
 rule begins mutating the model root, move the terminal completion point and update affected readers.

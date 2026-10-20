@@ -3,8 +3,8 @@
 Last updated: 2026-10-20
 
 Use this reference when changing spatial ownership, region reuse, location identities or basin maps.
-`blueearth_cst/spatial/` owns the implementation; the [rule index](workflows/rule-index.md) owns producer
-and consumer detail.
+`blueearth_cst/spatial/` owns the implementation; the [implementation map](workflows/rule-index.md) points
+to rule definitions and consumer checks.
 
 ## Ownership and dependency direction
 

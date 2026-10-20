@@ -124,8 +124,13 @@ layout and interpretation live in `docs/guide/running.md` § Execution logs and 
 
 For new output projects, `config/<workflow>/` holds `run_record.yml`, captured files,
 `SOURCES.md`, and `catalogs/` for the latest WF0–WF2
-configuration archives. Shared execution inputs, archive locks and invocation history live in
-`config/_engine/`. There is no intermediate `config/runs/` directory. Editable source configurations
+configuration archives. `config/SETTINGS.md` presents readable settings and original source paths.
+Immutable generations live in `config/_engine/configuration-snapshots/<workflow>/<record-sha256>/`;
+attempt history references those exact records, while unchanged captures reuse their creator generation.
+Shared execution inputs, archive locks and invocation history live in `config/_engine/`.
+Completed replacement backups and child launch contexts are transient. Existing cases can be inspected
+or migrated with `scripts/maintain_config_archives.py` (`--apply` opts into changes).
+There is no intermediate `config/runs/` directory. Editable source configurations
 remain beside the project, outside these generated archives.
 
 `experiments/_engine/{allocation.json,transactions/}` owns project-wide numbering and creation

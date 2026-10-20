@@ -378,6 +378,7 @@ def build_project_tree_rules(
         same_rx(rf"config/{workflow_name}/(?:catalogs/)?[^/]+")
     same("config/_engine/execution-configs/")
     same("config/_engine/archive-transactions/")
+    same("config/_engine/configuration-snapshots/")
     same("experiments/_engine/allocation.json")
     transaction = r"experiments/_engine/transactions/[0-9a-f]{32}"
     same_rx(rf"{transaction}/transaction\.json")
@@ -407,16 +408,8 @@ def build_project_tree_rules(
     # R9 map has carried the equivalent row since 2026-08-05; this is the
     # mirror that was never made.
     same("config/_engine/invocations/")
-    # The content-addressed bundles are GONE (config-snapshot redesign,
-    # 2026-08-13); the regex that matched
-    # `config/<workflow>/<digest>/...` went with them, so a surviving
-    # bundle in an existing project now reports as undeclared. That is the
-    # migration's own signal; delete the bundle. (The one-shot
-    # `prune_config_snapshots.py` that did so was retired 2026-09-24; it is
-    # recoverable from tag `archive/dev-scripts-2026-09-24`.)
-    #
-    # What replaces them is ONE record per workflow, at an enumerated path --
-    # no digest level, so nothing needs a regex.
+    # Latest views remain named by workflow. Immutable generations belong to
+    # the private configuration-snapshots namespace above, not these views.
     same("config/analyze_climate/run_record.yml")
     same("config/build_model/run_record.yml")
     same("config/analyze_projections/run_record.yml")
@@ -428,6 +421,7 @@ def build_project_tree_rules(
     same("config/_engine/journal.jsonl")
     # The bin's own README, rewritten by rule X.01 on every run.
     same("config/README.md")
+    same("config/SETTINGS.md")
     # Both still receive copies, but only of files the toolbox repository
     # cannot give back: a tracked, unmodified catalog or template is recorded
     # by git blob id instead. In a normal checkout these are usually EMPTY.

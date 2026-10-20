@@ -87,7 +87,7 @@ def capture_runs(monkeypatch):
     exits = {}  # index -> returncode override
     # These wrapper-only fixtures deliberately use minimal v1-shaped mappings.
     # Archive capture is exercised with a valid project set separately.
-    from blueearth_cst.shared import workflow_archive_launch
+    from blueearth_cst.shared import configuration_archive, workflow_archive_launch
 
     monkeypatch.setattr(
         workflow_archive_launch,
@@ -95,6 +95,11 @@ def capture_runs(monkeypatch):
         lambda _name, config, _root, **_kwargs: (Path(config), Path(config)),
     )
     monkeypatch.setattr(rw, "_bind_workflow_archive", lambda *_args: None)
+    # This orchestration-only fake returns its source path as a context. The
+    # lifecycle integration tests exercise cleanup of real private contexts.
+    monkeypatch.setattr(
+        configuration_archive, "remove_launch_context", lambda *_args: None
+    )
     monkeypatch.setattr(rw, "_capture_legacy_wf3_attempt", lambda *_args: "a" * 64)
 
     def fake_run(cmd, cwd=None, **kwargs):

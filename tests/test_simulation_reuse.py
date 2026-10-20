@@ -141,6 +141,83 @@ def test_identical_repeat_reuses_the_frozen_simulation(retained):
     check_simulation_reuse(retained, deepcopy(retained))
 
 
+def _archive_upgrade(retained):
+    from blueearth_cst.experiment.simulation_reuse import (
+        _ARCHIVE_AFTER,
+        _ARCHIVE_BEFORE,
+        _ARCHIVE_LAUNCH,
+    )
+
+    previous = deepcopy(retained)
+    previous["documents"]["simulator_adapter_code"].append(
+        {"path": _ARCHIVE_LAUNCH, "sha256": _ARCHIVE_BEFORE}
+    )
+    current = deepcopy(retained)
+    current["documents"]["simulator_adapter_code"].extend(
+        {"path": path, "sha256": checksum} for path, checksum in _ARCHIVE_AFTER.items()
+    )
+    return _rebuild(previous), _rebuild(current)
+
+
+def test_audited_archive_update_reuses_original_simulation_without_rewriting_it(
+    retained,
+):
+    previous, current = _archive_upgrade(retained)
+    before = deepcopy((previous, current))
+    check_simulation_reuse(previous, current)
+    assert (previous, current) == before
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "launcher",
+        "helper",
+        "old_launcher",
+        "code",
+        "settings",
+        "added_code",
+        "duplicate_code",
+    ],
+)
+def test_archive_bridge_refuses_any_unaudited_or_scientific_change(retained, change):
+    previous, current = _archive_upgrade(retained)
+    code = current["documents"]["simulator_adapter_code"]
+    if change == "launcher":
+        code[-2]["sha256"] = "f" * 64
+    elif change == "helper":
+        code[-1]["sha256"] = "f" * 64
+    elif change == "old_launcher":
+        previous["documents"]["simulator_adapter_code"][-1]["sha256"] = "f" * 64
+        previous = _rebuild(previous)
+    elif change == "code":
+        code[0]["sha256"] = "f" * 64
+    elif change == "settings":
+        current["documents"]["settings"]["simulation_window"]["end"] += 1
+    elif change == "duplicate_code":
+        previous["documents"]["simulator_adapter_code"].append(
+            deepcopy(previous["documents"]["simulator_adapter_code"][-1])
+        )
+        previous = _rebuild(previous)
+    else:
+        code.append({"path": "blueearth_cst/shared/unaudited.py", "sha256": "f" * 64})
+    with pytest.raises(SimulationFrozenError):
+        check_simulation_reuse(previous, _rebuild(current))
+
+
+def test_archive_bridge_matches_the_audited_checkout():
+    import hashlib
+
+    from blueearth_cst.experiment.simulation_reuse import _ARCHIVE_AFTER
+
+    root = Path(__file__).resolve().parents[1]
+    for path, expected in _ARCHIVE_AFTER.items():
+        observed = hashlib.sha256(
+            (root / path).read_bytes().replace(b"\r\n", b"\n")
+        ).hexdigest()
+        assert observed == expected, "Archive compatibility bridge requires a new audit"
+
+
 def test_diagnostic_edit_reuses_original_identity_without_mutating_intents(retained):
     current = deepcopy(retained)
     current["documents"]["simulator_adapter_code"][1]["sha256"] = "c" * 64

@@ -1415,6 +1415,7 @@ def _run_owned(
             child_id = uuid.uuid4().hex
             child_path = history_path.with_name(f"{child_id}.json")
             child_record = None
+            capture_context = None
             wf3_source_hash = None
             warning_path = history_path.parent / f".{child_id}.warnings"
             try:
@@ -1676,6 +1677,12 @@ def _run_owned(
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))
                 raise
             finally:
+                if capture_context is not None:
+                    from blueearth_cst.shared.configuration_archive import (
+                        remove_launch_context,
+                    )
+
+                    remove_launch_context(project_dir, capture_context)
                 if previous_tally is None:
                     os.environ.pop(RUN_WARNING_TALLY_ENV, None)
                 else:
@@ -1828,7 +1835,9 @@ def _link_child(
 def _bind_workflow_archive(
     child_path: Path, child: dict[str, Any], project_dir: Path, workflow: str
 ) -> None:
-    """Bind a WF0--WF2 child to its checked current creator archive."""
+    """Bind a WF0--WF2 child to its immutable configuration generation."""
+    from blueearth_cst.shared.configuration_archive import retain_archive
+
     archive = read_archive(project_dir, workflow, f"config/{workflow}")
     projection = archive["configuration_projection"]
     child["configuration"].update(
@@ -1836,11 +1845,11 @@ def _bind_workflow_archive(
         effective_config_sha256=projection["effective_config_sha256"],
         configuration_inputs_sha256=projection["configuration_inputs_sha256"],
         run_record=file_reference(
-            project_dir / "config" / workflow / "run_record.yml",
+            retain_archive(project_dir, project_dir / "config" / workflow),
             "project_root",
             project_dir,
         ),
-        archive_state="latest",
+        archive_state="retained",
     )
     invocation_history.update(child_path, child)
 

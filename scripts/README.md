@@ -20,3 +20,4 @@ repository inspection and maintenance tools live in `dev/scripts/` and are never
 | [`suggest_experiment_name.py`](suggest_experiment_name.py) | Preview numbered selection without changing configs or reserving a name. |
 | [`calibrate_batching.py`](calibrate_batching.py) | Time WF4 batch settings on your basin and machine. |
 | [`plot_workflow_dag.py`](plot_workflow_dag.py) | Render a workflow's DAG under the project's own `logs/dag/`. |
+| [`maintain_config_archives.py`](maintain_config_archives.py) | Inspect generated configuration history; `--apply` retains snapshots and removes completed launch bookkeeping. |

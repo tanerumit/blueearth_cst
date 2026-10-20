@@ -95,10 +95,32 @@ their consumed settings and dependency contents are unchanged. You can rename
 or move project/workflow configuration files, update their `config_path` links,
 or enable other workflows without rebuilding those steps. Paths to scientific
 data must still resolve to the same inputs. Each launch archives the original
-configuration files and paths separately from the stable execution view.
+configuration files and paths separately from the stable execution view. Identical
+captures reuse their original configuration snapshot; each launch still records its
+own command, timing and outcome. A changed capture creates an immutable snapshot,
+so earlier attempt references remain valid even when the latest configuration changes.
 Changing relevant settings or dependency contents still invalidates affected
 work. Existing runs may rebuild once after upgrading to this execution-view
 format; subsequent equivalent configurations reuse the staged inputs.
+
+Start with `<project_dir>/config/SETTINGS.md` to inspect the latest WF0–WF2 settings
+and original source paths. Exact captured sources remain in the named workflow
+folders; immutable snapshots and stable execution inputs live under `config/_engine/`.
+WF3 and WF4 retain their existing collection/experiment configuration records.
+Completed replacement directories and per-launch contexts are removed after their
+contents or outcomes have been retained. These operational files do not provide run history.
+
+For an existing case, inspect configuration maintenance without changing files:
+
+```bash
+pixi run python scripts/maintain_config_archives.py --project-dir /path/to/case-output
+```
+
+Add `--apply` to retain its available WF0–WF2 snapshots, create the readable settings
+view and remove completed launch/replacement bookkeeping. Source configurations,
+execution inputs, attempt history and scientific outputs are preserved. The command
+reports unavailable historical references; it cannot reconstruct records already deleted.
+It takes the project execution lock, so use it when the case is idle.
 
 To preview the enabled workflows, add `-- --dry-run` to the command. A dry run
 may show only part of a workflow until inputs from an earlier step exist.
@@ -237,7 +259,9 @@ their checks, avoiding Julia startup for layout reconstruction. Indicator sets s
 environment observations within each planning or publication phase; execution still checks independently.
 
 WF4 retains an experiment's original simulation identity and provenance when only execution-diagnostic
-code changes. Scientific input or simulation-code changes still require a new experiment. A refusal
+code changes. Existing experiments also accept the audited configuration-archive lifecycle upgrade;
+compatibility is restricted to the exact reviewed code versions and does not exempt future launcher edits.
+Scientific input or simulation-code changes still require a new experiment. A refusal
 before workflow execution skips indicator publication; partial job failures still allow completed
 indicator sets to publish independently.
 

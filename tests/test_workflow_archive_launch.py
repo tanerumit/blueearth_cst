@@ -51,8 +51,9 @@ def test_execution_inputs_ignore_source_locations_and_other_enable_flags(
 
     original = prepare(project_file)
     assert not (project_root / "config/runs").exists()
-    assert "edit the source" in (project_root / "config/README.md").read_text(
-        encoding="utf-8"
+    assert (
+        "edit the source"
+        in (project_root / "config/README.md").read_text(encoding="utf-8").lower()
     )
     original_bytes = original.read_bytes()
     original_mtime = original.stat().st_mtime_ns
@@ -363,12 +364,9 @@ def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
     child = next(item for item in invocations if item["workflow"] == "analyze_climate")
     assert child["invocation_id"] == record["invocation_id"]
     assert child["parent_invocation_id"] == parent["invocation_id"]
-    assert (
-        resolve_file_reference(
-            child["configuration"]["run_record"], {"project_root": output}
-        )
-        == output / "config/analyze_climate/run_record.yml"
-    )
+    assert resolve_file_reference(
+        child["configuration"]["run_record"], {"project_root": output}
+    ).is_relative_to(output / "config/_engine/configuration-snapshots/analyze_climate")
 
 
 @pytest.mark.parametrize(

@@ -85,6 +85,7 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
 
     from blueearth_cst.experiment import indicator_plan
     from blueearth_cst.experiment.indicator_registry import declarations
+    from blueearth_cst.shared.workflow_config_snapshot import file_reference
 
     declaration = indicator_plan._plain(asdict(declarations(("gwr",))[0]))
     environment = {"packages": {"fixture": "1"}}
@@ -94,6 +95,12 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
         "response_identity_sha256": "c" * 64,
         "series": [{"run_id": "run_01", "variable": "gwr", "location_id": "9"}],
     }
+    inventory_path = tmp_path / "_engine/response_inventory.json"
+    inventory_path.parent.mkdir()
+    indicator_plan.atomic_record(inventory_path, inventory)
+    simulation["response_inventory"] = file_reference(
+        inventory_path, "project_root", tmp_path.parent.parent
+    )
     projection = {
         "simulation_id": simulation["simulation_id"],
         "response_identity_sha256": inventory["response_identity_sha256"],

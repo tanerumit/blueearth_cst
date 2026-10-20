@@ -464,9 +464,9 @@ def test_sets_complete_independently_and_failures_keep_prior_publications(
     observations = []
     observe = indicator_plan._indicator_code_inventory
 
-    def code():
-        observations.append(True)
-        return observe()
+    def code(set_ids):
+        observations.append(set_ids)
+        return observe(set_ids)
 
     monkeypatch.setattr(indicator_plan, "_indicator_code_inventory", code)
 
@@ -489,7 +489,7 @@ def test_sets_complete_independently_and_failures_keep_prior_publications(
     outcomes = indicator_export.publish_selected_sets(
         root, project, settings, selection
     )
-    assert len(observations) == 1
+    assert observations == [("default",)]
     assert [(o["set_id"], o["status"]) for o in outcomes] == [
         ("default", "current"),
         ("q_only", "failed"),
@@ -504,7 +504,7 @@ def test_sets_complete_independently_and_failures_keep_prior_publications(
     for plan in (root / "_engine/indicator_requests").glob("*.json"):
         plan.unlink()
     again = indicator_export.publish_selected_sets(root, project, settings, selection)
-    assert len(observations) == 2
+    assert observations == [("default",), ("default",)]
     assert again[0]["status"] == "failed"
     assert again[0]["prior_publication_id"] == first
     assert {p.name: p.read_bytes() for p in folder.iterdir()} == before

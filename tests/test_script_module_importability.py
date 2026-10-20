@@ -23,8 +23,9 @@ config file -- not only on an undefined name.
 
 import ast
 import importlib
+import io
 import pkgutil
-import re
+import tokenize
 from pathlib import Path
 
 import pytest
@@ -91,6 +92,31 @@ def test_no_module_reads_snakemake_at_module_scope():
 # ---------------------------------------------------------------------------
 
 
+def _literal_script_targets(text):
+    """Read literal script directives without mistaking helper inputs for scripts."""
+    tokens = [
+        token
+        for token in tokenize.generate_tokens(io.StringIO(text).readline)
+        if token.type
+        not in {
+            tokenize.COMMENT,
+            tokenize.NL,
+            tokenize.NEWLINE,
+            tokenize.INDENT,
+            tokenize.DEDENT,
+        }
+    ]
+    return {
+        ast.literal_eval(value.string)
+        for name, colon, value in zip(tokens, tokens[1:], tokens[2:])
+        if name.type == tokenize.NAME
+        and name.string == "script"
+        and colon.string == ":"
+        and value.type == tokenize.STRING
+        and ast.literal_eval(value.string).endswith(".py")
+    }
+
+
 def _script_targets():
     """Every module a Snakefile names in a `script:` directive."""
     targets = set()
@@ -101,12 +127,29 @@ def _script_targets():
     entry_points = sorted(REPO.glob("*.smk"))
     assert entry_points, f"no workflow entry points (*.smk) under {REPO}"
     for snakefile in entry_points:
-        targets |= set(
-            re.findall(
-                r"blueearth_cst/[a-z_0-9/]*\.py", snakefile.read_text(encoding="utf-8")
-            )
-        )
+        targets |= _literal_script_targets(snakefile.read_text(encoding="utf-8"))
     return sorted(targets)
+
+
+def test_script_sweep_distinguishes_helpers_comments_and_directives():
+    targets = _literal_script_targets(
+        """
+rule prepare:
+    input:
+        scientific_code = ["blueearth_cst/spatial/config.py"]
+    # script: "blueearth_cst/comment.py"
+    params:
+        script = "blueearth_cst/parameter.py"
+    script:
+        "blueearth_cst/spatial/prepare_spatial_maps.py"
+rule render:
+    script: "blueearth_cst/shared/plot_spatial_maps.py"
+"""
+    )
+    assert targets == {
+        "blueearth_cst/spatial/prepare_spatial_maps.py",
+        "blueearth_cst/shared/plot_spatial_maps.py",
+    }
 
 
 def _future_import_line(path):

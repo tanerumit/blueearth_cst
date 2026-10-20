@@ -156,8 +156,9 @@ Update saved `--target` commands; log and benchmark parts use the new name. Outp
 paths are unchanged. Historical log parts are retained under their original names.
 
 Retain the diagnostic tables/map fields, projection-analysis tables, forcing and spatial inputs.
-WF1 evaluation also needs `<model>/run_default/output.csv`; a missing file can require another
-historical simulation. Use `--notemp` on the original model run to retain it.
+WF1 retains `<model>/run_default/output.csv` by default, so evaluation and table exports can reuse
+the full-precision native responses. Older projects where this file was deleted require one historical
+simulation to restore it; rounded exported tables cannot replace it.
 
 Currently, WF0 comparison recomputes its statistics from retained daily series, WF1 forcing recomputes
 plotting summaries, and WF1 evaluation recomputes indicators. These are combined calculation/rendering

@@ -108,9 +108,9 @@ Two things to know before you run it:
   `plots/` directories, `performance_indicators.csv`, `experiments/*/results/` —
   makes those rules re-execute without redoing the model build or the CMIP6
   fetches.
-- Deleting `performance_indicators.csv` re-runs Wflow. Rule 1.15's input is
-  `run_default/output.csv`, which rule 1.13 declares as `temp()`, so a completed
-  run has already removed it. That is expected, not a cascade bug.
+- Deleting `performance_indicators.csv` reruns evaluation using the retained
+  `run_default/output.csv`. Older trees where the native CSV was deleted need
+  one Wflow run to restore it.
 
 Verify by checking the executed notebooks rather than by reading them, on four
 counts:

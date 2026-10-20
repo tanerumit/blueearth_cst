@@ -246,12 +246,10 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   rather than emptying its table. That reducer was removed on 2026-09-25
   (t2609151037); WF4 now reduces the series its response inventory names. See also the `validate_hm7` note below: it has
   a "no rows" check that would have caught this, but is never invoked at run time.
-- **temp() lifecycle:** SPLIT between wf1 and wf4. wf1 `output.csv` **is** `temp()`
-  (rule 1.13): it is an intermediate feeding rule 1.14's derived per-variable
-  tables and rule 1.15's indicators, and Snakemake drops it once both have run. A
-  swapper must therefore treat the wf1 artifact as existing only *within* the
-  run — `--notemp` is what materialises it, and the baseline procedure uses that
-  flag for exactly this reason. The wf4 `output_rlz_*` CSVs still persist.
+- **retention:** WF1 `output.csv` persists after rule 1.13 so table exports,
+  evaluation and baseline checks can reuse full-precision native responses.
+  Older trees where temporary-output cleanup removed it need one simulation to
+  restore it. WF4 native response CSVs also persist.
 - **deliberately unpinned:** numeric discharge values (not a contract; they
   change per run).
 - **validator:** `validate_hm5` (per-artifact column-identity); cross-file

@@ -22,7 +22,7 @@ both legs, so an import-time error fails the suite.
 
 | Script | What it does |
 |---|---|
-| [`check_baseline.py`](check_baseline.py) | `record` / `check` / `compare` fingerprints of the baseline targets in `dev/baseline/manifest.json`. Run WF1 with `--notemp` first. |
+| [`check_baseline.py`](check_baseline.py) | `record` / `check` / `compare` fingerprints of the baseline targets in `dev/baseline/manifest.json`. Requires WF1's retained native CSV. |
 | [`snapshot_project_tree.py`](snapshot_project_tree.py) | Project-tree snapshot behind `pixi run tree-check`. |
 | [`todoboard.py`](todoboard.py) | Runs the `todoboard` CLI against the canonical board in the `main` worktree, including its generated `dev/TODO.md`. |
 

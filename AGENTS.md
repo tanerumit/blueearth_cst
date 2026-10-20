@@ -160,7 +160,7 @@ Use rapid config for execution/DAG checks/renders; baseline config only when num
 Never baseline-check the rapid tree. WF2-fast is restricted iteration with declared coverage loss.
 The baseline manifest is stale after the P-drive/GlobCover switch: regenerate the revised baseline
 and re-record before numerical gating. Each worktree's untracked baseline tree is independent;
-inspect its provenance. Keep WF1 `--notemp` to retain `run_default/output.csv`; rounded `output_q.csv`
+inspect its provenance. WF1 retains native `run_default/output.csv`; rounded `output_q.csv`
 is no substitute. The standing tree is not an R12 migration reference: use matched P0/GF-9 evidence.
 Details and recovery prerequisites live in the validation reference.
 

@@ -75,8 +75,8 @@ def test_the_seventh_output_is_the_seam_intermediate():
     assert len(rule.outputs) == 11
 
 
-def test_the_inputs_are_the_catalog_and_the_shared_region():
-    """Model-free: config + catalog + the one project polygon, nothing else.
+def test_the_inputs_are_scientific_code_catalog_and_the_shared_region():
+    """Model-free: scientific helpers, catalog and the one project polygon.
 
     A built model, `staticmaps.nc`, or the `--configfile` path as an input
     would each break the property this rule is shared for.
@@ -85,6 +85,18 @@ def test_the_inputs_are_the_catalog_and_the_shared_region():
     assert rule.inputs == {
         "data_catalogs": "config/catalogs/deltares_data.yml",
         "region_geojson": "/proj/data/spatial/geoms/region.geojson",
+        "scientific_code": rule.inputs["scientific_code"],
+    }
+    assert {
+        str(path).replace("\\", "/").split("blueearth_cst/", 1)[1]
+        for path in rule.inputs["scientific_code"]
+    } == {
+        "spatial/config.py",
+        "spatial/products.py",
+        "spatial/hydrography.py",
+        "spatial/delineation.py",
+        "spatial/identity.py",
+        "spatial/delineate_region.py",
     }
 
 

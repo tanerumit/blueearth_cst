@@ -677,11 +677,10 @@ from `climate_figures.figure_names("forcing")`, all declared.
 **Does.** Runs Wflow.jl once on that historical forcing, driven by the model's
 own TOML.
 
-**Writes.** `<model>/run_default/output.csv` — `temp()`, so a successful run
-does not leave it: rule 1.14 derives the readable per-variable tables from it
-and rule 1.15 reads it for the indicators, then Snakemake drops it. Run with
-`--notemp` to keep it (the baseline gate pins it, and iterating on a 1.15 figure
-otherwise re-runs the whole model).
+**Writes.** `<model>/run_default/output.csv`, retained at full precision.
+Rule 1.14 derives readable per-variable tables and rule 1.15 evaluates the retained responses.
+Rerunning these consumers does not require another simulation while the native CSV remains current.
+Older trees where it was deleted need one simulation to restore it.
 
 #### 1.15 · `plot_model_evaluation`
 

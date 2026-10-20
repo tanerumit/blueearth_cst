@@ -176,10 +176,9 @@ pixi run python dev/scripts/check_baseline.py check
 
 Expect `OK - 7 target(s) match manifest.` To re-verify the hashes above rather
 than the manifest's comparators, hash the four files directly — normalized as
-`fingerprint_csv` does it, or raw. A WF1 run feeding this gate needs `--notemp`:
-rule 1.14 declares `run_default/output.csv` as `temp()` and it is a manifest
-target, so without the flag the gate fails "target missing" and reads as a
-defect.
+`fingerprint_csv` does it, or raw. Current WF1 retains the manifest target
+`run_default/output.csv` by default. Older trees where it was deleted need one
+historical simulation to restore it; rounded exports cannot substitute for it.
 
 ### R14, 2026-08-29 — the strongest form of this gate's result
 

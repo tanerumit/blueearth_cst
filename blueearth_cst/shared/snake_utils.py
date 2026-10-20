@@ -754,6 +754,19 @@ def spatial_units_rule(project_dir, spatial_config, data_sources) -> SpatialUnit
 
     inputs = {
         "data_catalogs": data_sources,
+        # Imported scientific helpers are inputs so Snakemake tracks their edits.
+        # Keep this declaration shared by WF0, WF1 and WF2.
+        "scientific_code": [
+            f"blueearth_cst/spatial/{name}.py"
+            for name in (
+                "config",
+                "products",
+                "hydrography",
+                "delineation",
+                "identity",
+                "delineate_region",
+            )
+        ],
         # `region_rule` owns the path, so the two helpers cannot disagree about
         # where the one project polygon lives -- the same reason
         # `climate_store_rule` resolves it through the helper rather than

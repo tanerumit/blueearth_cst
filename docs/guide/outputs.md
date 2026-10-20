@@ -230,6 +230,12 @@ sets from retained responses. Saved publications remain readable, and model simu
 Original publication identifiers and provenance are preserved; old results are not relabelled as newly
 qualified calculations.
 
+WF1 retains its full-precision historical `run_default/output.csv` for evaluation and table exports.
+Changing evaluation settings does not rebuild thematic maps. Shared spatial preparation and WF1 model
+updates declare their scientific helper modules as Snakemake inputs, so helper edits schedule their
+producers without including logging or rendering modules. Adding these previously missing dependencies
+can cause one refresh of affected existing products. Their numerical methods and paths are unchanged.
+
 Wait for workflow completion before reading an export: replacement is atomic per file, not across the
 folder. Ordinary export I/O failures roll back the replaced files. Dry-runs and `simulations_only` do not
 refresh exports. A folder is refreshed only when this set's committed publication owns it; an existing

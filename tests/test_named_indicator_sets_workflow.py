@@ -12,11 +12,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import pytest
 import yaml
 
 from blueearth_cst.experiment.content_identity import read_canonical_json
-from tests._v2_experiment import build_v2_experiment
+from tests._v2_experiment import RUN_IDS, Responses, build_v2_experiment
 
 pytestmark = pytest.mark.workflow_contract
 
@@ -115,6 +117,83 @@ def test_named_sets_refuse_an_explicit_target(tmp_path):
     code, output = _simulate(experiment, "--target", "indicators", "--dry-run")
     assert code != 0
     assert "omit --target" in output, output
+
+
+@pytest.mark.skipif(os.name != "nt", reason="project writers require Windows")
+def test_erfa_set_executes_and_rechecks_retained_discharge(tmp_path):
+    """Exercise public hyphenated selection, publication and all numerical checkers."""
+    time = pd.date_range("2046-01-02", "2048-12-31")
+    temporal = {
+        "source_calendar": "proleptic_gregorian",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "response_calendar": "standard",
+        "operations": ["clip_to_configured_window", "refresh_toml_endpoints"],
+        "prepared_start": "2046-01-01T00:00:00",
+        "prepared_end": str(time[-1]),
+        "response_start": str(time[0]),
+        "response_end": str(time[-1]),
+        "time_label": "interval_end",
+    }
+    responses = Responses(
+        csv={
+            run: pd.DataFrame(
+                {"Q_9": (np.arange(len(time)) % 31 + 1) * scale}, index=time
+            )
+            .to_csv(index_label="time")
+            .encode()
+            for run, scale in zip(RUN_IDS, (1, 2), strict=True)
+        },
+        toml=(
+            '[time]\ncalendar="standard"\ntimestepsecs=86400\n'
+            'starttime="2046-01-01T00:00:00"\nendtime="2048-12-31T00:00:00"\n'
+            '[[output.csv.column]]\nheader="Q"\n'
+            'parameter="river_water__volume_flow_rate"\n'
+        ),
+        temporal=temporal,
+        variables=[
+            {
+                "variable": "q",
+                "locations": ["9"],
+                "units": "m3 s-1",
+                "calendar": "standard",
+                "timestep": "P1D",
+                "time_label": "interval_end",
+                "start": str(time[0]),
+                "end": str(time[-1]),
+                "missing_value": "NaN",
+            }
+        ],
+    )
+    experiment = build_v2_experiment(tmp_path, responses)
+    _named(experiment, {"operations": ["indicators"], "indicator_sets": ["eflow-erfa"]})
+    code, output = _simulate(experiment, "--dry-run")
+    assert code == 0, output
+    code, output = _simulate(experiment)
+    assert code == 0, output
+    export = experiment.root / "results/indicator_sets/eflow-erfa"
+    dictionary = pd.read_csv(export / "indicators.csv")
+    assert len(dictionary) == 70
+    assert set(dictionary.set_id) == {"eflow-erfa"}
+    rows = pd.read_csv(export / "q_run_indicators.csv")
+    maxima = rows[rows.indicator == "q_amax1d_med"]
+    assert sorted(maxima.value) == [31.0, 62.0]
+    (marker,) = (experiment.root / "_engine/indicator_sets").glob("*/indicators.json")
+    checked = subprocess.run(
+        [
+            sys.executable,
+            str(REPO / "scripts/inspect_indicators.py"),
+            "--experiment",
+            str(experiment.root),
+            "--manifest",
+            str(marker),
+            "--recheck",
+        ],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    assert checked.returncode == 0, checked.stdout + checked.stderr
 
 
 @pytest.mark.skipif(

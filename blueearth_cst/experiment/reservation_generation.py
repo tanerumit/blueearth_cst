@@ -1,6 +1,7 @@
 """Reservation-aware WF3 orchestration, outside the generator code inventory."""
 
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 
 from blueearth_cst.experiment.content_identity import (
@@ -11,6 +12,7 @@ from blueearth_cst.experiment.content_identity import (
 )
 from blueearth_cst.experiment.generation_plan import (
     build_candidate_intent,
+    build_reuse_plan,
     generation_configuration,
     publish_plan_pointer,
     read_pinned_plan,
@@ -100,7 +102,24 @@ def select_reserved_plan_owned(config, repository, root, name):
     if seed["state"] == "bound":
         plan_path = confined_path(root, seed["plan"]["path"])
         plan = read_pinned_plan(plan_path, seed["plan"]["sha256"], root)
-        compare_request(plan["request"], settings["request"])
+        relocated = canonical_json_bytes(plan["request"]) != canonical_json_bytes(
+            settings["request"]
+        )
+        current_request = deepcopy(settings["request"])
+        if relocated:
+            # These are locators, not scientific identities. Candidate digests
+            # and seed evidence below must still match the bound creator.
+            current_request["template"] = plan["request"]["template"]
+            current_request["settings"]["weathergen_config"] = plan["request"][
+                "settings"
+            ]["weathergen_config"]
+            if len(current_request["source"]["catalogs"]) == len(
+                plan["request"]["source"]["catalogs"]
+            ):
+                current_request["source"]["catalogs"] = deepcopy(
+                    plan["request"]["source"]["catalogs"]
+                )
+        compare_request(plan["request"], current_request)
         compare_request(
             plan["candidate_identity_digests"], candidate["identity_digests"]
         )
@@ -129,8 +148,15 @@ def select_reserved_plan_owned(config, repository, root, name):
             validate_installed_generator(plan, root, relocatable=True)
             if reservation["request"]["selection"]["mode"] == "project-generation":
                 bind_ready_collection_owned(root, name, marker_path)
+            if relocated:
+                plan = build_reuse_plan(settings, candidate, marker_path)
+                plan_path, plan_sha256 = publish_plan_pointer(settings, plan)
+                return settings, plan, plan_path, plan_sha256, True
             publish_plan_pointer(settings, plan)
             return settings, plan, plan_path, seed["plan"]["sha256"], True
+        # Only a validated ready collection may be relocated. Uninitialized or
+        # partial generation remains tied to the exact original request.
+        compare_request(plan["request"], settings["request"])
         record_root = marker_path.parent
         data_root = confined_path(root, plan["outputs"]["data_root"])
         receipts = plan_path.parent / "initializations"

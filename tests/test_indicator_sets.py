@@ -137,6 +137,41 @@ def test_default_preset_delegates_to_registry_declarations():
         sets.resolve_set(source, [])
 
 
+def test_erfa_bundled_selection_resolves_all_seventy_indicators():
+    selection = sets.parse_selection(
+        {"operations": ["indicators"], "indicator_sets": ["eflow-erfa"]},
+        "simulate_system.yml",
+    )
+    resolved = sets.resolve_set(selection.sets[0])
+    assert resolved.set_id == "eflow-erfa"
+    assert len(resolved.indicators) == 70
+    assert len({item.indicator for item in resolved.indicators}) == 70
+    assert {item.calculation_set for item in resolved.indicators} == {"eflow-erfa"}
+    assert {
+        item.declaration.required_responses.variable for item in resolved.indicators
+    } == {"q"}
+
+
+def test_authored_erfa_alias_keeps_metric_units_and_description():
+    text = AUTHORED.replace(
+        "method: annual_summary/1",
+        "set: eflow-erfa\n            method: erfa_annual_statistic/1",
+    ).replace(
+        "{variable: q, statistic: p95}",
+        "{metric: wyday_amax1d, statistic: med}",
+    )
+    indicator = sets.resolve_set(_source(text)).indicators[0].declaration
+    assert indicator.name == "high_flow"
+    assert registry.output_units(indicator) == "d"
+    assert "Day of water year" in registry.quantity(indicator)
+
+
+@pytest.mark.parametrize("name", ["../eflow-erfa", "eflow/erfa", "-erfa", "CON", "nul"])
+def test_hyphen_support_preserves_portable_path_refusals(name):
+    with pytest.raises(IndicatorSetError, match="must match"):
+        sets.validate_id(name, "indicator set")
+
+
 def test_preset_is_reserved_for_the_bundled_default():
     text = EXAMPLE.replace(
         "  indicators:\n        - definition: q_annual_mean\n        - definition: q_mean_annual_7day_min",

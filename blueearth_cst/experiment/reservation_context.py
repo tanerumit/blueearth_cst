@@ -5,6 +5,10 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
+from blueearth_cst.experiment.collection_resolution import (
+    GeneratedCollectionUnavailable,
+    resolve_explicit_collection_v2,
+)
 from blueearth_cst.experiment.reservation import (
     CapturedSource,
     admit_experiment_owned,
@@ -79,9 +83,29 @@ class ReservationContext:
                 selected_run_ids,
             )
 
-            selection, marker = resolve_selected_collection(
-                self.config_path, self.repository
-            )
+            try:
+                selection, marker = resolve_selected_collection(
+                    self.config_path, self.repository
+                )
+            except GeneratedCollectionUnavailable:
+                if (
+                    not self.execute_generation
+                    or requested["selection"]["mode"] != "project-generation"
+                ):
+                    raise
+                from blueearth_cst.shared.workflow_config_snapshot import (
+                    resolve_file_reference,
+                )
+
+                # WF3 owns rebuilding its mutable request pointer. Admission can
+                # use the immutable bound collection after the science comparison;
+                # WF3 still checks its pinned plan before doing any producer work.
+                manifest = resolve_file_reference(
+                    resolution["manifest"], {"project_root": self.root}
+                )
+                selection, marker = resolve_explicit_collection_v2(
+                    {"manifest_path": str(manifest)}
+                )
             compare_request(
                 {
                     key: resolution[key]

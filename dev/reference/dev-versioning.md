@@ -1,6 +1,6 @@
 # Toolbox versioning policy
 
-Last updated: 2026-10-13
+Last updated: 2026-10-21
 
 The toolbox uses manual Semantic Versioning. Only an explicit owner release
 request opens release preparation; ordinary commits and milestone seals do not
@@ -52,15 +52,12 @@ the result change first, retaining the evidence needed to interpret it.
    validation and landing gates in `AGENTS.md` and
    [the validation ladder](dev-validation.md). Landing requires approval.
 3. Verify coverage of the candidate main commit and the release delta using
-   the validation ladder. Reuse applicable landing, CI and execution evidence;
+   the validation ladder, including its pre-publication batch gate. Local landing
+   alone does not establish release readiness. Reuse applicable landing, CI and execution evidence;
    releasing or tagging the same content does not require another test run.
-   CI supplies full software coverage on both platforms. Run all-five E2E for
-   changes to several workflow handoffs or shared runtime behavior, or explicit
-   whole-toolbox qualification, unless applicable evidence already covers it.
-   Validate numerical changes with an independent oracle and affected consumers;
-   use the baseline configuration for whole-tree reproducibility claims, with
-   WF1's native `run_default/output.csv` retained. Add `semantic_tree_diff.py` when claiming tree
-   compatibility after shape changes. Render changed figures for inspection.
+   Select software, execution, numerical, and visual coverage through that reference;
+   it also owns CI limitations and baseline prerequisites. Add `semantic_tree_diff.py`
+   when claiming tree compatibility after shape changes.
    Retain the commands, results and candidate/input identities with the evidence.
 4. With explicit tagging authorization, create an annotated `vX.Y.Z` tag on
    the verified main commit. Confirm the tag is new and points to that exact

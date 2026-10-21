@@ -238,46 +238,24 @@ def render(
     reference = None
     retained = None
 
-    def validate_current():
-        if arguments is None:
-            if has_maps:
-                raise ValueError(
-                    "Source maps require the declared historical reference"
-                )
-            return
-        current = load_reference(map_reference, **arguments)
-        if (
-            reference is not None
-            and current["reference_id"] != reference["reference_id"]
-        ):
-            raise ValueError(
-                "Historical map reference changed during figure preparation"
-            )
-        if has_maps:
-            source = sources[0]
-            entry = current["identity"]["source_preparations"][source]
-            with xr.open_dataset(paths["compute"]["maps"]) as fields:
-                validate_fields(
-                    fields,
-                    entry["preparation_identity"],
-                    entry,
-                    source=source,
-                    target=paths["compute"]["maps"],
-                )
-            if retained is not None:
-                validate_fields(
-                    retained,
-                    entry["preparation_identity"],
-                    entry,
-                    source=source,
-                    target=paths["compute"]["maps"],
-                )
-        return current
-
-    reference = validate_current()
+    # Check the inputs once, then render the loaded snapshot. Exporting another
+    # PNG does not require rereading climate inputs or qualifying the environment.
+    if arguments is not None:
+        reference = load_reference(map_reference, **arguments)
+    elif has_maps:
+        raise ValueError("Source maps require the declared historical reference")
     if has_maps:
         with xr.open_dataset(paths["compute"]["maps"]) as fields:
             retained = fields.load()
+        source = sources[0]
+        entry = reference["identity"]["source_preparations"][source]
+        validate_fields(
+            retained,
+            entry["preparation_identity"],
+            entry,
+            source=source,
+            target=paths["compute"]["maps"],
+        )
     features = load_map_overlays(overlays) if has_maps else {}
     metadata = json.loads(
         Path(paths["compute"]["metadata"]).read_text(encoding="utf-8")
@@ -461,7 +439,6 @@ def render(
                 if form.startswith("map-")
                 else {}
             )
-            validate_current()
             contributing = (
                 [s for s in sources if results[s]["tclim"] is not None]
                 if form == "temperature"
@@ -507,7 +484,6 @@ def render(
                 records[relative]["reference_support"] = {
                     s: results[s]["anomaly_reference_support"] for s in sources
                 }
-    validate_current()
     if retained is not None:
         retained.close()
     write_json(
@@ -540,9 +516,8 @@ def render(
         if item["availability"] != "available"
     )
     log_row(
-        f"Wrote {plural(len(records), 'diagnostic figure')} for {listed(sources)}; "
-        f"{sum(unavailable.values())} with unavailable or unscaled estimates; "
-        "details → plots/_engine/figure_captions.json",
+        f"Wrote {plural(len(records), 'diagnostic figure')} for {listed(sources)} "
+        "→ plots/_engine/figure_captions.json",
         module="diagnostics",
     )
     for reason, count in unavailable.items():

@@ -49,6 +49,11 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+from blueearth_cst.shared.run_log_core import (
+    _CONSOLE_PATH_TOKENS_ENV,
+    _declared_tokens,
+    _shorten_console_paths,
+)
 from blueearth_cst.shared.snake_utils import (
     _ANSI_BODY,
     _ANSI_FAIL,
@@ -1640,6 +1645,9 @@ class _ConsoleHandler(logging.StreamHandler):
                     os.environ.get(_PROJECT_ROOT_ENV, ""),
                     _path_tokens(),
                 )
+                shown = _shorten_console_paths(
+                    shown, os.environ.get(_PROJECT_ROOT_ENV, ""), _path_tokens()
+                )
                 if record.levelno <= logging.INFO:
                     shown = self._paint(shown, _ANSI_BODY)
                 lines.append(shown)
@@ -2195,6 +2203,9 @@ def run_meta_rows(project_dir, config_path=None, details=None):
         )
     rows.extend((key, str(value)) for key, value in (details or {}).items())
     rows.extend(_folder_rows(project_dir))
+    rows.extend(
+        _folder_rows(project_dir, _declared_tokens(variable=_CONSOLE_PATH_TOKENS_ENV))
+    )
     return rows
 
 

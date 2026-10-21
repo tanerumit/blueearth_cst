@@ -479,7 +479,15 @@ LOG_PARTS_DIR, BENCH_PARTS_DIR = _paths.log_parts, _paths.benchmark_parts
 # line mentioning one of these directories prints `<model>/staticmaps.nc`
 # instead of twelve path components. `data` is the external tree, read out of
 # the catalog because it is the one folder a project neither owns nor derives.
+_console_catalogs = DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES]
 declare_path_tokens(
+    console_only={
+        "model-config": f"{basin_dir}/config",
+        **{
+            ("project-catalog" if len(_console_catalogs) == 1 else f"project-catalog-{i}"): path
+            for i, path in enumerate(_console_catalogs, 1)
+        },
+    },
     data=catalog_root(DATA_SOURCES),
     model=basin_dir,
     climate=store_dir,
@@ -498,7 +506,7 @@ PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps", 
 BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from the spatial foundation and global datasets")
 ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="apply configured reservoir, lake, and glacier setup")
 DECLARE_GAUGES_AND_OUTPUTS = RULES.logged("1.08", "declare_gauges_and_outputs", summary="configure discharge locations and output variables")
-ADD_CLIMATE_FORCING = RULES.logged("1.09", "add_climate_forcing", summary="prepare model forcing for the simulation window")
+ADD_CLIMATE_FORCING = RULES.logged("1.09", "add_climate_forcing", summary="prepare historical forcing")
 WRITE_GAUGE_INDEX = RULES.logged("1.10", "write_gauge_index", summary="write the outlet-to-location identity crosswalk")
 PLOT_BASIN_MAP = RULES.logged("1.11", "plot_basin_map", summary="render basin and spatial-input maps")
 PLOT_MODEL_FORCING = RULES.logged("1.12", "plot_model_forcing", summary="render model-forcing maps and time series")

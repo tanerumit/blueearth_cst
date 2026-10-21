@@ -42,7 +42,7 @@ _DATA_SOURCE_FROM_RE = re.compile(r"^Reading (\S+) from (\S+)$")
 _GENERATION_MESSAGES = (
     (
         r"Reading weather netcdf: (.+)",
-        r"Reading historical climate for weather generation → \1",
+        r"Reading historical climate → \1",
     ),
     (
         r"Resampling on (\d+) basin cell\(s\) of (\d+) in the store",
@@ -56,9 +56,7 @@ _GENERATION_MESSAGES = (
     ),
     (
         r"Moving (\d+) figure\(s\) to (.+)",
-        lambda m: (
-            f"Moving {plural(int(m[1]), 'weather-generator diagnostic figure')} → {m[2]}"
-        ),
+        r"Moving diagnostic figures → \2",
     ),
     (r"Saving realization (\d+) of (\d+)", r"Writing stochastic realization \1 of \2"),
     (r"(\S+) reading realization (.+)", r"\1: reading source realization \2"),
@@ -295,11 +293,12 @@ def _strip_prefix(text, prefix, replacement=""):
 
 
 _PATH_TOKENS_ENV = "CST_PATH_TOKENS"
+_CONSOLE_PATH_TOKENS_ENV = "CST_CONSOLE_PATH_TOKENS"
 
 _PROJECT_ROOT_ENV = "CST_PROJECT_ROOT"
 
 
-def _declared_tokens(environ=None):
+def _declared_tokens(environ=None, *, variable=_PATH_TOKENS_ENV):
     """Read the declared folders as ``(name, path)`` in DECLARATION order.
 
     The order a workflow declared them in is the order they read best in a
@@ -308,7 +307,7 @@ def _declared_tokens(environ=None):
     insertion order. Matching wants a different order entirely; see
     :func:`_path_tokens`.
     """
-    raw = (os.environ if environ is None else environ).get(_PATH_TOKENS_ENV)
+    raw = (os.environ if environ is None else environ).get(variable)
     if not raw:
         return ()
     try:
@@ -492,6 +491,19 @@ def _folder_rows(project_root, tokens=None):
         shown = _tokenize_prefix(path, root, "project") if root else path
         rows.append((f"<{token}>", shown.replace(os.sep, "/")))
     return rows
+
+
+def _shorten_console_paths(text, project_root, tokens):
+    """Apply terminal-only aliases after the shared log-path rewrites.
+
+    Match the spelling already used by the tee, such as ``<model>/config``.
+    Saved log rows retain their original catalog identities and config paths.
+    """
+    aliases = _declared_tokens(variable=_CONSOLE_PATH_TOKENS_ENV)
+    for token, path in sorted(aliases, key=lambda pair: len(pair[1]), reverse=True):
+        shown = _relativize_paths(path, project_root, tokens)
+        text = _tokenize_prefix(text, shown, token)
+    return text
 
 
 def _log_header_lines(path, kind="log", time_label="started", markdown=False):
@@ -1160,6 +1172,9 @@ class _Tee:
         self._closed = False
 
     def write(self, text, _redraw=False):
+        # An empty replay from captured_output is not console activity.
+        if not text:
+            return 0
         if self._on_activity is not None:
             self._on_activity()
         out = _relativize_paths(
@@ -1174,6 +1189,7 @@ class _Tee:
         shown, self._in_redraw = _drop_redraw_frames(out, self._in_redraw)
         if _redraw:
             shown, self._in_redraw = out, False
+        shown = _shorten_console_paths(shown, self._project_root, self._tokens)
         if shown and not _muted_on_console(shown):
             # The CONSOLE copy only. `out` below feeds `_pending` and the log
             # file, and the module's standing contract is that no escape code
@@ -1251,7 +1267,8 @@ class _Tee:
 
     def flush(self):
         # Flush the sinks but NOT ``_pending``: emitting a mid-progress fragment
-        # would re-clutter the log with every partial redraw.        self._live.flush()
+        # would re-clutter the log with every partial redraw.
+        self._live.flush()
         # Same reasoning as ``write``: ``logging.shutdown`` flushes every handler
         # at exit, so a handler left pointing here must not raise.
         if not self._closed:
@@ -1420,7 +1437,10 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
                 # summary row does not reach the file with trailing spaces on
                 # it, and the padding is measured on the text rather than on the
                 # escape codes `_paint_body` wraps around it.
-                console_text, columns = _pad_line_over(text, bar_line["columns"])
+                console_text = _shorten_console_paths(text, project_root, tokens)
+                console_text, columns = _pad_line_over(
+                    console_text, bar_line["columns"]
+                )
                 shown = _paint_body(console_text, colour)
                 # `redraw` means the frames of this line were already streamed,
                 # so the cursor sits mid-bar: return to column 0 and overwrite

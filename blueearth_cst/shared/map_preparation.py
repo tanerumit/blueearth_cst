@@ -15,10 +15,10 @@ from uuid import uuid4
 import numpy as np
 import pandas as pd
 import xarray as xr
-import yaml
 
 from blueearth_cst.climate_analysis.source_map_fields import SourceMapSpec
 from blueearth_cst.shared.output_capture import captured_output
+from blueearth_cst.shared.yaml_documents import parse_yaml_document
 
 SCHEMA_VERSION = 1
 POLICIES = {"preparation": 1, "units_availability": 1, "source_pet": 1}
@@ -33,6 +33,7 @@ PREPARATION_FILES = (
     "blueearth_cst/shared/climate_parity.py",
     "blueearth_cst/shared/grid_cells.py",
     "blueearth_cst/shared/map_preparation.py",
+    "blueearth_cst/shared/yaml_documents.py",
     "blueearth_cst/shared/variable_registry.py",
     "blueearth_cst/__init__.py",
     "blueearth_cst/climate_analysis/__init__.py",
@@ -171,7 +172,7 @@ def _code_identity(paths: Sequence[str]) -> list[dict[str, str]]:
 def environment_identity() -> dict[str, Any]:
     """Qualify actual imported versions and relevant Conda builds against Pixi v7."""
     root = _repo_root()
-    lock = yaml.safe_load((root / "pixi.lock").read_text(encoding="utf-8"))
+    lock = parse_yaml_document((root / "pixi.lock").read_bytes())
     if lock.get("version") != 7:
         raise ValueError("Map environment qualification requires Pixi lock schema 7")
     active_platform = (

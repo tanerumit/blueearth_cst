@@ -103,7 +103,7 @@ def test_falsey_values_returned_as_is(falsey):
         (
             "weathergen",
             "Reading weather netcdf: source.nc",
-            "Reading historical climate for weather generation → source.nc",
+            "Reading historical climate → source.nc",
         ),
         (
             "weathergen",
@@ -118,7 +118,7 @@ def test_falsey_values_returned_as_is(falsey):
         (
             "weathergen",
             "Moving 2 figure(s) to plots",
-            "Moving 2 weather-generator diagnostic figures → plots",
+            "Moving diagnostic figures → plots",
         ),
         (
             "weathergen",
@@ -717,6 +717,56 @@ def declare_folders(monkeypatch):
     return su.declare_path_tokens
 
 
+@pytest.mark.parametrize("backend", ["tee", "child"])
+@pytest.mark.parametrize("separator", ["/", "\\"])
+def test_console_aliases_preserve_saved_commands(
+    tmp_path, monkeypatch, capsys, declare_folders, backend, separator
+):
+    project = str(tmp_path)
+    model = tmp_path / "models/hydrology/wflow"
+    catalog = (
+        tmp_path
+        / "config/_engine/execution-configs/_shared/project_catalog_0/459d6135261e/project_catalog_0.yml"
+    )
+    declare_folders(
+        model=model,
+        console_only={"model-config": model / "config", "project-catalog": catalog},
+    )
+    monkeypatch.setenv(su._PROJECT_ROOT_ENV, project)
+    recipe = str(model / "config/build_historical_forcing.yml").replace("\\", "/")
+    source = str(catalog).replace("\\", "/")
+    command = f"$ hydromt update wflow_sbm {model} -i {recipe} -d {source} -vv"
+    command = command.replace("\\", "/").replace("/", separator)
+    if backend == "tee":
+        live, saved = io.StringIO(), io.StringIO()
+        tee = su._Tee(live, saved, project_root=project)
+        tee.write(command + "\n")
+        tee.close()
+        shown, logged = live.getvalue(), saved.getvalue()
+    else:
+        log = tmp_path / "rule.log"
+        assert su.run_and_tee([sys.executable, "-c", f"print({command!r})"], log) == 0
+        shown = capsys.readouterr().out
+        logged = log.read_text(encoding="utf-8")
+    assert shown == (
+        "$ hydromt update wflow_sbm <model> "
+        "-i <model-config>/build_historical_forcing.yml -d <project-catalog> -vv\n"
+    )
+    assert "<model>/config/build_historical_forcing.yml" in logged
+    assert (
+        "config/_engine/execution-configs/_shared/project_catalog_0/459d6135261e/project_catalog_0.yml"
+        in logged
+    )
+    assert "<model-config>" not in logged
+    assert "<project-catalog>" not in logged
+    rows = dict(cs.run_meta_rows(project))
+    assert rows["<model-config>"] == "<project>/models/hydrology/wflow/config"
+    assert rows["<project-catalog>"].endswith("459d6135261e/project_catalog_0.yml")
+    # A subsequent workflow must not inherit these run-specific aliases.
+    declare_folders(climate=tmp_path / "climate")
+    assert "<model-config>" not in dict(cs.run_meta_rows(project))
+
+
 def test_declared_folders_become_tokens_in_one_line(declare_folders):
     """The interleaved case: an external data root and a model dir in one line.
 
@@ -1289,6 +1339,44 @@ class _LiveConsole:
 
     def getvalue(self):
         return self._buffer.getvalue()
+
+
+@pytest.mark.parametrize("closed", [False, True])
+def test_tee_flush_publishes_live_output_without_draining_partial_log(closed):
+    class BufferedConsole(io.StringIO):
+        visible = ""
+
+        def flush(self):
+            self.visible = self.getvalue()
+
+    live = BufferedConsole()
+    logfile = io.StringIO()
+    tee = su._Tee(live, logfile)
+    if closed:
+        tee.close()
+        logfile.close()
+    tee.write("partial")
+    assert live.visible == ""
+    tee.flush()
+    assert live.visible == "partial"
+    if not closed:
+        assert logfile.getvalue() == ""
+
+
+def test_empty_tee_replays_do_not_postpone_heartbeat(monkeypatch):
+    clock = [0.0]
+    monkeypatch.setattr(log_core.time, "monotonic", lambda: clock[0])
+    monkeypatch.delenv("CST_HEARTBEAT_SECS", raising=False)
+    console = io.StringIO()
+    heartbeat = _Heartbeat("plot_climate_diagnostics", console, interval=15)
+    tee = su._Tee(console, io.StringIO(), on_activity=heartbeat.touch)
+    for seconds in (15.0, 30.0, 45.0):
+        clock[0] = seconds
+        # Successful captured_output() replays an empty string between figures.
+        assert tee.write("") == 0
+        heartbeat._tick(seconds)
+    assert console.getvalue().count("elapsed") == 3
+    assert "0:00:45 elapsed" in console.getvalue()
 
 
 def _drive_a_bar(live, logfile):

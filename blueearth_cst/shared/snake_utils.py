@@ -60,6 +60,7 @@ from blueearth_cst.shared.run_log_core import (
     _ANSI_RESET,
     _ASCII_GLYPH_FALLBACK,
     _COMPONENT_PREFIX_RE,
+    _CONSOLE_PATH_TOKENS_ENV,
     _DATA_SOURCE_FROM_RE,
     _DATA_SOURCE_READ_RE,
     _DEMOTED_WARNINGS,
@@ -161,7 +162,7 @@ from blueearth_cst.shared.wf3_science import (
 )
 
 
-def declare_path_tokens(**folders):
+def declare_path_tokens(*, console_only=None, **folders):
     """Declare a workflow's key folders once, by short name. Returns the pairs.
 
     Called at Snakefile PARSE time, before any rule runs. Two things then read
@@ -182,6 +183,10 @@ def declare_path_tokens(**folders):
     passes what it has (WF2 has no model) without a caller-side conditional.
     Paths are stored ABSOLUTE and normalized: a rule's output names a resolved
     path, and a relative ``project_dir`` from the config would never match it.
+
+    ``console_only`` optionally maps display aliases to paths (including files).
+    These appear in the console legend and terminal rows, while saved logs keep
+    the shared folder spelling. Each declaration replaces both sets of aliases.
     """
     tokens = {}
     for name, folder in folders.items():
@@ -189,6 +194,13 @@ def declare_path_tokens(**folders):
             continue
         tokens[name] = os.path.normpath(os.path.abspath(os.fspath(folder)))
     os.environ[_PATH_TOKENS_ENV] = json.dumps(tokens)
+    os.environ[_CONSOLE_PATH_TOKENS_ENV] = json.dumps(
+        {
+            name: os.path.normpath(os.path.abspath(os.fspath(path)))
+            for name, path in (console_only or {}).items()
+            if path is not None and str(path).strip()
+        }
+    )
     return tokens
 
 

@@ -45,6 +45,7 @@ def _no_ambient_path_tokens(monkeypatch):
     tests/test_snake_utils.py).
     """
     monkeypatch.setenv("CST_PATH_TOKENS", "")
+    monkeypatch.setenv("CST_CONSOLE_PATH_TOKENS", "")
 
 
 #: Screen resolution, for tests that SAVE a figure to assert something about it.

@@ -1,6 +1,6 @@
 # Development workflow
 
-Last updated: 2026-10-20
+Last updated: 2026-10-21
 
 Shared procedures for developers and agents coordinating repository work. This reference owns task
 admission, board location, worktree coordination, and handoffs. Placement and scratch rules live in
@@ -65,6 +65,15 @@ References and developer scripts are edited in the session branch.
 Use the configured `git-workflow` session lifecycle for allocation, identity checks, synchronization,
 and landing. Root `AGENTS.md` and `.git-workflow.yml` identify the repository's active mode.
 
+A modifying request permits a clean detached session to claim itself from the primary checkout with
+`task-start --task <task> --session <name> --base main --no-launch`; never create the branch by hand.
+At new-session entry, synchronize a clean local unpushed lane with `main` by rebase; published lanes
+use merge unless rewriting is authorized. Resolve dirty state/conflicts without automatic stash/reset.
+Do not repeat synchronization per follow-up. Stay in the occupied session until the user asks to
+switch or land. Commit completed tasks with the checks selected by the validation reference;
+completion does not authorize landing or pushing. After a verified merge, prove ancestry,
+detach/free the lane, then delete its branch; on failure preserve the lane and branch for recovery.
+
 Keep the note's `branch:` current. When tracked work needs a locator, maintain the following section in
 the central note rather than creating a separate status file. Use logical checkout names and relative
 paths; resolve actual roots with `git worktree list`.
@@ -88,6 +97,31 @@ and artifacts in that same note. At handoff and approved landing, run
 A parked branch without a worktree keeps `status: blocked` and its `branch:`, with the parking reason in
 Progress and Work location. The current CLI reports that branch as missing and exits 1; explain the row
 until the branch resumes or lands.
+
+### Lane status
+
+Each worktree owns an ignored root `STATUS.md` for a quick view of its active work and next steps.
+Read it on entry, then reconcile its context with the actual branch and working changes before relying
+on it. Maintain it at meaningful checkpoints and handoffs. Include the lane and branch, an update
+timestamp with timezone, current focus, relevant verification, blockers, and one concrete next action.
+Keep it concise; omit task-board summaries, other lanes, and unrelated landed work.
+
+When absent, copy [the lane status template](../templates/lane-status.md) to the current worktree's
+`STATUS.md` and populate it from inspected state. When the lane starts a new task or branch, refresh its
+context and remove obsolete work after retaining any needed evidence. Never seed, link, or copy a
+populated status from another worktree. Ignored files survive branch switches, so check the context
+even when the file already exists.
+
+Status is local continuity, not durable evidence or task authority. Keep durable decisions and
+verification evidence in their owning task records or committed documentation; Git owns branch state.
+Status updates are not committed, landed, or pushed.
+
+When adopting this policy in a checkout that still tracks `STATUS.md`, preserve that checkout's copy
+outside the tracked path before merging the removal; restore it afterward and verify
+`git check-ignore STATUS.md` succeeds and `git ls-files -- STATUS.md` is empty. Follow repository scratch
+and retention rules for any backup. Do this separately in each owning lane; do not overwrite another
+lane's status. Branches predating the policy may still track the file: preserve the local copy before
+switching to one and reconcile any tracked-file collision explicitly.
 
 ### Local scratch and navigation
 
@@ -128,8 +162,8 @@ cmd /c rmdir dev\00-current-board-main
 4. The recipient verifies branch and artifact locations before editing. Prefer re-entering the same
    session; switching or landing remains the user's decision.
 
-Follow `git-workflow` and root `AGENTS.md` for synchronization timing. Do not background-sync tracked
-folders or scratch.
+Follow `git-workflow` and the session-entry rules above for synchronization timing. Do not background-sync
+tracked folders or scratch.
 
 ## Verification and closure
 

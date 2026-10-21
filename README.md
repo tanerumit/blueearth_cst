@@ -7,7 +7,8 @@
 > [Deltares/blueearth_cst](https://github.com/Deltares/blueearth_cst).
 > [Current development guidance](dev/reference/README.md) describes the applicable practices and design.
 > [Milestone history](dev/records/milestones/roadmap.md) preserves phase lineage;
-> `CHANGELOG.md` tracks releases and `dev/TODO.md` tracks active work.
+> `CHANGELOG.md` tracks releases; [project status](STATUS.md) summarizes current focus and next actions,
+> and `dev/TODO.md` tracks active work.
 
 The BlueEarth Climate Stress Test toolbox (`blueearth_cst`) is a free,
 open-source toolkit for interactive climate risk assessment based on bottom-up

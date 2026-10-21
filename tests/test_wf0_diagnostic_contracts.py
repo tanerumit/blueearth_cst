@@ -46,6 +46,50 @@ def test_short_record_acf_confidence_limits_fit_inside_axes():
     plt.close(fig)
 
 
+@pytest.mark.parametrize("stale", [False, True])
+def test_render_checks_inputs_before_export_then_uses_loaded_snapshot(
+    tmp_path, monkeypatch, stale
+):
+    from blueearth_cst.climate_analysis import diagnostic_render as dr
+
+    settings = parse_settings(None, {"start": 2000, "end": 2005}, ["chirps"])
+    daily = pd.DataFrame(
+        {"precip": np.nan, "temp": np.nan},
+        index=pd.date_range("2000-01-01", "2005-12-31"),
+    )
+    _, tables = compute(daily, settings, 1, (2000, 2005))
+    paths = diagnostic_source_outputs(tmp_path, "chirps", settings)
+    write_tables(paths, {"chirps": tables}, settings, 1, (2000, 2005), {})
+    paths["figures"] = {
+        key: value
+        for key, value in paths["figures"].items()
+        if key in {"coverage", "anomaly"}
+    }
+    checks = []
+
+    def load_once(*args, **kwargs):
+        assert not checks, "Rendering must not repeat the input check for each PNG"
+        checks.append(True)
+        if stale:
+            raise ValueError("Historical reference is stale")
+        return {}
+
+    monkeypatch.setattr(dr, "load_reference", load_once)
+    params = dict(
+        source_specs=[], selected="chirps", m0=1, completeness={}, shared_inputs={}
+    )
+    arguments = dict(map_reference="reference.json", map_reference_params=params)
+    if stale:
+        with pytest.raises(ValueError, match="reference is stale"):
+            render(paths, settings, 1, ["chirps"], [tmp_path], **arguments)
+        assert not list(tmp_path.rglob("*.png"))
+    else:
+        records = render(paths, settings, 1, ["chirps"], [tmp_path], **arguments)
+        assert len(records) == 2
+        assert all(Path(filename).is_file() for filename in paths["figures"].values())
+    assert len(checks) == 1
+
+
 def test_source_summary_preserves_extracted_metadata_and_readiness(tmp_path):
     import xarray as xr
 
@@ -175,8 +219,9 @@ def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind, c
         assert series["availability"].startswith("Unavailable")
         assert "no usable data or reference fit" in series["caption"]
         output = capsys.readouterr().out
-        assert "Wrote 16 diagnostic figures for chirps" in output
-        assert "details → plots/_engine/figure_captions.json" in output
+        assert (
+            "Wrote 16 diagnostic figures for chirps → plots/_engine/figure_captions.json"
+        ) in output
         assert "no native temperature" in output
 
 

@@ -6,6 +6,12 @@
 
 BlueEarth Climate Stress Test is a Python/R/Julia Snakemake workflow engine; no API or frontend code.
 
+Read this worktree's local `STATUS.md` first when orienting or resuming for a quick view of active work
+and next steps. Maintain it at meaningful checkpoints and handoffs using `project-system`.
+It is ignored, lane-specific state: never commit, share, or summarize other lanes or the task board in it.
+For initialization, lane reuse, and durable evidence, follow
+[lane status](dev/reference/dev-task-and-session-workflow.md#lane-status).
+
 | Entry point | ID | Purpose |
 |---|---|---|
 | `analyze_climate.smk` | wf0 | Optional, model-free historical climate analysis |
@@ -103,79 +109,21 @@ remove that setting when diagnosing why a job reran.
 
 ## Validation ladder — match the check to the blast radius
 
-Read `dev/reference/dev-validation.md` before planning verification, selecting gates, landing,
-or pushing. It owns acceptance-to-check/input/output mapping, evidence reuse, config provenance,
-`verify_landing.py`, and CI procedures. Execution success never replaces numerical/visual acceptance.
+Before selecting checks, landing, or pushing, read `dev/reference/dev-validation.md`.
+It owns the validation ladder, exemptions, evidence reuse, execution coverage, config provenance,
+and CI procedures. Select coverage from changed behavior and affected consumers.
 
-Use `git-workflow`'s configured session lifecycle. A modifying request permits a clean detached
-session to claim itself with `task-start --task <task> --session <name> --base main --no-launch`
-from the primary checkout; never create the branch by hand. The user controls switching and landing.
-At new-session entry, synchronize a clean local unpushed lane with `main` by rebase; published lanes
-use merge unless rewriting is authorized. Resolve dirty state/conflicts without automatic stash/reset.
-Do not repeat synchronization per follow-up. Commit tasks with focused checks; select landing gates
-from the unverified delta and affected consumers, retaining applicable evidence. Completion does not authorize
-landing/pushing. After a verified merge, prove ancestry, detach/free the lane, then delete its branch;
-on failure preserve the lane and branch for recovery.
+Use affected checks for commits and local landing; apply the batch gate before pushing or releasing.
+Local main may contain undiscovered regressions pending that gate. Reuse applicable
+evidence; stop when required coverage is sound. Execution success never replaces independent
+numerical checks or visual inspection. Use rapid inputs for execution/DAG checks and renders;
+consult the reference before making baseline claims.
 
-| When | Required coverage |
-|---|---|
-| Iterating | Tests covering the change |
-| Pre-commit | Regression/consumer checks; affected CLI/DAG checks for rule/input/script changes; scoped Ruff |
-| Final Python batch | `pixi run lint` and `pixi run format-check` once |
-| Land a batch | One `test-fast` on the integrated candidate, or reuse evidence; exempt-only diffs skip it |
-| Additional software coverage | Affected contracts; local full for needed extra coverage, replacing fast |
-| Several workflow handoffs or shared runtime behavior | All-five local or live E2E, or reuse evidence |
-| Confined workflow behavior | Affected integration path/consumers; execution when outputs can change |
-| Numeric output | Independent numerical check and affected consumers; baseline for whole-tree claims |
-| Release or milestone | Verify candidate and delta coverage; labels alone add no tests |
-| Push | Reuse landing evidence; check uncovered changes, run cheap hooks, and inspect CI |
-| After push | Read the latest CI run, including both platforms |
+## Session lifecycle
 
-Apply the reference's evidence-reuse contract: full covers fast on the same candidate/environment;
-equivalent merges need tree-equality and ancestry proof. Missing or skipped required checks never pass.
-Classify behavior and consumers, not directory names. A small follow-up invalidates only affected
-claims; use reviewed delta evidence rather than repeating a preceding broad gate. Unknown or broad
-impact escalates. Console changes affecting control flow, exit status or parsed output are behavioral.
-Optimize verification for safety with the fewest sufficient tests and procedures. Add a test, gate,
-receipt or review step only for a concrete risk not covered by existing evidence or a simpler check;
-prefer extending or replacing an existing check. Do not turn a one-off diagnostic into a standing gate.
-Focused checks suffice for task commits; do not pull landing gates forward into each task. Full covers
-fast; E2E covers its affected workflow executions. Stop once required coverage is sound; repeat only
-for invalidated evidence or a concrete diagnostic need. Keep rationale in existing task notes or the
-completion report; this rule requires no new checklist, document or approval step.
-The local E2E gate regenerates every downstream product from staged source inputs. Use focused fetching
-tests for acquisition changes; opt into live E2E when verifying catalog availability, addressing,
-windows, clipping or cache behavior. A release or milestone label alone does not require live fetching.
-See `dev/reference/dev-validation.md` for bundle qualification and refresh.
-Use policy-tooling tests only when changing that tooling or its contracts, not merely using its verifier.
-
-Push exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root
-`AGENTS.md` and root `README.md`. Renames/deletions are never exempt. `dev/scripts/`, `dev/records/`,
-`dev/reference/`, `config/templates/` and `docs/notebooks/` have test readers and remain gated.
-Classify actual diff paths, not commit labels or earlier pushed batches; grep tests before adding
-an exemption. For push, inspect `origin/main..main` and reuse valid landing evidence. Changed content
-needs affected checks or a missing batch gate, not an automatic repeat. Read red/unread CI and diagnose
-its failures; CI status alone does not invalidate matching local evidence. An exempt-only unpushed delta
-needs only the Ruff pre-push hook. CI owns full software coverage on both platforms. Capture gate output
-in a file, never pipe it through `tail`.
-
-CI runs for `main` pushes and PRs, not backup branch pushes. Normal approved publishing goes to
-`main`; use a PR when the change needs two-platform assurance before landing.
-`gh` defaults to Deltares upstream here: explicitly select
-`tanerumit/blueearth_cst`. Install local hooks with `core.hooksPath .githooks`.
-
-Use rapid config for execution/DAG checks/renders; baseline config only when numbers are the point.
-Never baseline-check the rapid tree. WF2-fast is restricted iteration with declared coverage loss.
-The baseline manifest is stale after the P-drive/GlobCover switch: regenerate the revised baseline
-and re-record before numerical gating. Each worktree's untracked baseline tree is independent;
-inspect its provenance. WF1 retains native `run_default/output.csv`; rounded `output_q.csv`
-is no substitute. The standing tree is not an R12 migration reference: use matched P0/GF-9 evidence.
-Details and recovery prerequisites live in the validation reference.
-
-For figure-only changes, render and publish PNG artifacts for visual inspection; no baseline,
-full suite or render-byte comparisons. Search shared plotting callers and render all affected figures.
-Changes to runtime/config contracts or non-figure consumers trigger broader gates. For confined
-workflow execution, state affected consumers and omitted workflows; rapid must not silently narrow coverage.
+Use `git-workflow` and `dev/reference/dev-task-and-session-workflow.md` for session allocation,
+synchronization, and cleanup. Stay in the occupied session across follow-ups. The user controls
+switching and landing; completion does not authorize landing or pushing.
 
 ## Hard Constraints
 

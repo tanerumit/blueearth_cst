@@ -8,6 +8,12 @@ Owner decision after review: backward compatibility with existing study cases is
 the toolbox is in development. Contract changes may require regeneration of development runs. Do not
 implement legacy readers, migration machinery or historical-artifact compatibility for this task.
 
+Further owner decisions: v1 calculates the proposed ET formulas using existing model AET and forcing
+PET, with scientific limitations documented for later review. Every non-discharge variable uses the
+current subcatchment-mean output convention. Matched unstressed ET, agricultural masks and revised
+spatial weighting are follow-up topics, not prerequisites for v1. These decisions supersede the case
+brief's stricter ET-compatibility and area-weighting conditions for this initial implementation.
+
 ## Recommendation
 
 Proceed with the six methods as a hydroclimatic agricultural screening set, subject to the decisions
@@ -21,14 +27,15 @@ registration, independent-check and publication pattern, but does not establish 
 
 ## Findings and required changes to the assignment
 
-1. **Separate reference PET from an unstressed counterpart of AET.** Wflow documents its forcing as
+1. **Calculate existing AET/PET and document its interpretation.** Wflow documents its forcing as
    reference evapotranspiration; vegetation coefficients, canopy fraction and evaporation components
    affect its use. Same run, dates and area are necessary but insufficient for compatibility.
-   Verify the installed model version, configured coefficients and exact output components before
-   calling the ratio evaporative limitation. If only reference PET is available, explicitly describe
-   the result as an AET/reference-PET proxy, with vegetation as a confounder, or leave those metrics
-   unavailable pending a matched denominator. Relabelling alone does not establish compatibility.
-   Do not reconstruct a new PET inside the indicator or silently change the six formulas.
+   For v1, retain both proposed formulas: `100 * (1 - sum(AET)/sum(PET))` and counts of
+   `AET/PET < 0.5` where `PET >= 1 mm/day`. Use existing model AET and forcing PET without a new
+   denominator, crop correction or compatibility gate. Document these as screening proxies: differences
+   can reflect vegetation and evaporation components as well as water availability. They are not
+   calibrated crop stress or damage estimates. Preserve negative deficits and flag AET above PET.
+   Revisit the scientific assumptions later; ordinary units, alignment and missing-data checks remain.
    Evidence: [Wflow evaporation documentation](https://deltares.github.io/Wflow.jl/stable/model_docs/land/landhydrology_sbm.html)
    and [HydroMT crop-factor documentation](https://deltares.github.io/hydromt_wflow/stable/user_guide/5_setup_methods/setup_lulcmaps.html).
    These describe upstream semantics; the case configuration has not been verified.
@@ -58,12 +65,14 @@ registration, independent-check and publication pattern, but does not establish 
    dependencies change. Historical artifact readability and identity continuity are not acceptance
    gates for this task; retain input provenance and deterministic identity for the new contracts.
 
-5. **Treat spatial support as evidence, not a location label.** Current non-Q outputs use subcatchment
-   `mean`; Q uses outlet/gauge samples. These are different supports. A basin mean is a useful first
-   implementation if labelled honestly, but is not an agricultural-area mean. If existing reducer
-   weights differ from the brief's fixed-area-weight requirement, document that limitation or scope
-   the change explicitly. Record mask/map, reducer and weighting with P/PET/AET bindings. Keep recharge
-   support and Q reach meaning separate; outlet drainage cannot establish irrigation-supply failure.
+5. **Use subcatchment means for all non-discharge inputs in v1.** Follow the existing `mean` reducer
+   for P, PET, AET, recharge and other non-Q variables; Q remains an outlet/gauge series. Calculate
+   indicators from daily subcatchment means, rather than averaging cell-level indicator results.
+   Keep paired variables on the same subcatchment support. Document the current reducer and its
+   spatial-representativeness limits; no agricultural mask, aquifer mask or new weighting scheme is
+   required. Subcatchment means do not establish agricultural-area or aquifer-specific conditions.
+   Revisit these choices later. Q reach interpretation remains separate: outlet drainage cannot
+   establish irrigation-supply failure.
 
 6. **Specify baseline-threshold and calendar details before coding.** The existing explicit reference
    facility selects wet/dry months from unperturbed runs; it is not a historical Qcrit estimator.
@@ -77,7 +86,7 @@ registration, independent-check and publication pattern, but does not establish 
 
 ## Delivery sequence and evidence
 
-1. Resolve scientific bindings and the minimal paired-input/publication design.
+1. Resolve case bindings, Qcrit and paired-input/publication design using the settled v1 assumptions.
 2. Implement PET retention and paired inputs; keep current single-input sets working on new contracts.
 3. Implement six kernels, ten declarations, complete-period diagnostics and documented assumptions.
 4. Run independent arithmetic and boundary checks, affected contract/publication regression checks,
@@ -91,5 +100,6 @@ frames and period partitions are not rebuilt per declaration. No broad hydrologi
 for arithmetic alone; output-path changes need their own bounded execution evidence.
 
 No production series, active Alexandria configuration or numeric Qcrit was established by this review.
-The case brief remains the source for intended formulas and provisional regional settings. Its
+The case brief remains the source for formulas and regional settings, with the owner decisions above
+overriding its ET-compatibility and spatial-weighting prerequisites for v1. Its
 validation-reference path should be repository-relative `dev/reference/dev-validation.md`.

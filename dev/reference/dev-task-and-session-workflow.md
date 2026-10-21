@@ -98,6 +98,31 @@ A parked branch without a worktree keeps `status: blocked` and its `branch:`, wi
 Progress and Work location. The current CLI reports that branch as missing and exits 1; explain the row
 until the branch resumes or lands.
 
+### Lane status
+
+Each worktree owns an ignored root `STATUS.md` for a quick view of its active work and next steps.
+Read it on entry, then reconcile its context with the actual branch and working changes before relying
+on it. Maintain it at meaningful checkpoints and handoffs. Include the lane and branch, an update
+timestamp with timezone, current focus, relevant verification, blockers, and one concrete next action.
+Keep it concise; omit task-board summaries, other lanes, and unrelated landed work.
+
+When absent, copy [the lane status template](../templates/lane-status.md) to the current worktree's
+`STATUS.md` and populate it from inspected state. When the lane starts a new task or branch, refresh its
+context and remove obsolete work after retaining any needed evidence. Never seed, link, or copy a
+populated status from another worktree. Ignored files survive branch switches, so check the context
+even when the file already exists.
+
+Status is local continuity, not durable evidence or task authority. Keep durable decisions and
+verification evidence in their owning task records or committed documentation; Git owns branch state.
+Status updates are not committed, landed, or pushed.
+
+When adopting this policy in a checkout that still tracks `STATUS.md`, preserve that checkout's copy
+outside the tracked path before merging the removal; restore it afterward and verify
+`git check-ignore STATUS.md` succeeds and `git ls-files -- STATUS.md` is empty. Follow repository scratch
+and retention rules for any backup. Do this separately in each owning lane; do not overwrite another
+lane's status. Branches predating the policy may still track the file: preserve the local copy before
+switching to one and reconcile any tracked-file collision explicitly.
+
 ### Local scratch and navigation
 
 Follow [Task temporary material](dev-repository-layout.md#task-temporary-material) for scratch placement, evidence

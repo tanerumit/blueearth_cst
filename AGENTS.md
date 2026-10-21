@@ -6,9 +6,11 @@
 
 BlueEarth Climate Stress Test is a Python/R/Julia Snakemake workflow engine; no API or frontend code.
 
-Read `STATUS.md` when orienting or resuming project work. Maintain it at meaningful checkpoints and
-explicit handoffs using `project-system`; task records remain authoritative for task state.
-Keep it branch-versioned; reconcile its snapshot with the current checkout and canonical board.
+Read this worktree's local `STATUS.md` first when orienting or resuming for a quick view of active work
+and next steps. Maintain it at meaningful checkpoints and handoffs using `project-system`.
+It is ignored, lane-specific state: never commit, share, or summarize other lanes or the task board in it.
+For initialization, lane reuse, and durable evidence, follow
+[lane status](dev/reference/dev-task-and-session-workflow.md#lane-status).
 
 | Entry point | ID | Purpose |
 |---|---|---|

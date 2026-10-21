@@ -1,7 +1,7 @@
 # Project status
 
-Updated: 2026-10-21 11:11 Europe/Amsterdam (UTC+02:00)
-Context: adoption on `chore/fix-live-console-flush`; implementation snapshot through `dccb51d5`.
+Updated: 2026-10-21 11:22 Europe/Amsterdam (UTC+02:00)
+Context: validation-policy follow-up on `chore/fix-live-console-flush`.
 
 ## Current objective
 
@@ -11,6 +11,9 @@ own task state. Reconcile this branch snapshot with the checkout and canonical b
 
 ## Active work and next actions
 
+- **Validation guidance:** consolidated in the [validation reference](dev/reference/dev-validation.md).
+  The policy now selects affected paths before all-five execution, permits inspected prose exemptions,
+  and reserves formal receipts for landing reuse. Next: apply it to the pending batch's actual delta.
 - **Console/runtime follow-ups:** five commits after main's `25f6f41c` are committed locally on
   `chore/fix-live-console-flush` through `dccb51d5`. They address heartbeat advancement, repeated WF0
   provenance checks during figure export, and console wording/date-time/path display. Next: review
@@ -36,8 +39,9 @@ priorities or authorize execution, landing, or publishing.
 
 ## Validation
 
-- This adoption changes documentation only. Its checks cover diff integrity, relative-link targets,
-  and consistency with the project-system status convention and existing task records.
+- Validation-policy edits were checked for diff integrity, reference targets, reader impact, and
+  consistency with the landing verifier, hook, CI configuration, and release guidance. They change
+  guidance only; no workflow execution or scientific results were tested by this follow-up.
 - Historical implementation checks and their limits remain in the linked task records. They do not
   establish that this branch's pending console/runtime batch has passed its landing gates; select
   those from the [validation reference](dev/reference/dev-validation.md).

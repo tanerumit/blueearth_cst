@@ -7,27 +7,43 @@ config provenance, and CI. `AGENTS.md` routes verification work here.
 
 ## Validation ladder
 
-| When | Required coverage |
+| Stage | Required coverage |
 |---|---|
-| Iterating | Tests covering the change |
-| Pre-commit | Regression/consumer checks; affected CLI/DAG checks for rule/input/script changes; scoped Ruff |
-| Final Python batch | `pixi run lint` and `pixi run format-check` once |
-| Land a batch | One `test-fast` on the integrated candidate, or reuse evidence; exempt-only diffs skip it |
-| Additional software coverage | Affected contracts; local full for needed extra coverage, replacing fast |
-| Several workflow handoffs or shared runtime behavior | All-five local or live E2E, or reuse evidence |
-| Confined workflow behavior | Affected integration path/consumers; execution when outputs can change |
-| Numeric output | Independent numerical check and affected consumers; baseline for whole-tree claims |
-| Release or milestone | Verify candidate and delta coverage; labels alone add no tests |
-| Push | Reuse landing evidence; check uncovered changes, run cheap hooks, and inspect CI |
-| After push | Read the latest CI run, including both platforms |
+| Task | Focused checks as needed while iterating; complete affected checks before commit. |
+| Integrated batch | At landing, one `test-fast`, stronger or reused evidence; exempt-only deltas skip it. |
+| Publishing | Check uncovered changes, retain the pre-push hook, and inspect both CI platforms after push. |
+
+Select task coverage by changed behavior and affected consumers:
+
+- **Software:** regression/consumer checks and affected CLI/DAG checks for rule/input/script changes.
+  Include affected contract tests when needed; local `test-full` replaces fast when broader coverage is owed.
+- **Workflow execution:** exercise affected integration paths and downstream consumers. Execute workflows
+  when outputs can change. Use all-five E2E for pipeline-wide impact, explicit whole-toolbox claims,
+  or cross-workflow uncertainty that inspection and focused checks cannot resolve.
+- **Numerical results:** independent numerical checks and affected consumers; current baseline evidence
+  for whole-tree numerical claims. Execution success alone does not establish numerical acceptance.
+- **Prose and figures:** inspection can suffice for prose; render and inspect affected figures.
+  Executable examples, parsed documentation, calculation changes, and other behavioral consumers also
+  need their affected checks. Figure-only work does not automatically require the software batch gate.
+
+For Python edits, complete scoped Ruff checks before commit and repository-wide `pixi run lint` and
+`pixi run format-check` before landing. Count an existing manual or hook pass when it covers the candidate
+at the required stage; rerun only invalidated checks. Keep the pre-push hook enabled, but do not add
+a duplicate manual run immediately before it. A later push hook cannot satisfy an earlier landing gate.
+Release and milestone labels add no checks beyond the changed behavior and qualification claims.
 
 ### Batch and push exemptions
 
-Exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root `AGENTS.md`
-and root `README.md`. Renames/deletions are never exempt. `dev/scripts/`, `dev/records/`,
-`dev/reference/`, `config/templates/` and `docs/notebooks/` have test readers and remain gated.
-Classify actual diff paths, not commit labels or earlier pushed batches; search tests before adding
-an exemption. An exempt-only unpushed delta needs only the Ruff pre-push hook.
+The software batch gate may be omitted when every change is non-executable prose or terminal figure
+presentation and inspection establishes that no runtime, configuration, calculation, or test-consumed
+contract changed. This covers eligible content regardless of directory, including task notes, guides,
+and agent instructions. It does not waive affected link, example, policy-consistency, or visual checks.
+
+Classify the actual diff and search readers/callers before claiming an exemption. A document read by
+a test is exempt only if the changed content cannot affect that test's contract. Scripts, config
+templates, and executable notebook cells are not prose; uncertain impact retains the batch gate.
+Renames/deletions remain non-exempt because path consumers may break. At push, an exempt-only delta
+needs the pre-push hook and any still-missing affected checks, not a software suite.
 
 ## Planning and reusing verification
 
@@ -38,10 +54,12 @@ remove redundant requirements when their purpose is covered elsewhere. A one-off
 become a standing gate by precedent. Preserve independent numerical and visual acceptance where needed.
 Use existing task notes or the completion report for the rationale, not another form or approval step.
 
-For every new or revised task design, map each acceptance claim to a check and its input case before
-scheduling runs. Reference the live ladder instead of copying a fixed list of gate commands into the
-design. Record the tested commit, command, result, environment, input/config identity and output root in
-the existing task evidence. A command's successful exit does not discharge claims it never checked.
+Before scheduling checks, identify the affected claims and inputs; a sentence is enough for a simple
+change. Record attributable commands, results, and material limitations in existing notes or the
+completion report. Include candidate, environment, input/config identity and output root when needed
+to interpret or reuse execution evidence. Formal receipts are required only for gates reused through
+the landing verifier, not for every focused task check. A successful exit does not discharge claims
+the command never checked.
 
 - A passing `test-full` satisfies `test-fast` on the same candidate and environment. Do not schedule
   both as final gates. A fast run before full is optional early feedback, not another acceptance duty.
@@ -105,19 +123,13 @@ fresh-process and Snakemake DAG checks. Other tests also incur setup and renderi
 duration evidence before optimizing either tier. Count the selected cases with
 `pytest tests/ -m "workflow_contract or process_isolation" --collect-only -q` rather than trusting a number written here — it drifts every time a rule gains a contract test.
 
-Task commits need focused regression and affected-consumer checks. At landing, run one `test-fast`
-for the integrated batch unless applicable evidence already covers it or the delta is exempt-only.
-A passing full suite covers fast; do not run included subsets again merely for another gate label.
-For each proposed check, state the distinct failure or claim it covers before scheduling it.
-
 `test-fast` runs its workers in parallel (`-n auto --dist loadfile`). Keep `loadfile`: it puts every test in a file on one worker, which is what contains module-level state — a test that stubs a library process-globally stays confined to its own file. `--dist load` distributes per test and would break that. The floor is the per-worker import cost, so adding cores past a point buys nothing.
 
 `test-contract` stays serial. Those tests share a `project_dir` and take `.snakemake` locks, so parallelising them needs each group proved independent first.
 
-**CI owns full software coverage on Windows and Linux.** Select affected tests from `test-contract`
-when they add coverage of the change. A local `test-full` replaces fast when its extra coverage is
-needed before publishing; it is not an automatic consequence of a release, milestone or directory name.
-Use a PR when two-platform assurance is required before landing. Inspect both CI results.
+CI runs the software suite on Windows and Linux. Fixture-dependent tests may skip and real workflow
+execution remains local; CI success does not establish those missing claims. Use a PR when
+two-platform assurance is required before landing. Inspect both CI results and required skips.
 
 **A push checks uncovered changes, not the same candidate again.** Inspect `origin/main..main` and
 reuse valid landing evidence. Exempt-only changes need cheap hooks; other follow-ups need checks for
@@ -140,9 +152,11 @@ After an infrastructure failure, probe the failing prerequisite before repeating
 
 ## Recording gates and verifying landing
 
-Use `dev/scripts/verify_landing.py` instead of writing a task-specific landing verifier. Its `record`
-command executes one explicit gate, captures a fresh log and records the tested Git tree, Python
-executable/version/platform, lock-file identity and named input-file hashes. Record during the original
+When reusing gate results through `task-land --verify`, use `dev/scripts/verify_landing.py` instead of
+writing a task-specific verifier. An ordinary task check needs no receipt unless it will supply that
+reuse. A freshly executed landing check can instead be the verification command itself.
+The helper's `record` command executes one explicit gate, captures a fresh log and records the Git tree,
+Python executable/version/platform, lock-file identity and named input-file hashes. Record during the original
 test run, not by rerunning a passed command solely to produce a receipt. By default the candidate must
 be clean and committed. Before commit, stage the intended changes and use `record --staged`; it refuses
 unstaged changes and nonignored untracked files, and checks identity again after execution. Commit the
@@ -155,7 +169,8 @@ pixi run python dev/scripts/verify_landing.py record --evidence .tmp/tasks/<id>/
 pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/tasks/<id>/gates.json --require-gate test-fast
 ```
 
-For a focused pre-commit check, use `record --staged` with an appropriate gate name and test command.
+For a focused pre-commit check intended for landing reuse, use `record --staged` with an appropriate
+gate name and test command.
 Stage only task-owned paths first; the recorder never stages files or creates a commit. New staged
 records use schema version 2: `commit` is the pre-test HEAD and `tree` is the tested index tree.
 Existing version-1 committed records remain supported. A test that edits tracked files invalidates
@@ -180,6 +195,10 @@ Code changes require fresh affected checks and the reviewed delta route below. N
 are supported.
 
 ### Reviewed follow-up changes
+
+This JSON protocol applies only when retaining formal gate receipts across behavior-changing
+follow-ups. Ordinary task reports need no JSON review. Keep the verifier's existing identity and
+coverage checks intact; its recorder supplies mechanical identity fields automatically.
 
 Keep the earlier evidence file and logs intact. Record new checks in a separate evidence file on the
 follow-up candidate (clean committed or fully staged), using the same named inputs. Commit staged
@@ -228,17 +247,11 @@ record. Human attestation remains necessary for those claims.
 
 ## Choosing execution coverage
 
-At landing use one batch software gate: fast normally, full only for needed additional coverage, or
-reuse applicable evidence. For Python edits, run scoped lint/format checks before each commit and
-repository-wide lint/format once before final
-batch verification. A later Python edit invalidates the relevant final check; a commit or gate label
-alone does not. Focused tests remain the development loop.
-
-All-five execution covers changes affecting several workflow handoffs or shared runtime behavior,
-and explicit whole-toolbox qualification. Reuse applicable evidence. A release or milestone label,
-directory name or development dependency addition alone does not trigger it. Shared plotting changes
-affecting only terminal figures remain render/inspection work. Runtime dependency changes require
-execution of the workflows whose behavior can change; use all five when the impact spans the pipeline.
+Trace changed behavior through its workflow callers and downstream consumers, including shared runtime
+and dependency changes. Several affected handoffs do not alone require all-five execution: exercise
+the affected paths when their boundary is established. Use all five when impact spans the pipeline,
+the claim qualifies the whole toolbox, or cross-workflow uncertainty remains after inspection and
+focused checks. State the affected paths and omitted workflows; reuse applicable execution evidence.
 
 Console wording or formatting alone takes affected console tests and representative output
 inspection. A change to exit status, exception handling, machine-readable output or control flow is

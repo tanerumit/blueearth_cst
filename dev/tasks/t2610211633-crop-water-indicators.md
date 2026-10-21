@@ -18,9 +18,9 @@ updated: 2026-10-21
 
 ## Progress
 
-Next: Resolve case bindings and baseline Qcrit, then design the paired-input contract.
+Next: Execute the revised brief; inspect paired-input contracts and case bindings.
 
-- [x] Review the case brief against current WF4 — scope supported, integration gaps recorded in the review.
+- [x] Review and revise the case brief — self-contained SOL medium handoff includes settled v1 scope.
 - [x] Set v1 assumptions — use existing AET/PET and non-Q subcatchment means; document limitations.
 - [ ] Resolve baseline Qcrit and active case inputs.
 - [ ] Define paired-input and retention contracts, including publication and identity.
@@ -28,7 +28,7 @@ Next: Resolve case bindings and baseline Qcrit, then design the paired-input con
 - [ ] Verify independent arithmetic, affected consumers and a bounded retained-response integration.
 - [ ] Document the set and configure the active Alexandria case when bindings are verified.
 
-Review complete; implementation pending. No simulations run.
+Handoff ready; implementation not started. The revised brief owns the assignment.
 
 No backward compatibility required: omit migration/legacy readers; development runs may need regeneration.
 Keep single-input sets working and retain provenance/integrity checks.
@@ -41,7 +41,6 @@ Document ET and spatial limitations for later review; neither blocks v1.
 - Owner: session-1; branch: `feat/t2610211633`; implementation: not started.
 - Coordination: main :: `dev/tasks/t2610211633/`.
 - Evidence: linked review; inspected toolbox revision `9887be49`.
-- Next action: resolve case bindings and Qcrit; active configuration remains unverified.
 
 ## Refs
 

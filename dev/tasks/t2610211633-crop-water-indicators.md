@@ -23,13 +23,13 @@ updated: 2026-10-21
 Next: Verify case bindings and baseline years, derive location-keyed Qcrit, then run the case.
 The active `wrt-egypt-v2` project currently has WF2 material only.
 
-- [x] Revise brief with settled v1 scope and WF4 criteria.
+- [x] Revise brief and document the set and starter configuration.
 - [x] Implement paired-input retention, publication and identity.
 - [x] Add native PET, six methods, ten selections and period diagnostics.
 - [x] Verify arithmetic, affected consumers, retained-response integration and native Wflow PET.
-- [x] Document the set and starter configuration.
 - [ ] Verify historical Q and active case bindings; derive fixed Qcrit.
-- [ ] Configure and run the Alexandria case.
+- [x] Prepare Alexandria model outputs and crop-water selector (`cst-cases` `a94e353`).
+- [ ] Fill Qcrit and run the Alexandria case.
 
 V1 uses existing AET/reference PET and non-Q subcatchment means. Qcrit is the location-keyed
 linear 0.10 quantile across complete historical summers; missing thresholds refuse evaluation.

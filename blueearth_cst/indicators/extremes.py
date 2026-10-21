@@ -8,8 +8,12 @@ import numpy as np
 import pandas as pd
 
 from blueearth_cst.indicators import gev_lmoments
-from blueearth_cst.indicators.contract import IndicatorDeclaration
-from blueearth_cst.indicators.series import ResponseSeries, compatible_bundle
+from blueearth_cst.indicators.contract import EvaluationContext, IndicatorDeclaration
+from blueearth_cst.indicators.series import (
+    ResponseSeries,
+    annual_blocks,
+    compatible_bundle,
+)
 from blueearth_cst.indicators.temporal import validate_requirement
 
 GEV_SCREENING_BLOCK_FLOOR = 10
@@ -160,6 +164,7 @@ def reduce_bundle(
     expected_run_ids: Sequence[str],
     anchor: str,
     validation=None,
+    _prepared=None,
 ) -> tuple[pd.Series, tuple[ReturnLevelEvidence, ...]]:
     """Extract blocks within each member, screen and fit without splicing runs.
 
@@ -201,6 +206,20 @@ def reduce_bundle(
     )
     declared = _declared_probabilities(validation)
     declared_shapes = _declared_shapes(validation)
+    preparation_context = EvaluationContext(
+        anchor, prepared={} if _prepared is None else _prepared
+    )
+    blocks_by_run = {
+        run: annual_blocks(
+            members,
+            preparation_context,
+            "max" if maximum else "min",
+            window=None if maximum else 7,
+        )
+        if all(item.time.equals(members[0].time) for item in members)
+        else None
+        for run, members in by_run.items()
+    }
     values, evidence = {}, []
     for location in sorted(location_sets[0]):
         members = sorted(
@@ -210,12 +229,17 @@ def reduce_bundle(
         compatible_bundle(members)
         samples, counts = [], []
         for item in members:
-            daily = pd.Series(item.values, index=item.time)
-            blocks = (
-                daily.resample(anchor).max()
-                if maximum
-                else daily.rolling(7).mean().resample(anchor).min()
-            )
+            if blocks_by_run[item.run_id] is None:
+                # Locations may have distinct grids; only members of one
+                # location must align. Preserve that standalone bundle contract.
+                daily = pd.Series(item.values, index=item.time)
+                blocks = (
+                    daily.resample(anchor).max()
+                    if maximum
+                    else daily.rolling(7).mean().resample(anchor).min()
+                )
+            else:
+                blocks = blocks_by_run[item.run_id][location]
             usable = blocks.to_numpy(dtype="float64")
             usable = usable[np.isfinite(usable)]
             samples.append(usable)

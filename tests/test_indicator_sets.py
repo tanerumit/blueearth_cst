@@ -370,3 +370,20 @@ def test_the_shipped_indicator_set_template_resolves():
         "q_annual_mean",
         "q_mean_annual_7day_min",
     ]
+
+
+def test_legacy_declaration_batch_observes_revisions_once_and_refreshes(monkeypatch):
+    records = sets.default_calculations(["q", "gwr"])
+    calls = []
+
+    def revision(set_id="default"):
+        calls.append(set_id)
+        return str(len(calls)) * 64
+
+    monkeypatch.setattr(registry, "_revision", revision)
+    first = sets.declarations_for_calculations(records)
+    assert calls == ["default"]
+    assert {item.implementation_revision for item in first} == {"1" * 64}
+    fresh = sets.declarations_for_calculations(records)
+    assert calls == ["default", "default"]
+    assert {item.implementation_revision for item in fresh} == {"2" * 64}

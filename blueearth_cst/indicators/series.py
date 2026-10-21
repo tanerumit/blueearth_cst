@@ -159,3 +159,44 @@ def response_frame(series: Sequence[ResponseSeries]) -> pd.DataFrame:
         },
         index=first.time,
     )
+
+
+def prepared_frame(series: Sequence[ResponseSeries], context) -> dict:
+    """Reuse a frame and reductions within one immutable-response evaluation scope.
+
+    Retain the source objects so their identity keys cannot be reused while the
+    scope lives. Callers must not mutate response arrays during evaluation.
+    """
+    key = (context.anchor, tuple(id(item) for item in series))
+    if key not in context.prepared:
+        context.prepared[key] = {
+            "series": tuple(series),
+            "frame": response_frame(series),
+        }
+    return context.prepared[key]
+
+
+def annual_blocks(
+    series: Sequence[ResponseSeries],
+    context,
+    statistic: str,
+    *,
+    window: int | None = None,
+) -> pd.DataFrame:
+    """Reuse member-local blocks without changing native pandas missingness."""
+    prepared = prepared_frame(series, context)
+    key = ("annual", window, statistic)
+    if key not in prepared:
+        frame = prepared["frame"]
+        if window is not None:
+            rolling_key = ("rolling", window)
+            if rolling_key not in prepared:
+                prepared[rolling_key] = frame.rolling(window).mean()
+            frame = prepared[rolling_key]
+        blocks = frame.resample(context.anchor)
+        prepared[key] = (
+            blocks.quantile(0.95)
+            if statistic == "p95"
+            else getattr(blocks, statistic)()
+        )
+    return prepared[key]

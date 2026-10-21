@@ -87,7 +87,9 @@ def test_leap_month_completeness_and_partial_year_evidence():
 
 
 @pytest.mark.parametrize("anchor", ["YE-DEC", "YE-SEP", "YE-MAR", "YS-OCT"])
-def test_all_70_indicators_against_independent_checker(anchor):
+def test_all_70_indicators_against_independent_checker(anchor, monkeypatch):
+    from blueearth_cst.indicators.sets.eflow_erfa import calculations
+
     time = pd.date_range("1999-01-01", "2004-12-31")
     position = np.arange(len(time))
     daily = pd.Series((position % 73).astype(float), index=time)
@@ -95,20 +97,51 @@ def test_all_70_indicators_against_independent_checker(anchor):
     daily.iloc[200:207] = np.nan
     series = [_series(daily)]
     declarations = loader.declarations("eflow-erfa")
+    calls = []
+    original = calculations.annual_metrics
+
+    def counted(*args):
+        calls.append(args)
+        return original(*args)
+
+    monkeypatch.setattr(calculations, "annual_metrics", counted)
+    prepared = {}
     assert len(declarations) == 70
     assert len({item.name for item in declarations}) == 70
     for indicator in declarations:
-        result = loader.evaluate(indicator, series, anchor=anchor)
+        result = loader.evaluate(indicator, series, anchor=anchor, _prepared=prepared)
         checked = checking.check(indicator, series, result, anchor=anchor)
         assert checked["numerical_checks"] == 1
         assert result.diagnostics[0].name == "erfa_year_coverage"
         assert set(result.diagnostics[0].data.location_id) == {"g"}
+    assert len(calls) == 1, "one annual table must supply all 70 summaries"
     indicator = declarations[0]
     result = loader.evaluate(indicator, series, anchor=anchor)
     with pytest.raises(ValueError, match="numerical mismatch"):
         checking.check(
             indicator, series, IndicatorResult(result.values + 1), anchor=anchor
         )
+
+
+def test_prepared_erfa_tables_are_scoped_to_response_objects_and_anchor():
+    daily = pd.Series(
+        np.arange(1096, dtype=float) % 73,
+        index=pd.date_range("2000-01-01", periods=1096),
+    )
+    indicator = loader.declarations("eflow-erfa")[0]
+    prepared = {}
+    original = replace(_series(daily), values=daily.to_numpy(copy=True))
+    for series, anchor in (
+        ([original], "YE-DEC"),
+        ([_series(daily + 50)], "YE-DEC"),
+        ([original], "YE-SEP"),
+    ):
+        actual = loader.evaluate(indicator, series, anchor=anchor, _prepared=prepared)
+        checking.check(indicator, series, actual, anchor=anchor)
+    # A later public call must observe even an in-place edit to an earlier array.
+    series[0].values[:] += 100
+    actual = loader.evaluate(indicator, series, anchor=anchor)
+    checking.check(indicator, series, actual, anchor=anchor)
 
 
 def test_linear_iqr_missing_metric_and_response_refusals():

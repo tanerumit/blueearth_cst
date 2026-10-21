@@ -42,10 +42,11 @@ def test_all_indicators_match_recorded_r_oracle():
     indicators = {item.name: item for item in declarations("eflow-erfa")}
     assert len(reference) == 210
     for anchor, rows in reference.groupby("anchor"):
+        prepared = {}
         assert set(rows.indicator) == set(indicators)
         for row in rows.itertuples():
             indicator = indicators[row.indicator]
-            result = evaluate(indicator, series, anchor=anchor)
+            result = evaluate(indicator, series, anchor=anchor, _prepared=prepared)
             np.testing.assert_allclose(
                 result.values["gauge"],
                 row.value,

@@ -109,3 +109,22 @@ Calculation errors preserve their exception types, causes and structured estimat
 set/indicator/location context. Undefined returned scalars, unavailable variables, insufficient blocks,
 unqualified probabilities and unexpected programming faults remain distinct. Evaluation never converts an
 unexpected exception into a successful or scientifically undefined result.
+
+## Evaluation reuse
+
+WF4 evaluates each run indicator once per member and forms group means from those results. The same
+results supply diagnostics and independent numerical checks; checking still reconstructs expected values
+through the set's separate checker. Bundled return levels retain their pooled member-local blocks and
+qualified fitting path.
+
+Within each loaded response group, `EvaluationContext.prepared` holds shared frames and intermediate
+reductions. Default indicators reuse annual summaries and complete seven-day rolling blocks, including
+the blocks used by pooled return levels. ERFA computes each location's 35 annual metrics once and derives
+all median/IQR summaries together. Cache keys include response object identities and the water-year
+anchor; source objects remain retained for the scope's lifetime. Inputs and prepared tables must remain
+unchanged during evaluation. No prepared responses persist across reduction invocations.
+
+Declaration batches observe each contributing source revision once. Later batches observe sources again;
+live environment checks, dependency source qualification and retained-response integrity checks remain
+fresh. Existing result and diagnostic schemas are unchanged. Updated execution sources receive new
+implementation identities, while previously published sets remain readable without rewriting their bytes.

@@ -332,6 +332,16 @@ def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(
     experiment, monkeypatch
 ):
     from blueearth_cst.experiment import indicator_plan
+    from blueearth_cst.indicators import loader
+
+    calculate = loader.evaluate
+    calls = []
+
+    def counted(indicator, series, **context):
+        calls.append(tuple(item.run_id for item in series))
+        return calculate(indicator, series, **context)
+
+    monkeypatch.setattr(loader, "evaluate", counted)
 
     root = experiment.root
     plan = _plan(root)
@@ -344,6 +354,7 @@ def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(
         for i, run in enumerate(RUN_IDS, 1)
     ]
     manifest = publish_indicator_set(root, plan)
+    assert calls == [(run,) for run in RUN_IDS], "group means must reuse run values"
     marker = _engine(root, plan) / "indicators.json"
     assert (_result(root, plan) / "gwr_run_indicators.csv").is_file()
     assert not (root / "results/indicator_sets").exists()

@@ -652,7 +652,10 @@ def declarations_for_calculations(records) -> tuple[registry.IndicatorDeclaratio
     Each record's method and parameters are re-validated, so a changed
     parameter-to-reducer mapping is observed rather than trusted.
     """
+    records = tuple(records)
     result = []
+    legacy = None
+    revisions = {}
     for record in records:
         if "set" in record:
             from blueearth_cst.indicators import loader
@@ -669,12 +672,15 @@ def declarations_for_calculations(records) -> tuple[registry.IndicatorDeclaratio
                 raise IndicatorSetError(
                     f"{record['indicator']}: local identity differs"
                 )
+            if record["set"] not in revisions:
+                revisions[record["set"]] = loader.implementation_revision(record["set"])
             result.append(
                 loader.resolve(
                     record["set"],
                     record["method"],
                     record["parameters"],
                     indicator_name=record["indicator"],
+                    _revision=revisions[record["set"]],
                 )
             )
             continue
@@ -688,9 +694,11 @@ def declarations_for_calculations(records) -> tuple[registry.IndicatorDeclaratio
                 f"{record['indicator']}: calculation now resolves to {definition!r}, "
                 f"not the recorded {record['definition']!r}"
             )
-        result.append(
-            replace(registry.declaration_for(definition), name=record["indicator"])
-        )
+        if legacy is None:
+            legacy = registry.declaration_catalog(
+                [item["definition"] for item in records if "set" not in item]
+            )
+        result.append(replace(legacy[definition], name=record["indicator"]))
     return tuple(result)
 
 

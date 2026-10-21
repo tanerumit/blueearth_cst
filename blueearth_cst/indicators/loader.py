@@ -116,7 +116,7 @@ def _source_revision(signature) -> str:
 
 
 def _declaration(
-    set_id, indicator, *, name=None, parameters=None
+    set_id, indicator, *, name=None, parameters=None, revision=None
 ) -> IndicatorDeclaration:
     params = dict(indicator.parameters if parameters is None else parameters)
     module = importlib.import_module(indicator.calculate.__module__)
@@ -142,7 +142,9 @@ def _declaration(
         reference_location=indicator.reference_location,
         return_period=period,
         blocks_per_return_period=indicator.blocks_per_return_period,
-        implementation_revision=implementation_revision(set_id),
+        implementation_revision=(
+            implementation_revision(set_id) if revision is None else revision
+        ),
         value_validity="finite required; reject invalid GEV fit; no clipping"
         if indicator.grain == "bundle"
         else "finite or native-reduction NaN; refuse infinity; no clipping",
@@ -155,11 +157,15 @@ def _declaration(
 
 def declarations(set_id: str) -> tuple[IndicatorDeclaration, ...]:
     """Resolve all registrations without central calculation inventory edits."""
-    return tuple(_declaration(set_id, item) for item in load(set_id).INDICATORS)
+    registry = load(set_id)
+    revision = implementation_revision(set_id)
+    return tuple(
+        _declaration(set_id, item, revision=revision) for item in registry.INDICATORS
+    )
 
 
 def resolve(
-    set_id: str, method: str, parameters, *, indicator_name=None
+    set_id: str, method: str, parameters, *, indicator_name=None, _revision=None
 ) -> IndicatorDeclaration:
     """Validate a local callable and return its resolved declaration."""
     identity = f"{set_id}/{indicator_name or method}"
@@ -195,7 +201,11 @@ def resolve(
                 f"no unambiguous declaration matches parameters {normalized!r}"
             )
         return _declaration(
-            set_id, template, name=indicator_name, parameters=normalized
+            set_id,
+            template,
+            name=indicator_name,
+            parameters=normalized,
+            revision=_revision,
         )
     except (ValueError, TypeError) as error:
         raise ValueError(f"{identity}: {error}") from error
@@ -213,7 +223,9 @@ def local_declaration(indicator: IndicatorDeclaration) -> IndicatorDeclaration:
                 indicator.statistic,
                 indicator.required_responses.variable,
             ):
-                candidate = _declaration(set_id, item)
+                candidate = _declaration(
+                    set_id, item, revision=indicator.implementation_revision
+                )
                 return replace(
                     candidate,
                     name=indicator.name,
@@ -262,6 +274,47 @@ def registration(indicator: IndicatorDeclaration):
     return matches[0]
 
 
+def mean_run_results(indicator, results, *, expected_run_ids) -> IndicatorResult:
+    """Average already evaluated members with explicit membership and NaN propagation."""
+    members = tuple(expected_run_ids)
+    if (
+        indicator.grain != "run"
+        or indicator.group_reduction != "equal-weight-run-reductions-propagate-nan/1"
+    ):
+        raise ValueError("no reviewed group mean policy")
+    if not members or len(set(members)) != len(members) or set(results) != set(members):
+        raise ValueError(
+            "group membership requires unique evaluated members matching the declaration"
+        )
+    ordered = [results[run] for run in members]
+    for result in ordered:
+        validate_result(result)
+    if any(set(item.values.index) != set(ordered[0].values.index) for item in ordered):
+        raise ValueError("group location sets differ")
+    values = pd.Series(
+        np.mean(
+            np.stack(
+                [
+                    item.values.reindex(ordered[0].values.index).to_numpy()
+                    for item in ordered
+                ]
+            ),
+            axis=0,
+        ),
+        index=ordered[0].values.index,
+    )
+    result = IndicatorResult(
+        values,
+        metadata={"member_run_ids": members},
+        statuses={
+            str(location): "undefined" if pd.isna(value) else "available"
+            for location, value in values.items()
+        },
+    )
+    validate_result(result)
+    return result
+
+
 def evaluate(
     indicator,
     series,
@@ -271,6 +324,7 @@ def evaluate(
     expected_run_ids=None,
     validation=None,
     group=False,
+    _prepared=None,
 ) -> IndicatorResult:
     """Evaluate locations or member groups; unexpected calculation faults propagate."""
     indicator = local_declaration(indicator)
@@ -288,7 +342,8 @@ def evaluate(
         if expected_run_ids is None
         else expected_run_ids
     )
-    context = EvaluationContext(anchor, reference, members, validation)
+    prepared = {} if _prepared is None else _prepared
+    context = EvaluationContext(anchor, reference, members, validation, prepared)
     try:
         offset = pd.tseries.frequencies.to_offset(anchor)
         if not offset.freqstr.startswith(("YE-", "YS-")) or offset.n != 1:
@@ -310,34 +365,18 @@ def evaluate(
                 raise ValueError(
                     "group membership requires unique evaluated members matching the declaration"
                 )
-            results = [
-                evaluate(
+            results = {
+                run: evaluate(
                     indicator,
                     [item for item in series if item.run_id == run],
                     anchor=anchor,
                     reference=reference,
                     validation=validation,
+                    _prepared=prepared,
                 )
                 for run in members
-            ]
-            if any(
-                set(item.values.index) != set(results[0].values.index)
-                for item in results
-            ):
-                raise ValueError("group location sets differ")
-            values = pd.Series(
-                np.mean(
-                    np.stack(
-                        [
-                            item.values.reindex(results[0].values.index).to_numpy()
-                            for item in results
-                        ]
-                    ),
-                    axis=0,
-                ),
-                index=results[0].values.index,
-            )
-            result = IndicatorResult(values, metadata={"member_run_ids": members})
+            }
+            result = mean_run_results(indicator, results, expected_run_ids=members)
         else:
             result = function(indicator, series, context)
         validate_result(result)

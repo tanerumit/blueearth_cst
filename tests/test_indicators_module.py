@@ -126,6 +126,77 @@ def test_plain_python_native_missingness_and_independent_checks(anchor):
             check(indicator, series, wrong, anchor=anchor)
 
 
+def test_default_shares_rolling_blocks_and_keeps_member_boundaries(monkeypatch):
+    """Extrema, BFI and pooled lows reuse each member's seven-day windows."""
+    values = np.arange(11 * 366, dtype=float) % 101 + 1
+    values[400:410] = np.nan
+    series = [response(values, run="r1"), response(values * 2, run="r2")]
+    registered = {item.name: item for item in declarations("default")}
+    rolling = pd.DataFrame.rolling
+    calls = []
+
+    def counted(frame, *args, **kwargs):
+        calls.append(len(frame))
+        return rolling(frame, *args, **kwargs)
+
+    monkeypatch.setattr(pd.DataFrame, "rolling", counted)
+    prepared = {}
+    validation = {"tested_domain": {"probabilities": [0.5, 0.9]}}
+    for name in (
+        "q_mean_annual_7day_min",
+        "q_mean_annual_7day_max",
+        "q_baseflow_index",
+        "q_return_level_2yr_7day_min",
+    ):
+        indicator = registered[name]
+        result = evaluate(
+            indicator,
+            series,
+            anchor="YE-SEP",
+            group=True,
+            expected_run_ids=("r1", "r2"),
+            validation=validation,
+            _prepared=prepared,
+        )
+        check(
+            indicator,
+            series,
+            result,
+            anchor="YE-SEP",
+            group=True,
+            expected_run_ids=("r1", "r2"),
+            validation=validation,
+        )
+    assert calls == [len(values), len(values)]
+
+
+@pytest.mark.parametrize(
+    "name", ["q_return_level_10yr_max", "q_return_level_2yr_7day_min"]
+)
+def test_bundle_preserves_distinct_time_grids_between_locations(name):
+    registered = {item.name: item for item in declarations("default")}
+    series = []
+    for run in ("r1", "r2"):
+        for ordinal, start in enumerate(("2000-01-01", "2001-01-01")):
+            values = 10 + np.arange(11 * 366, dtype=float) / 366
+            series.append(
+                replace(
+                    response(values, start=start, run=run),
+                    location_id=f"gauge-{ordinal}",
+                    location_ordinal=ordinal,
+                )
+            )
+    validation = {"tested_domain": {"probabilities": [0.5, 0.9]}}
+    indicator = registered[name]
+    result = evaluate(indicator, series, anchor="YE-SEP", validation=validation)
+    assert (
+        check(indicator, series, result, anchor="YE-SEP", validation=validation)[
+            "status"
+        ]
+        == "passed"
+    )
+
+
 @pytest.mark.parametrize(
     "method,parameters,fragment",
     [

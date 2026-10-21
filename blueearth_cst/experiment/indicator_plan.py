@@ -28,9 +28,6 @@ from blueearth_cst.experiment.indicator_groups import indicator_groups
 from blueearth_cst.experiment.indicator_registry import (
     DeclaredBundle,
     indicator_unit_index,
-    reduce_bundle,
-    reduce_group_mean,
-    reduce_run,
     resolve_month_reference,
     series_coverage,
 )
@@ -821,6 +818,7 @@ def reduce_indicator_plan(
     inventory = read_response_inventory_v2(root)
     native = _native_runs_v2(root, inventory)
     registry = declarations_for_calculations(plan["request"]["calculations"])
+    local_registry = [(item, loader.local_declaration(item)) for item in registry]
     references = {
         key: MonthReference(
             **{
@@ -843,41 +841,48 @@ def reduce_indicator_plan(
         )
         for item in series:
             coverage.setdefault(item.key, series_coverage(item, anchor))
-        for indicator in registry:
+        prepared = {}
+        by_variable = {
+            token: [item for item in series if item.variable == token]
+            for token in output
+        }
+        for indicator, local in local_registry:
             token = indicator.required_responses.variable
-            variable = [item for item in series if item.variable == token]
+            variable = by_variable[token]
+            reference = (
+                references["wet" if indicator.statistic == "wetmonth_mean" else "dry"]
+                if indicator.reference
+                else None
+            )
             if indicator.grain == "bundle":
-                values, report = reduce_bundle(
-                    indicator,
+                result = loader.evaluate(
+                    local,
                     variable,
                     expected_run_ids=members,
                     anchor=anchor,
                     validation=plan["request"]["return_level_validation"],
+                    _prepared=prepared,
                 )
-                batches = [(plan["bundle_run_group_ids"][group], values)]
+                batches = [(plan["bundle_run_group_ids"][group], result)]
                 evidence.append(
                     {
                         "indicator": indicator.name,
                         "run_group_id": batches[0][0],
-                        "locations": [_plain(asdict(item)) for item in report],
+                        "locations": [
+                            _plain(asdict(item)) for item in result.metadata["evidence"]
+                        ],
                     }
                 )
             else:
-                reference = (
-                    references[
-                        "wet" if indicator.statistic == "wetmonth_mean" else "dry"
-                    ]
-                    if indicator.reference
-                    else None
-                )
                 batches = [
                     (
                         run,
-                        reduce_run(
-                            indicator,
+                        loader.evaluate(
+                            local,
                             [item for item in variable if item.run_id == run],
                             anchor=anchor,
                             reference=reference,
+                            _prepared=prepared,
                         ),
                     )
                     for run in members
@@ -885,21 +890,18 @@ def reduce_indicator_plan(
                 batches.append(
                     (
                         plan["bundle_run_group_ids"][group],
-                        reduce_group_mean(
-                            indicator,
-                            variable,
+                        loader.mean_run_results(
+                            local,
+                            dict(batches),
                             expected_run_ids=members,
-                            anchor=anchor,
-                            reference=reference,
                         ),
                     )
                 )
-            for unit, values in batches:
+            for unit, checked in batches:
+                values = checked.values
                 if numerical_checks or (
                     diagnostics is not None and indicator.calculation_set
                 ):
-                    from blueearth_cst.indicators import loader
-
                     is_group = unit.startswith("group_")
                     inputs = (
                         variable
@@ -908,20 +910,11 @@ def reduce_indicator_plan(
                     )
                     context = {
                         "anchor": anchor,
-                        "reference": (
-                            references[
-                                "wet"
-                                if indicator.statistic == "wetmonth_mean"
-                                else "dry"
-                            ]
-                            if indicator.reference
-                            else None
-                        ),
+                        "reference": reference,
                         "expected_run_ids": members if is_group else (unit,),
                         "validation": plan["request"]["return_level_validation"],
                         "group": is_group,
                     }
-                    checked = loader.evaluate(indicator, inputs, **context)
                     if numerical_checks:
                         loader.check(indicator, inputs, checked, **context)
                     if diagnostics is not None and indicator.calculation_set:
@@ -946,18 +939,6 @@ def reduce_indicator_plan(
                                     for table in checked.diagnostics
                                 ],
                             }
-                        )
-                    if set(checked.values.index) != set(
-                        values.index
-                    ) or not np.allclose(
-                        checked.values.reindex(values.index),
-                        values,
-                        rtol=1e-10,
-                        atol=1e-12,
-                        equal_nan=True,
-                    ):
-                        raise ValueError(
-                            f"{indicator.name}/{unit}: adapter numerical mismatch"
                         )
                 for location, value in values.items():
                     output[token].append(

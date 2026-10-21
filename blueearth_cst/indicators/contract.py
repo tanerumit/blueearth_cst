@@ -52,6 +52,7 @@ class EvaluationContext:
     reference: Any = None
     expected_run_ids: tuple[str, ...] = ()
     validation: Mapping | None = None
+    prepared: dict = field(default_factory=dict, compare=False, repr=False)
 
 
 @dataclass(frozen=True)

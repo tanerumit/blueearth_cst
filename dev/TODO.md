@@ -34,6 +34,7 @@ cssclasses: [todo-board]
 | 25     | [t2608121606][]          | Missing catalog source can hide a reservoir                  | wf1        | backlog      |
 | 26     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog      |
 | 27     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog      |
+|        | [t2610211349][]          | Improving repo-wide documentation and instructions           | docs       | backlog      |
 |        | [t2610191347][]          | Retain logs and benchmark reports by execution               | runtime    | backlog      |
 |        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run       | runtime    | backlog      |
 |        | [t2610161523][]          | Integrate multiple metric sets                               | wf4        | active (3/3) |
@@ -65,6 +66,7 @@ cssclasses: [todo-board]
 [t2608121606]: tasks/t2608121606-a-missing-catalog-source-is-logged-identically-to-an-empty-basin-so-1-08-can-silently-omit-a-real-reservoir.md
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
+[t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md
 [t2610191347]: tasks/t2610191347-execution-logs-benchmarks.md
 [t2610191323]: tasks/t2610191323-ntoum-workflow-performance.md
 [t2610161523]: tasks/t2610161523-integrate-multiple-metric-sets.md

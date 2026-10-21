@@ -717,6 +717,56 @@ def declare_folders(monkeypatch):
     return su.declare_path_tokens
 
 
+@pytest.mark.parametrize("backend", ["tee", "child"])
+@pytest.mark.parametrize("separator", ["/", "\\"])
+def test_console_aliases_preserve_saved_commands(
+    tmp_path, monkeypatch, capsys, declare_folders, backend, separator
+):
+    project = str(tmp_path)
+    model = tmp_path / "models/hydrology/wflow"
+    catalog = (
+        tmp_path
+        / "config/_engine/execution-configs/_shared/project_catalog_0/459d6135261e/project_catalog_0.yml"
+    )
+    declare_folders(
+        model=model,
+        console_only={"model-config": model / "config", "project-catalog": catalog},
+    )
+    monkeypatch.setenv(su._PROJECT_ROOT_ENV, project)
+    recipe = str(model / "config/build_historical_forcing.yml").replace("\\", "/")
+    source = str(catalog).replace("\\", "/")
+    command = f"$ hydromt update wflow_sbm {model} -i {recipe} -d {source} -vv"
+    command = command.replace("\\", "/").replace("/", separator)
+    if backend == "tee":
+        live, saved = io.StringIO(), io.StringIO()
+        tee = su._Tee(live, saved, project_root=project)
+        tee.write(command + "\n")
+        tee.close()
+        shown, logged = live.getvalue(), saved.getvalue()
+    else:
+        log = tmp_path / "rule.log"
+        assert su.run_and_tee([sys.executable, "-c", f"print({command!r})"], log) == 0
+        shown = capsys.readouterr().out
+        logged = log.read_text(encoding="utf-8")
+    assert shown == (
+        "$ hydromt update wflow_sbm <model> "
+        "-i <model-config>/build_historical_forcing.yml -d <project-catalog> -vv\n"
+    )
+    assert "<model>/config/build_historical_forcing.yml" in logged
+    assert (
+        "config/_engine/execution-configs/_shared/project_catalog_0/459d6135261e/project_catalog_0.yml"
+        in logged
+    )
+    assert "<model-config>" not in logged
+    assert "<project-catalog>" not in logged
+    rows = dict(cs.run_meta_rows(project))
+    assert rows["<model-config>"] == "<project>/models/hydrology/wflow/config"
+    assert rows["<project-catalog>"].endswith("459d6135261e/project_catalog_0.yml")
+    # A subsequent workflow must not inherit these run-specific aliases.
+    declare_folders(climate=tmp_path / "climate")
+    assert "<model-config>" not in dict(cs.run_meta_rows(project))
+
+
 def test_declared_folders_become_tokens_in_one_line(declare_folders):
     """The interleaved case: an external data root and a model dir in one line.
 

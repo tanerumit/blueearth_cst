@@ -1,7 +1,7 @@
 ---
 title: Add crop-water screening indicators to WF4
 type: todo-item
-status: backlog
+status: blocked
 effort: 2
 area: wf4
 queue:
@@ -18,29 +18,31 @@ updated: 2026-10-21
 
 ## Progress
 
-Next: Execute the revised brief; inspect paired-input contracts and case bindings.
+*Blocked — Alexandria lacks verified historical Q, fixed Qcrit and WF1/WF3/WF4 bindings.*
 
-- [x] Review and revise the case brief — self-contained SOL medium handoff includes settled v1 scope.
-- [x] Set v1 assumptions — use existing AET/PET and non-Q subcatchment means; document limitations.
-- [ ] Resolve baseline Qcrit and active case inputs.
-- [ ] Define paired-input and retention contracts, including publication and identity.
-- [ ] Add PET output/retention and the six methods with ten selections and period diagnostics.
-- [ ] Verify independent arithmetic, affected consumers and a bounded retained-response integration.
-- [ ] Document the set and configure the active Alexandria case when bindings are verified.
+Next: Verify case bindings and baseline years, derive location-keyed Qcrit, then run the case.
+The active `wrt-egypt-v2` project currently has WF2 material only.
 
-Handoff ready; implementation not started. The revised brief owns the assignment.
+- [x] Revise brief with settled v1 scope and WF4 criteria.
+- [x] Implement paired-input retention, publication and identity.
+- [x] Add native PET, six methods, ten selections and period diagnostics.
+- [x] Verify arithmetic, affected consumers, retained-response integration and native Wflow PET.
+- [x] Document the set and starter configuration.
+- [ ] Verify historical Q and active case bindings; derive fixed Qcrit.
+- [ ] Configure and run the Alexandria case.
 
-No backward compatibility required: omit migration/legacy readers; development runs may need regeneration.
-Keep single-input sets working and retain provenance/integrity checks.
+V1 uses existing AET/reference PET and non-Q subcatchment means. Qcrit is the location-keyed
+linear 0.10 quantile across complete historical summers; missing thresholds refuse evaluation.
+Existing development runs require regeneration for PET retention.
 
-V1 uses existing AET/PET and daily subcatchment means for all non-Q inputs before calculation.
-Document ET and spatial limitations for later review; neither blocks v1.
+Evidence: independent numerical checks, retained-response publication and named export,
+affected pytest, Ruff and syntax checks, plus isolated Julia/Wflow PET output read at four
+subcatchment IDs. Native-run evidence: session-1 `.tmp/tasks/crop-water-native/`.
 
 ## Work location
 
-- Owner: session-1; branch: `feat/t2610211633`; implementation: not started.
+- Owner: session-1; branch: `feat/t2610211633`.
 - Coordination: main :: `dev/tasks/t2610211633/`.
-- Evidence: linked review; inspected toolbox revision `9887be49`.
 
 ## Refs
 

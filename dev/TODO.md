@@ -34,7 +34,7 @@ cssclasses: [todo-board]
 | 25     | [t2608121606][]          | Missing catalog source can hide a reservoir                  | wf1        | backlog      |
 | 26     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog      |
 | 27     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog      |
-|        | [t2610211633][]          | Add crop-water screening indicators to WF4                   | wf4        | backlog      |
+|        | [t2610211633][]          | Add crop-water screening indicators to WF4                   | wf4        | blocked      |
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions           | docs       | backlog      |
 |        | [t2610191347][]          | Retain logs and benchmark reports by execution               | runtime    | backlog      |
 |        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run       | runtime    | backlog      |

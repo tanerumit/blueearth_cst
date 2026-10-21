@@ -4,6 +4,10 @@ Reviewed 21 October 2026 against toolbox `9887be49` in session-1. This is an ins
 assessment, not implementation approval or validation of Alexandria data. The original brief and both
 sibling context documents were read; their formulas remain the proposed scientific specification.
 
+Owner decision after review: backward compatibility with existing study cases is not required while
+the toolbox is in development. Contract changes may require regeneration of development runs. Do not
+implement legacy readers, migration machinery or historical-artifact compatibility for this task.
+
 ## Recommendation
 
 Proceed with the six methods as a hydroclimatic agricultural screening set, subject to the decisions
@@ -37,21 +41,22 @@ registration, independent-check and publication pattern, but does not establish 
    calendar, timestep, units and spatial support; never silently intersect unmatched locations/dates.
    Existing scalar diagnostics can hold period values without a new indicator engine.
 
-3. **Make PET production and retained-reader compatibility explicit work.** PET is absent from both
+3. **Make PET production and the new retention contract explicit work.** PET is absent from both
    `model/setup_gauges_and_outputs.py` and `experiment/wflow_response_reader.py`; shared output codes
    and configuration/template consumers also need review. Prefer a verified native PET output on the
    same subcatchment support as P/AET for new runs. A forcing-file bridge is an alternative only with
    explicit immutable provenance, clock and aggregation contracts; its complexity is not free.
    `response_inventory.response_reader_revision()` hashes the native reader. Changing it currently
-   refuses older retained experiments except a narrowly pinned historical exception. Define and test
-   a versioned/compatible read path before modifying it. Do not weaken integrity checks globally.
-   Distinguish older runs with unavailable PET from older runs that should remain usable for Q sets.
+   refuses older retained experiments except a narrowly pinned historical exception. The owner accepts
+   this break for development cases: update the contract directly, retain integrity checks and report
+   which runs need regeneration. No legacy read path or migration is required. Do not silently rerun
+   or overwrite existing simulations as part of indicator evaluation.
 
 4. **Correct the blanket identity acceptance criterion.** Adding a standalone set should leave
    unrelated identities unchanged. Editing shared execution or native interpretation code legitimately
-   changes dependent identities under the current contract. Require stable identities for genuinely
-   unaffected code, deliberate new identities where dependencies change, and continued readability of
-   historical published artifacts. Do not require false identity stability to satisfy this task.
+   changes dependent identities under the current contract. Require deliberate new identities where
+   dependencies change. Historical artifact readability and identity continuity are not acceptance
+   gates for this task; retain input provenance and deterministic identity for the new contracts.
 
 5. **Treat spatial support as evidence, not a location label.** Current non-Q outputs use subcatchment
    `mean`; Q uses outlet/gauge samples. These are different supports. A basin mean is a useful first
@@ -72,16 +77,16 @@ registration, independent-check and publication pattern, but does not establish 
 
 ## Delivery sequence and evidence
 
-1. Resolve scientific bindings and the minimal paired-input/publication/compatibility design.
-2. Implement PET retention and the compatible paired-input path, preserving existing single-input use.
+1. Resolve scientific bindings and the minimal paired-input/publication design.
+2. Implement PET retention and paired inputs; keep current single-input sets working on new contracts.
 3. Implement six kernels, ten declarations, complete-period diagnostics and documented assumptions.
 4. Run independent arithmetic and boundary checks, affected contract/publication regression checks,
    and a small indicator-only integration. Exercise native retention separately on an isolated case
    if output production changes. Report real case readiness separately from software readiness.
 
 The brief's numerical examples and focused verification are suitable. Add tests for mismatched paired
-locations/dates, secondary-input identity changes, Qcrit provenance changes, old retained Q-only runs,
-old published artifacts and period-diagnostic export. Reuse ERFA's scoped preparation pattern so paired
+locations/dates, secondary-input identity changes, Qcrit provenance changes, single-input sets on new
+contracts and period-diagnostic export. Reuse ERFA's scoped preparation pattern so paired
 frames and period partitions are not rebuilt per declaration. No broad hydrological rerun is needed
 for arithmetic alone; output-path changes need their own bounded execution evidence.
 

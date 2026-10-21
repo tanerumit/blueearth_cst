@@ -18,17 +18,21 @@ updated: 2026-10-21
 
 ## Progress
 
-Next: Agree the scope-review recommendations, starting with ET interpretation and reader compatibility.
+Next: Resolve ET interpretation and case bindings before designing the paired-input contract.
 
 - [x] Review the case brief against current WF4 — scope supported, integration gaps recorded in the review.
 - [ ] Resolve PET/AET interpretation, spatial support, baseline Qcrit and active case inputs.
-- [ ] Define paired-input and retained-reader compatibility contracts, including publication and identity.
+- [ ] Define paired-input and retention contracts, including publication and identity.
 - [ ] Add PET output/retention and the six methods with ten selections and period diagnostics.
 - [ ] Verify independent arithmetic, affected consumers and a bounded retained-response integration.
 - [ ] Document the set and configure the active Alexandria case when bindings are verified.
 
 Review and task capture are complete. Implementation has not been authorized by the review request.
 Keep the item in backlog until implementation is taken up; no simulations were run.
+
+Owner decision: backward compatibility with development study cases is not required. Existing runs
+may need regeneration; omit legacy readers and migration support. Keep single-input sets working on
+the new contracts and retain provenance/integrity checks.
 
 ## Work location
 

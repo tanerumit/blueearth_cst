@@ -49,6 +49,12 @@ Add trusted code under a set package. User YAML selects declarations; it cannot 
 Keep `__init__.py`, `registry.py`, `calculations.py`, `checks.py` and `README.md` in each set.
 An optional `SET_ID` in `__init__.py` declares its public selector when it differs from the Python
 package name; `eflow_erfa` uses `eflow-erfa`. Keep package initializers free of calculation imports.
+An indicator can declare `additional_inputs` for paired variables. All requirements must have matching
+run, location, ordinal, daily labels, calendar and timestep. `output_variable` selects the table token;
+when omitted, the primary `input.variable` does. The complete input list and output binding enter
+calculation identity. A registry selection can supply closed, indicator-keyed parameter overrides via
+`selection.registry: {set: crop-water, overrides: {...}}`; this is used to bind case-specific Qcrit
+without changing the trusted calculation package.
 Put a formula in `calculations.py`; it receives `(declaration, responses, context)` and returns
 `IndicatorResult(values=pd.Series(...))`, indexed by location. Add its one parameter specification to local
 `PARAMETERS`, keyed by the callable. Every parameter value is explicit in the registration; unknown fields

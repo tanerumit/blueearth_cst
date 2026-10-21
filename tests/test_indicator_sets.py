@@ -11,6 +11,7 @@ from blueearth_cst.experiment import indicator_registry as registry
 from blueearth_cst.experiment import indicator_sets as sets
 from blueearth_cst.experiment.indicator_sets import IndicatorSetError
 from blueearth_cst.shared.config_composition import normalize_indicator_settings
+from blueearth_cst.shared.indicator_tables import VARIABLE_TOKENS
 
 
 def test_old_scalar_settings_are_input_aliases_only():
@@ -59,13 +60,13 @@ AUTHORED = """
 def test_registry_covers_every_existing_definition_exactly():
     names = {
         item.name
-        for token in ("q", "aet", "gwr", "precip", "snow", "overland_flow")
+        for token in VARIABLE_TOKENS.values()
         for item in registry.declarations([token])
     }
     optional = {item.name for item in registry.optional_declarations()}
     assert not names & optional
     assert set(registry.DEFINITIONS) == names | optional
-    assert (len(names), len(optional)) == (16, 5)
+    assert (len(names), len(optional)) == (17, 5)
     for definition, (method, parameters, _) in registry.DEFINITIONS.items():
         assert registry.validate_calculation(method, parameters)[0] == definition
         assert registry.declaration_for(definition).name == definition
@@ -123,6 +124,7 @@ def test_output_units_are_declared_not_inferred():
     }
     assert units["q_baseflow_index"] == "1"
     assert units["precip_annual_total"] == units["aet_annual_total"] == "mm"
+    assert units["pet_annual_total"] == "mm"
     assert units["snow_annual_max"] == "mm"
     assert units["overland_flow_annual_mean"] == units["q_annual_mean"] == "m3 s-1"
 

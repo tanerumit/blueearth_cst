@@ -1,6 +1,6 @@
 # Indicator glossary — every spelling of every WF4 output variable
 
-Last updated: 2026-10-20
+Last updated: 2026-10-21
 
 One output variable carries **five names** by the time it reaches a result table,
 and they are not interchangeable. This file is the one place all five sit in one
@@ -20,6 +20,7 @@ to the dicts first and to the tables here second.
 | --- | --- | --- | --- | --- | --- |
 | `river discharge` | `river_water__volume_flow_rate` | `Q` | `q` | `q_run_indicators.csv` | *11 names — see §2* |
 | `precipitation` | `atmosphere_water__precipitation_volume_flux` | `p` | `precip` | `precip_run_indicators.csv` | `precip_annual_total` |
+| `potential evapotranspiration` | `land_surface_water__potential_evaporation_volume_flux` | `pet` | `pet` | `pet_run_indicators.csv` | `pet_annual_total` |
 | `actual evapotranspiration` | `land_surface__evapotranspiration_volume_flux` | `aet` | `aet` | `aet_run_indicators.csv` | `aet_annual_total` |
 | `groundwater recharge` | `soil_water_saturated_zone_top__net_recharge_volume_flux` | `gwr` | `gwr` | `gwr_run_indicators.csv` | `gwr_annual_total` |
 | `overland flow` | `land_surface_water__volume_flow_rate` | `qof` | `overland_flow` | `overland_flow_run_indicators.csv` | `overland_flow_annual_mean` |
@@ -50,7 +51,7 @@ Column by column, with the dict that owns it:
 - **table / indicator** — derived from the token by `indicator_table_filename` and
   `basin_indicator_name`; no dict of its own.
 
-**Why the token and the code differ at all, for three of six.** They answer to
+**Why the token and the code differ at all, for three of seven.** They answer to
 different owners: the code reaches the csv through the TOML, the token names our
 files. Where the repo already had a canonical short name the token takes it —
 which is why `aet` and `gwr` coincide with their code, and why `gwr` replaced the
@@ -76,6 +77,7 @@ figure sees only what the csv carried.
 | code | resample | legend |
 | --- | --- | --- |
 | `p` | `sum` | Precipitation (mm month⁻¹) |
+| `pet` | `sum` | Potential Evapotranspiration (mm month⁻¹) |
 | `aet` | `sum` | Actual Evapotranspiration (mm month⁻¹) |
 | `gwr` | `sum` | Groundwater Recharge (mm month⁻¹) |
 | `qof` | `mean` | Overland Flow (m³s⁻¹) |

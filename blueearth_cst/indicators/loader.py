@@ -152,6 +152,8 @@ def _declaration(
         calculation_set=set_id,
         calculation_method=method,
         calculation_parameters=params,
+        additional_responses=indicator.additional_inputs,
+        output_variable=indicator.output_variable,
     )
 
 

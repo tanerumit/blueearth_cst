@@ -266,6 +266,7 @@ METHODS = {
         {
             "q": {"statistic": ("mean", "max", "min", "p95")},
             "aet": {"statistic": ("sum",)},
+            "pet": {"statistic": ("sum",)},
             "gwr": {"statistic": ("sum",)},
             "precip": {"statistic": ("sum",)},
             "snow": {"statistic": ("max",)},
@@ -449,6 +450,10 @@ DEFINITION_TEXT = {
     ),
     "aet_annual_total": (
         "Mean water-year actual evapotranspiration depth",
+        "Daily depths summed per water-year block, averaged with equal block weight.",
+    ),
+    "pet_annual_total": (
+        "Mean water-year potential evapotranspiration depth",
         "Daily depths summed per water-year block, averaged with equal block weight.",
     ),
     "gwr_annual_total": (

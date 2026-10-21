@@ -36,6 +36,11 @@ class ResponseRequest:
 NATIVE_VARIABLES = {
     "q": ("Q", "river_water__volume_flow_rate", "m3 s-1"),
     "precip": ("p", "atmosphere_water__precipitation_volume_flux", "mm dt-1"),
+    "pet": (
+        "pet",
+        "land_surface_water__potential_evaporation_volume_flux",
+        "mm dt-1",
+    ),
     "aet": ("aet", "land_surface__evapotranspiration_volume_flux", "mm dt-1"),
     "gwr": (
         "gwr",
@@ -111,6 +116,13 @@ def open_responses(
         ):
             raise ValueError(
                 f"run_id={run_id}: {variable} native parameter must be {parameter}"
+            )
+        if variable == "pet" and any(
+            item.get("map") != "subcatchment" or item.get("reducer") != "mean"
+            for item in declarations
+        ):
+            raise ValueError(
+                f"run_id={run_id}: pet native output must be a subcatchment mean"
             )
         prefix = native_header + "_"
         locations = [

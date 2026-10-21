@@ -16,7 +16,7 @@ from blueearth_cst.experiment.wflow_response_reader import (
 def native(tmp_path):
     csv_path = tmp_path / "opaque.csv"
     csv_path.write_text(
-        "time,Q_9,Q_2,gwr_9\n2046-01-02,1,2,3\n2046-01-03,4,,6\n",
+        "time,Q_9,Q_2,gwr_9,pet_9\n2046-01-02,1,2,3,5\n2046-01-03,4,,6,7\n",
         encoding="utf-8",
     )
     toml_path = tmp_path / "unrelated.toml"
@@ -26,7 +26,9 @@ def native(tmp_path):
         '[[output.csv.column]]\nheader="Q"\n'
         'parameter="river_water__volume_flow_rate"\n'
         '[[output.csv.column]]\nheader="gwr"\n'
-        'parameter="soil_water_saturated_zone_top__net_recharge_volume_flux"\n',
+        'parameter="soil_water_saturated_zone_top__net_recharge_volume_flux"\n'
+        '[[output.csv.column]]\nheader="pet"\nmap="subcatchment"\nreducer="mean"\n'
+        'parameter="land_surface_water__potential_evaporation_volume_flux"\n',
         encoding="utf-8",
     )
     return NativeRunArtifacts(csv_path, toml_path)
@@ -64,6 +66,44 @@ def test_native_metadata_mismatch_refuses(native, old, new, match):
     native.toml_path.write_text(native.toml_path.read_text().replace(old, new))
     with pytest.raises(ValueError, match=match):
         open_responses("01", native, ResponseRequest(("q",)))
+
+
+def test_pet_retains_model_forcing_with_native_units_and_support(native):
+    series = open_responses("01", native, ResponseRequest(("pet",)))
+    assert len(series) == 1
+    assert series[0].variable == "pet"
+    assert series[0].location_id == "9"
+    assert series[0].units == "mm dt-1"
+    assert series[0].time_label == "interval_end"
+    np.testing.assert_array_equal(series[0].values, [5.0, 7.0])
+
+
+def test_pet_refuses_missing_or_wrong_native_parameter(native):
+    original = native.toml_path.read_text()
+    native.toml_path.write_text(original.replace('header="pet"', 'header="other"'))
+    with pytest.raises(ValueError, match="pet native parameter"):
+        open_responses("01", native, ResponseRequest(("pet",)))
+    native.toml_path.write_text(
+        original.replace(
+            "land_surface_water__potential_evaporation_volume_flux",
+            "land_surface__evapotranspiration_volume_flux",
+        )
+    )
+    with pytest.raises(ValueError, match="pet native parameter"):
+        open_responses("01", native, ResponseRequest(("pet",)))
+
+
+@pytest.mark.parametrize(
+    "old,new",
+    [
+        ('map="subcatchment"', 'map="gauges_locations"'),
+        ('reducer="mean"', 'reducer="only"'),
+    ],
+)
+def test_pet_refuses_non_subcatchment_mean(native, old, new):
+    native.toml_path.write_text(native.toml_path.read_text().replace(old, new))
+    with pytest.raises(ValueError, match="subcatchment mean"):
+        open_responses("01", native, ResponseRequest(("pet",)))
 
 
 def test_missing_request_and_duplicate_columns_refuse(native, tmp_path):

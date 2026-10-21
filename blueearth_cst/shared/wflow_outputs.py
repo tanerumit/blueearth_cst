@@ -26,6 +26,7 @@ header ``Q``, which ``shared/gauges.py`` keys on.
 #: Semantic label (what a config writes) -> short column code.
 CODES = {
     "precipitation": "p",
+    "potential evapotranspiration": "pet",
     "overland flow": "qof",
     "actual evapotranspiration": "aet",
     "groundwater recharge": "gwr",
@@ -43,6 +44,10 @@ PLOT_META = {
     "gwr": {"resample": "sum", "legend": "Groundwater Recharge (mm month$^{-1}$)"},
     "swe": {"resample": "mean", "legend": "Snowpack Liquid Water (mm)"},
     "p": {"resample": "sum", "legend": "Precipitation (mm month$^{-1}$)"},
+    "pet": {
+        "resample": "sum",
+        "legend": "Potential Evapotranspiration (mm month$^{-1}$)",
+    },
 }
 
 for _code, _meta in PLOT_META.items():
@@ -67,6 +72,7 @@ del _code, _meta
 SUBBASIN_PLOT_DIRNAME = "subbasins"
 BASAVG_FIGURE_STEMS = {
     "p": "precip",
+    "pet": "pet",
     "qof": "overland_flow",
     "swe": "snow",
     "aet": "aet",

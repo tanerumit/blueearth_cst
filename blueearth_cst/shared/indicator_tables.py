@@ -57,12 +57,13 @@ from blueearth_cst.shared.wflow_outputs import CODES as _WFLOW_CODES
 #: → short token used in filenames and in the composite ``indicator``.
 #:
 #: Authoritative source for the semantic names: the ``WFLOW_VARS`` map in
-#: ``blueearth_cst/model/setup_gauges_and_outputs.py``. **Six entries, not five** —
-#: ``precipitation`` is one of them, emitted at registry locations with header
-#: ``P`` when a ``location_registry`` is configured.
+#: ``blueearth_cst/model/setup_gauges_and_outputs.py``. Seven entries —
+#: ``precipitation`` and ``potential evapotranspiration`` use subcatchment
+#: means, as do all non-discharge outputs.
 VARIABLE_TOKENS = {
     "river discharge": "q",
     "precipitation": "precip",
+    "potential evapotranspiration": "pet",
     "actual evapotranspiration": "aet",
     "groundwater recharge": "gwr",
     "overland flow": "overland_flow",
@@ -74,11 +75,11 @@ VARIABLE_TOKENS = {
 #: **A fourth spelling, and unlike the other three it is not ours to choose.** The
 #: code is `wflow_outputs.CODES`, which reaches the csv header via the TOML the
 #: model build writes (``gwr_101``, ``aet_101``); the token is what this file
-#: mints for filenames and indicator names. Three of the five still differ —
+#: mints for filenames and indicator names. Three of the six still differ —
 #: ``precip`` is ``p``, ``snow`` is ``swe``, ``overland_flow`` is ``qof`` — so a
 #: reducer that reuses the token as the column prefix reads exactly the two where
-#: they coincide (``aet``, ``gwr``) and silently finds nothing for the rest.
-#: **Two agreeing tokens is worse than one for a naive fix**, not better: it
+#: they coincide (``aet``, ``pet``, ``gwr``) and silently finds nothing for the rest.
+#: **Three agreeing tokens is worse than one for a naive fix**, not better: it
 #: doubles the chance that whichever variable a hand-written test reaches for is
 #: one the broken matcher happens to work on.
 #:
@@ -231,6 +232,7 @@ Q_INDICATOR_SUFFIXES = {
 #:    ways. The q vocabulary makes the mean-over-years step visible; these do not.
 BASIN_INDICATOR_SUFFIXES = {
     "aet": ("annual_total", "sum"),
+    "pet": ("annual_total", "sum"),
     "gwr": ("annual_total", "sum"),
     "precip": ("annual_total", "sum"),
     "snow": ("annual_max", "max"),

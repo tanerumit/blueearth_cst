@@ -42,6 +42,16 @@ class IndicatorDeclaration:
     calculation_set: str | None = None
     calculation_method: str | None = None
     calculation_parameters: dict | None = None
+    additional_responses: tuple[ResponseRequirement, ...] = ()
+    output_variable: str | None = None
+
+    @property
+    def requirements(self) -> tuple[ResponseRequirement, ...]:
+        return (self.required_responses, *self.additional_responses)
+
+    @property
+    def table_variable(self) -> str:
+        return self.output_variable or self.required_responses.variable
 
 
 @dataclass(frozen=True)
@@ -91,6 +101,8 @@ class Indicator:
     return_period: int | None = None
     blocks_per_return_period: float | None = None
     method: str | None = None
+    additional_inputs: tuple[ResponseRequirement, ...] = ()
+    output_variable: str | None = None
 
 
 Series = ResponseSeries

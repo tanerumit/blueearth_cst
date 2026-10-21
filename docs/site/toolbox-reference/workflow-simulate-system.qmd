@@ -80,7 +80,22 @@ statistics. Group results average member indicators with equal weights, propagat
 See the [set conventions](https://github.com/tanerumit/blueearth_cst/blob/main/blueearth_cst/indicators/sets/eflow_erfa/README.md)
 for all fixed defaults and interpretation limits.
 
-Selected indicators must be available: before simulating, their variables are checked against `model.outvars`; when indicators run alone, against the retained responses. A missing variable fails with the set, indicator, method and variable; it never schedules a simulation.
+The `crop-water` set supplies ten seasonal or annual agricultural screening indicators from discharge,
+precipitation, PET, AET and net recharge. It requires daily retained responses for all five variables.
+Use `model.outvars` to retain them in a new simulation; existing experiments without PET must be
+regenerated under a fresh experiment name. The summer low-flow declaration also needs one fixed,
+location-keyed historical Qcrit with source and baseline provenance. Copy the bundled
+`config/indicator_sets/crop-water.yml` to a case file with the same `id`, replace `selection.registry`
+with a mapping that supplies `overrides.summer_low_flow_days`, and bind that file using
+`indicator_set_definitions.crop-water.config_path`. An explicit custom definition may replace this
+bundled selector; the `default` preset cannot be replaced. The
+[set conventions](../../../blueearth_cst/indicators/sets/crop_water/README.md) define periods,
+formulas, the Qcrit record, diagnostics and interpretation limits. The ET ratios use Wflow landscape
+AET and reference PET as screening proxies; subcatchment means do not represent crop or aquifer areas.
+
+Selected indicators must be available: before simulating, all their required variables are checked
+against `model.outvars`; when indicators run alone, against the retained responses. A missing variable
+fails with the set, indicator, method and variable; it never schedules a simulation.
 
 The scalar `operation: simulate-and-indicators | indicators-only` and `indicators:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
 

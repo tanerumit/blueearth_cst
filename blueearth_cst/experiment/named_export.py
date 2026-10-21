@@ -192,7 +192,7 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
             raise NamedExportError(
                 f"{resolved_set.set_id}: {indicator.indicator} differs from its immutable declaration"
             )
-        variable = declaration.required_responses.variable
+        required = {item.variable for item in declaration.requirements}
         contract = registry.METHODS.get(indicator.method)
         if indicator.calculation_set:
             from types import SimpleNamespace
@@ -209,7 +209,7 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
         pairs = {
             (run, var, location, "evaluated")
             for run, var, location in series
-            if var == variable
+            if var in required
         }
         if declaration.reference:
             which = "wet" if declaration.statistic == "wetmonth_mean" else "dry"
@@ -218,7 +218,14 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 (run, "q", resolved["reference_location_id"], "reference")
                 for run in resolved["run_ids"]
             }
-        cover = [item for item in evidence if item["variable"] == variable]
+        cover = [item for item in evidence if item["variable"] in required]
+        crop_water = declaration.calculation_set == "crop-water"
+        assignment = (
+            f"{assumptions['season_labels']}; {assumptions['recharge_year']}"
+            if crop_water
+            else f"{anchor} ({registry.block_bins(anchor)} water-year blocks); "
+            f"{contract.block_assignment}"
+        )
         rows.append(
             {
                 "indicator": indicator.indicator,
@@ -227,8 +234,13 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 "set_description": resolved_set.description,
                 "title": indicator.title,
                 "description": indicator.description,
-                "variable": variable,
-                "input_units": declaration.required_responses.units,
+                "variable": ", ".join(sorted(required)),
+                "input_units": ", ".join(
+                    f"{item.variable}: {item.units}"
+                    for item in declaration.requirements
+                )
+                if len(required) > 1
+                else declaration.required_responses.units,
                 "output_units": registry.output_units(declaration),
                 "quantity": registry.quantity(declaration),
                 "method": indicator.method,
@@ -236,16 +248,19 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 "equivalent_definition": indicator.equivalent_definition,
                 "grain": declaration.grain,
                 "group_policy": declaration.group_reduction,
-                "water_year_start": water_year_start,
+                "water_year_start": (
+                    "Oct (recharge); fixed seasons" if crop_water else water_year_start
+                ),
                 "calendar": "; ".join(sorted({item["calendar"] for item in cover})),
                 "time_label": "; ".join(sorted({item["time_label"] for item in cover})),
-                "block_assignment": (
-                    f"{anchor} ({registry.block_bins(anchor)} water-year blocks); "
-                    f"{contract.block_assignment}"
-                ),
+                "block_assignment": assignment,
                 "partial_blocks": contract.partial_blocks,
-                "block_coverage": block_coverage(
-                    evidence, sorted((r, v, loc, role) for r, v, loc, role in pairs)
+                "block_coverage": (
+                    "Complete-period counts and coverage: indicator_diagnostics.json/period_values"
+                    if crop_water
+                    else block_coverage(
+                        evidence, sorted((r, v, loc, role) for r, v, loc, role in pairs)
+                    )
                 ),
                 "missingness": contract.missingness,
                 "validity": contract.validity,

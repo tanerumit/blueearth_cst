@@ -337,7 +337,14 @@ def indicator_request(
     return {
         "schema_version": "indicator-request/4",
         "simulation_id": simulation_id,
-        "tokens": sorted({item.required_responses.variable for item in registry}),
+        "tokens": sorted({item.table_variable for item in registry}),
+        "response_variables": sorted(
+            {
+                requirement.variable
+                for item in registry
+                for requirement in item.requirements
+            }
+        ),
         "calculations": _plain(calculations),
         "declarations": [_plain(asdict(item)) for item in registry],
         "grouping": "stochastic/st_id including empty unperturbed key",
@@ -568,11 +575,21 @@ def build_indicator_plan(experiment_root, request, *, _observed_code=None):
     locations = {
         item["variable"]: item["locations"] for item in frozen_request["variables"]
     }
-    required = {item.required_responses.variable for item in registry}
+    required = {
+        requirement.variable for item in registry for requirement in item.requirements
+    }
     if not required <= set(locations):
         raise IndicatorPlanStale(
             f"missing retained response requirements: {sorted(required - set(locations))}; a new simulation is required"
         )
+    for indicator in registry:
+        primary = locations[indicator.table_variable]
+        for requirement in indicator.requirements:
+            if locations[requirement.variable] != primary:
+                raise IndicatorPlanStale(
+                    f"{indicator.name}: paired response locations differ for "
+                    f"{requirement.variable}"
+                )
     references = {}
     if any(item.reference for item in registry):
         native = _native_runs_v2(root, inventory)
@@ -598,7 +615,7 @@ def build_indicator_plan(experiment_root, request, *, _observed_code=None):
         expected_keys.extend(
             [indicator.name, location, unit]
             for unit in ids
-            for location in locations[indicator.required_responses.variable]
+            for location in locations[indicator.table_variable]
         )
     expected_keys.sort()
     definition = {
@@ -837,18 +854,19 @@ def reduce_indicator_plan(
         series = tuple(
             item
             for run in members
-            for item in open_responses(run, native[run], ResponseRequest(tuple(output)))
+            for item in open_responses(
+                run,
+                native[run],
+                ResponseRequest(tuple(plan["request"]["response_variables"])),
+            )
         )
         for item in series:
             coverage.setdefault(item.key, series_coverage(item, anchor))
         prepared = {}
-        by_variable = {
-            token: [item for item in series if item.variable == token]
-            for token in output
-        }
         for indicator, local in local_registry:
-            token = indicator.required_responses.variable
-            variable = by_variable[token]
+            token = indicator.table_variable
+            required_variables = {item.variable for item in indicator.requirements}
+            variable = [item for item in series if item.variable in required_variables]
             reference = (
                 references["wet" if indicator.statistic == "wetmonth_mean" else "dry"]
                 if indicator.reference

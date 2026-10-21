@@ -156,9 +156,9 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
         raise IndicatorSetError("indicator_set_definitions must be a mapping")
     for name, entry in definitions.items():
         validate_id(name, "indicator_set_definitions key")
-        if name == DEFAULT_SET or (BUNDLED_ROOT / f"{name}.yml").is_file():
+        if name == DEFAULT_SET:
             raise IndicatorSetError(
-                f"custom indicator set {name!r} collides with a bundled set"
+                f"custom indicator set {name!r} collides with the default preset"
             )
         if (
             not isinstance(entry, dict)
@@ -401,11 +401,38 @@ def resolve_set(
     elif kind == "registry":
         from blueearth_cst.indicators import loader
 
+        overrides = {}
+        if isinstance(value, dict):
+            if set(value) != {"set", "overrides"} or not isinstance(
+                value["overrides"], dict
+            ):
+                raise IndicatorSetError(
+                    f"{label}: registry mapping needs set and overrides"
+                )
+            overrides = value["overrides"]
+            value = value["set"]
         try:
             local = loader.declarations(value)
             module = loader.load_set(value)
         except ValueError as exc:
             raise IndicatorSetError(f"{label}: {exc}") from exc
+        unknown = set(overrides) - {item.name for item in local}
+        if unknown:
+            raise IndicatorSetError(
+                f"{label}: registry overrides name unknown indicators {sorted(unknown)}"
+            )
+        if overrides:
+            local = tuple(
+                loader.resolve(
+                    value,
+                    item.calculation_method,
+                    overrides[item.name],
+                    indicator_name=item.name,
+                )
+                if item.name in overrides
+                else item
+                for item in local
+            )
         descriptions = {item.id: item.description for item in module.INDICATORS}
         indicators = [
             ResolvedIndicator(
@@ -707,5 +734,6 @@ def required_variables(sets) -> list[str]:
     seen = {}
     for item in sets:
         for declaration in item.declarations:
-            seen.setdefault(declaration.required_responses.variable, None)
+            for requirement in declaration.requirements:
+                seen.setdefault(requirement.variable, None)
     return list(seen)

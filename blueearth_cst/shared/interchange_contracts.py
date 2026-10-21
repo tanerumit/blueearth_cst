@@ -902,7 +902,10 @@ def validate_hm7_v2(
     entries = manifest.get("tables", [])
     table_names = {f"{entry['token']}_{entry['scope']}" for entry in entries}
     declarations = manifest.get("declarations", [])
-    tokens = {d["required_responses"]["variable"] for d in declarations}
+    tokens = {
+        d.get("output_variable") or d["required_responses"]["variable"]
+        for d in declarations
+    }
     if (
         table_names != {f"{t}_{scope}" for t in tokens for scope in ("run", "group")}
         or set(tables) != table_names
@@ -931,7 +934,8 @@ def validate_hm7_v2(
         expected = {
             (d["name"], loc, unit)
             for d in declarations
-            if d["required_responses"]["variable"] == token
+            if (d.get("output_variable") or d["required_responses"]["variable"])
+            == token
             and (scope == "group" or d["grain"] == "run")
             for loc in expected_locations.get(token, set())
             for unit in (runs if scope == "run" else groups)

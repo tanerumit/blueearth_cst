@@ -39,7 +39,11 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
             declaration = declarations_by_name.get(row["indicator"])
             if (
                 declaration is None
-                or declaration["required_responses"]["variable"] != token
+                or (
+                    declaration.get("output_variable")
+                    or declaration["required_responses"]["variable"]
+                )
+                != token
             ):
                 raise ImmutableIndicatorSetError(
                     "indicator row has undeclared indicator or wrong table token"
@@ -299,7 +303,8 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
                 for row in scoped_rows
             )
     tokens = {
-        item["required_responses"]["variable"] for item in manifest["declarations"]
+        item.get("output_variable") or item["required_responses"]["variable"]
+        for item in manifest["declarations"]
     }
     if seen != {(token, scope) for token in tokens for scope in ("run", "group")}:
         raise ImmutableIndicatorSetError("indicator table scopes are incomplete")
@@ -314,7 +319,9 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
         for indicator, location, _ in manifest["expected_result_keys"]:
             declaration = by_name[indicator]
             locations.setdefault(
-                declaration["required_responses"]["variable"], set()
+                declaration.get("output_variable")
+                or declaration["required_responses"]["variable"],
+                set(),
             ).add(location)
         inventory = {
             "series": [
@@ -351,7 +358,10 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
     expected_keys = sorted(
         [declaration["name"], location, unit]
         for declaration in manifest["declarations"]
-        for location in locations[declaration["required_responses"]["variable"]]
+        for location in locations[
+            declaration.get("output_variable")
+            or declaration["required_responses"]["variable"]
+        ]
         for unit in (runs | group_ids if declaration["grain"] == "run" else group_ids)
     )
     if manifest["expected_result_keys"] != expected_keys:

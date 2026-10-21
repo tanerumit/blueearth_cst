@@ -88,10 +88,11 @@ def check_required_variables(sets, available, where):
     """
     missing = [
         f"{item.set_id}:{indicator.indicator} ({indicator.method}) needs "
-        f"{indicator.declaration.required_responses.variable}"
+        f"{requirement.variable}"
         for item in sets
         for indicator in item.indicators
-        if indicator.declaration.required_responses.variable not in available
+        for requirement in indicator.declaration.requirements
+        if requirement.variable not in available
     ]
     if missing:
         raise ValueError(

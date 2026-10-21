@@ -9,6 +9,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Add the optional `eflow-erfa` indicator set: 35 annual IHA-style flow metrics, each summarized
+  by median and IQR, ported from `eflowrisk` defaults. Select it through WF4 `indicator_sets`.
+  Set identifiers now also accept hyphens; existing underscore identifiers remain valid.
+
 ## [v0.4.1] — 2026-10-12
 
 Owner-approved versioning exception: this release uses a patch number despite new features and

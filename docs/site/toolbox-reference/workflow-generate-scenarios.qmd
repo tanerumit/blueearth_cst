@@ -26,6 +26,12 @@ The `all` target waits for the ready collection and execution records. Wrapper s
 Console completion and reuse messages report the number of scenario runs. Collection digests and
 internal manifest paths remain in retained records rather than those messages.
 
+When resuming an experiment from another checkout, keep WF3 enabled so the runner can validate and
+reuse its ready collection under the current checkout's request path. The original generation plan
+and seed remain unchanged. Changed generation inputs or settings still require a new experiment;
+an incomplete collection cannot be repaired through this continuation path. A dry run does not
+publish the new request pointer, so downstream WF4 previews may require one actual WF3 reuse first.
+
 ## Rule flow
 
 ```{mermaid}

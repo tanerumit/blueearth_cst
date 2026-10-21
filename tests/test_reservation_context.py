@@ -576,3 +576,72 @@ def test_bound_selector_mode_policy_uses_exact_retained_identity(
     assert original == before_original
     assert requested == before_requested
     assert durable_inventory(retained) == before
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "missing pointer",
+        "changed science",
+        "different collection",
+        "standalone",
+        "stale pointer",
+    ],
+)
+def test_generation_can_restore_pointer_only_for_unchanged_bound_collection(
+    retained, monkeypatch, change
+):
+    from blueearth_cst.experiment.collection_resolution import (
+        GeneratedCollectionStale,
+        GeneratedCollectionUnavailable,
+    )
+    from blueearth_cst.shared.workflow_config_snapshot import file_reference
+
+    original, _ = capture_request(retained.config, REPOSITORY, execute_generation=True)
+    original["selection"] = {"mode": "project-generation", "manifest": None}
+    requested = copy.deepcopy(original)
+    marker = read_collection_v2(retained.marker)
+    resolution = {
+        "manifest": file_reference(retained.marker, "project_root", retained.project),
+        "collection_id": marker["collection_id"],
+        "collection_revision": marker["collection_revision"],
+        "run_ids": [entry["run_id"] for entry in marker["series"]],
+    }
+    if change == "changed science":
+        requested["generation"]["n_realizations"] += 1
+    if change == "different collection":
+        resolution["collection_id"] = "0" * 64
+    monkeypatch.setattr(
+        reservation_context,
+        "read_reservation",
+        lambda *args: {"resolution": resolution},
+    )
+
+    def missing(*args):
+        if change == "changed science":
+            pytest.fail("changed science reached collection lookup")
+        error = (
+            GeneratedCollectionStale
+            if change == "stale pointer"
+            else GeneratedCollectionUnavailable
+        )
+        raise error("project-generation request pointer missing or stale")
+
+    monkeypatch.setattr(reservation_context, "resolve_selected_collection", missing)
+    context = reservation_context.ReservationContext(
+        retained.project,
+        retained.config,
+        REPOSITORY,
+        "stress_test_01",
+        uuid.uuid4().hex,
+        change != "standalone",
+        False,
+        original,
+    )
+    before = durable_inventory(retained)
+    if change == "missing pointer":
+        context.compare(original, requested)
+    else:
+        with pytest.raises(ValueError):
+            context.compare(original, requested)
+    assert durable_inventory(retained) == before

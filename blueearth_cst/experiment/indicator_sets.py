@@ -21,7 +21,7 @@ OPERATIONS = ("simulations", "indicators")
 DEFAULT_SET = "default"
 DEFAULT_PRESET = "current_default"
 SET_SCHEMA_VERSION = 1
-SET_ID_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
+SET_ID_PATTERN = re.compile(r"[a-z][a-z0-9_-]*")
 SET_ID_MAX_LENGTH = 64
 _WINDOWS_RESERVED = {"con", "prn", "aux", "nul"} | {
     f"{stem}{n}" for stem in ("com", "lpt") for n in range(1, 10)
@@ -70,7 +70,7 @@ def validate_id(value, label: str) -> str:
         or value in _WINDOWS_RESERVED
     ):
         raise IndicatorSetError(
-            f"{label} {value!r} must match [a-z][a-z0-9_]*, be at most "
+            f"{label} {value!r} must match [a-z][a-z0-9_-]*, be at most "
             f"{SET_ID_MAX_LENGTH} characters and not be a Windows reserved name"
         )
     return value

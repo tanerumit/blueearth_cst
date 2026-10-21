@@ -21,20 +21,36 @@ from blueearth_cst.indicators.temporal import validate_requirement
 from blueearth_cst.indicators.validation import validate_parameters, validate_result
 
 
+def _set_packages() -> dict[str, str]:
+    """Map public set IDs to installed packages, allowing an explicit SET_ID."""
+    packages = {}
+    for item in pkgutil.iter_modules(sets.__path__):
+        if not item.ispkg:
+            continue
+        name = f"{sets.__name__}.{item.name}"
+        package = importlib.import_module(name)
+        set_id = getattr(package, "SET_ID", item.name)
+        if not isinstance(set_id, str) or not set_id or set_id in packages:
+            raise ValueError(
+                f"invalid or duplicate installed indicator set ID: {set_id!r}"
+            )
+        packages[set_id] = name
+    return packages
+
+
 def available_sets() -> tuple[str, ...]:
     """List installed trusted packages; YAML cannot name an arbitrary import path."""
-    return tuple(
-        sorted(item.name for item in pkgutil.iter_modules(sets.__path__) if item.ispkg)
-    )
+    return tuple(sorted(_set_packages()))
 
 
 def load(set_id: str):
     """Load one discovered package's set-owned registration module."""
-    if set_id not in available_sets():
+    packages = _set_packages()
+    if set_id not in packages:
         raise ValueError(
             f"unknown indicator set {set_id!r}; discoverable sets: {list(available_sets())}"
         )
-    return importlib.import_module(f"{sets.__name__}.{set_id}.registry")
+    return importlib.import_module(f"{packages[set_id]}.registry")
 
 
 load_set = load

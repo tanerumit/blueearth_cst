@@ -1,8 +1,9 @@
 # Migration — named WF4 indicator sets and metric-set/4
 
-`dev/reference/naming.md` §7 record for the named-indicator-sets work, boarded as
-[`t2610161523`](../../../tasks/t2610161523-integrate-multiple-metric-sets.md). Contract source: the sealed
-design v3 under that task's `design-runs/named-indicator-sets/`. Filed under `post-r12/` for the reason
+Historical migration record for the named-indicator-sets work, task `t2610161523`.
+[Completion and evidence](../../validation/named-indicator-sets.md) retains the design principles,
+acceptance results and exact Git recovery identities for sealed design v3 and its review.
+Filed under `post-r12/` for the reason
 given in `migration_scenario-tree.md`: this is follow-up work, not a milestone.
 
 ## Event 1 — WF4 operation selection

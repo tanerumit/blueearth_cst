@@ -8,9 +8,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from blueearth_cst.indicators import sets
 from blueearth_cst.indicators.contract import EvaluationContext
-from blueearth_cst.indicators.loader import local_declaration
+from blueearth_cst.indicators.loader import load, local_declaration
 from blueearth_cst.indicators.validation import validate_result
 
 
@@ -100,7 +99,7 @@ def check(
     """Independently recheck through the selected set, recording current checker identity."""
     indicator = local_declaration(indicator)
     module = importlib.import_module(
-        f"{sets.__name__}.{indicator.calculation_set}.checks"
+        f"{load(indicator.calculation_set).__package__}.checks"
     )
     context = EvaluationContext(
         anchor,

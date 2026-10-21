@@ -1,6 +1,6 @@
 # Development workflow
 
-Last updated: 2026-10-20
+Last updated: 2026-10-21
 
 Shared procedures for developers and agents coordinating repository work. This reference owns task
 admission, board location, worktree coordination, and handoffs. Placement and scratch rules live in
@@ -65,6 +65,15 @@ References and developer scripts are edited in the session branch.
 Use the configured `git-workflow` session lifecycle for allocation, identity checks, synchronization,
 and landing. Root `AGENTS.md` and `.git-workflow.yml` identify the repository's active mode.
 
+A modifying request permits a clean detached session to claim itself from the primary checkout with
+`task-start --task <task> --session <name> --base main --no-launch`; never create the branch by hand.
+At new-session entry, synchronize a clean local unpushed lane with `main` by rebase; published lanes
+use merge unless rewriting is authorized. Resolve dirty state/conflicts without automatic stash/reset.
+Do not repeat synchronization per follow-up. Stay in the occupied session until the user asks to
+switch or land. Commit completed tasks with the checks selected by the validation reference;
+completion does not authorize landing or pushing. After a verified merge, prove ancestry,
+detach/free the lane, then delete its branch; on failure preserve the lane and branch for recovery.
+
 Keep the note's `branch:` current. When tracked work needs a locator, maintain the following section in
 the central note rather than creating a separate status file. Use logical checkout names and relative
 paths; resolve actual roots with `git worktree list`.
@@ -128,8 +137,8 @@ cmd /c rmdir dev\00-current-board-main
 4. The recipient verifies branch and artifact locations before editing. Prefer re-entering the same
    session; switching or landing remains the user's decision.
 
-Follow `git-workflow` and root `AGENTS.md` for synchronization timing. Do not background-sync tracked
-folders or scratch.
+Follow `git-workflow` and the session-entry rules above for synchronization timing. Do not background-sync
+tracked folders or scratch.
 
 ## Verification and closure
 

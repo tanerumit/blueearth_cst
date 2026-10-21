@@ -1,8 +1,33 @@
 # Validation ladder — tiering, configs, and CI
 
-Last updated: 2026-10-20
+Last updated: 2026-10-21
 
-The ladder table lives in `AGENTS.md` § Validation ladder. This file holds what does not fit there: how the tiers are drawn, which config a run takes, and how to read CI.
+This reference owns verification policy: check selection, evidence reuse, execution coverage,
+config provenance, and CI. `AGENTS.md` routes verification work here.
+
+## Validation ladder
+
+| When | Required coverage |
+|---|---|
+| Iterating | Tests covering the change |
+| Pre-commit | Regression/consumer checks; affected CLI/DAG checks for rule/input/script changes; scoped Ruff |
+| Final Python batch | `pixi run lint` and `pixi run format-check` once |
+| Land a batch | One `test-fast` on the integrated candidate, or reuse evidence; exempt-only diffs skip it |
+| Additional software coverage | Affected contracts; local full for needed extra coverage, replacing fast |
+| Several workflow handoffs or shared runtime behavior | All-five local or live E2E, or reuse evidence |
+| Confined workflow behavior | Affected integration path/consumers; execution when outputs can change |
+| Numeric output | Independent numerical check and affected consumers; baseline for whole-tree claims |
+| Release or milestone | Verify candidate and delta coverage; labels alone add no tests |
+| Push | Reuse landing evidence; check uncovered changes, run cheap hooks, and inspect CI |
+| After push | Read the latest CI run, including both platforms |
+
+### Batch and push exemptions
+
+Exemption covers modifications only to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, root `AGENTS.md`
+and root `README.md`. Renames/deletions are never exempt. `dev/scripts/`, `dev/records/`,
+`dev/reference/`, `config/templates/` and `docs/notebooks/` have test readers and remain gated.
+Classify actual diff paths, not commit labels or earlier pushed batches; search tests before adding
+an exemption. An exempt-only unpushed delta needs only the Ruff pre-push hook.
 
 ## Planning and reusing verification
 
@@ -35,7 +60,7 @@ the existing task evidence. A command's successful exit does not discharge claim
 - At landing, an executable `task-land --verify` may verify recorded passing evidence and candidate
   equivalence instead of rerunning expensive gates. It must fail for missing evidence, failed/skipped
   required checks, or unclassified changes. After an equivalent merge, prove tree equality and ancestry;
-  do not repeat gates. Push retains the CI and delta checks in `AGENTS.md`.
+  do not repeat gates. Push retains the CI and delta checks below.
 
 For designs with several distinct claims, a compact table can help; simple changes need only a sentence:
 
@@ -47,7 +72,9 @@ For designs with several distinct claims, a compact table can help; simple chang
 | Conditional behavior | Focused test or execution | Named alternate case | State what rapid misses |
 
 Completed design and review records describe the gates actually used. Their historical command lists
-do not prescribe future work; new tasks use this maintained guidance and the live `AGENTS.md` ladder.
+do not prescribe future work; new tasks use this maintained guidance.
+Stop once required coverage is sound; repeat only for invalidated evidence or a concrete diagnostic need.
+Capture gate output in a file, never pipe it through `tail`.
 
 ## Pytest temporary directories
 
@@ -96,8 +123,7 @@ Use a PR when two-platform assurance is required before landing. Inspect both CI
 reuse valid landing evidence. Exempt-only changes need cheap hooks; other follow-ups need checks for
 the claims they invalidate, or a missing batch gate. A red/unread CI run needs inspection and diagnosis,
 not an automatic repeat of a matching local suite. Local success cannot replace a failed Linux CI leg.
-Retain the explicit exemption list in `AGENTS.md`: test readers make some documentation and maintenance
-files behavioral inputs. Review those consumers before extending exemptions.
+Apply the batch and push exemptions above; test readers can make documentation behavioral inputs.
 
 Classify the unverified behavior and its consumers, not the preceding batch's gate. A confined
 script-signature change needs affected producer/consumer checks; batch coverage belongs at landing.
@@ -226,7 +252,9 @@ new hydrological simulation merely to reach the same guard. When workflow output
 the affected workflow and consumers with rapid inputs. State the coverage and omitted
 workflows in the task evidence. Preserve owned wrappers: WF3 uses a WF3-only project configuration with
 `run_workflows.py`; WF4 uses `simulate_system.py` or the all-workflow runner. For figure-only changes,
-render and inspect affected figures. Changes to calculations still require numerical acceptance.
+search shared plotting callers, render all affected figures, and publish PNG artifacts for inspection;
+no baseline, full suite, or render-byte comparisons. Changes to runtime/config contracts or non-figure
+consumers trigger broader gates. Changes to calculations still require numerical acceptance.
 
 Escalate a confined change when focused verification exposes wider breakage. Preserve independent
 numerical and visual acceptance whenever the change affects those claims.
@@ -275,8 +303,8 @@ candidate, output root and live/local comparison when making a parity claim.
 `pixi run test-e2e` is the automated all-five execution check:
 through `scripts/run_workflows.py`, on the rapid config, in a fresh temporary
 project root. It needs what CI cannot provide (the data mirror, juliaup Julia,
-`weathergenr`, network for WF2), so it is a local gate, and the ladder in
-`AGENTS.md` says when it is owed; the execution-coverage section above distinguishes broad changes
+`weathergenr`, network for WF2), so it is a local gate. The execution-coverage section above
+distinguishes broad changes
 from confined workflow changes. Release and milestone coverage follows the changed behavior and the
 qualification claim; neither label requires repeating applicable execution evidence.
 
@@ -331,6 +359,9 @@ WF1 retains `run_default/output.csv`, which the baseline manifest needs. Older t
 deleted require a historical simulation to restore it. Rounded `output_q.csv` is not a substitute.
 
 ## Read the CI run after you push
+
+CI runs for `main` pushes and PRs, not backup branch pushes. Normal approved publishing goes to
+`main`; use a PR when the change needs two-platform assurance before landing.
 
 GitHub does not allow self-approval of a PR. If enabling merge-on-green, make both platform test
 checks required first: auto-merge without required checks merges immediately.

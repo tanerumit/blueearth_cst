@@ -11,7 +11,7 @@
 # the bypass is the habit -- at which point the hook reads as coverage while
 # providing none. The bare `pytest tests/` is an order of magnitude slower again,
 # because the marked contract tier spawns a process per test. Both stay manual
-# steps, per the validation ladder in AGENTS.md.
+# steps, per dev/reference/dev-validation.md.
 #
 # What this CANNOT catch: anything platform-specific. The failure that replaced
 # the lint one was four tests asserting Windows path spelling, green on the

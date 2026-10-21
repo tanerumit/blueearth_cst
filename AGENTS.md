@@ -6,6 +6,10 @@
 
 BlueEarth Climate Stress Test is a Python/R/Julia Snakemake workflow engine; no API or frontend code.
 
+Read `STATUS.md` when orienting or resuming project work. Maintain it at meaningful checkpoints and
+explicit handoffs using `project-system`; task records remain authoritative for task state.
+Keep it branch-versioned; reconcile its snapshot with the current checkout and canonical board.
+
 | Entry point | ID | Purpose |
 |---|---|---|
 | `analyze_climate.smk` | wf0 | Optional, model-free historical climate analysis |

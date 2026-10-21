@@ -1,6 +1,6 @@
 # Project status
 
-Updated: 2026-10-21 11:22 Europe/Amsterdam (UTC+02:00)
+Updated: 2026-10-21 11:27 Europe/Amsterdam (UTC+02:00)
 Context: validation-policy follow-up on `chore/fix-live-console-flush`.
 
 ## Current objective
@@ -12,8 +12,9 @@ own task state. Reconcile this branch snapshot with the checkout and canonical b
 ## Active work and next actions
 
 - **Validation guidance:** consolidated in the [validation reference](dev/reference/dev-validation.md).
-  The policy now selects affected paths before all-five execution, permits inspected prose exemptions,
-  and reserves formal receipts for landing reuse. Next: apply it to the pending batch's actual delta.
+  Local landing requires affected checks; the broad batch gate is due before pushing or releasing.
+  Existing numerical tests, rendered figures, and equivalent evidence satisfy their covered claims.
+  Next: apply the policy to the pending batch's actual delta before publication.
 - **Console/runtime follow-ups:** five commits after main's `25f6f41c` are committed locally on
   `chore/fix-live-console-flush` through `dccb51d5`. They address heartbeat advancement, repeated WF0
   provenance checks during figure export, and console wording/date-time/path display. Next: review

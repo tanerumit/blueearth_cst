@@ -10,8 +10,18 @@ config provenance, and CI. `AGENTS.md` routes verification work here.
 | Stage | Required coverage |
 |---|---|
 | Task | Focused checks as needed while iterating; complete affected checks before commit. |
-| Integrated batch | At landing, one `test-fast`, stronger or reused evidence; exempt-only deltas skip it. |
-| Publishing | Check uncovered changes, retain the pre-push hook, and inspect both CI platforms after push. |
+| Local landing | Complete affected checks; broaden only for uncertain impact or integration risks. |
+| Publishing | Before push or release, satisfy the batch gate below; confirm both CI platforms after push. |
+
+Local `main` may contain undiscovered regressions between landing and publishing. Before pushing to
+`origin` or releasing, review the complete unpublished delta and require one integrated `test-fast`
+pass, stronger coverage, or applicable reused evidence; exempt-only deltas skip the software gate.
+Include affected contract tests excluded from fast and any owed execution, numerical, or visual checks.
+Use full when broader or uncertain impact needs its extra coverage. Resolve known regressions and
+missing required coverage before publishing. This gate reduces risk; no suite guarantees zero regressions.
+
+Existing CI evidence can substitute only for an equivalent candidate and relevant environment/inputs.
+CI triggered by the proposed push is subsequent assurance, not evidence for this pre-push gate.
 
 Select task coverage by changed behavior and affected consumers:
 
@@ -22,14 +32,18 @@ Select task coverage by changed behavior and affected consumers:
   or cross-workflow uncertainty that inspection and focused checks cannot resolve.
 - **Numerical results:** independent numerical checks and affected consumers; current baseline evidence
   for whole-tree numerical claims. Execution success alone does not establish numerical acceptance.
+  An existing test with an independent expected result satisfies its covered claim;
+  add no duplicate comparison.
 - **Prose and figures:** inspection can suffice for prose; render and inspect affected figures.
+  Reuse figures already produced by the verified execution; inspect changed output without rerendering
+  or reinspecting unaffected figures unless a shared change invalidates them.
   Executable examples, parsed documentation, calculation changes, and other behavioral consumers also
   need their affected checks. Figure-only work does not automatically require the software batch gate.
 
 For Python edits, complete scoped Ruff checks before commit and repository-wide `pixi run lint` and
-`pixi run format-check` before landing. Count an existing manual or hook pass when it covers the candidate
+`pixi run format-check` before publishing. Count an existing manual or hook pass when it covers the candidate
 at the required stage; rerun only invalidated checks. Keep the pre-push hook enabled, but do not add
-a duplicate manual run immediately before it. A later push hook cannot satisfy an earlier landing gate.
+a duplicate manual run immediately before it. For a release without a push, run any missing checks directly.
 Release and milestone labels add no checks beyond the changed behavior and qualification claims.
 
 ### Batch and push exemptions
@@ -129,7 +143,8 @@ duration evidence before optimizing either tier. Count the selected cases with
 
 CI runs the software suite on Windows and Linux. Fixture-dependent tests may skip and real workflow
 execution remains local; CI success does not establish those missing claims. Use a PR when
-two-platform assurance is required before landing. Inspect both CI results and required skips.
+two-platform assurance is required before landing. Confirm both platform jobs passed for the intended
+commit; inspect failures and skips relevant to required claims. Successful job logs need no routine full read.
 
 **A push checks uncovered changes, not the same candidate again.** Inspect `origin/main..main` and
 reuse valid landing evidence. Exempt-only changes need cheap hooks; other follow-ups need checks for
@@ -138,11 +153,14 @@ not an automatic repeat of a matching local suite. Local success cannot replace 
 Apply the batch and push exemptions above; test readers can make documentation behavioral inputs.
 
 Classify the unverified behavior and its consumers, not the preceding batch's gate. A confined
-script-signature change needs affected producer/consumer checks; batch coverage belongs at landing.
+script-signature change needs affected producer/consumer checks; batch coverage belongs before publishing.
 Policy-tooling suites apply when changing that tooling or its contracts, not when using `task-land`
 or its evidence verifier. Do not add a separate suite merely because its name appears in a workflow.
 
-Between merges and the next push, a `workflow_contract` regression can sit on local `main` across several branches, so bisect across all of them. Reading the CI run after each push is what bounds that window. `ci.yml` cancels an in-flight run when the same ref is pushed again, so after quick successive pushes the latest run is the one to read; it covers the whole tree.
+Between merges and the next push, a regression can span several locally landed branches. Review their
+combined delta at the pre-push gate, including affected contracts, rather than only the last task.
+CI may find further platform-specific defects after push; resolve them before release. `ci.yml` cancels
+an in-flight run when the same ref is pushed again, so check the latest run's commit and both platform jobs.
 
 Use measured timings with their candidate and environment when comparing costs; do not treat old
 timings or the name "fast" as a guarantee. Establish working cache permissions before a broad run.
@@ -168,6 +186,9 @@ Follow `dev-repository-layout.md` § Task temporary material for retention and c
 pixi run python dev/scripts/verify_landing.py record --evidence .tmp/tasks/<id>/gates.json --gate test-fast --log .tmp/tasks/<id>/fast.log -- pixi run test-fast
 pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/tasks/<id>/gates.json --require-gate test-fast
 ```
+
+These commands illustrate a batch-gate receipt; they do not require fast at every local landing.
+For landing, select the affected checks actually owed. The helper can also verify batch evidence before push.
 
 For a focused pre-commit check intended for landing reuse, use `record --staged` with an appropriate
 gate name and test command.
@@ -385,7 +406,8 @@ Install the pre-push hook once per clone — cloning does not install it:
 git config core.hooksPath .githooks     # runs the two ruff checks, ~2 s
 ```
 
-Read the run regardless. The hook cannot see platform-specific failures, and a green local suite is no evidence about the ubuntu leg — the only place linux-64 is exercised.
+Confirm the intended commit's platform results regardless of local success. The hook cannot see
+platform-specific failures; inspect failing jobs and relevant skips as described under Tiering.
 
 `gh` resolves to `upstream` (`Deltares/blueearth_cst`) in this clone, not `origin` (`tanerumit/blueearth_cst`, where CI runs), so a bare `gh run list` queries Deltares, exits 0 and prints nothing. Point it at origin once per clone:
 

@@ -111,7 +111,8 @@ Before selecting checks, landing, or pushing, read `dev/reference/dev-validation
 It owns the validation ladder, exemptions, evidence reuse, execution coverage, config provenance,
 and CI procedures. Select coverage from changed behavior and affected consumers.
 
-Use focused checks for task commits and the reference's batch gate at landing. Reuse applicable
+Use affected checks for commits and local landing; apply the batch gate before pushing or releasing.
+Local main may contain undiscovered regressions pending that gate. Reuse applicable
 evidence; stop when required coverage is sound. Execution success never replaces independent
 numerical checks or visual inspection. Use rapid inputs for execution/DAG checks and renders;
 consult the reference before making baseline claims.

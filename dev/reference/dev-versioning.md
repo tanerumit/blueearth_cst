@@ -52,7 +52,8 @@ the result change first, retaining the evidence needed to interpret it.
    validation and landing gates in `AGENTS.md` and
    [the validation ladder](dev-validation.md). Landing requires approval.
 3. Verify coverage of the candidate main commit and the release delta using
-   the validation ladder. Reuse applicable landing, CI and execution evidence;
+   the validation ladder, including its pre-publication batch gate. Local landing
+   alone does not establish release readiness. Reuse applicable landing, CI and execution evidence;
    releasing or tagging the same content does not require another test run.
    Select software, execution, numerical, and visual coverage through that reference;
    it also owns CI limitations and baseline prerequisites. Add `semantic_tree_diff.py`

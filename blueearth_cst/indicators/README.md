@@ -47,6 +47,8 @@ workflow files. `reference_month_mean/1` requires an explicit resolved reference
 
 Add trusted code under a set package. User YAML selects declarations; it cannot import arbitrary code.
 Keep `__init__.py`, `registry.py`, `calculations.py`, `checks.py` and `README.md` in each set.
+An optional `SET_ID` in `__init__.py` declares its public selector when it differs from the Python
+package name; `eflow_erfa` uses `eflow-erfa`. Keep package initializers free of calculation imports.
 Put a formula in `calculations.py`; it receives `(declaration, responses, context)` and returns
 `IndicatorResult(values=pd.Series(...))`, indexed by location. Add its one parameter specification to local
 `PARAMETERS`, keyed by the callable. Every parameter value is explicit in the registration; unknown fields

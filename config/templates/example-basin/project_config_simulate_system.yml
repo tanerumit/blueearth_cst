@@ -35,6 +35,7 @@ include_unperturbed: true
 
 # Named sets, each published to results/indicator_sets/<set-id>/ with an
 # indicators.csv dictionary. `default` is bundled; omitted means [default].
+# Add eflow-erfa for 70 discharge median/IQR indicators: [default, eflow-erfa].
 # Select named indicator sets to calculate. Input: list of registered set IDs.
 indicator_sets: [default]
 

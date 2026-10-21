@@ -169,6 +169,7 @@ def _recheck(root, marker, manifest, context):
             )
     # Import execution code only after saved-artifact inspection and source checks.
     from blueearth_cst.experiment.indicator_plan import (
+        _plain,
         build_indicator_plan,
         reduce_indicator_plan,
         resolve_indicator_environment,
@@ -199,7 +200,7 @@ def _recheck(root, marker, manifest, context):
     if content_sha256(saved_diagnostics) != content_sha256(
         {
             "schema_version": "indicator-diagnostics/1",
-            "results": diagnostics,
+            "results": _plain(diagnostics),
         }
     ):
         raise ValueError("fresh numerical diagnostics differ from saved publication")

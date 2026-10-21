@@ -54,7 +54,31 @@ indicator_set_definitions:
     config_path: indicator_sets/example_subset.yml   # relative to this file
 ```
 
-`operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter. `indicator_sets` lists set ids (`[a-z][a-z0-9_]*`, at most 64 characters); omitted means `[default]`. `default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for `model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file that declares it. Selected set files are read once per invocation. Copy `config/templates/indicator_set.template.yml` for a custom set: it selects registered definitions, or names one registered calculation under an authored id. A set never defines arithmetic, units, calendars, missingness or grain.
+`operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter.
+`indicator_sets` lists set ids (`[a-z][a-z0-9_-]*`, at most 64 characters); omitted means `[default]`.
+`default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for
+`model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators
+run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file
+that declares it. Selected set files are read once per invocation. Copy
+`config/templates/indicator_set.template.yml` for a custom set: it selects registered definitions,
+or names one registered calculation under an authored id. A set never defines arithmetic, units,
+calendars, missingness or grain.
+
+To add environmental-flow indicators, use `indicator_sets: [default, eflow-erfa]`, or select
+`[eflow-erfa]` alone. This set requires retained daily discharge (`q`) and supplies 70 indicators:
+the median and interquartile range of each of 35 annual metrics, grouped into high flow, monthly flow,
+low flow, rates/frequencies of change, and intermittency. Names follow `q_<metric>_<med|iqr>`.
+It ports the default conventions of `eflowrisk`'s daily-flow extension of IHA/ERFA; it does not produce
+ecological risk classes or baseline/scenario comparisons.
+
+The configured water year applies. Years need at least 90% finite daily observations and monthly
+means need 80% of their calendar month's days; incomplete edge years can therefore be excluded.
+Pulse thresholds are the individual record's 90th/10th percentiles, with strict exceedances; zero
+sequences include discharge at or below zero. Rolling windows and daily differences cross year
+boundaries, while pulse runs split there. Timing uses the first occurrence and linear day-of-water-year
+statistics. Group results average member indicators with equal weights, propagating undefined values.
+See the [set conventions](https://github.com/tanerumit/blueearth_cst/blob/main/blueearth_cst/indicators/sets/eflow_erfa/README.md)
+for all fixed defaults and interpretation limits.
 
 Selected indicators must be available: before simulating, their variables are checked against `model.outvars`; when indicators run alone, against the retained responses. A missing variable fails with the set, indicator, method and variable; it never schedules a simulation.
 

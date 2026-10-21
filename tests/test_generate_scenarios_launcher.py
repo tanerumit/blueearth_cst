@@ -12,6 +12,32 @@ from blueearth_cst.shared import output_capture
 from scripts import generate_scenarios
 
 
+@pytest.mark.parametrize("flag", ["--unlock", "--dry-run", "-n"])
+@pytest.mark.parametrize("exit_code", [0, 9])
+def test_preview_stops_after_snakemake(tmp_path, monkeypatch, flag, exit_code):
+    config = tmp_path / "project.yml"
+    config.write_text("{}", encoding="utf-8")
+    calls = []
+
+    def child(command, **kwargs):
+        calls.append((command, kwargs))
+        return exit_code
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Preview entered generation setup")
+
+    monkeypatch.setattr(generate_scenarios, "run_project_child", child)
+    monkeypatch.setattr(generate_scenarios, "_run_source_phase_quietly", unexpected)
+    monkeypatch.setattr(generate_scenarios, "compose_config", unexpected)
+    assert (
+        generate_scenarios.run_owned(config, tmp_path, 1, [flag], invocation_id="test")
+        == exit_code
+    )
+    assert len(calls) == 1
+    assert flag in calls[0][0]
+    assert calls[0][1]["writing"] is False
+
+
 @pytest.mark.parametrize("ready,exit_code", [(False, 0), (False, 9), (True, 0)])
 def test_success_and_ready_reuse_export_the_selected_collection(
     tmp_path, monkeypatch, ready, exit_code, capsys

@@ -10,6 +10,7 @@ import pytest
 from blueearth_cst.experiment import indicator_registry as registry
 from blueearth_cst.experiment import indicator_sets as sets
 from blueearth_cst.experiment.indicator_sets import IndicatorSetError
+from blueearth_cst.indicators import loader
 from blueearth_cst.shared.config_composition import normalize_indicator_settings
 from blueearth_cst.shared.indicator_tables import VARIABLE_TOKENS
 
@@ -127,6 +128,16 @@ def test_output_units_are_declared_not_inferred():
     assert units["pet_annual_total"] == "mm"
     assert units["snow_annual_max"] == "mm"
     assert units["overland_flow_annual_mean"] == units["q_annual_mean"] == "m3 s-1"
+
+
+def test_default_set_resolves_legacy_pet_total_for_indicator_planning():
+    legacy = registry.declaration_for("pet_annual_total")
+    local = loader.local_declaration(legacy)
+    assert (local.calculation_set, local.calculation_method) == (
+        "default",
+        "annual_summary/1",
+    )
+    assert local.required_responses.variable == "pet"
 
 
 def test_default_preset_delegates_to_registry_declarations():

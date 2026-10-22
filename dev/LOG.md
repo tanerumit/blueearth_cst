@@ -21,6 +21,15 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-22 | t2609161642 | Scope R15: run workflows as one DAG [dropped] | workflows |
+| 2026-10-22 | t2608181139 | Add forcing-selection evaluation to WF0 [dropped] | wf0  |
+| 2026-10-22 | t2608210010 | Use official Deltares colours on docs site [dropped] | docs |
+| 2026-10-22 | t2608222239 | Support more historical climate datasets [dropped] | climate |
+| 2026-10-22 | t2608202351 | Publish the technical note as site chapters [dropped] | docs |
+| 2026-10-22 | t2610062309 | Snakemake scheduler stalls mid-run on long WF2 fetch batches [dropped] | wf2  |
+| 2026-10-22 | t2609171500 | Move frozen simulation documents into _engine [dropped] | layout |
+| 2026-10-22 | t2608202148 | WF2 behaviour has no current documentation [dropped] | wf2  |
+| 2026-10-22 | t2609162115 | weathergenr prints a raw glue expression [dropped] | upstream |
 | 2026-10-15 | t2610121419 | Add local-input E2E tests for all five workflows | validation |
 | 2026-10-15 | t2610032349 | Number experiments and add a new-experiment flag | wf4  |
 | 2026-10-15 | t2610151519 | Simplify obsolete config migration diagnostics | config |

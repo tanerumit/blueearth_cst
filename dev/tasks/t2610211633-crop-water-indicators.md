@@ -18,26 +18,23 @@ updated: 2026-10-21
 
 ## Progress
 
-*Blocked — Alexandria lacks verified historical Q, fixed Qcrit and WF1/WF3/WF4 bindings.*
+*Blocked — WF1 source raster unreadable; no historical Q, Qcrit or ready model.*
 
-Next: Verify case bindings and baseline years, derive location-keyed Qcrit, then run the case.
-The active `wrt-egypt-v2` project currently has WF2 material only.
+Next: Restore P-drive hydrography, rerun WF1, apply case Q90, then prepare WF3/WF4.
 
 - [x] Revise brief and document the set and starter configuration.
 - [x] Implement paired-input retention, publication and identity.
 - [x] Add native PET, six methods, ten selections and period diagnostics.
 - [x] Verify arithmetic, affected consumers, retained-response integration and native Wflow PET.
 - [ ] Verify historical Q and active case bindings; derive fixed Qcrit.
-- [x] Prepare Alexandria model outputs and crop-water selector (`cst-cases` `a94e353`).
+- [x] Prepare Alexandria outputs, selector and Q90 command (`cst-cases` `56ca48c`).
 - [ ] Fill Qcrit and run the Alexandria case.
 
-V1 uses existing AET/reference PET and non-Q subcatchment means. Qcrit is the location-keyed
-linear 0.10 quantile across complete historical summers; missing thresholds refuse evaluation.
-Existing development runs require regeneration for PET retention.
+Qcrit trial policy: linear 0.10 quantile of complete 1985–2004 historical May–October
+daily model Q, fixed at every native location. Missing thresholds refuse evaluation.
 
-Evidence: independent numerical checks, retained-response publication and named export,
-affected pytest, Ruff and syntax checks, plus isolated Julia/Wflow PET output read at four
-subcatchment IDs. Native-run evidence: session-1 `.tmp/tasks/crop-water-native/`.
+Evidence: toolbox checks and native PET run passed. Alexandria WF1 dry-run passed; rule 1.01
+failed reading P-drive `30sec_uparea.tif`. See case notes; no Qcrit value was invented.
 
 ## Work location
 

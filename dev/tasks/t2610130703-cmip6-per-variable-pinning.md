@@ -4,9 +4,9 @@ type: todo-item
 status: backlog
 effort: 1
 area: wf2
-queue: 8
+queue: 6
 created: 2026-10-13
-updated: 2026-10-15
+updated: 2026-10-22
 ---
 
 > [!note] Overview

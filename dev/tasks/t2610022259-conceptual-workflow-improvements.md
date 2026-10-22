@@ -4,10 +4,10 @@ type: todo-item
 status: backlog
 effort: 2
 area: methods
-queue: 11
+queue: 9
 doc: dev/tasks/t2610022259/wf0-climate-analysis-ideas.md
 created: 2026-10-02
-updated: 2026-10-15
+updated: 2026-10-22
 ---
 
 > [!note] Overview

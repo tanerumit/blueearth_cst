@@ -3,8 +3,8 @@
 Last updated: 2026-10-23
 
 Shared procedures for developers and agents coordinating repository work. This reference owns task
-admission, board location, worktree coordination, handoffs, and Herdr worker coordination. Placement and scratch rules live in
-[dev-repository-layout.md](dev-repository-layout.md); preservation rules live in [dev-record-lifecycle.md](dev-record-lifecycle.md).
+admission, board location, worktree coordination, handoffs, and Herdr worker coordination. Placement and
+scratch rules live in [dev-repository-layout.md](dev-repository-layout.md); preservation rules live in [dev-record-lifecycle.md](dev-record-lifecycle.md).
 
 ## Task admission and the board
 
@@ -167,12 +167,16 @@ tracked folders or scratch.
 
 ## Herdr agent coordination
 
-Applies when a coordinator runs visible worker agents in Herdr panes; the `herdr` and
-`agent-routing` skills own CLI syntax and role choice. Herdr supplies visibility only. Allocation, branch
-identity, verification, landing and cleanup stay with the rules above and `git-workflow`; a visible pane
-neither claims a session nor makes concurrent writes safe. Multiple workers need explicit user
-authorization. Launch behaviour below was tested on 2026-10-23 with Codex CLI 0.162.0 and Claude Code
-2.1.308; re-check it after upgrades.
+Applies when a coordinator runs visible worker agents in Herdr panes; the `herdr` and `agent-routing`
+skills own CLI syntax and role choice. Herdr supplies visibility only. Allocation, branch identity,
+verification, landing and cleanup stay with the rules above and `git-workflow`; a visible pane neither
+claims a session nor makes concurrent writes safe. Multiple workers need explicit user authorization.
+
+Vendor documentation defines the model and effort controls: Codex
+[`/model`](https://learn.chatgpt.com/docs/developer-commands#set-the-active-model-with-model) and Claude Code
+[model configuration](https://code.claude.com/docs/en/model-config). The launch details below are local
+observations from Codex CLI 0.162.0 and Claude Code 2.1.308 on 2026-10-23, not documented guarantees;
+re-check them after upgrades.
 
 ### Spaces and ownership
 
@@ -182,8 +186,10 @@ authorization. Launch behaviour below was tested on 2026-10-23 with Codex CLI 0.
   lowercase. Keep the checks `pwsh` pane for tests, logs and inspection. Never create a worker
   opportunistically; start one only for an authorized assignment, in the background, without taking the
   user's focus.
-- Before reusing a pane, resolve who owns it: a disconnected or still-running writer is stopped, with its
-  branch and changes preserved, before a replacement starts. Exit an idle probe only when it holds no work.
+- Before reusing a pane, establish who owns its occupant. Stop or replace a prior worker only with the
+  coordinator's established ownership or the user's authority over that task; otherwise report it and ask.
+  Preserve its branch and changes first. Never close or stop another task's agent, pane or the Herdr
+  server on your own judgement. An idle probe you started that holds no work may be exited.
 
 ### Launch
 
@@ -192,18 +198,22 @@ authorization. Launch behaviour below was tested on 2026-10-23 with Codex CLI 0.
    does not prove a model is unavailable; the live picker decides.
 2. Verify worktree allocation (`git worktree list`, branch, clean tree) and, separately, a clean agent
    context. An idle pane or clean tree does not prove a fresh conversation.
-3. Start the agent in the existing pane with `herdr agent start <name> --kind <kind> --pane <id> -- <args>`:
+3. With the shell idle in the foreground of the existing pane, run
+   `herdr agent start <name> --kind <kind> --pane <id> -- <args>`:
    - **Claude Code:** pass `--model` and `--effort` after `--`; the UI and `/status` show the resolved
      model ID and effort.
    - **Codex:** pass only `-C <session-root>` and `-m <model>` after `--`. A `-c` override such as
      `model_reasoning_effort` forces embedded mode, so the worker is not listed by shared-server thread
-     discovery (Herdr tracking still works). Instead open `/model` in the idle fresh CLI, choose model
-     and effort, and press `s` (session) rather than Enter (saved default). `/daemon` should report a
-     running server; leave it untouched.
+     discovery (Herdr tracking still works). Instead open `/model` in the idle fresh CLI and choose the
+     model, which leads to the effort screen. There, `s` applies model and effort to this session only;
+     Enter saves them as the default, so do not use it. `/daemon` should report a running server; leave
+     it untouched.
 4. Verify effective model, effort, worktree and branch in the fresh UI. The start response and Herdr
    metadata can show a stale conversation ID until the first turn.
 5. Send a preflight-only turn: confirm no earlier task, report cwd and branch, and stop. Record the new
-   conversation ID, different from the pane's previous one; for Codex also confirm discovery lists it.
+   conversation ID, different from the pane's previous one. For Codex, also confirm that shared-server
+   thread discovery lists it with the correct cwd. Claude Code keeps its own interactive session; it is
+   not a Codex thread, so check its ID in `/status`, and Herdr read/wait for completion.
 
 A new unrelated task always gets a fresh conversation, never a resumed or forked one; carry over only
 selected instructions and evidence. Related follow-ups keep the existing conversation. Do not change

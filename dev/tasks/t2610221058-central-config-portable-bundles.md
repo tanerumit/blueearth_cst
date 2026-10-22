@@ -25,7 +25,14 @@ updated: 2026-10-22
 - [x] Implement portable export and validated import with conflict protection (`94887b4d`, `381b5e39`, `96dcf2e0`).
 - [x] Verify transfer, failure handling, and existing runner behavior; update authoritative documentation.
   Docs `98081bee`; [walkthrough](t2610221058/walkthrough.md): Ntoum transfer and real rapid
-  run/no-op/plot-rerun sequence passed. Batch gate (`test-fast`, lint, format-check) owed before push.
+  run/no-op/plot-rerun sequence passed.
+
+Batch gate at `5149dd6e` (rebased on `main` `68ce458b`; config-read registry and launcher re-audit fixed in
+`5149dd6e`): `pixi run lint` and `format-check` passed at `316252ab` (later edits scoped-Ruff clean);
+launcher contract tests passed; `test-fast` 5039 passed, 1 failed. The failure,
+`test_crop_water_cli_publication`, was a parallel-worker `WinError 32` on the shared
+`.snakemake/iocache/latest.pkl`; rerun alone 3/3 passed. Paused wrt-egypt-v2 `stress_test_01` code inventory
+is identical to the branch. Evidence: session-1 `.tmp/tasks/t2610221058/gate/`. Not landed or pushed.
 
 ## Work location
 

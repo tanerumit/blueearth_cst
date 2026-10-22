@@ -82,6 +82,12 @@ conflicts remain errors.
 
 WF2 retains the acquired slices and basin monthly series, a change-factor product by model, scenario, and horizon, projection figures, and merged logs and benchmarks. Interpret these as plausibility context alongside the response surface, not as forcing for its simulations.
 
+Launcher runs record which invocation produced each current product file in
+`_engine/execution/production.json`, beside copies of those invocations' logs and benchmarks.
+`scripts/transfer_results.py` exports a completed product with its configuration snapshots and basin
+polygon, and imports it into another project after integrity and compatibility checks. The user guide's
+outputs page owns the record semantics, transfer commands and compatibility rules.
+
 The `analysis/` tables use the configured `reference_window` and `future_windows`, retaining complete water
 years inside their calendar bounds. January 2041–2060 uses all 20 years; an October start uses WY 2041–2059
 (October 2041–September 2060). Windows are never recentered, extended or replaced by a reference fallback.

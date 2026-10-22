@@ -132,6 +132,8 @@ Execution diagnostics share `logs/<UTC timestamp>-<short invocation ID>/`: summa
 workflow logs and Markdown/TSV benchmarks. Child invocations share their parent's folder; each retry
 has fresh part namespaces. Historical shared logs and benchmark files remain untouched. The maintained
 layout and interpretation live in `docs/guide/running.md` § Execution logs and benchmarks.
+The WF2 product additionally owns `_engine/execution/` (production attribution and retained copies of
+contributing logs) and, after an import, `_engine/imported/`; `docs/guide/outputs.md` owns both.
 
 For new output projects, `config/<workflow>/` holds `run_record.yml`, captured files,
 `SOURCES.md`, and `catalogs/` for the latest WF0–WF2

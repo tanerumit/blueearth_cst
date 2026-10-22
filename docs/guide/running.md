@@ -292,7 +292,9 @@ parts. Previously written top-level workflow logs and `benchmarks/` reports rema
 they are not reassigned to new executions.
 
 Configuration archives keep their existing locations under `config/`; resource traces remain under
-`config/_engine/invocations/`. Removing an execution's diagnostic folder does not remove its
+`config/_engine/invocations/`. WF2 additionally copies the logs and benchmarks of the runs that produced
+its current files into the product's `_engine/execution/`; see
+[which run produced these files](outputs.md#which-run-produced-these-files). Removing an execution's diagnostic folder does not remove its
 configuration provenance or scientific outputs.
 
 The all-workflow console includes the selected experiment and its action in the

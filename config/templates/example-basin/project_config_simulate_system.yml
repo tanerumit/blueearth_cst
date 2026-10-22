@@ -36,11 +36,27 @@ include_unperturbed: true
 # Named sets, each published to results/indicator_sets/<set-id>/ with an
 # indicators.csv dictionary. `default` is bundled; omitted means [default].
 # Add eflow-erfa for 70 discharge median/IQR indicators: [default, eflow-erfa].
-# Crop-water also needs retained P, PET, AET, recharge and Q plus a custom
-# crop-water set file binding historical Qcrit thresholds or a baseline_quantile rule.
+# Crop-water also needs retained P, PET, AET, recharge and Q. Configure it inline:
+#indicator_sets:
+#  - set: crop-water
+#    summer_low_flow_days:
+#      thresholds:
+#        baseline_quantile: {}
+#    summer_longest_dry_spell:
+#      dry_day_mm: 2.0
+#    winter_longest_dry_spell:
+#      enabled: false
+#  - set: flow_regime
+#    q_mean_annual_90day_min:
+#      enabled: false
+# Omitted indicators/parameters inherit defaults. enabled defaults to true.
+# Historical Qcrit uses this project's WF1 model; omitted years (or all)
+# uses all historical calendar years. Q90 exceedance, summer and linear are defaults.
+# Preparation follows WF1 at the WF4 boundary; a combined dry-run may leave it pending.
 # See blueearth_cst/indicators/sets/crop_water/README.md for the complete rule.
-# Select named indicator sets to calculate. Input: list of registered set IDs.
-indicator_sets: [default]
+# Select named indicator sets to calculate. Input: list of IDs or inline mappings.
+indicator_sets:
+  - set: default
 
 # Custom sets: set id -> file. A relative config_path resolves against THIS
 # file; absolute paths are allowed. Copy config/templates/indicator_set.template.yml.

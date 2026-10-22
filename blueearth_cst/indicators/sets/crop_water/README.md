@@ -28,37 +28,37 @@ or pumpable recharge; whether return flows and canal leakage are represented dep
 Q is a named outlet/gauge series and may describe drainage rather than irrigation supply.
 
 The low-flow declaration requires fixed, location-keyed `thresholds` before evaluation. WF4 can prepare
-them directly from WF1's historical model discharge. In a custom crop-water set file, use:
+them directly from WF1's historical model discharge. In `project_config_simulate_system.yml`, use:
 
 ```yaml
-schema_version: 1
-id: crop-water
-title: Crop-water with historical Qcrit
-description: Fixed historical model-discharge thresholds
-selection:
-  registry:
-    set: crop-water
-    overrides:
-      summer_low_flow_days:
-        season: summer
-        thresholds:
-          baseline_quantile:
-            model_root: /absolute/project/models/hydrology/wflow
-            source_id: historical-model-era5
-            years: [1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005]
-            quantile: 0.90
-            convention: exceedance
-            reference_period: summer
-            quantile_method: linear
+indicator_sets:
+  - set: crop-water
+    summer_low_flow_days:
+      thresholds:
+        baseline_quantile: {}
 ```
 
-`model_root` resolves against this set file. Preparation reads `run_default/output.csv` with
+The registered `season: summer` is inherited. WF4 binds the rule to its project's
+`models/hydrology/wflow` model and derives source identity from the historical artifacts.
+Legacy explicit `model_root` (relative to its set file) and `source_id` remain supported.
+Preparation reads `run_default/output.csv` with
 `wflow_sbm.toml`, verifies the historical forcing binding (`inmaps_historical.nc`), and refuses missing
-or incompatible inputs. Run WF1 first; dry-runs also need its historical output. Neither synthetic
-observations nor future scenario discharge supplies this reference. Baseline preparation also works
+or incompatible inputs. With all workflows enabled, startup validates the rule without opening
+historical output; preparation happens at the WF4 boundary after upstream execution. A combined
+dry-run with WF1 enabled inspects upstream workflows and reports WF4 Q90 preparation as pending
+when historical CSV/TOML inputs are missing. Its data-dependent WF4 DAG cannot then be inspected;
+no thresholds or calculation identity are invented. A direct WF4 dry-run, or one with WF1 disabled,
+requires existing historical inputs and names the required WF1 historical run if they are absent.
+Existing malformed inputs remain errors. Neither synthetic observations nor future scenario discharge
+supplies this reference. Baseline preparation also works
 for indicators-only operations and does not start Wflow. The resolved values are fixed across scenarios.
 
 The default is Q90 exceedance: `quantile: 0.90`, `convention: exceedance` means non-exceedance p=0.10.
+Omit `years` (as in this minimal example) or use `years: all` to request every historical calendar
+year found in the discharge labels, including partial edge years which are reported and excluded
+when their reference period is incomplete. An explicit list such as `years: [1999, 2000, 2001]`
+restricts the request; unavailable requested years are also reported as excluded. No reference
+period is inferred from the project's climate window.
 For Q80 use 0.80 exceedance, or equivalently 0.20 nonexceedance. Probabilities must lie strictly between
 0 and 1. `reference_period: summer` pools complete May–October periods for compatibility; `annual`
 pools complete calendar years. This changes the reference distribution only: the indicator still
@@ -67,10 +67,14 @@ global crop calendar. Supported quantile methods are linear (default), lower, hi
 The Python helper `prepare_baseline_qcrit` accepts the same rule settings and validated historical Q.
 
 Derived records retain source identity and CSV/TOML SHA-256 digests, baseline run identity, requested
-years, reference period, quantile convention and probability, interpolation method, included/excluded
-periods, sample count and per-year expected/finite-day coverage. Incomplete or nonfinite periods are
-excluded per location; no complete period is an error. Inspect exclusions before scientific use.
+years (`years`), discovered calendar years (`discovered_years`), selection mode (`year_selection`:
+`all` or `explicit`), reference period, quantile convention and probability, interpolation method,
+included/excluded periods, sample count and per-year expected/finite-day coverage. Incomplete or nonfinite
+periods are excluded per location; no complete period is an error. Inspect exclusions before scientific use.
 These values and provenance enter calculation identity, so changing inputs or rules changes identity.
+Omission and `years: all` have the same resolved identity. An explicit list records explicit intent
+even if it happens to match the discovered years. New derived records include these provenance fields;
+previous explicit threshold records remain readable.
 Existing explicit records with `value`, `source_id`, `years`, `used_summers`, `excluded_summers`,
 `method: supplied operational` (or legacy `linear p=0.10`) and `units: m3 s-1` remain supported.
 Do not mix explicit thresholds and a baseline rule. A zero threshold makes a strict low-flow count

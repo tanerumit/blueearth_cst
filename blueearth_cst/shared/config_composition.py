@@ -856,8 +856,13 @@ def _probe_t2(
             if source_bytes is not None
             else Path(resolved).read_bytes()
         )
-        loaded = yaml.safe_load(data)
-    except yaml.YAMLError as exc:
+        if name == "simulate_system":
+            from blueearth_cst.experiment.indicator_sets import load_unique_yaml
+
+            loaded = load_unique_yaml(data)
+        else:
+            loaded = yaml.safe_load(data)
+    except (yaml.YAMLError, ValueError) as exc:
         return _Probe(name, os.fspath(raw), resolved, "unparseable", {}, str(exc))
     if loaded is None:
         # An empty file is a workflow with no settings, same as an omitted key.

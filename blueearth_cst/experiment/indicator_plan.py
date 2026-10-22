@@ -118,13 +118,14 @@ def indicator_anchor(project: dict) -> str:
     )
 
 
-def indicators_only_configuration(config_path):
+def indicators_only_configuration(config_path, *, prepare_baseline=True):
     """Read only the selected experiment and indicator settings.
 
     This projection never opens generation or model workflow files.
     """
     import yaml
 
+    from blueearth_cst.experiment.indicator_sets import load_unique_yaml
     from blueearth_cst.shared.snake_utils import validate_experiment_name
 
     path = Path(config_path).resolve()
@@ -136,7 +137,7 @@ def indicators_only_configuration(config_path):
         raise ValueError(
             "indicators-only requires an enabled simulate_system config_path"
         )
-    workflow = yaml.safe_load(
+    workflow = load_unique_yaml(
         (path.parent / descriptor["config_path"]).read_text(encoding="utf-8")
     )
     from blueearth_cst.shared.config_composition import normalize_indicator_settings
@@ -178,6 +179,7 @@ def indicators_only_configuration(config_path):
         simulation_path=False,
         retained_variables=retained_variables,
         legacy_context="indicators_only",
+        prepare_baseline=prepare_baseline,
     )
     climate = project.get("climate") or {}
     anchor = indicator_anchor(project)

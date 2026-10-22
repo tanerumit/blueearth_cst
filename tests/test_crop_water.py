@@ -14,6 +14,61 @@ from blueearth_cst.indicators.sets.crop_water.calculations import prepare_baseli
 TIME = pd.date_range("2023-10-01", "2024-10-31", freq="D")
 
 
+@pytest.mark.parametrize(
+    "options", [{}, {"years": "all"}, {"years": [1998, 1999, 2000, 2001, 2002]}]
+)
+@pytest.mark.parametrize("reference_period", ["summer", "annual"])
+def test_qcrit_year_selection_keeps_location_exclusions(options, reference_period):
+    time = pd.date_range("1999-07-01", "2002-07-01")
+    first = np.full(len(time), 10.0)
+    second = np.full(len(time), 20.0)
+    second[time == "2000-06-01"] = np.nan
+    responses = [
+        _series("q", first, location="a", time=time),
+        replace(_series("q", second, location="b", time=time), location_ordinal=1),
+    ]
+    records = prepare_baseline_qcrit(
+        responses, source_id="historical", reference_period=reference_period, **options
+    )
+    requested = options.get("years")
+    expected_years = (
+        requested if isinstance(requested, list) else [1999, 2000, 2001, 2002]
+    )
+    for record in records.values():
+        assert record["years"] == expected_years
+        assert record["discovered_years"] == [1999, 2000, 2001, 2002]
+        assert record["year_selection"] == (
+            "explicit" if isinstance(requested, list) else "all"
+        )
+        assert record["nonexceedance_probability"] == pytest.approx(0.1)
+    assert records["a"]["value"] == 10
+    assert records["b"]["value"] == 20
+    assert records["a"]["used_periods"] == [2000, 2001]
+    assert records["b"]["used_periods"] == [2001]
+    assert records["a"]["sample_count"] == (
+        368 if reference_period == "summer" else 731
+    )
+    assert records["b"]["sample_count"] == (
+        184 if reference_period == "summer" else 365
+    )
+    assert records["b"]["excluded_periods"] == [
+        year for year in expected_years if year != 2001
+    ]
+    second[time == "2001-06-01"] = np.nan
+    responses[1] = replace(
+        _series("q", second, location="b", time=time), location_ordinal=1
+    )
+    with pytest.raises(
+        ValueError, match=f"no complete baseline {reference_period} period at b"
+    ):
+        prepare_baseline_qcrit(
+            responses,
+            source_id="historical",
+            reference_period=reference_period,
+            **options,
+        )
+
+
 def _series(variable, values, *, location="basin", time=TIME):
     values = np.asarray(values, dtype=float)
     return ResponseSeries(

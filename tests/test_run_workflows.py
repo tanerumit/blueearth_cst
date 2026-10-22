@@ -148,6 +148,219 @@ def _snakefiles_invoked(calls):
     return out
 
 
+def _q90_config(tmp_path, *, build_model=True):
+    """A named Q90 request whose historical output has not been produced."""
+    import yaml
+
+    cfg = tmp_path / "q90-project.yml"
+    flags = {name: "true" for name in rw.WORKFLOW_ORDER}
+    flags["build_model"] = "true" if build_model else "false"
+    _write_cfg(cfg, flags)
+    project = yaml.safe_load(cfg.read_text())
+    project["model"] = {"outvars": ["river discharge"]}
+    cfg.write_text(yaml.safe_dump(project), encoding="utf-8")
+    workflow = tmp_path / "q90-project-simulation.yml"
+    workflow.write_text(
+        yaml.safe_dump(
+            {
+                "operations": ["simulations", "indicators"],
+                "experiment_name": "test",
+                "indicator_sets": ["crop-water"],
+                "indicator_set_definitions": {
+                    "crop-water": {"config_path": "crop-water-q90.yml"}
+                },
+                "indicator_selection": {
+                    "crop-water": {"include": ["summer_low_flow_days"]}
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    model = tmp_path / "project/models/hydrology/wflow"
+    (tmp_path / "crop-water-q90.yml").write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 1,
+                "id": "crop-water",
+                "title": "Q90",
+                "description": "Historical",
+                "selection": {
+                    "registry": {
+                        "set": "crop-water",
+                        "overrides": {
+                            "summer_low_flow_days": {
+                                "season": "summer",
+                                "thresholds": {
+                                    "baseline_quantile": {
+                                        "model_root": str(model),
+                                        "source_id": "historical",
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    return cfg, model
+
+
+@pytest.mark.parametrize("inline", [False, True])
+def test_combined_q90_dry_run_leaves_wf4_pending_without_historical_output(
+    tmp_path, capture_runs, monkeypatch, capsys, inline
+):
+    cfg, model = _q90_config(tmp_path)
+    if inline:
+        _inline_q90_config(tmp_path)
+    calls, _ = capture_runs
+    # A dry-run child must not manufacture WF1's outputs.
+    monkeypatch.setattr(
+        rw, "run_project_child", lambda cmd, **_kwargs: calls.append(cmd) or 0
+    )
+    assert rw.run(str(cfg), cores=3, extra=["--dry-run"]) == 0
+    assert not model.exists()
+    assert _snakefiles_invoked(calls) == [
+        "analyze_climate.smk",
+        "build_model.smk",
+        "analyze_projections.smk",
+        "generate_scenarios.smk",
+    ]
+    output = capsys.readouterr().out
+    assert "Q90 preparation pending WF1" in output
+    assert "DAG not inspected" in output
+    history = _read_only_manifest(tmp_path / "project")
+    assert "simulate_system" in history["pending_workflows"]
+
+
+def _inline_q90_config(tmp_path):
+    """Use the project's model context without a separate set file."""
+    import yaml
+
+    path = tmp_path / "q90-project-simulation.yml"
+    settings = yaml.safe_load(path.read_text())
+    settings.pop("indicator_set_definitions")
+    settings["indicator_sets"] = [
+        {
+            "set": "crop-water",
+            "summer_low_flow_days": {"thresholds": {"baseline_quantile": {}}},
+        }
+    ]
+    path.write_text(yaml.safe_dump(settings), encoding="utf-8")
+
+
+def test_inline_duplicate_indicator_keys_are_not_silently_overwritten(
+    tmp_path, capture_runs
+):
+    cfg, _ = _q90_config(tmp_path)
+    _inline_q90_config(tmp_path)
+    path = tmp_path / "q90-project-simulation.yml"
+    path.write_text(
+        path.read_text().replace(
+            "  summer_low_flow_days:",
+            "  summer_low_flow_days: {}\n  summer_low_flow_days:",
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate YAML key"):
+        rw.run(str(cfg), cores=3, extra=[])
+    assert capture_runs[0] == []
+
+
+@pytest.mark.parametrize("inline", [False, True])
+def test_combined_q90_execution_prepares_only_after_wf1(
+    tmp_path, capture_runs, monkeypatch, inline
+):
+    import numpy as np
+    import pandas as pd
+
+    from blueearth_cst.experiment import baseline_qcrit
+
+    cfg, model = _q90_config(tmp_path)
+    if inline:
+        _inline_q90_config(tmp_path)
+    calls, _ = capture_runs
+    child = rw.run_project_child
+    prepare = baseline_qcrit.resolve_thresholds
+    preparations = []
+
+    def observed_prepare(parameters, path, **kwargs):
+        if kwargs.get("prepare", True):
+            assert "build_model.smk" in _snakefiles_invoked(calls)
+            preparations.append(path)
+        return prepare(parameters, path, **kwargs)
+
+    def produce_historical(cmd, **kwargs):
+        result = child(cmd, **kwargs)
+        if Path(cmd[cmd.index("-s") + 1]).name == "build_model.smk":
+            (model / "run_default").mkdir(parents=True, exist_ok=True)
+            pd.DataFrame(
+                {"Q_9": np.arange(365)}, index=pd.date_range("1999-01-01", "1999-12-31")
+            ).to_csv(model / "run_default/output.csv", index_label="time")
+            (model / "wflow_sbm.toml").write_text(
+                '[time]\ncalendar="standard"\ntimestepsecs=86400\n'
+                'starttime="1998-12-31T00:00:00"\nendtime="1999-12-31T00:00:00"\n'
+                '[input]\npath_forcing="forcing/inmaps_historical.nc"\n'
+                '[[output.csv.column]]\nheader="Q"\nparameter="river_water__volume_flow_rate"\n',
+                encoding="utf-8",
+            )
+        return result
+
+    monkeypatch.setattr(baseline_qcrit, "resolve_thresholds", observed_prepare)
+    monkeypatch.setattr(rw, "run_project_child", produce_historical)
+    monkeypatch.setattr(
+        simulation_record,
+        "capture_simulation_sources_v2",
+        lambda *_: tmp_path / "capture.json",
+    )
+    assert rw.run(str(cfg), cores=3, extra=[]) == 0
+    assert preparations
+    assert _snakefiles_invoked(calls)[-1] == "simulate_system.smk"
+
+
+def test_q90_without_wf1_reports_required_historical_run(tmp_path, capture_runs):
+    cfg, _ = _q90_config(tmp_path, build_model=False)
+    with pytest.raises(
+        ValueError, match="missing WF1.*historical simulation before WF4"
+    ):
+        rw.run(str(cfg), cores=3, extra=["--dry-run"])
+
+
+def test_combined_q90_dry_run_does_not_hide_corrupt_existing_toml(
+    tmp_path, capture_runs, monkeypatch, capsys
+):
+    cfg, model = _q90_config(tmp_path)
+    calls, _ = capture_runs
+    model.mkdir(parents=True)
+    (model / "wflow_sbm.toml").write_text("[broken", encoding="utf-8")
+    monkeypatch.setattr(
+        rw, "run_project_child", lambda cmd, **_kwargs: calls.append(cmd) or 0
+    )
+    with pytest.raises(ValueError, match="Expected"):
+        rw.run(str(cfg), cores=3, extra=["--dry-run"])
+    assert "simulate_system.smk" not in _snakefiles_invoked(calls)
+    assert "Q90 preparation pending WF1" not in capsys.readouterr().out
+
+
+def test_combined_q90_refuses_malformed_rule_before_upstream_execution(
+    tmp_path, capture_runs
+):
+    import yaml
+
+    cfg, _ = _q90_config(tmp_path)
+    path = tmp_path / "crop-water-q90.yml"
+    document = yaml.safe_load(path.read_text())
+    rule = document["selection"]["registry"]["overrides"]["summer_low_flow_days"][
+        "thresholds"
+    ]["baseline_quantile"]
+    rule["quantile"] = 2
+    path.write_text(yaml.safe_dump(document), encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid Qcrit"):
+        rw.run(str(cfg), cores=3, extra=[])
+    assert capture_runs[0] == []
+
+
 def _manifests(project_dir: Path) -> list[Path]:
     """Return only parent invocation records, excluding workflow children."""
     paths = (project_dir / "config" / "_engine" / "invocations").glob("*.json")

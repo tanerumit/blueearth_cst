@@ -70,6 +70,10 @@ def _thresholds(value: object) -> bool:
             set(record) == legacy
             or set(record) == derived
             or set(record) == derived | {"used_summers", "excluded_summers"}
+            or set(record) == derived | {"year_selection", "discovered_years"}
+            or set(record)
+            == derived
+            | {"used_summers", "excluded_summers", "year_selection", "discovered_years"}
         )
         and _positive(record["value"])
         and isinstance(record["source_id"], str)
@@ -98,7 +102,25 @@ def _derived_threshold(record: dict) -> bool:
     """Validate the explicit quantile rule retained with a derived threshold."""
     p = record["nonexceedance_probability"]
     return (
-        record["reference_period"] in ("summer", "annual")
+        (
+            "year_selection" not in record
+            or (
+                record["year_selection"] in ("all", "explicit")
+                and isinstance(record["discovered_years"], list)
+                and bool(record["discovered_years"])
+                and all(
+                    type(year) is int and 1 <= year <= 9998
+                    for year in record["discovered_years"]
+                )
+                and record["discovered_years"]
+                == sorted(set(record["discovered_years"]))
+                and (
+                    record["year_selection"] != "all"
+                    or record["years"] == record["discovered_years"]
+                )
+            )
+        )
+        and record["reference_period"] in ("summer", "annual")
         and record["convention"] in ("exceedance", "nonexceedance")
         and _fraction(record["quantile"])
         and _fraction(p)
@@ -145,30 +167,32 @@ def _longest(flags: np.ndarray) -> int:
     return best
 
 
-def prepare_baseline_qcrit(
-    responses: Sequence[ResponseSeries],
+def validate_qcrit_options(
     *,
     source_id: str,
-    years: Sequence[int],
+    years: Sequence[int] | str | None = None,
     quantile: float = 0.9,
     convention: str = "exceedance",
     reference_period: str = "summer",
     quantile_method: str = "linear",
-) -> dict[str, dict]:
-    """Pool complete historical periods into fixed location thresholds.
-
-    ``quantile=0.9, convention='exceedance'`` means Q90 (nonexceedance p=0.10).
-    Summer is May–October; annual is the calendar year. Incomplete/nonfinite
-    periods are excluded independently per location and recorded, never filled.
-    The caller must identify historical model discharge, not scenario responses.
-    """
+) -> None:
+    """Validate the authored rule independently of historical output availability."""
     if (
         not isinstance(source_id, str)
         or not source_id
-        or not years
-        or any(type(year) is not int or not 1 <= year <= 9998 for year in years)
+        or (
+            years is not None
+            and years != "all"
+            and (
+                not isinstance(years, (list, tuple))
+                or not years
+                or any(type(year) is not int or not 1 <= year <= 9998 for year in years)
+            )
+        )
     ):
-        raise ValueError("Qcrit requires source identity and explicit baseline years")
+        raise ValueError(
+            "Qcrit requires source identity and years: all or a nonempty list of calendar years"
+        )
     if (
         isinstance(quantile, bool)
         or not _fraction(quantile)
@@ -179,6 +203,32 @@ def prepare_baseline_qcrit(
         raise ValueError(
             "invalid Qcrit quantile, convention, reference_period or quantile_method"
         )
+
+
+def prepare_baseline_qcrit(
+    responses: Sequence[ResponseSeries],
+    *,
+    source_id: str,
+    years: Sequence[int] | str | None = None,
+    quantile: float = 0.9,
+    convention: str = "exceedance",
+    reference_period: str = "summer",
+    quantile_method: str = "linear",
+) -> dict[str, dict]:
+    """Pool complete historical periods into fixed location thresholds.
+
+    Omitted years or ``all`` discover historical calendar years. Q90 exceedance
+    is nonexceedance p=0.10. Summer is May–October; annual is the calendar year.
+    Incomplete/nonfinite periods are excluded independently per location.
+    """
+    validate_qcrit_options(
+        source_id=source_id,
+        years=years,
+        quantile=quantile,
+        convention=convention,
+        reference_period=reference_period,
+        quantile_method=quantile_method,
+    )
     probability = 1 - quantile if convention == "exceedance" else quantile
     validate_responses(responses, evaluated_runs={item.run_id for item in responses})
     if len({item.run_id for item in responses}) != 1 or any(
@@ -188,6 +238,9 @@ def prepare_baseline_qcrit(
     ):
         raise ValueError("Qcrit baseline requires one daily interval-end Q run")
     frame = response_frame(responses)
+    discovered = sorted(set(int(year) for year in frame.index.year))
+    selection = "all" if years is None or years == "all" else "explicit"
+    years = discovered if selection == "all" else sorted(set(years))
     result = {}
     for location in frame:
         pooled, used, excluded, coverage = [], [], [], []
@@ -221,6 +274,8 @@ def prepare_baseline_qcrit(
             "value": float(np.quantile(pooled, probability, method=quantile_method)),
             "source_id": source_id,
             "years": list(sorted(set(years))),
+            "year_selection": selection,
+            "discovered_years": discovered,
             "baseline_run_id": responses[0].run_id,
             "reference_period": reference_period,
             "quantile": quantile,

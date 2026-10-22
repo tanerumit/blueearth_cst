@@ -4,6 +4,9 @@ The closed workflow set is analyze_climate, build_model, analyze_projections,
 generate_scenarios, simulate_system. Every enabled flag must be a boolean.
 Disabled workflows are reported and skipped; the first failure stops the run.
 Preflights occur immediately before their consumer, after preceding producers.
+Startup validates static WF4 settings without preparing historical Qcrit. A
+combined dry-run with WF1 enabled reports missing historical Q90 inputs as
+pending; it cannot inspect the data-dependent WF4 DAG until those inputs exist.
 Simulation uses the dedicated runner's operation/target validation and starts
 one Snakemake invocation. Its execution-option allowlist also applies here.
 Forwarded --unlock unlocks each enabled workflow without generating scenarios,
@@ -998,6 +1001,13 @@ def _closing_block(
         groups.append(("ran", [(_label(name), outcome) for name, outcome in ran]))
     elif manifest["no_op"]:
         groups.append(("nothing ran -- every workflow was disabled", []))
+    pending = [
+        (_label(name), workflow["pending_reason"])
+        for name, workflow in manifest["workflows"].items()
+        if workflow.get("pending_reason")
+    ]
+    if pending:
+        groups.append(("pending -- DAG not inspected", pending))
 
     if counted or unavailable:
         groups.append(
@@ -1287,6 +1297,9 @@ def _run_owned(
                 if new_experiment or note is not None or recover_reservation:
                     raise ValueError("experiment flags require enabled simulate_system")
             else:
+                from blueearth_cst.experiment.baseline_qcrit import (
+                    HistoricalQcritUnavailable,
+                )
                 from blueearth_cst.experiment.reservation_context import (
                     admit_context_owned,
                 )
@@ -1294,7 +1307,13 @@ def _run_owned(
                     simulation_command,
                 )
 
-                simulation_command(config_path, list(simulation_targets), cores, extra)
+                simulation_command(
+                    config_path,
+                    list(simulation_targets),
+                    cores,
+                    extra,
+                    prepare_baseline=False,
+                )
                 reservation_context = admit_context_owned(
                     Path(config_path),
                     REPO_ROOT,
@@ -1401,9 +1420,8 @@ def _run_owned(
                 # `build_command` gives simulate_system's own Python entry
                 # point, which the banner would otherwise show verbatim
                 # instead of the snakemake invocation it launches. Re-derive
-                # the real command for display; a misconfigured project still
-                # surfaces its error from the try block below, where it is
-                # already handled.
+                # the real command at the WF4 boundary. Preparation errors must
+                # surface here, including corrupt existing historical inputs.
                 from blueearth_cst.experiment.simulation_runner import (
                     simulation_command,
                 )
@@ -1412,8 +1430,24 @@ def _run_owned(
                     cmd, _ = simulation_command(
                         config_path, list(simulation_targets), cores, extra
                     )
-                except (OSError, KeyError, TypeError, ValueError):
-                    pass
+                except HistoricalQcritUnavailable as exc:
+                    if not (manifest["dry_run"] and flags["build_model"]):
+                        raise
+                    reason = (
+                        f"WF4 historical Q90 preparation pending WF1: {exc} "
+                        "WF4's data-dependent indicator DAG cannot be inspected until "
+                        "the historical inputs exist; no threshold or calculation identity was created."
+                    )
+                    workflow["status"] = "pending"
+                    workflow["pending_reason"] = reason
+                    history.setdefault("pending_workflows", {})[name] = reason
+                    invocation_history.update(history_path, history)
+                    print(
+                        "\n"
+                        + _handoff(tag, "pending WF1 historical inputs", note=reason),
+                        flush=True,
+                    )
+                    continue
             workflow["command"] = sanitize_argv(cmd)
             workflow["status"] = "running"
             print(

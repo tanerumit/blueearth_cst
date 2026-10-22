@@ -55,7 +55,8 @@ indicator_set_definitions:
 ```
 
 `operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter.
-`indicator_sets` lists set ids (`[a-z][a-z0-9_-]*`, at most 64 characters); omitted means `[default]`.
+`indicator_sets` accepts set ids or inline mappings; omitted means `[default]`.
+Set ids match `[a-z][a-z0-9_-]*`, at most 64 characters.
 `default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for
 `model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators
 run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file
@@ -89,26 +90,67 @@ The `crop-water` set supplies ten seasonal or annual agricultural screening indi
 precipitation, PET, AET and net recharge. It requires daily retained responses for all five variables.
 Use `model.outvars` to retain them in a new simulation; existing experiments without PET must be
 regenerated under a fresh experiment name. The summer low-flow declaration also needs one fixed,
-location-keyed historical Qcrit with source and baseline provenance. Copy the bundled
-`config/indicator_sets/crop-water.yml` to a case file with the same `id`, replace `selection.registry`
-with a mapping that supplies `overrides.summer_low_flow_days`, and bind that file using
-`indicator_set_definitions.crop-water.config_path`. An explicit custom definition may replace this
-bundled selector; the `default` preset cannot be replaced. The
+location-keyed historical Qcrit with source and baseline provenance. Configure it inline in the WF4
+file; a separate set file is optional. The
 [set conventions](../../../blueearth_cst/indicators/sets/crop_water/README.md) define periods,
 formulas, the Qcrit record, diagnostics and interpretation limits. The ET ratios use Wflow landscape
 AET and reference PET as screening proxies; subcatchment means do not represent crop or aquifer areas.
 
 The override accepts explicit operational thresholds or a `thresholds.baseline_quantile` rule.
-The latter identifies WF1's historical model directory, source and years, and automatically prepares
-fixed location thresholds before indicator evaluation. It defaults to Q90 exceedance (non-exceedance
+The latter uses the same project's WF1 historical model and derives source identity from its artifacts,
+and automatically prepares
+fixed location thresholds at the WF4 boundary after upstream execution. Omitted `years`, or `years: all`,
+selects all discovered historical calendar years; an explicit year list restricts the request.
+It defaults to Q90 exceedance (non-exceedance
 p=0.10), linear interpolation and complete May–October reference periods. Choose `reference_period:
 annual` for complete calendar years, or another quantile with explicit exceedance/nonexceedance
 semantics. This changes the reference distribution; low-flow day counts still use May–October.
-Historical CSV/TOML digests, rule settings and included/excluded coverage enter calculation provenance.
-WF1's historical output must already exist, including for a WF4 dry-run. Synthetic observations and
+Historical CSV/TOML digests, rule settings, requested/discovered years, year-selection mode and
+included/excluded coverage enter calculation provenance. A combined dry-run with WF1 enabled reports
+Q90 preparation as pending if historical inputs are absent; the data-dependent WF4 DAG remains
+uninspected until those inputs exist. A direct WF4 dry-run, or a run with WF1 disabled, requires the
+historical inputs and reports a WF1 prerequisite error when they are absent. Static malformed rules
+and corrupt existing inputs remain errors. Synthetic observations and
 scenario discharge are not used to fit these thresholds. The set conventions contain a complete example.
 
-To calculate part of a set, give `indicator_selection` one `include` or `exclude` list per selected
+Inline entries place indicator names directly below `set`:
+
+```yaml
+indicator_sets:
+  - set: crop-water
+    summer_low_flow_days:
+      thresholds:
+        baseline_quantile: {}
+    summer_longest_dry_spell:
+      dry_day_mm: 2.0
+    winter_longest_dry_spell:
+      enabled: false
+    summer_et_limitation_days:
+      pet_min_mm: 1.5
+      ratio: 0.6
+  - set: flow_regime
+    q_mean_annual_90day_min:
+      enabled: false
+  - set: default
+```
+
+`set` names a registered set. Optional `id` defaults to `set`; `title` and `description` are
+presentation metadata. Other keys must name registered indicators. Omitted indicators stay enabled;
+omitted parameters inherit registered defaults, including `season: summer` for `summer_low_flow_days`.
+Each supplied parameter replaces that parameter's value; nested threshold mappings are not merged.
+`enabled` must be a boolean and is not a calculation parameter. Disabled entries still undergo static
+parameter validation, but require no response variables or historical preparation. Disabling every
+indicator is an error: remove that set entry instead. Parameters encoded in registered names, such as
+season or window length, cannot be changed to contradict the name.
+
+Existing string selectors, `indicator_set_definitions` files and nested `selection.registry` files
+remain supported. Standalone files can also use the flat structure with `schema_version: 1`.
+An inline set cannot also have a file definition. Legacy `model_root` and `source_id` rule fields remain
+supported; new project configurations can omit both. Inline sources are captured in the invocation's
+selection snapshot just like separate files.
+
+For compatibility, `indicator_selection` can further narrow an inline set, but cannot re-enable an
+indicator disabled there. To calculate part of a set, give it one `include` or `exclude` list per selected
 set; omitted means every indicator. Keys are the published indicator names, kept in set order.
 
 ```yaml

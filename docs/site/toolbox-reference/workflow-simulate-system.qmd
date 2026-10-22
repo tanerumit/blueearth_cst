@@ -93,6 +93,21 @@ bundled selector; the `default` preset cannot be replaced. The
 formulas, the Qcrit record, diagnostics and interpretation limits. The ET ratios use Wflow landscape
 AET and reference PET as screening proxies; subcatchment means do not represent crop or aquifer areas.
 
+To calculate part of a set, give `indicator_selection` one `include` or `exclude` list per selected
+set; omitted means every indicator. Keys are the published indicator names, kept in set order.
+
+```yaml
+indicator_sets: [default, crop-water]
+indicator_selection:
+  crop-water:
+    exclude: [summer_low_flow_days]   # runs the other nine without Qcrit or retained q
+```
+
+A deselected indicator is outside the request: it is neither calculated, published nor checked for
+inputs. Unknown names, a set absent from `indicator_sets`, both lists for one set, or a selection
+leaving no indicators are refused. A changed selection publishes a new indicator set under the same set
+id from retained responses; earlier publications remain unchanged.
+
 Selected indicators must be available: before simulating, all their required variables are checked
 against `model.outvars`; when indicators run alone, against the retained responses. A missing variable
 fails with the set, indicator, method and variable; it never schedules a simulation.

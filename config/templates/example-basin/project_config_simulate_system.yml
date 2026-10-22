@@ -51,6 +51,14 @@ indicator_sets: [default]
 # Locate the indicator set definition. Input: YAML path relative to this file or absolute.
 #    config_path: indicator_sets/example_subset.yml
 
+# Calculate part of a selected set; omitted means all of its indicators.
+# Narrow selected sets to individual indicators. Input: set-ID-to-choice mapping.
+#indicator_selection:
+# Keep or drop named indicators of one set. Input: {include: [...]} or {exclude: [...]}.
+#  'crop-water':
+# Drop indicators by published name. Input: nonempty list of indicator names.
+#    exclude: [summer_low_flow_days]
+
 # The scalar `operation:` and `indicators:` keys are the legacy interface,
 # accepted for one feature release; they cannot be mixed with the keys above.
 

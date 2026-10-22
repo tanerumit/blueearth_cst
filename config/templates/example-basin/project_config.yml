@@ -113,7 +113,7 @@ climate:
 model:
   # Any of: river discharge, precipitation, potential evapotranspiration,
   # overland flow, actual evapotranspiration, groundwater recharge, snow.
-  # Select variables retained from model runs. Non-discharge outputs use subcatchment means.
+  # Select retained model outputs; non-discharge ones are subcatchment means. Input: list.
   outvars: ["river discharge", "precipitation", "potential evapotranspiration", "actual evapotranspiration", "groundwater recharge"]
 
 

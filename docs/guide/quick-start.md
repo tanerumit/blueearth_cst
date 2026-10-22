@@ -3,27 +3,19 @@ title: "Quick start"
 subtitle: "Run the example basin and find its results"
 ---
 
-This page runs the whole pipeline once, on the example basin that ships with the
-toolbox, so you can see what each stage produces before setting up your own
-basin. Allow at least an hour; the time depends on your computer and data access.
+Run the five-workflow rapid example on the supplied basin to see the output
+layout before configuring your own case. Allow at least an hour; data access,
+downloads, and local compute capacity affect the time.
 
-If the toolbox is not installed yet, do that first: [Setup guide](../site/setup/install.md).
-The example also needs access to the datasets named in its HydroMT catalogs;
-the supplied catalog paths may need to be replaced for your machine. Check
-`project.catalog` and the data source entries before starting.
+First complete the [Windows setup guide](../site/setup/install.md), including
+Pixi, juliaup-managed Julia 1.11.7, `pixi install`, and `pixi run install`.
+From the repository root, confirm that the rapid config's `project.catalog`
+entries and their data roots are available. Its base catalog expects the
+Deltares P-drive at `P:/wflow_global/hydromt`; the ERA5 override also uses
+that drive. CMIP6 acquisition needs network access. Installation alone does
+not supply these data. See [Configuring a project](configuration.md)
+if your data live elsewhere.
 
-::: {.callout-important}
-## Complete both installation steps
-
-```bash
-pixi install
-pixi run install
-```
-
-The second command installs the weather generator and prepares the Julia
-environment. Julia itself must already be available through juliaup; see the
-[setup guide](../site/setup/install.md).
-:::
 
 ## The shape of a run
 
@@ -46,70 +38,73 @@ and one settings file per workflow; both describe the same basin:
 
 | Config | Use it for |
 |---|---|
-| `test_case/project_config_rapid.yml` | A short first run to learn the workflow; its results are for checking execution |
-| `test_case/project_config_baseline.yml` | The longer reference run for numerical comparisons |
+| `test_case/project_config_rapid.yml` | First execution check: 2 × 2 perturbation grid plus the reference |
+| `test_case/project_config_baseline.yml` | 2 × 3 grid plus the reference; not needed for a first run |
 
-The rapid example covers all five workflows with fewer years and realizations.
-Its fitted return levels are not suitable for interpretation. Start with this
-example to learn the steps, then choose periods and sample sizes appropriate to
-your assessment.
+Both sets use two weather realizations and the 2046–2054 simulation window;
+the rapid set reduces the perturbation grid. Its return levels are only an
+execution check, not basin estimates. Review the period, stressor range, and
+sample size for an assessment. The [configuration guide](configuration.md)
+explains the project and workflow files.
 
 ## Run it
 
-From the repository root, inside the pixi environment:
+From the repository root, preview the enabled workflows first. The dry run
+may show a partial DAG until earlier producers have created their inputs:
 
-```bash
-pixi shell
+```powershell
+pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 -- --dry-run
+```
 
-python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
+Then run them:
+
+```powershell
+pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 ```
 
 The command runs the workflows enabled in the project file, in this order:
 historical climate, model, projections, scenario generation, and simulation.
 
-::: {.callout-tip}
-## Check a workflow before running it
-
-`--dry-run` lists the steps that can be determined without running them. For
-example, check the model workflow with:
-
-```bash
-python scripts/run_workflow.py build_model --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 --dry-run
-```
-:::
+WF1 builds the model and WF3 generates its independent climate series. WF4
+uses both. WF2 compares projections with the stress-test range; it does not
+feed WF3. Use the [running guide](running.md) for one-workflow commands and
+experiment selection.
 
 ## What you get
 
-Results are written under the `project_dir` named in the config —
-`test_case/test_rapid` for the rapid config:
+The rapid config writes under `test_case/test_rapid/`. After a successful
+run, open the exact `logs/<timestamp>__all-workflows/summary.md` named by
+the closing console message. It links the workflow logs and benchmark reports.
+The main products are:
 
-```
+```text
 test_case/test_rapid/
-  data/spatial/         basin, subbasins, rivers, gauge locations, and their plots
-  data/climate/         the historical climate store, and the CMIP6 slices
-  models/hydrology/     the Wflow-SBM model, its forcing, its run, its evaluation
-  scenarios/_engine/requests/   scenario generation settings
-  scenarios/            full current collection: lookups, series/, config/, weathergenr/
-  scenarios/<id>/       immutable scenario collections
-  experiments/<name>/   simulated responses and indicators
-  logs/                 one log per workflow
-  benchmarks/           per-rule timings
-  config/              configuration archives and run records
+  data/spatial/                       basin geometry and locations
+  data/climate/                       historical forcing and projection products
+  models/hydrology/wflow/             model, historical run, and evaluation
+  scenarios/                          exported current collection and lookup tables
+  scenarios/_engine/data/<id>/        immutable collection data
+  experiments/experiment_rapid/       retained responses and indicator sets
+  logs/<timestamp>__all-workflows/    summary, logs, and benchmarks
+  config/                             configuration archives and invocation records
 ```
 
 Find the hydrological indicators under
-`experiments/<name>/results/indicator_sets/default/`, starting with its
-`indicators.csv` dictionary. Join each indicator to its
-temperature and precipitation change using the files described in
-[Reading the outputs](outputs.md).
+`experiments/experiment_rapid/results/indicator_sets/default/`, starting
+with `indicators.csv` for definitions and units. Run-level tables join through
+`scenarios/scenario_run_lookup.csv`; group-level tables join through
+`group_metadata.csv` and `scenarios/perturbation_lookup.csv`. See
+[Reading the outputs](outputs.md) for the exact joins and interpretation limits.
 
 ## When something goes wrong
 
-- **"Directory cannot be locked"** — if no other run is using this project,
-  clear a lock left by an interrupted run:
-  `snakemake --unlock -s <workflow>.smk --configfile <config>`.
-- **`there is no package called 'weathergenr'`** — the second install step was
-  skipped; run `pixi run install`.
+- **The catalog root is missing** — check that the P-drive is mounted and the
+  catalog source paths resolve. The [setup guide](../site/setup/install.md)
+  shows the bounded path check.
+- **The project is locked** — confirm that no other run is active, then use
+  the [workflow recovery instructions](running.md#run-one-workflow).
+- **`weathergenr` is missing** — complete `pixi run install` as described in
+  the [setup guide](../site/setup/install.md).
 - **Julia not found** — Julia is deliberately not in the pixi environment. It is
   managed by juliaup and must be on your `PATH`; see the
   [Setup guide](../site/setup/install.md).

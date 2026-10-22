@@ -45,22 +45,9 @@ invalidating their old raw slices and derived series without a global schema bum
 readability through actual staging. `tests/test_series_identity.py` owns version-selection checks.
 Inspect fetched coverage and diagnostics before interpreting absent ensemble members scientifically.
 
-### Scoped live measurement (2026-10-22)
-
-The t2610130703 check read historical `r1i1p1f1`, 1950–2014, over a small equatorial basin bounding
-box with one-cell buffering. Each variable contained 4,680 values (780 months × 3 × 2 cells).
-Direct xarray Zarr reads, independently selected and converted to mm/day and °C, matched every value
-exactly for both the original and revised fetchers.
-
-| Source | Original read | Revised read | Revised cache hit |
-|---|---:|---:|---:|
-| TaiESM1, shared `gn/v20200623` | 46.62 s | 48.70 s | 0.059 s |
-| FIO-ESM-2-0, pr `gn/v20191209`, tas `gn/v20191115` | 29.01 s | 41.78 s | 0.022 s |
-
-These are single uncached acquisitions per reader, not controlled statistical speed estimates;
-network state and concurrent work varied. The split path adds separate opens and calendar checks and
-was slower in this sample. Its benefit is deterministic addressing and explicit compatibility validation.
-An existing GFDL historical raw cache was also reused byte-for-byte under the unchanged shared-pin digest.
+The [per-variable pinning verification](../records/validation/cmip6-per-variable-pinning-2026-10-22.md)
+retains live availability, independent value checks, cache compatibility and single-sample before/after
+timings for TaiESM1 and FIO-ESM-2-0. Those measurements establish the tested cases, not a general speedup.
 
 [Readability measurements](../records/milestones/r08/cmip6-readability-measurements.md) and
 [the historical inventory](../records/milestones/r08/wf2-cmip6-store-inventory.md) describe particular

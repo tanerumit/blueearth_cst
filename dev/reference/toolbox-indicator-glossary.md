@@ -25,6 +25,7 @@ to the dicts first and to the tables here second.
 | `groundwater recharge` | `soil_water_saturated_zone_top__net_recharge_volume_flux` | `gwr` | `gwr` | `gwr_run_indicators.csv` | `gwr_annual_total` |
 | `overland flow` | `land_surface_water__volume_flow_rate` | `qof` | `overland_flow` | `overland_flow_run_indicators.csv` | `overland_flow_annual_mean` |
 | `snow` | `snowpack_liquid_water__depth` | `swe` | `snow` | `snow_run_indicators.csv` | `snow_annual_max` |
+| `temperature` | `atmosphere_air__temperature` | `temp` | `temp` | `temp_run_indicators.csv` | `temp_annual_mean` |
 
 Each run table has a paired `<token>_group_indicators.csv`; §3 defines their distinct identifier columns.
 
@@ -51,7 +52,7 @@ Column by column, with the dict that owns it:
 - **table / indicator** — derived from the token by `indicator_table_filename` and
   `basin_indicator_name`; no dict of its own.
 
-**Why the token and the code differ at all, for three of seven.** They answer to
+**Why the token and the code differ at all, for three variables.** They answer to
 different owners: the code reaches the csv through the TOML, the token names our
 files. Where the repo already had a canonical short name the token takes it —
 which is why `aet` and `gwr` coincide with their code, and why `gwr` replaced the
@@ -82,6 +83,16 @@ figure sees only what the csv carried.
 | `gwr` | `sum` | Groundwater Recharge (mm month⁻¹) |
 | `qof` | `mean` | Overland Flow (m³s⁻¹) |
 | `swe` | `mean` | Snowpack liquid water (mm) |
+| `temp` | `mean` | Air Temperature (°C) |
+
+Temperature is Wflow's air-temperature forcing retained as subcatchment means in degrees Celsius,
+using the upstream standard name `atmosphere_air__temperature`
+([Wflow simulation settings](https://deltares.github.io/Wflow.jl/stable/user_guide/toml_file.html)).
+It is a state variable: monthly and annual reductions use means, never depth sums. The default
+`temp_annual_mean` averages water-year means with equal block weight, following the default set's
+partial-block and missingness policies. Add `temperature` to `model.outvars` to enable it; existing
+output selections are unchanged. Existing retained simulations lacking temperature require a new
+simulation before temperature indicators can be calculated.
 
 ## 2. Indicator vocabulary
 

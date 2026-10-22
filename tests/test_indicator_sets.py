@@ -67,7 +67,7 @@ def test_registry_covers_every_existing_definition_exactly():
     optional = {item.name for item in registry.optional_declarations()}
     assert not names & optional
     assert set(registry.DEFINITIONS) == names | optional
-    assert (len(names), len(optional)) == (17, 5)
+    assert (len(names), len(optional)) == (18, 5)
     for definition, (method, parameters, _) in registry.DEFINITIONS.items():
         assert registry.validate_calculation(method, parameters)[0] == definition
         assert registry.declaration_for(definition).name == definition

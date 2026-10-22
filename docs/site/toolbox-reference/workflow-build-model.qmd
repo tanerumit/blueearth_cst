@@ -111,6 +111,11 @@ Seasonal cycles give equal weight to eligible monthly aggregates across years an
 percentile bands for interannual variability. Annual trends use Sen slopes per decade. Snow represents
 snowpack liquid-water depth in mm. Precipitation figures remain in the forcing figure family.
 
+Optional `temperature` output retains subcatchment mean air temperature in degrees Celsius with
+Wflow standard name `atmosphere_air__temperature` and CSV code `temp`. Its monthly and annual figures
+use means rather than accumulated depths. Add it to the project's existing `model.outvars` list to
+retain it alongside the other selected outputs.
+
 ## Configuration
 
 The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, the `basin` definition and `output_locations`, `climate.selected` and `climate.window`, and `model.outvars`. Its `workflows.build_model` stanza enables this workflow and points to its YAML file through `config_path`.

@@ -151,6 +151,8 @@ def test_delete_all_output_removes_the_declared_plot_outputs(fabricated_project)
 _BASAVG_RELS = (
     "models/hydrology/wflow/evaluation/plots/wflow_aet_annual_ts_basin_avg.png",
     "models/hydrology/wflow/evaluation/plots/wflow_aet_monthly_clim_band_basin_avg.png",
+    "models/hydrology/wflow/evaluation/plots/wflow_temp_annual_ts_basin_avg.png",
+    "models/hydrology/wflow/evaluation/plots/wflow_temp_monthly_clim_band_basin_avg.png",
 )
 
 
@@ -171,6 +173,7 @@ def project_with_basavg_outvar(tmp_path, request):
     cfg["model"]["outvars"] = [
         "river discharge",
         "actual evapotranspiration",
+        "temperature",
     ]
     cfg["workflows"]["build_model"]["evaluation"] = {"subbasin_plots": request.param}
     cfg_path = write_config(tmp_path, cfg, stem="project_config_basavg")

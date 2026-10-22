@@ -25,9 +25,12 @@ def _indicator(
     period=None,
 ):
     """Keep registration values explicit while sharing unvarying annotations."""
-    units = {"q": "m3 s-1", "snow": "mm", "overland_flow": "m3 s-1"}.get(
-        variable, "mm dt-1"
-    )
+    units = {
+        "q": "m3 s-1",
+        "snow": "mm",
+        "overland_flow": "m3 s-1",
+        "temp": "degC",
+    }.get(variable, "mm dt-1")
     return Indicator(
         id=name,
         calculate=function,
@@ -158,6 +161,13 @@ INDICATORS = (
         {"variable": "overland_flow", "statistic": "mean"},
         "mean",
         variable="overland_flow",
+    ),
+    _indicator(
+        "temp_annual_mean",
+        c.annual_summary,
+        {"variable": "temp", "statistic": "mean"},
+        "mean",
+        variable="temp",
     ),
 )
 

@@ -131,8 +131,20 @@ def _responses(locations=("9",), *, without_pet=False):
 def crop_water_experiment(tmp_path, monkeypatch):
     from blueearth_cst.experiment import indicator_plan
 
-    responses, thresholds = _responses()
+    responses, _ = _responses()
     experiment = build_v2_experiment(tmp_path, responses)
+    historical = tmp_path / "historical-model"
+    (historical / "run_default").mkdir(parents=True)
+    pd.DataFrame({"Q_9": 2.0}, index=pd.date_range("1999-01-01", "1999-12-31")).to_csv(
+        historical / "run_default/output.csv", index_label="time"
+    )
+    (historical / "wflow_sbm.toml").write_text(
+        '[time]\ncalendar="standard"\ntimestepsecs=86400\n'
+        'starttime="1998-12-31T00:00:00"\nendtime="1999-12-31T00:00:00"\n'
+        '[input]\npath_forcing="forcing/inmaps_historical.nc"\n'
+        '[[output.csv.column]]\nheader="Q"\nparameter="river_water__volume_flow_rate"\n',
+        encoding="utf-8",
+    )
     monkeypatch.setattr(
         indicator_plan, "resolve_indicator_environment", lambda: FIXTURE_ENVIRONMENT
     )
@@ -152,7 +164,14 @@ def crop_water_experiment(tmp_path, monkeypatch):
                         "overrides": {
                             "summer_low_flow_days": {
                                 "season": "summer",
-                                "thresholds": thresholds,
+                                "thresholds": {
+                                    "baseline_quantile": {
+                                        "model_root": historical.as_posix(),
+                                        "source_id": "historical-fixture",
+                                        "years": [1999],
+                                        "reference_period": "annual",
+                                    }
+                                },
                             }
                         },
                     }
@@ -247,10 +266,9 @@ def test_crop_water_retained_response_publication(crop_water_experiment):
     low_flow = next(
         row for row in manifest["declarations"] if row["name"] == "summer_low_flow_days"
     )
-    assert (
-        low_flow["calculation_parameters"]["thresholds"]["9"]["source_id"]
-        == "historical-fixture"
-    )
+    assert low_flow["calculation_parameters"]["thresholds"]["9"][
+        "source_id"
+    ].startswith("historical-fixture;")
     diagnostics = read_canonical_json(
         Path(marker).parent / manifest["diagnostics"]["path"]
     )

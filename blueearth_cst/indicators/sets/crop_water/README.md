@@ -27,13 +27,53 @@ agricultural-area or aquifer-specific conditions. `gwr` is signed net saturated-
 or pumpable recharge; whether return flows and canal leakage are represented depends on the model setup.
 Q is a named outlet/gauge series and may describe drainage rather than irrigation supply.
 
-The low-flow declaration requires fixed, location-keyed `thresholds` before evaluation. Each record
-contains `value`, `source_id`, `years`, `used_summers`, `excluded_summers`, `method` and `units`. Derive
-the fallback as the linear 0.10 non-exceedance quantile of daily Q pooled across complete historical
-baseline summers. `prepare_baseline_qcrit(historical_q, source_id=..., years=...)` produces that record
-from validated retained daily Q series; inspect the selected years and copy the mapping into the case
-selection. A supplied operational threshold is also supported. Thresholds and provenance enter
-calculation identity; scenarios never refit them. A zero threshold makes a strict low-flow count
+The low-flow declaration requires fixed, location-keyed `thresholds` before evaluation. WF4 can prepare
+them directly from WF1's historical model discharge. In a custom crop-water set file, use:
+
+```yaml
+schema_version: 1
+id: crop-water
+title: Crop-water with historical Qcrit
+description: Fixed historical model-discharge thresholds
+selection:
+  registry:
+    set: crop-water
+    overrides:
+      summer_low_flow_days:
+        season: summer
+        thresholds:
+          baseline_quantile:
+            model_root: /absolute/project/models/hydrology/wflow
+            source_id: historical-model-era5
+            years: [1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005]
+            quantile: 0.90
+            convention: exceedance
+            reference_period: summer
+            quantile_method: linear
+```
+
+`model_root` resolves against this set file. Preparation reads `run_default/output.csv` with
+`wflow_sbm.toml`, verifies the historical forcing binding (`inmaps_historical.nc`), and refuses missing
+or incompatible inputs. Run WF1 first; dry-runs also need its historical output. Neither synthetic
+observations nor future scenario discharge supplies this reference. Baseline preparation also works
+for indicators-only operations and does not start Wflow. The resolved values are fixed across scenarios.
+
+The default is Q90 exceedance: `quantile: 0.90`, `convention: exceedance` means non-exceedance p=0.10.
+For Q80 use 0.80 exceedance, or equivalently 0.20 nonexceedance. Probabilities must lie strictly between
+0 and 1. `reference_period: summer` pools complete May–October periods for compatibility; `annual`
+pools complete calendar years. This changes the reference distribution only: the indicator still
+counts May–October low-flow days. Choose periods for the basin rather than treating this season as a
+global crop calendar. Supported quantile methods are linear (default), lower, higher, midpoint and nearest.
+The Python helper `prepare_baseline_qcrit` accepts the same rule settings and validated historical Q.
+
+Derived records retain source identity and CSV/TOML SHA-256 digests, baseline run identity, requested
+years, reference period, quantile convention and probability, interpolation method, included/excluded
+periods, sample count and per-year expected/finite-day coverage. Incomplete or nonfinite periods are
+excluded per location; no complete period is an error. Inspect exclusions before scientific use.
+These values and provenance enter calculation identity, so changing inputs or rules changes identity.
+Existing explicit records with `value`, `source_id`, `years`, `used_summers`, `excluded_summers`,
+`method: supplied operational` (or legacy `linear p=0.10`) and `units: m3 s-1` remain supported.
+Do not mix explicit thresholds and a baseline rule. A zero threshold makes a strict low-flow count
 uninformative. The bundled registry uses an empty threshold mapping so case preparation must supply it
 through a case-specific `selection.registry.overrides.summer_low_flow_days` mapping before a complete
 `crop-water` evaluation. Bind the custom file with `indicator_set_definitions.crop-water.config_path`.

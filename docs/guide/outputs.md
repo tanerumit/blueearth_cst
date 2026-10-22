@@ -256,7 +256,8 @@ The product is staged in a hidden `.<ensemble>.import-*.staged` sibling and appe
 verification, with one rename. A staged folder left by an interruption is never a result; the next
 import removes it. Import adds `_engine/imported/<bundle id>/` with the manifest, `import_record.json`,
 the configuration snapshots and region. It does not write the destination's `config/` archives,
-`data/spatial/`, invocation records or logs.
+`data/spatial/`, invocation records or logs; it only holds the project's execution lock under
+`config/_engine/archive-transactions/`.
 
 Imported results are for reading and interpretation. The runner has no record of producing them, so a
 later WF2 run in the destination may recompute them, and WF2 does not need to be enabled to read them.

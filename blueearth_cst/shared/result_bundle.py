@@ -7,8 +7,9 @@ only as historical text; nothing in a bundle needs the source project, its
 `_shared/` execution inputs, links, locks or `.snakemake/` state.
 
 The working project keeps its one configuration home under `config/`. Bundles
-carry snapshots; import never writes the destination's `config/`, spatial
-foundation, invocation history or logs. Import supports reading and
+carry snapshots; import never writes the destination's configuration archives,
+spatial foundation, invocation history or logs. It only creates the project's
+runtime execution lock under `config/_engine/archive-transactions/`. Import supports reading and
 interpreting results, not runner adoption: no future no-recompute behaviour
 is implied.
 """
@@ -220,7 +221,8 @@ def _compatibility(
 
 def _historical_references(members: Mapping[str, Path], project: Path) -> list[str]:
     """Text payloads naming the source project: history, never dependencies."""
-    needles = {str(project), project.as_posix()}
+    # JSON escapes Windows separators, so look for that spelling as well.
+    needles = {str(project), project.as_posix(), json.dumps(str(project))[1:-1]}
     found = []
     for name, path in members.items():
         if path.suffix.lower() not in _TEXT_SUFFIXES:

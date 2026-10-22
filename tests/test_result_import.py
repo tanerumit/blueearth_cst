@@ -45,6 +45,7 @@ def exported(tmp_path, monkeypatch):
 
 
 def tree(root):
+    """Destination bytes, excluding the runtime execution lock import holds."""
     return {
         path.relative_to(root).as_posix(): path.read_bytes()
         for path in root.rglob("*")
@@ -83,8 +84,13 @@ def test_round_trip_without_the_source(exported):
     (snapshot,) = (directory / "configuration").iterdir()
     assert validate_archive(snapshot)["workflow"] == "analyze_projections"
     assert (directory / "dependencies/region.geojson").is_file()
-    # Destination configuration archives and spatial foundation stay untouched.
-    assert not (destination / "config/analyze_projections").exists()
+    # Destination configuration archives and spatial foundation stay untouched;
+    # only the runtime execution lock appears under config/.
+    assert {
+        path.relative_to(destination).as_posix()
+        for path in (destination / "config").rglob("*")
+        if path.is_file()
+    } == {"config/_engine/archive-transactions/project-execution.lock"}
     assert not (destination / "data/spatial").exists()
     assert not list((destination / PRODUCT).parent.glob(".*.staged"))
 
@@ -127,6 +133,19 @@ def _missing(members, manifest):
 
 def _unsafe(members, manifest):
     members["../escape.txt"] = b"x"
+
+
+def test_link_members_are_refused(exported):
+    bundle, destination, _, _ = exported
+    linked = bundle.with_name("linked.zip")
+    shutil.copyfile(bundle, linked)
+    with zipfile.ZipFile(linked, "a") as archive:
+        info = zipfile.ZipInfo("product/cmip6/link")
+        info.external_attr = 0o120777 << 16
+        archive.writestr(info, "../../outside")
+    with pytest.raises(BundleError, match="not a file"):
+        import_bundle(linked, destination)
+    assert tree(destination) == {}
 
 
 def _schema(members, manifest):

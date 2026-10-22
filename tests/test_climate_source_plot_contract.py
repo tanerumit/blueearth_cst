@@ -39,7 +39,16 @@ def test_workflow_defers_header_and_summarizes_requested_outputs(
     workflow = _parse_workflow(snakefile, CONFIG_FN)
     parsed = capsys.readouterr()
     if snakefile == "analyze_projections.smk":
+        # Queued at run start, not DAG parse, so a reused analysis stays quiet.
         assert "Reference period is short" not in parsed.out + parsed.err
+        assert not any(
+            "Reference period is short" in row[2]
+            for row in console_style._DEFERRED_WARNINGS
+        )
+        with monkeypatch.context() as patch:
+            for name in ("install_console_style", "_header", "_journal"):
+                patch.setitem(workflow.globals, name, lambda *args: None)
+            workflow._onstart(None)
         assert any(
             "Reference period is short" in row[2]
             for row in console_style._DEFERRED_WARNINGS

@@ -4,7 +4,8 @@ Last updated: 2026-10-23
 
 Shared procedures for developers and agents coordinating repository work. This reference owns task
 admission, board location, worktree coordination, handoffs, and Herdr worker coordination. Placement and
-scratch rules live in [dev-repository-layout.md](dev-repository-layout.md); preservation rules live in [dev-record-lifecycle.md](dev-record-lifecycle.md).
+scratch rules live in [dev-repository-layout.md](dev-repository-layout.md); preservation rules live in
+[dev-record-lifecycle.md](dev-record-lifecycle.md).
 
 ## Task admission and the board
 

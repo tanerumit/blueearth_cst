@@ -412,6 +412,11 @@ OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
         ("scripts/run_workflows.py", "generate_scenarios"),
         ("scripts/generate_scenarios.py", "generate_scenarios"),
         ("blueearth_cst/shared/workflow_archive_launch.py", "*"),
+        # WF2 production records and result bundles read WF2's captured section
+        # to locate its product and to state or compare its scientific settings;
+        # neither consumes them as another workflow's inputs.
+        ("blueearth_cst/shared/product_record.py", "*"),
+        ("blueearth_cst/shared/result_bundle.py", "*"),
         # The case scaffold checks enable flags and follows config_path entries
         # to copy a template set; it consumes no workflow settings.
         ("scripts/create_case.py", "*"),

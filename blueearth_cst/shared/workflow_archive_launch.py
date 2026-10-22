@@ -25,7 +25,7 @@ from typing import Any
 
 import yaml
 
-from blueearth_cst.shared import execution_outputs, invocation_history
+from blueearth_cst.shared import execution_outputs, invocation_history, product_record
 from blueearth_cst.shared.config_composition import (
     capture_configuration_sources,
     compose_captured_config,
@@ -710,8 +710,15 @@ def _run_workflow_started(
             environment[CONTEXT_ENV] = str(context)
             from blueearth_cst.shared.windows_job import run_project_child
 
-            result = run_project_child(command, cwd=Path.cwd(), env=environment)
+            observation = product_record.observe(workflow, Path(project_root))
+            try:
+                result = run_project_child(command, cwd=Path.cwd(), env=environment)
+            except BaseException as error:
+                invocation_history.finish(path, record, exit_code=None, error=error)
+                product_record.publish(observation, path, record)
+                raise
         finally:
             remove_launch_context(Path(project_root), context)
         invocation_history.finish(path, record, exit_code=result)
+        product_record.publish(observation, path, record)
         return result

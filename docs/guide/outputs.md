@@ -200,6 +200,71 @@ remains with its data products in `summary/`.
 The former `plots/overview/` and `plots/windows/` figure paths are retired. Existing
 files at those paths are not current suite outputs and are not deleted automatically.
 
+### Which run produced these files
+
+Runs launched through `scripts/run_workflows.py` or `scripts/run_workflow.py` keep
+`_engine/execution/production.json` at the ensemble root. It names, for every current product file,
+the invocation whose bytes are present, with that invocation's outcome, configuration snapshot under
+`config/_engine/configuration-snapshots/analyze_projections/`, and `region.geojson` checksum.
+Copies of each contributing invocation's `wf2.log` and `wf2-benchmarks.md`/`.tsv` sit beside it in
+`_engine/execution/<invocation id>/`. They remain while that invocation still owns a file. Central
+`logs/` folders and invocation records are never pruned by this.
+
+- `state: complete` means the latest run that changed the product succeeded. `incomplete` means it
+  failed after replacing some files: tables, figures or caches then come from different runs.
+- A run that writes no product file, successful or failed, leaves the record untouched. A file is
+  credited when the run changed its bytes or rewrote it identically (detected by write time under the
+  project lock), so a partial plotting rerun credits only the figures and figure manifests it rewrote.
+- `producer: null` marks bytes no launcher observed being written: products from before this record
+  existed, direct Snakemake runs, or edits by hand. The record never credits them to a later run.
+- Rules 2.01–2.02 run inside WF2 but write the shared `data/spatial/geoms/`. They appear in the copied
+  log and are listed as `shared_steps`; their files are not product files.
+
+## Moving WF2 results to another project
+
+Export a completed WF2 product as one ZIP, then import it into a project on another machine:
+
+```console
+pixi run python scripts/transfer_results.py export --project-dir <source project> --output cmip6-results.zip
+pixi run python scripts/transfer_results.py import cmip6-results.zip --project-dir <destination project>
+```
+
+The bundle holds the whole product (including `raw/`, `scalar/` and `_engine/`), the exact configuration
+snapshots that produced it, the basin `region.geojson`, and a `manifest.json` listing every file's size and
+SHA-256. It needs no source-machine paths, `_shared/` execution inputs, locks or `.snakemake/` state.
+Source paths inside copied configuration are history, listed under `historical_path_references`.
+Use `--ensemble <name>` when the project has no captured WF2 configuration naming the product.
+
+Export refuses an `incomplete` product, missing required files, a `region.geojson` whose polygon differs
+from the one recorded in `summary/provenance.json`, and provenance that matches no retained
+configuration snapshot. Files whose bytes no longer match the production record are exported with
+`producer: null`. Products from before production records export as `legacy-unattributed`; their
+configuration snapshot is the one whose digests match `summary/provenance.json`.
+
+Import checks the whole bundle before writing: member names, sizes, checksums, the manifest's identity,
+schema version and required files. It then compares the destination:
+
+| Destination check | On mismatch |
+|---|---|
+| Basin polygon in `data/spatial/geoms/` | Refused, even with an equal bounding box; absent is `unverified` |
+| WF2 ensemble, models, scenarios, members, variables, windows | Refused unless `--accept-differences` |
+| Existing `data/climate/projections/<ensemble>/` | Refused unchanged; the same bundle is `already_imported` |
+
+Settings are compared with `--config` when given, else with the destination's captured WF2
+configuration. Accepted differences are recorded in the import record.
+
+The product is staged in a hidden `.<ensemble>.import-*.staged` sibling and appears only after
+verification, with one rename. A staged folder left by an interruption is never a result; the next
+import removes it. Import adds `_engine/imported/<bundle id>/` with the manifest, `import_record.json`,
+the configuration snapshots and region. It does not write the destination's `config/` archives,
+`data/spatial/`, invocation records or logs; it only holds the project's execution lock under
+`config/_engine/archive-transactions/`.
+
+Imported results are for reading and interpretation. The runner has no record of producing them, so a
+later WF2 run in the destination may recompute them, and WF2 does not need to be enabled to read them.
+The bundle records toolbox commit, dirty state and lock hashes as provenance; they do not recreate the
+source environment.
+
 ## Reading an indicator set
 
 For post-processing, read CSVs from `experiments/<name>/results/indicator_sets/<set-id>/`, one folder per

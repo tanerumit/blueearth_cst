@@ -36,8 +36,11 @@ _ARCHIVE_PREVIOUS = {
         "02d8168156949d51a2bbc4cbd06d73c750db74a9134bfbd35f3ad1c1ecbe4e80"
     ),
 }
+# Re-audited after t2610221058: the launcher only gained WF2 product observation
+# and production-record publication around the child; staging and execution
+# settings are unchanged. Current simulation inventories exclude this launcher.
 _ARCHIVE_AFTER = {
-    _ARCHIVE_LAUNCH: "805b78e0fc540c727f7d584da768fcb08431b7ef226009a864722492c446ec61",
+    _ARCHIVE_LAUNCH: "1efda5e4ad723b44214b23ba601356e992e40f38abbcd8a7839436b35cec3938",
     "blueearth_cst/shared/configuration_archive.py": (
         "ddee2d3ad42c37f875824915d78474dc94d996939d3df14def93397019724257"
     ),

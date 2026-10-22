@@ -26,7 +26,7 @@ cssclasses: [todo-board]
 | 17     | [t2608071221][]          | Docker and Linux end-to-end runs untested              | platform   | backlog      |
 | 18     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard               | wf1        | backlog      |
 |        | [t2610221413][]          | Herdr multi-agent work setup                           | tooling    | backlog      |
-|        | [t2610221058][]          | Central configuration and portable workflow bundles    | workflows  | backlog      |
+|        | [t2610221058][]          | Central configuration and portable workflow bundles    | workflows  | active (4/5) |
 |        | [t2610211633][]          | Add crop-water screening indicators to WF4             | wf4        | blocked      |
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions     | docs       | backlog      |
 |        | [t2610191347][]          | Retain logs and benchmark reports by execution         | runtime    | backlog      |

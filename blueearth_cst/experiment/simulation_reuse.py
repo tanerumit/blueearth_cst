@@ -22,7 +22,12 @@ _BOUNDARY_BEFORE = "69dcf9de9882f029d615873460572f1a1d9f639dee8bc2a7ab51e0151408
 # comments/docstrings changed, while executable calculations stayed identical.
 # Re-audited after 14e423cc: the response reader only gained the native PET
 # mapping and a PET-only declaration check; existing variables read unchanged.
-_BOUNDARY_AFTER = "fe2e4d92b48cbbca8a29ade215e55951dba5bfbf1417ff29ebde3845212f5cfa"
+_BOUNDARY_PREVIOUS = "fe2e4d92b48cbbca8a29ade215e55951dba5bfbf1417ff29ebde3845212f5cfa"
+# Re-audited after f6841501: temperature extends the native mapping and its
+# declaration guard only; all seven existing variables read identically.
+# Model TOML bytes and response requirements remain independently checked.
+# See dev/records/validation/qcrit-temperature-outputs.md for audit evidence.
+_BOUNDARY_AFTER = "12c02734236bbb1d4fa0cf9b4538f815d0c9d196074432f11378b5baed3a1b76"
 
 # Audited archive-lifecycle migration: input staging and execution settings are
 # unchanged. Pin BOTH versions, rather than exempting this launcher wholesale:
@@ -81,9 +86,13 @@ def check_simulation_reuse(retained: dict[str, Any], current: dict[str, Any]) ->
         item for item in current_code if item["path"] not in ignored
     ]
     code_matches = code_matches or (
-        content_sha256(retained_code) == _BOUNDARY_BEFORE
-        and content_sha256(current_code) == _BOUNDARY_AFTER
-    )
+        content_sha256(retained_code),
+        content_sha256(current_code),
+    ) in {
+        (_BOUNDARY_BEFORE, _BOUNDARY_PREVIOUS),
+        (_BOUNDARY_BEFORE, _BOUNDARY_AFTER),
+        (_BOUNDARY_PREVIOUS, _BOUNDARY_AFTER),
+    }
     comparable = {
         **current,
         "document_digests": {

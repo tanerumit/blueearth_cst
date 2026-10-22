@@ -290,15 +290,26 @@ def _historical_code():
     )
 
 
+def _pre_temperature_code():
+    """Normalized inventory captured from 76a2a874, before native temperature."""
+    return json.loads(
+        (
+            Path(__file__).parent / "data/simulation-code-before-temperature.json"
+        ).read_text(encoding="utf-8")
+    )
+
+
 def test_boundary_bridge_matches_audited_sources():
     from blueearth_cst.experiment.content_identity import content_sha256
     from blueearth_cst.experiment.simulation_code import simulation_code_inventory
     from blueearth_cst.experiment.simulation_reuse import (
         _BOUNDARY_AFTER,
         _BOUNDARY_BEFORE,
+        _BOUNDARY_PREVIOUS,
     )
 
     assert content_sha256(_historical_code()) == _BOUNDARY_BEFORE
+    assert content_sha256(_pre_temperature_code()) == _BOUNDARY_PREVIOUS
     assert (
         content_sha256(simulation_code_inventory(Path(__file__).resolve().parents[1]))
         == _BOUNDARY_AFTER
@@ -358,17 +369,25 @@ def test_source_boundary_drives_actual_reuse_guard(
 
 
 @pytest.mark.parametrize(
-    "change", [None, "old_code", "new_code", "duplicate", "settings", "environment"]
+    "change",
+    [None, "old_code", "new_code", "duplicate", "settings", "environment", "response"],
 )
-def test_boundary_bridge_accepts_only_the_audited_transition(retained, change):
+@pytest.mark.parametrize("transition", ["boundary", "temperature", "previous"])
+def test_boundary_bridge_accepts_only_the_audited_transition(
+    retained, change, transition
+):
     from blueearth_cst.experiment.simulation_code import simulation_code_inventory
 
     previous = deepcopy(retained)
-    previous["documents"]["simulator_adapter_code"] = _historical_code()
+    previous["documents"]["simulator_adapter_code"] = (
+        _pre_temperature_code() if transition == "temperature" else _historical_code()
+    )
     current = deepcopy(retained)
     current["documents"]["simulator_adapter_code"] = simulation_code_inventory(
         Path(__file__).resolve().parents[1]
     )
+    if transition == "previous":
+        current["documents"]["simulator_adapter_code"] = _pre_temperature_code()
     if change == "old_code":
         previous["documents"]["simulator_adapter_code"][0]["sha256"] = "f" * 64
     elif change == "new_code":
@@ -381,6 +400,8 @@ def test_boundary_bridge_accepts_only_the_audited_transition(retained, change):
         current["documents"]["settings"]["simulation_window"]["end"] += 1
     elif change == "environment":
         current["documents"]["environment"]["packages"]["julia:Wflow"] = "changed"
+    elif change == "response":
+        current["documents"]["response_request"]["variables"][0]["units"] = "changed"
     previous, current = _rebuild(previous), _rebuild(current)
     before = deepcopy((previous, current))
     if change:
@@ -391,8 +412,9 @@ def test_boundary_bridge_accepts_only_the_audited_transition(retained, change):
     assert (previous, current) == before
 
 
+@pytest.mark.parametrize("inventory", [_historical_code, _pre_temperature_code])
 def test_completed_legacy_inventory_reuses_records_without_rewriting_bytes(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, inventory
 ):
     from blueearth_cst.experiment import content_identity, simulation_record
     from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
@@ -403,7 +425,7 @@ def test_completed_legacy_inventory_reuses_records_without_rewriting_bytes(
     original = simulation_record.simulation_intent_v2
 
     def historical_intent(name, collection, simulator, documents, preparation):
-        documents = {**documents, "simulator_adapter_code": _historical_code()}
+        documents = {**documents, "simulator_adapter_code": inventory()}
         return original(name, collection, simulator, documents, preparation)
 
     # Build supported retained records using the captured pre-change inventory.
@@ -420,8 +442,7 @@ def test_completed_legacy_inventory_reuses_records_without_rewriting_bytes(
     before = {
         path: path.read_bytes() for path in experiment.root.rglob("*") if path.is_file()
     }
-    check_completed_simulation_inputs(
-        experiment.root,
+    kwargs = dict(
         project_root=experiment.project,
         model_root=experiment.project / "models/hydrology/wflow",
         collection_path=experiment.collection_marker,
@@ -431,6 +452,17 @@ def test_completed_legacy_inventory_reuses_records_without_rewriting_bytes(
         simulation_window=retained["documents"]["settings"]["simulation_window"],
         julia_command=["unused"],
     )
+    check_completed_simulation_inputs(experiment.root, **kwargs)
+    # Temperature support in the reader cannot authorize changed model outputs.
+    model = Path(kwargs["model_root"]) / "wflow_sbm.toml"
+    model.write_text(
+        model.read_text() + '\n[[output.csv.column]]\nheader="temp"\n'
+        'parameter="atmosphere_air__temperature"\n'
+        'map="subcatchment"\nreducer="mean"\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(SimulationFrozenError):
+        check_completed_simulation_inputs(experiment.root, **kwargs)
     assert {
         path: path.read_bytes() for path in experiment.root.rglob("*") if path.is_file()
     } == before

@@ -396,8 +396,11 @@ that boundary; selected collection contents and resolved simulation inputs
 remain checked separately. Snakemake continues to schedule jobs.
 
 Completed simulations accept the audited source transition from `040a8e61`
-without rewriting their identity or provenance. Both source inventories are
-pinned: an unknown historical implementation still requires a new experiment.
+and the native-temperature reader extension after `76a2a874` without rewriting
+their identity or provenance. Each accepted source pair is pinned, including
+the previously supported transition. Existing response reads are unchanged;
+adding temperature outputs to the model changes its TOML digest and requires
+a new experiment. An unknown historical implementation also requires one.
 Incomplete experiments retain their strict freeze checks. Changed scientific
 code, model inputs, settings, preparation, response requirements or relevant
 environment also require a new experiment. The Julia progress helper remains

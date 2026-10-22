@@ -27,6 +27,8 @@ Select task coverage by changed behavior and affected consumers:
 
 - **Software:** regression/consumer checks and affected CLI/DAG checks for rule/input/script changes.
   Include affected contract tests when needed; local `test-full` replaces fast when broader coverage is owed.
+  Snakefile edits that move work or console output between parse time and `onstart`/`onsuccess`/`onerror`
+  owe `test-contract`: `test-fast` excludes the `workflow_contract` tests that pin handler timing.
 - **Workflow execution:** exercise affected integration paths and downstream consumers. Execute workflows
   when outputs can change. Use all-five E2E for pipeline-wide impact, explicit whole-toolbox claims,
   or cross-workflow uncertainty that inspection and focused checks cannot resolve.

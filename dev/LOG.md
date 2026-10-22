@@ -21,6 +21,7 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-23 | t2610221413 | Herdr multi-agent work setup | tooling |
 | 2026-10-22 | t2610130703 | Pin CMIP6 variables independently when versions differ | wf2  |
 | 2026-10-22 | t2610221058 | Central configuration and portable workflow bundles | workflows |
 | 2026-10-22 | t2610211633 | Add crop-water screening indicators to WF4 [dropped] | wf4  |

@@ -25,7 +25,6 @@ cssclasses: [todo-board]
 | 16     | [t2608071221][]          | Docker and Linux end-to-end runs untested                 | platform   | backlog      |
 | 17     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                  | wf1        | backlog      |
 |        | [t2610230016][]          | Investigate incomplete skill loading in delegated workers | tooling    | backlog      |
-|        | [t2610221413][]          | Herdr multi-agent work setup                              | tooling    | active (5/5) |
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions        | docs       | backlog      |
 |        | [t2610191347][]          | Retain logs and benchmark reports by execution            | runtime    | backlog      |
 |        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run    | runtime    | backlog      |
@@ -48,7 +47,6 @@ cssclasses: [todo-board]
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
 [t2610230016]: tasks/t2610230016-delegated-skill-loading.md
-[t2610221413]: tasks/t2610221413-herdr-multi-agent-work-setup.md
 [t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md
 [t2610191347]: tasks/t2610191347-execution-logs-benchmarks.md
 [t2610191323]: tasks/t2610191323-ntoum-workflow-performance.md

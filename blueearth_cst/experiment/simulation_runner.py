@@ -106,7 +106,7 @@ def check_required_variables(
             ]
             gaps = (
                 ()
-                if absent
+                if absent or indicator.pending_baseline
                 else loader.unavailable(
                     declaration, (locations or {}).get(declaration.table_variable)
                 )
@@ -132,15 +132,27 @@ def check_required_variables(
                     "indicator": indicator.indicator,
                     "inputs": inputs,
                     "text": text,
+                    "kind": "response" if absent else "parameter",
                 }
             )
     if missing and evaluation == "strict":
+        remedies = []
+        if all(gap["kind"] == "parameter" for gap in missing):
+            where = "the selected indicator parameters"
+        if any(gap["kind"] == "response" for gap in missing):
+            remedies.append(
+                "Supply the missing response through model.outvars in a separate simulation (--new-experiment)."
+            )
+        if any(gap["kind"] == "parameter" for gap in missing):
+            remedies.append(
+                "Supply the missing indicator parameter (for Qcrit, thresholds)."
+            )
         raise ValueError(
             f"selected indicators lack inputs in {where}: "
             + "; ".join(gap["text"] for gap in missing)
-            + ". A missing response needs a separate simulation with those "
-            "model.outvars (--new-experiment); otherwise supply the parameter, "
-            "exclude the indicator with indicator_selection, or set "
+            + ". "
+            + " ".join(remedies)
+            + " Alternatively exclude the indicator with indicator_selection, or set "
             "indicator_evaluation: partial."
         )
     return missing
@@ -164,7 +176,9 @@ def report_unavailable(gaps):
         )
 
 
-def simulation_indicator_sets(project, settings, selection, *, report=False):
+def simulation_indicator_sets(
+    project, settings, selection, *, report=False, prepare_baseline=True
+):
     """Resolve sets for the simulation path and preflight model outputs.
 
     ``report`` logs partial-mode gaps once, from the runner rather than every
@@ -181,6 +195,7 @@ def simulation_indicator_sets(project, settings, selection, *, report=False):
         simulation_path=True,
         retained_variables=lambda: [],
         legacy_context="simulation_rule",
+        prepare_baseline=prepare_baseline,
     )
     if not selection.legacy:
         outvars = (project.get("model") or {}).get("outvars", DEFAULT_WFLOW_OUTVARS)
@@ -212,7 +227,7 @@ def simulation_indicator_sets(project, settings, selection, *, report=False):
     return sets
 
 
-def resolve_targets(config_path, targets):
+def resolve_targets(config_path, targets, *, prepare_baseline=True):
     """Return ``(operation, targets)``, refusing operation bypass before Snakemake.
 
     The named interface infers its single target; legacy mode keeps its
@@ -228,7 +243,13 @@ def resolve_targets(config_path, targets):
             )
         if selection.indicators:
             if selection.simulations:
-                simulation_indicator_sets(project, settings, selection, report=True)
+                simulation_indicator_sets(
+                    project,
+                    settings,
+                    selection,
+                    report=True,
+                    prepare_baseline=prepare_baseline,
+                )
             else:
                 from blueearth_cst.experiment.indicator_plan import (
                     indicators_only_configuration,
@@ -237,7 +258,9 @@ def resolve_targets(config_path, targets):
                     read_simulation_intent_v2,
                 )
 
-                root, sets, _ = indicators_only_configuration(config_path)
+                root, sets, _ = indicators_only_configuration(
+                    config_path, prepare_baseline=prepare_baseline
+                )
                 request = read_simulation_intent_v2(root)["documents"][
                     "response_request"
                 ]
@@ -299,13 +322,17 @@ def validate_targets(config_path, targets):
     return resolve_targets(config_path, targets)[0]
 
 
-def simulation_command(config_path, targets, cores, extra=(), *, snapshot_path=None):
+def simulation_command(
+    config_path, targets, cores, extra=(), *, snapshot_path=None, prepare_baseline=True
+):
     """Build one checked invocation; callers control lifecycle reporting.
 
     ``snapshot_path`` receives the admitted indicator-set sources so every
     Snakemake process resolves the same bytes.
     """
-    operation, targets = resolve_targets(config_path, targets)
+    operation, targets = resolve_targets(
+        config_path, targets, prepare_baseline=prepare_baseline
+    )
     _, _, selection = simulation_selection(config_path)
     extra = list(extra)
     # Independent sets: one set's refused reduction must not stop the others.

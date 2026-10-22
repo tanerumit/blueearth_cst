@@ -436,6 +436,27 @@ def test_indicator_selection_excludes_without_authoring_declarations(tmp_path):
     )
 
 
+@pytest.mark.parametrize("available,kind", [({"q"}, "parameter"), (set(), "response")])
+def test_preflight_distinguishes_parameters_from_response_variables(
+    tmp_path, available, kind
+):
+    from blueearth_cst.experiment.simulation_runner import check_required_variables
+
+    _, selected = _crop_water(tmp_path, {"include": ["summer_low_flow_days"]})
+    with pytest.raises(ValueError) as error:
+        check_required_variables([selected], available, "the configured model.outvars")
+    message = str(error.value)
+    if kind == "parameter":
+        assert "missing_parameter:thresholds" in message
+        assert "indicator parameter" in message
+        assert "model.outvars" not in message
+        assert "--new-experiment" not in message
+    else:
+        assert "needs response q" in message
+        assert "model.outvars" in message
+        assert "--new-experiment" in message
+
+
 def test_indicator_selection_include_keeps_set_order(tmp_path):
     _, narrowed = _crop_water(
         tmp_path, {"include": ["annual_recharge", "winter_climatic_deficit"]}

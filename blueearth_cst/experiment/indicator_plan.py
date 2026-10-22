@@ -118,7 +118,7 @@ def indicator_anchor(project: dict) -> str:
     )
 
 
-def indicators_only_configuration(config_path):
+def indicators_only_configuration(config_path, *, prepare_baseline=True):
     """Read only the selected experiment and indicator settings.
 
     This projection never opens generation or model workflow files.
@@ -178,6 +178,7 @@ def indicators_only_configuration(config_path):
         simulation_path=False,
         retained_variables=retained_variables,
         legacy_context="indicators_only",
+        prepare_baseline=prepare_baseline,
     )
     climate = project.get("climate") or {}
     anchor = indicator_anchor(project)

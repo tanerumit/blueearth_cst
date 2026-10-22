@@ -315,6 +315,7 @@ class ResolvedIndicator:
     authored_references: tuple[str, ...]
     equivalent_definition: str
     calculation_set: str | None = None
+    pending_baseline: bool = False
 
     @property
     def indicator(self) -> str:
@@ -431,7 +432,11 @@ def _authored(entry: dict, label: str, set_id: str = DEFAULT_SET) -> ResolvedInd
 
 
 def resolve_set(
-    source: SetSource, default_tokens=None, *, legacy: bool = False
+    source: SetSource,
+    default_tokens=None,
+    *,
+    legacy: bool = False,
+    prepare_baseline: bool = True,
 ) -> ResolvedSet:
     """Validate one captured set file and resolve its entries.
 
@@ -506,12 +511,23 @@ def resolve_set(
             raise IndicatorSetError(
                 f"{label}: registry overrides name unknown indicators {sorted(unknown)}"
             )
+        pending = set()
         if overrides:
             if value == "crop-water":
                 from blueearth_cst.experiment.baseline_qcrit import resolve_thresholds
 
+                if not prepare_baseline:
+                    pending = {
+                        name
+                        for name, parameters in overrides.items()
+                        if isinstance(parameters, dict)
+                        and isinstance(parameters.get("thresholds"), dict)
+                        and "baseline_quantile" in parameters["thresholds"]
+                    }
                 overrides = {
-                    name: resolve_thresholds(parameters, source.path)
+                    name: resolve_thresholds(
+                        parameters, source.path, prepare=prepare_baseline
+                    )
                     if name == "summer_low_flow_days" and isinstance(parameters, dict)
                     else parameters
                     for name, parameters in overrides.items()
@@ -540,6 +556,7 @@ def resolve_set(
                 authored_references=(),
                 equivalent_definition="",
                 calculation_set=value,
+                pending_baseline=item.name in pending,
             )
             for item in local
         ]
@@ -725,6 +742,7 @@ def selected_sets(
     simulation_path: bool,
     retained_variables,
     legacy_context: str,
+    prepare_baseline: bool = True,
 ) -> tuple[ResolvedSet, ...]:
     """Resolve every selected set, expanding the default preset by mode.
 
@@ -734,7 +752,10 @@ def selected_sets(
     ``retained_variables`` is a callable; ``legacy_context`` names the legacy
     branch (see :func:`legacy_tokens`) whose precedence applies.
     """
+    from blueearth_cst.experiment.baseline_qcrit import HistoricalQcritUnavailable
+
     resolved = []
+    unavailable = []
     for source in selection.sets:
         tokens = None
         if source.bundled and source.set_id == DEFAULT_SET:
@@ -747,12 +768,21 @@ def selected_sets(
                     retained_variables=retained_variables,
                 )
             )
-        resolved.append(
-            apply_choice(
-                resolve_set(source, tokens, legacy=selection.legacy),
-                selection.choices,
+        try:
+            item = resolve_set(
+                source,
+                tokens,
+                legacy=selection.legacy,
+                prepare_baseline=prepare_baseline,
             )
-        )
+        except HistoricalQcritUnavailable as exc:
+            # Inspect the remaining sets: a pending producer must not hide
+            # malformed rules or corrupt existing historical data in another set.
+            unavailable.append(exc)
+            continue
+        resolved.append(apply_choice(item, selection.choices))
+    if unavailable:
+        raise unavailable[0]
     return tuple(resolved)
 
 
@@ -763,6 +793,11 @@ def calculation_records(indicators) -> list[dict]:
     selection order are excluded; the indicator key, method, normalized parameters
     and resolved registered calculation are retained by value.
     """
+    indicators = tuple(indicators)
+    if any(item.pending_baseline for item in indicators):
+        raise IndicatorSetError(
+            "historical Qcrit preparation is pending; calculation identity is unavailable"
+        )
     return sorted(
         (
             {

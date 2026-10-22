@@ -9,6 +9,11 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Defer historical Qcrit preparation until WF4 after enabled upstream workflows. Combined dry-runs
+  report missing WF1-dependent Q90 preparation as pending; direct WF4 reports actionable missing
+  historical CSV/TOML prerequisites. Distinguish absent indicator parameters from response variables.
+  Omitted baseline-quantile years and `years: all` select all historical calendar years, retaining
+  selection mode, discovered/requested years and per-location exclusions in calculation provenance.
 - Add the optional `eflow-erfa` indicator set: 35 annual IHA-style flow metrics, each summarized
   by median and IQR, ported from `eflowrisk` defaults. Select it through WF4 `indicator_sets`.
   Set identifiers now also accept hyphens; existing underscore identifiers remain valid.

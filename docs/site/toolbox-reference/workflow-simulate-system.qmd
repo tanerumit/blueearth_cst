@@ -99,13 +99,19 @@ formulas, the Qcrit record, diagnostics and interpretation limits. The ET ratios
 AET and reference PET as screening proxies; subcatchment means do not represent crop or aquifer areas.
 
 The override accepts explicit operational thresholds or a `thresholds.baseline_quantile` rule.
-The latter identifies WF1's historical model directory, source and years, and automatically prepares
-fixed location thresholds before indicator evaluation. It defaults to Q90 exceedance (non-exceedance
+The latter identifies WF1's historical model directory and source, and automatically prepares
+fixed location thresholds at the WF4 boundary after upstream execution. Omitted `years`, or `years: all`,
+selects all discovered historical calendar years; an explicit year list restricts the request.
+It defaults to Q90 exceedance (non-exceedance
 p=0.10), linear interpolation and complete May–October reference periods. Choose `reference_period:
 annual` for complete calendar years, or another quantile with explicit exceedance/nonexceedance
 semantics. This changes the reference distribution; low-flow day counts still use May–October.
-Historical CSV/TOML digests, rule settings and included/excluded coverage enter calculation provenance.
-WF1's historical output must already exist, including for a WF4 dry-run. Synthetic observations and
+Historical CSV/TOML digests, rule settings, requested/discovered years, year-selection mode and
+included/excluded coverage enter calculation provenance. A combined dry-run with WF1 enabled reports
+Q90 preparation as pending if historical inputs are absent; the data-dependent WF4 DAG remains
+uninspected until those inputs exist. A direct WF4 dry-run, or a run with WF1 disabled, requires the
+historical inputs and reports a WF1 prerequisite error when they are absent. Static malformed rules
+and corrupt existing inputs remain errors. Synthetic observations and
 scenario discharge are not used to fit these thresholds. The set conventions contain a complete example.
 
 To calculate part of a set, give `indicator_selection` one `include` or `exclude` list per selected

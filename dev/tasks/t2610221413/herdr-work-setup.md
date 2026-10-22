@@ -55,9 +55,9 @@ Use the live registered role pool through `agent-routing`. Suggested matches are
 | Analytical figure design | `dataviz-designer` |
 
 Owner decision, 2026-10-22: the coordinator must select a supported model and effort level for each
-assignment before launch, following shared routing policy and explicit user preferences. Pass both
-explicitly through the runtime's supported launch options; do not inherit them silently from the pane
-or user configuration. Before launch, print one sentence in the coordinator console naming the role,
+assignment before launch, following shared routing policy and explicit user preferences. Apply both
+explicitly using launch options or session-only controls before submitting work; do not inherit them
+silently from the pane or user configuration. Before launch, print one sentence naming the role,
 model, effort and task-specific reason. For example:
 
 > python-engineer: GPT-6.1 Sol, medium effort — scoped Python implementation with defined acceptance criteria.
@@ -159,5 +159,11 @@ Walk one failure path: a launch interruption or a staged-primary landing blocker
 recoverable writer and preserved changes, with an explicit next action.
 
 This proposal was checked for consistency with the current slot policy and existing Herdr guidance.
-The complete arrangement has not yet been demonstrated in a fresh session. Adoption should update
-the existing development workflow reference, keeping one authoritative home for operational rules.
+Two worker trials have now reached owner-approved landing, including explicit model/effort selection
+and fresh-context verification in the second trial. See the task note for commit and verification evidence.
+The initial effort override required embedded Codex mode. A subsequent Codex 0.162.0 probe avoided
+that limitation: launch without `-c`, choose model and effort with `/model`, then press `s` on the effort
+screen for session-only settings. UI, `/daemon` and shared-server thread discovery confirmed the result.
+Claude Code 2.1.308 accepted `--model sonnet --effort medium` directly and resolved to Sonnet 5.5 / medium.
+Its fresh interactive session completed the Herdr preflight; Codex daemon discovery is not its lifecycle.
+Adoption is being implemented in session-2's development workflow reference, retaining one operational home.

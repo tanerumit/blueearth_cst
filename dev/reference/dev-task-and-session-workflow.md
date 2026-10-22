@@ -1,10 +1,11 @@
 # Development workflow
 
-Last updated: 2026-10-21
+Last updated: 2026-10-23
 
 Shared procedures for developers and agents coordinating repository work. This reference owns task
-admission, board location, worktree coordination, and handoffs. Placement and scratch rules live in
-[dev-repository-layout.md](dev-repository-layout.md); preservation rules live in [dev-record-lifecycle.md](dev-record-lifecycle.md).
+admission, board location, worktree coordination, handoffs, and Herdr worker coordination. Placement and
+scratch rules live in [dev-repository-layout.md](dev-repository-layout.md); preservation rules live in
+[dev-record-lifecycle.md](dev-record-lifecycle.md).
 
 ## Task admission and the board
 
@@ -164,6 +165,78 @@ cmd /c rmdir dev\00-current-board-main
 
 Follow `git-workflow` and the session-entry rules above for synchronization timing. Do not background-sync
 tracked folders or scratch.
+
+## Herdr agent coordination
+
+Applies when a coordinator runs visible worker agents in Herdr panes; the `herdr` and `agent-routing`
+skills own CLI syntax and role choice. Herdr supplies visibility only. Allocation, branch identity,
+verification, landing and cleanup stay with the rules above and `git-workflow`; a visible pane neither
+claims a session nor makes concurrent writes safe. Multiple workers need explicit user authorization.
+
+Vendor documentation defines the model and effort controls: Codex
+[`/model`](https://learn.chatgpt.com/docs/developer-commands#set-the-active-model-with-model) and Claude Code
+[model configuration](https://code.claude.com/docs/en/model-config). The launch details below are local
+observations from Codex CLI 0.162.0 and Claude Code 2.1.308 on 2026-10-23, not documented guarantees;
+re-check them after upgrades.
+
+### Spaces and ownership
+
+- Keep one workspace for the primary checkout (coordinator) and one per session worktree. Discover live
+  workspace, pane and agent IDs each time; do not record them in guidance. Aliases and model menus change.
+- Reuse the session's designated agents pane for its one writer and name the agent after the task, in
+  lowercase. Keep the checks `pwsh` pane for tests, logs and inspection. Never create a worker
+  opportunistically; start one only for an authorized assignment, in the background, without taking the
+  user's focus.
+- Before reusing a pane, establish who owns its occupant. Stop or replace a prior worker only with the
+  coordinator's established ownership or the user's authority over that task; otherwise report it and ask.
+  Preserve its branch and changes first. Never close or stop another task's agent, pane or the Herdr
+  server on your own judgement. An idle probe you started that holds no work may be exited.
+
+### Launch
+
+1. Choose model and effort from scope and the runtime's live supported list, following `agent-routing`.
+   Print one sentence naming role, model, effort and reason before launching. Cache or catalog absence
+   does not prove a model is unavailable; the live picker decides.
+2. Verify worktree allocation (`git worktree list`, branch, clean tree) and, separately, a clean agent
+   context. An idle pane or clean tree does not prove a fresh conversation.
+3. With the shell idle in the foreground of the existing pane, run
+   `herdr agent start <name> --kind <kind> --pane <id> -- <args>`:
+   - **Claude Code:** pass `--model` and `--effort` after `--`; the UI and `/status` show the resolved
+     model ID and effort.
+   - **Codex:** pass only `-C <session-root>` and `-m <model>` after `--`. A `-c` override such as
+     `model_reasoning_effort` forces embedded mode, so the worker is not listed by shared-server thread
+     discovery (Herdr tracking still works). Instead open `/model` in the idle fresh CLI and choose the
+     model, which leads to the effort screen. There, `s` applies model and effort to this session only;
+     Enter saves them as the default, so do not use it. `/daemon` should report a running server; leave
+     it untouched.
+4. Verify effective model, effort, worktree and branch in the fresh UI. The start response and Herdr
+   metadata can show a stale conversation ID until the first turn.
+5. Send a preflight-only turn: confirm no earlier task, report cwd and branch, and stop. Record the new
+   conversation ID, different from the pane's previous one. For Codex, also confirm that shared-server
+   thread discovery lists it with the correct cwd. Claude Code keeps its own interactive session; it is
+   not a Codex thread, so check its ID in `/status`, and Herdr read/wait for completion.
+
+A new unrelated task always gets a fresh conversation, never a resumed or forked one; carry over only
+selected instructions and evidence. Related follow-ups keep the existing conversation. Do not change
+global defaults, permissions or the server to make a launch work.
+
+### Assignment, review and landing
+
+- Send a bounded handoff: objective, sources, owned paths, checks, write authority, commit policy, no
+  nested delegation. The worker maintains its ignored `STATUS.md`; the coordinator alone writes primary
+  board and task records. Report role activation, requested versus observed settings, worktree and branch,
+  agent name and pane, and conversation ID.
+- `idle` and `done` are navigation aids. Read the return, inspect the branch and run or confirm the checks
+  chosen under the [validation ladder](dev-validation.md) before accepting.
+- Landing and pushing keep their explicit-approval policy; a finished worker does not free the session.
+  After approval, land under `git-workflow`, prove ancestry, then park the session.
+
+### Failure and timeout
+
+A timed-out start, prompt or wait does not show the worker never ran. Inspect with `herdr agent list` and
+`herdr agent read <name>`, then wait or continue the same worker. Never resubmit the assignment or start a
+second writer while the first may be live. After an interruption, keep the branch, status and evidence;
+resume the same worker, or stop it and hand its exact worktree to a replacement.
 
 ## Verification and closure
 

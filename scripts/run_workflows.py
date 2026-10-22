@@ -50,6 +50,7 @@ from blueearth_cst.shared import (  # noqa: E402
     console_style,
     execution_outputs,
     invocation_history,
+    product_record,
 )
 from blueearth_cst.shared.config_composition import (  # noqa: E402
     capture_configuration_sources,
@@ -1431,6 +1432,7 @@ def _run_owned(
             child_path = history_path.with_name(f"{child_id}.json")
             child_record = None
             capture_context = None
+            observation = None
             wf3_source_hash = None
             warning_path = history_path.parent / f".{child_id}.warnings"
             try:
@@ -1640,6 +1642,7 @@ def _run_owned(
                         _bind_workflow_archive(
                             child_path, child_record, project_dir, name
                         )
+                        observation = product_record.observe(name, project_dir)
                     _link_child(history_path, history, child_path, name, child_id)
                     if name == "generate_scenarios":
                         from scripts.generate_scenarios import run_owned
@@ -1678,6 +1681,7 @@ def _run_owned(
                         error=exc,
                         elapsed_seconds=time.monotonic() - workflow_started,
                     )
+                    product_record.publish(observation, child_path, child_record)
                     _link_child(history_path, history, child_path, name, child_id)
                 else:
                     history["launch_failures"].append(
@@ -1731,6 +1735,7 @@ def _run_owned(
                     exit_code=result.returncode,
                     elapsed_seconds=time.monotonic() - workflow_started,
                 )
+                product_record.publish(observation, child_path, child_record)
             if child_path.exists():
                 _link_child(history_path, history, child_path, name, child_id)
             else:

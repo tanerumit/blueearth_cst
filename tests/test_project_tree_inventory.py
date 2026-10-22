@@ -154,6 +154,9 @@ COVERED: dict[str, list[str]] = {
         f"data/climate/projections/{CP}/plots/period_2070_2099/cmip6_precip_temp_annual_change_cloud_basin_avg.png",
         f"data/climate/projections/{CP}/plots/figure_captions.md",
         f"data/climate/projections/{CP}/_engine/figure_captions.json",
+        f"data/climate/projections/{CP}/_engine/execution/production.json",
+        f"data/climate/projections/{CP}/_engine/execution/{'b' * 32}/wf2.log",
+        f"data/climate/projections/{CP}/_engine/execution/{'b' * 32}/wf2-benchmarks.tsv",
         f"data/climate/projections/{CP}/report.md",
     ],
     "models": [
@@ -351,6 +354,8 @@ UNDECLARED = [
     f"experiments/{E}/_engine/batch_staging/run_01.unknown",
     "experiments/unknown_run/_engine/reservation.json",
     "data/climate/historical/_engine/unknown.json",
+    f"data/climate/projections/{CP}/_engine/execution/{'b' * 32}/console.log",
+    f"data/climate/projections/{CP}/_engine/execution/unknown/wf2.log",
     f"scenarios/{PK}/unknown.csv",
     f"scenarios/{PK}/series/run_01.tmp.nc",
     f"scenarios/{PK}/weathergenr/output/unknown_dates.csv",

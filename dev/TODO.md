@@ -5,33 +5,34 @@ cssclasses: [todo-board]
 
 # TODO
 
-| #      | ID                       | Item                                                   | Area       | Status       |
-| ------ | ------------------------ | ------------------------------------------------------ | ---------- | ------------ |
-| 1      | [t2610082103][]          | Share plot renderers across climate workflows          | plotting   | active (6/7) |
-| 2      | [t2609281102][]          | Finish Wflow model revisions design                    | wf1        | blocked      |
-| 3      | [t2608202352][]          | Publish docs site to GitHub Pages                      | docs       | blocked      |
-| 4      | [t2608091730][]          | Make waterbody layers for the basin map                | plotting   | blocked      |
-| 5      | [t2608071207][]          | Prove wflow log check fails without path_log           | wf3        | blocked      |
-| 6      | [t2610130703][]          | Pin CMIP6 variables independently when versions differ | wf2        | backlog      |
-| 7      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4    | wf4        | backlog      |
-| 8      | [t2610091622][]          | Triage unresolved geographic robustness findings       | validation | backlog      |
-| 9      | [t2610022259][]          | Scope conceptual workflow improvements                 | methods    | backlog      |
-| 10     | [t2609251520][]          | Decide naming of generation_inputs snapshots           | wf3        | backlog      |
-| 11     | [t2609251025][]          | Wflow sysimage to cut Julia startup                    | runtime    | backlog      |
-| 12     | [t2609181302][]          | Snakemake preamble cannot be suppressed                | console    | backlog      |
-| 13     | [t2608222252][]          | Make climate extraction variables configurable         | climate    | backlog      |
-| 14     | [t2608202351a][]         | Publish pipeline notebooks on the docs site            | docs       | backlog      |
-| 15     | [t2608191733][]          | Ship a sample dataset bundle                           | data       | backlog      |
-| 16     | [t2608121606][]          | Missing catalog source can hide a reservoir            | wf1        | backlog      |
-| 17     | [t2608071221][]          | Docker and Linux end-to-end runs untested              | platform   | backlog      |
-| 18     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard               | wf1        | backlog      |
-|        | [t2610221413][]          | Herdr multi-agent work setup                           | tooling    | backlog      |
-|        | [t2610221058][]          | Central configuration and portable workflow bundles    | workflows  | active (5/5) |
-|        | [t2610211633][]          | Add crop-water screening indicators to WF4             | wf4        | blocked      |
-|        | [t2610211349][]          | Improving repo-wide documentation and instructions     | docs       | backlog      |
-|        | [t2610191347][]          | Retain logs and benchmark reports by execution         | runtime    | backlog      |
-|        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run | runtime    | backlog      |
-|        | [t2610161523][]          | Integrate multiple metric sets                         | wf4        | active (3/3) |
+| #      | ID                       | Item                                                          | Area       | Status       |
+| ------ | ------------------------ | ------------------------------------------------------------- | ---------- | ------------ |
+| 1      | [t2610082103][]          | Share plot renderers across climate workflows                 | plotting   | active (6/7) |
+| 2      | [t2609281102][]          | Finish Wflow model revisions design                           | wf1        | blocked      |
+| 3      | [t2608202352][]          | Publish docs site to GitHub Pages                             | docs       | blocked      |
+| 4      | [t2608091730][]          | Make waterbody layers for the basin map                       | plotting   | blocked      |
+| 5      | [t2608071207][]          | Prove wflow log check fails without path_log                  | wf3        | blocked      |
+| 6      | [t2610130703][]          | Pin CMIP6 variables independently when versions differ        | wf2        | backlog      |
+| 7      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4           | wf4        | backlog      |
+| 8      | [t2610091622][]          | Triage unresolved geographic robustness findings              | validation | backlog      |
+| 9      | [t2610022259][]          | Scope conceptual workflow improvements                        | methods    | backlog      |
+| 10     | [t2609251520][]          | Decide naming of generation_inputs snapshots                  | wf3        | backlog      |
+| 11     | [t2609251025][]          | Wflow sysimage to cut Julia startup                           | runtime    | backlog      |
+| 12     | [t2609181302][]          | Snakemake preamble cannot be suppressed                       | console    | backlog      |
+| 13     | [t2608222252][]          | Make climate extraction variables configurable                | climate    | backlog      |
+| 14     | [t2608202351a][]         | Publish pipeline notebooks on the docs site                   | docs       | backlog      |
+| 15     | [t2608191733][]          | Ship a sample dataset bundle                                  | data       | backlog      |
+| 16     | [t2608121606][]          | Missing catalog source can hide a reservoir                   | wf1        | backlog      |
+| 17     | [t2608071221][]          | Docker and Linux end-to-end runs untested                     | platform   | backlog      |
+| 18     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                      | wf1        | backlog      |
+|        | [t2610221807][]          | Audit temperature compatibility for retained simulation reuse | toolbox    | active (0/3) |
+|        | [t2610221413][]          | Herdr multi-agent work setup                                  | tooling    | backlog      |
+|        | [t2610221058][]          | Central configuration and portable workflow bundles           | workflows  | active (5/5) |
+|        | [t2610211633][]          | Add crop-water screening indicators to WF4                    | wf4        | blocked      |
+|        | [t2610211349][]          | Improving repo-wide documentation and instructions            | docs       | backlog      |
+|        | [t2610191347][]          | Retain logs and benchmark reports by execution                | runtime    | backlog      |
+|        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run        | runtime    | backlog      |
+|        | [t2610161523][]          | Integrate multiple metric sets                                | wf4        | active (3/3) |
 
 [t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
@@ -51,6 +52,7 @@ cssclasses: [todo-board]
 [t2608121606]: tasks/t2608121606-a-missing-catalog-source-is-logged-identically-to-an-empty-basin-so-1-08-can-silently-omit-a-real-reservoir.md
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
+[t2610221807]: tasks/t2610221807-temperature-reuse-audit.md
 [t2610221413]: tasks/t2610221413-herdr-multi-agent-work-setup.md
 [t2610221058]: tasks/t2610221058-central-config-portable-bundles.md
 [t2610211633]: tasks/t2610211633-crop-water-indicators.md

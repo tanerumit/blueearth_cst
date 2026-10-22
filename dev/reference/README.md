@@ -10,7 +10,7 @@ before writing. Update that document for revisions; do not create a separate fil
 
 | When the change concerns | Update or consult |
 |---|---|
-| Task admission, sessions, board coordination or handoffs | [dev-task-and-session-workflow.md](dev-task-and-session-workflow.md) |
+| Task admission, sessions, board coordination, handoffs or Herdr worker coordination | [dev-task-and-session-workflow.md](dev-task-and-session-workflow.md) |
 | Repository placement, config directories or local scratch | [dev-repository-layout.md](dev-repository-layout.md) |
 | Documentation authority, promotion, retention or sealing | [dev-record-lifecycle.md](dev-record-lifecycle.md) |
 | File, identifier or output naming | [dev-naming-conventions.md](dev-naming-conventions.md) |

@@ -1,6 +1,7 @@
 """WF2 product-local production attribution across launcher-observed runs."""
 
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -79,7 +80,12 @@ def test_runs_keep_truthful_attribution(project, monkeypatch):
     assert set(_producers(record).values()) == {success}
     generation = record["generations"][success]
     assert generation["status"] == "succeeded"
-    assert generation["changes"] == {"added": 3, "changed": 0, "removed": 0}
+    assert generation["changes"] == {
+        "added": 3,
+        "changed": 0,
+        "rewritten_identical": 0,
+        "removed": 0,
+    }
     retained = product / RECORD_DIRECTORY / success / "wf2.log"
     assert retained.read_text() == f"log {sorted(first)}\n"
     reference = generation["configuration"]["run_record"]
@@ -136,6 +142,31 @@ def test_runs_keep_truthful_attribution(project, monkeypatch):
     assert not (product / RECORD_DIRECTORY / success).exists()
     assert not (product / RECORD_DIRECTORY / failed).exists()
     assert (output / f"config/_engine/invocations/{success}.json").is_file()
+
+
+def test_identical_rewrite_is_credited_but_untouched_files_are_not(
+    project, monkeypatch
+):
+    """A deterministic plot rerun rewrites equal bytes; that is production."""
+    config, output = project
+    product = output / "data/climate/projections/cmip6"
+    first = {"summary/provenance.json": "p", "plots/a/fig.png": "f"}
+    assert _run(monkeypatch, config, _writer(product, first)) == 0
+    tables = _record(product)["latest_invocation_id"]
+    before = (product / RECORD_DIRECTORY / RECORD_NAME).read_bytes()
+    assert _run(monkeypatch, config, _writer(product, {})) == 0
+    assert (product / RECORD_DIRECTORY / RECORD_NAME).read_bytes() == before
+
+    time.sleep(0.01)  # distinct write time on coarse-clock filesystems
+    assert _run(monkeypatch, config, _writer(product, {"plots/a/fig.png": "f"})) == 0
+    record = _record(product)
+    plots = record["latest_invocation_id"]
+    assert plots != tables
+    assert _producers(record) == {
+        "summary/provenance.json": tables,
+        "plots/a/fig.png": plots,
+    }
+    assert record["generations"][plots]["changes"]["rewritten_identical"] == 1
 
 
 def test_unobserved_bytes_are_not_credited(project, monkeypatch):

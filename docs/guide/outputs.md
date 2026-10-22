@@ -212,8 +212,9 @@ Copies of each contributing invocation's `wf2.log` and `wf2-benchmarks.md`/`.tsv
 
 - `state: complete` means the latest run that changed the product succeeded. `incomplete` means it
   failed after replacing some files: tables, figures or caches then come from different runs.
-- A run that changes no bytes, successful or failed, leaves the record untouched. A partial plotting
-  rerun credits only the figures it rewrote.
+- A run that writes no product file, successful or failed, leaves the record untouched. A file is
+  credited when the run changed its bytes or rewrote it identically (detected by write time under the
+  project lock), so a partial plotting rerun credits only the figures and figure manifests it rewrote.
 - `producer: null` marks bytes no launcher observed being written: products from before this record
   existed, direct Snakemake runs, or edits by hand. The record never credits them to a later run.
 - Rules 2.01–2.02 run inside WF2 but write the shared `data/spatial/geoms/`. They appear in the copied

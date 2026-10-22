@@ -1,10 +1,12 @@
 """Product-local production records for launcher-observed WF2 executions.
 
 A product keeps one record of which observed invocation produced each current
-file, beside retained copies of those invocations' diagnostics. Attribution is
-by bytes: the launcher inventories the product before its child starts and
-after its diagnostics are merged, inside the project execution lock. A no-op
-changes nothing here, whatever its exit status. Bytes that changed without an
+file, beside retained copies of those invocations' diagnostics. The launcher
+inventories the product (bytes and write times) before its child starts and
+after its diagnostics are merged, inside the project execution lock. A file is
+credited to the invocation when its bytes or write time changed, so an
+identical rewrite (a deterministic plot rerun) is credited too. A no-op writes
+nothing and changes nothing here, whatever its exit status. Bytes that changed without an
 observation (older products, bare Snakemake, a killed launcher) are recorded
 with no producer rather than credited to a later run.
 
@@ -49,6 +51,8 @@ class Observation:
     project_root: Path
     product: Path
     before: dict[str, dict[str, Any]]
+    # Write times only detect rewrites under the lock; they are never recorded.
+    before_mtimes: dict[str, int]
 
 
 def product_root(project_root: Path, workflow: str) -> Path | None:
@@ -74,9 +78,26 @@ def _sha256(path: Path) -> str:
 
 def inventory(product: Path) -> dict[str, dict[str, Any]]:
     """Digest every product file, excluding product-local provenance."""
-    result: dict[str, dict[str, Any]] = {}
+    return {
+        name: {
+            "sha256": _sha256(product / name),
+            "size_bytes": (product / name).stat().st_size,
+        }
+        for name in _product_files(product)
+    }
+
+
+def write_times(product: Path) -> dict[str, int]:
+    """Nanosecond write times of the files :func:`inventory` digests."""
+    return {
+        name: (product / name).stat().st_mtime_ns for name in _product_files(product)
+    }
+
+
+def _product_files(product: Path) -> list[str]:
+    names = []
     if not product.exists():
-        return result
+        return names
     for path in sorted(product.rglob("*")):
         relative = path.relative_to(product).as_posix()
         if any(
@@ -86,11 +107,8 @@ def inventory(product: Path) -> dict[str, dict[str, Any]]:
         if path.is_symlink() or path.is_junction():
             raise ValueError(f"product contains a linked path: {relative}")
         if path.is_file():
-            result[relative] = {
-                "sha256": _sha256(path),
-                "size_bytes": path.stat().st_size,
-            }
-    return result
+            names.append(relative)
+    return names
 
 
 def read_record(product: Path) -> dict[str, Any] | None:
@@ -113,7 +131,9 @@ def observe(workflow: str, project_root: Path) -> Observation | None:
     try:
         project_root = Path(project_root).resolve()
         product = product_root(project_root, workflow)
-        return Observation(workflow, project_root, product, inventory(product))
+        return Observation(
+            workflow, project_root, product, inventory(product), write_times(product)
+        )
     except Exception as error:  # noqa: BLE001 -- diagnostics cannot block a run
         _unavailable(workflow, error)
         return None
@@ -127,15 +147,15 @@ def _unavailable(label: str, error: BaseException) -> None:
 
 
 def attribute(
-    before: Mapping[str, Mapping[str, Any]],
+    written: set[str],
     after: Mapping[str, Mapping[str, Any]],
     previous: Mapping[str, Mapping[str, Any]],
     invocation_id: str,
 ) -> dict[str, dict[str, Any]]:
-    """Credit changed bytes to this invocation; keep only still-true credits."""
+    """Credit written files to this invocation; keep only still-true credits."""
     files = {}
     for name, state in after.items():
-        if before.get(name) != state:
+        if name in written:
             producer = invocation_id
         else:
             prior = previous.get(name, {})
@@ -168,6 +188,7 @@ def _generation(
     invocation: Mapping[str, Any],
     before: Mapping[str, Any],
     after: Mapping[str, Any],
+    written: set[str],
     diagnostics: list[str],
 ) -> dict[str, Any]:
     configuration = invocation.get("configuration", {})
@@ -194,6 +215,10 @@ def _generation(
             "added": sum(name not in before for name in after),
             "changed": sum(
                 name in before and before[name] != state
+                for name, state in after.items()
+            ),
+            "rewritten_identical": sum(
+                name in written and before.get(name) == state
                 for name, state in after.items()
             ),
             "removed": sum(name not in after for name in before),
@@ -228,13 +253,20 @@ def record_production(
     if invocation["status"] not in {"succeeded", "failed"}:
         raise ValueError("production is recorded only for a finished invocation")
     after = inventory(observation.product)
-    if after == observation.before:
+    times = write_times(observation.product)
+    written = {
+        name
+        for name, state in after.items()
+        if observation.before.get(name) != state
+        or observation.before_mtimes.get(name) != times.get(name)
+    }
+    if not written and set(after) == set(observation.before):
         return None
     from blueearth_cst.shared.workflow_config_snapshot import _atomic_json
 
     previous = read_record(observation.product) or {"files": {}, "generations": {}}
     identity = invocation["invocation_id"]
-    files = attribute(observation.before, after, previous["files"], identity)
+    files = attribute(written, after, previous["files"], identity)
     # The changing invocation stays described even when it only removed files.
     owners = {item["producer"] for item in files.values()} | {identity}
     generations = {
@@ -245,6 +277,7 @@ def record_production(
         invocation,
         observation.before,
         after,
+        written,
         _retain_diagnostics(observation, invocation),
     )
     record = {

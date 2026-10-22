@@ -112,6 +112,35 @@ Capture gate output in a file, never pipe it through `tail`.
 
 ## Pytest temporary directories
 
+### Windows Snakemake cache access
+
+Run checks that invoke Snakemake with normal user permissions outside a restricted agent sandbox on
+Windows. This includes subprocess and in-process DAG checks, even when their pytest marker does not
+identify them as workflow contracts. Pure Python checks can remain sandboxed. Request the tool's
+normal-permission execution mode up front; do not first wait for the known cache failure to recur.
+This is not Windows administrator elevation and does not authorize production runs or publishing.
+The execution host still controls approvals; this repository does not grant or persist blanket access.
+
+When cache access under a process token is uncertain, run:
+
+```powershell
+pixi run python dev/scripts/check_snakemake_access.py
+```
+
+The probe exercises the installed Snakemake source cache in a child process, including temporary-directory
+creation and a file round-trip. It exits 0 for success, or 2 with a diagnosis; the default 15-second
+timeout stops a stalled child. It runs no workflow and changes no permissions. A timeout can also mean
+unusually slow imports: compare with normal permissions before attributing it to access restrictions.
+
+Snakemake uses the Windows user source cache, independently of pytest's worktree-local scratch.
+On the affected Windows/Python combination, `tempfile.mkdtemp()` can retry a denied directory creation
+while its parent appears writable. Private temporary-directory ACLs can also exclude restricted tokens.
+Changing pytest `--basetemp`, `TMP` or `TEMP` does not redirect this explicitly selected cache.
+Do not patch installed packages, relax cache ACLs, or extend workflow timeouts to mask this failure.
+If normal-permission execution also fails, diagnose that error before continuing.
+
+### Worktree-local pytest scratch
+
 Bare `pytest` and Pixi test tasks load the test-directory plugin from `tests/conftest.py`.
 Each invocation creates `.tmp/pytest/run-<unique-id>/` in its own checkout; xdist places worker
 directories beneath that run. The reusable cache lives in `.tmp/pytest/cache/`. Concurrent runs

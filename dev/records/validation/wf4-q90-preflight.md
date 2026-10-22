@@ -40,6 +40,27 @@ pixi run pytest tests/test_crop_water_integration.py tests/test_named_indicator_
 The final logs are retained under `.tmp/tasks/wf4-q90-preflight/inline-*.log` through owner review.
 Original numerical checks below still cover the unchanged Q90 formula and period exclusions.
 
+## Follow-up: Windows Snakemake permission policy
+
+Inline configuration is committed as `fb1ce693`. The subsequent user-authorized permissions follow-up
+adds a bounded `dev/scripts/check_snakemake_access.py` diagnostic and updates the owning validation
+reference and AGENTS routing. It makes normal user permissions the up-front execution policy for
+Windows checks invoking Snakemake. It does not change the sandbox, grant blanket approval, modify ACLs,
+patch dependencies or run a model. Project-instructions, project-reference-docs and Snakemake guidance
+were applied in addition to the Python/testing guidance.
+
+```powershell
+pixi run python dev/scripts/check_snakemake_access.py
+```
+
+Under the restricted token, the diagnostic exits 2 after its 15-second child timeout with recovery
+guidance. Under normal user permissions, the same diagnostic exits 0 in about 3 seconds after an actual
+Snakemake temporary-cache directory and file round-trip. The child cleans up its own successful probe;
+`subprocess.run` stops and waits for a timed-out child. The restricted transcript is retained as
+`.tmp/tasks/wf4-q90-preflight/cache-probe-restricted.log`. Scoped Ruff, formatting, compilation and
+whitespace checks pass. This establishes the diagnostic's two observed outcomes, not future-session
+instruction adoption or a change to upstream Snakemake's retry behavior.
+
 ## Result and boundaries
 
 - Startup validates authored WF4 selections and Qcrit settings without opening historical output.

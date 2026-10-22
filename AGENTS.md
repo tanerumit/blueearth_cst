@@ -110,6 +110,8 @@ remove that setting when diagnosing why a job reran.
 ## Validation ladder — match the check to the blast radius
 
 Before selecting checks, landing, or pushing, read `dev/reference/dev-validation.md`.
+On Windows, launch checks that invoke Snakemake with normal user permissions outside a restricted
+agent sandbox. For unknown environments, use the bounded cache probe in that reference first.
 It owns the validation ladder, exemptions, evidence reuse, execution coverage, config provenance,
 and CI procedures. Select coverage from changed behavior and affected consumers.
 

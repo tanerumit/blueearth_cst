@@ -11,6 +11,22 @@ import pytest
 HOOKS = Path(__file__).resolve().parents[1] / ".githooks"
 
 
+@pytest.mark.parametrize("name", ["pre-commit", "pre-push"])
+def test_installed_hooks_are_tracked_as_executable(name: str):
+    environment = {
+        key: value for key, value in os.environ.items() if not key.startswith("GIT_")
+    }
+    result = subprocess.run(
+        ["git", "ls-files", "--stage", f".githooks/{name}"],
+        cwd=HOOKS.parent,
+        env=environment,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    assert result.stdout.split()[0] == "100755"
+
+
 @pytest.fixture
 def repository(tmp_path: Path):
     """Isolate Git context while preserving normal executable discovery."""

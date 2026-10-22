@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 import yaml
 
 from blueearth_cst.experiment import indicator_sets
@@ -126,7 +127,8 @@ def _responses(locations=("9",), *, without_pet=False):
     return Responses(rows, toml, temporal, variables), thresholds
 
 
-def test_crop_water_retained_response_publication(tmp_path, monkeypatch):
+@pytest.fixture
+def crop_water_experiment(tmp_path, monkeypatch):
     from blueearth_cst.experiment import indicator_plan
 
     responses, thresholds = _responses()
@@ -173,27 +175,39 @@ def test_crop_water_retained_response_publication(tmp_path, monkeypatch):
         ),
         encoding="utf-8",
     )
+    return experiment, source
+
+
+def _run_indicators(experiment, *extra):
+    """Invoke WF4 against the configured synthetic retained responses."""
     environment = os.environ.copy()
     environment.pop("SNAKEMAKE_PROFILE", None)
     environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
-    for extra in (("--dry-run",), ()):
-        run = subprocess.run(
-            [
-                sys.executable,
-                "scripts/simulate_system.py",
-                "--config",
-                str(experiment.config),
-                "--cores",
-                "1",
-                *extra,
-            ],
-            cwd=Path(__file__).resolve().parents[1],
-            env=environment,
-            capture_output=True,
-            text=True,
-            timeout=1200,
-        )
-        assert run.returncode == 0, run.stdout + run.stderr
+    return subprocess.run(
+        [
+            sys.executable,
+            "scripts/simulate_system.py",
+            "--config",
+            str(experiment.config),
+            "--cores",
+            "1",
+            *extra,
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=1200,
+    )
+
+
+@pytest.mark.skipif(
+    os.name != "nt", reason="run_project_child refuses project writers off Windows"
+)
+def test_crop_water_cli_publication(crop_water_experiment):
+    experiment, _ = crop_water_experiment
+    run = _run_indicators(experiment)
+    assert run.returncode == 0, run.stdout + run.stderr
     assert (
         experiment.root / "results/indicator_sets/crop-water/indicators.csv"
     ).is_file()
@@ -203,6 +217,12 @@ def test_crop_water_retained_response_publication(tmp_path, monkeypatch):
     assert len(dictionary) == 10
     assert set(dictionary.water_year_start) == {"Oct (recharge); fixed seasons"}
     assert dictionary.block_assignment.str.contains("1 Nov-31 May").all()
+
+
+def test_crop_water_retained_response_publication(crop_water_experiment):
+    experiment, source = crop_water_experiment
+    run = _run_indicators(experiment, "--dry-run")
+    assert run.returncode == 0, run.stdout + run.stderr
     resolved = indicator_sets.resolve_set(source)
     assert len(resolved.indicators) == 10
     request = current_indicator_request(

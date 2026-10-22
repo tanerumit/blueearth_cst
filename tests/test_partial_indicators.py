@@ -1,6 +1,7 @@
 """Partial indicator evaluation: availability, explicit unavailable rows, recovery."""
 
 import csv
+import os
 from pathlib import Path
 
 import pytest
@@ -176,8 +177,21 @@ def test_evaluation_mode_is_validated_and_snapshotted(tmp_path):
         )
 
 
-def test_cli_partial_run_succeeds_with_warning_and_strict_refuses(experiment):
-    import os
+@pytest.mark.parametrize(
+    "execute",
+    [
+        False,
+        pytest.param(
+            True,
+            marks=pytest.mark.skipif(
+                os.name != "nt",
+                reason="run_project_child refuses project writers off Windows",
+            ),
+        ),
+    ],
+    ids=["preflight-and-dry-run", "publication"],
+)
+def test_cli_partial_run_succeeds_with_warning_and_strict_refuses(experiment, execute):
     import subprocess
     import sys
 
@@ -227,9 +241,11 @@ def test_cli_partial_run_succeeds_with_warning_and_strict_refuses(experiment):
     assert strict.returncode != 0
     assert "summer_low_flow_days" in strict.stdout + strict.stderr
     assert "indicator_evaluation: partial" in strict.stdout + strict.stderr
-    for extra in (("--dry-run",), ()):
-        partial = run("partial", *extra)
-        assert partial.returncode == 0, partial.stdout + partial.stderr
+    partial = run("partial", *(() if execute else ("--dry-run",)))
+    assert partial.returncode == 0, partial.stdout + partial.stderr
+    if not execute:
+        assert not (built.root / "results/indicator_sets/crop-water").exists()
+        return
     assert "partial results; unavailable: summer_low_flow_days" in partial.stdout
     dictionary = pd.read_csv(
         built.root / "results/indicator_sets/crop-water/indicators.csv"

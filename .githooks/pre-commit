@@ -41,9 +41,9 @@ if [ "$branch" != main ]; then
         # Synchronizing a session may import canonical task state unchanged.
         :
     else
-        echo "pre-commit: REJECTED. Task documents and board state belong to main."
-        echo "Use main's dev/tasks/ (open .tmp/navigation/main-dev.lnk)."
-        echo "Commit task changes there separately; do not bypass sparse exclusion."
+        echo "pre-commit: REJECTED. Task documents and board state belong to main." >&2
+        echo "Use main's dev/tasks/ (open .tmp/navigation/main-dev.lnk)." >&2
+        echo "Commit task changes there separately; do not bypass sparse exclusion." >&2
         exit 1
     fi
 fi
@@ -55,9 +55,9 @@ else
 fi
 
 if ! pixi run python dev/scripts/notebook_outputs.py --check --staged; then
-    echo ""
-    echo "pre-commit: REJECTED. Strip them and stage again:"
-    echo "    pixi run python dev/scripts/notebook_outputs.py --strip"
-    echo "    git add docs/notebooks/"
+    echo "" >&2
+    echo "pre-commit: REJECTED. Strip them and stage again:" >&2
+    echo "    pixi run python dev/scripts/notebook_outputs.py --strip" >&2
+    echo "    git add docs/notebooks/" >&2
     exit 1
 fi

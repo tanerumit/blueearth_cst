@@ -21,6 +21,8 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-22 | t2610221058 | Central configuration and portable workflow bundles | workflows |
+| 2026-10-22 | t2610211633 | Add crop-water screening indicators to WF4 [dropped] | wf4  |
 | 2026-10-22 | t2610161523 | Integrate multiple metric sets | wf4  |
 | 2026-10-22 | t2610221807 | Audit temperature compatibility for retained simulation reuse | toolbox |
 | 2026-10-22 | t2610221645 | Configurable baseline Qcrit and retained temperature outputs | toolbox |

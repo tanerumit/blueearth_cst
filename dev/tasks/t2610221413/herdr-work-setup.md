@@ -54,9 +54,27 @@ Use the live registered role pool through `agent-routing`. Suggested matches are
 | Independent challenge of a consequential design | `critical-thinker` |
 | Analytical figure design | `dataviz-designer` |
 
-Choose models and effort through the shared routing policy and explicit user preferences. GPT-6.1 Sol
-at medium effort was the requested allocation for the CI repair example; this proposal does not turn
-that choice into a mandatory default or a claim about comparative model performance.
+Owner decision, 2026-10-22: the coordinator must select a supported model and effort level for each
+assignment before launch, following shared routing policy and explicit user preferences. Pass both
+explicitly through the runtime's supported launch options; do not inherit them silently from the pane
+or user configuration. Before launch, print one sentence in the coordinator console naming the role,
+model, effort and task-specific reason. For example:
+
+> python-engineer: GPT-6.1 Sol, medium effort — scoped Python implementation with defined acceptance criteria.
+
+Verify the effective model and effort after startup and before submitting the work. If either differs
+from the selection or cannot be verified, resolve the launch settings before dispatch. An unavailable
+selection requires an explicit, justified supported alternative. These choices are task-specific;
+the example is neither a fixed default nor a measured comparative performance claim.
+
+Owner decision, 2026-10-22: a new, unrelated task starts a fresh agent conversation, even when reusing
+the same session worktree and Herdr pane. Before dispatch, verify conversation identity and task
+ownership separately from Git cleanliness. An idle agent, cleared terminal or clean worktree does not
+prove a fresh context. Do not resume or fork the previous task's conversation for a new assignment.
+Verify that the new conversation differs from the previous one before submitting the bounded handoff;
+carry forward only relevant, deliberately selected instructions and evidence. Related follow-ups may
+continue their existing conversation. If the previous worker still owns the pane or may be running
+after disconnection, resolve its ownership and preserve its work before starting a replacement.
 
 Use a fresh reviewer when independence adds value, especially for cross-workflow or scientific changes.
 A read-only reviewer can inspect a frozen commit without claiming a writing session. Give it the exact
@@ -71,7 +89,9 @@ because that space exists.
 2. Allocate a clean available session through the managed `task-start` lifecycle from local `main`.
    Verify session identity before launch; never create a task branch manually to bypass allocation.
 3. Inside Herdr, launch the worker in a visible pane using the shared `agent-routing` and `herdr`
-   skills. Preserve the selected role contract, model/effort and assigned worktree. If launch fails,
+   skills. Apply the explicit selection, console justification and startup verification above.
+   Check task ownership and verify a fresh conversation for a new assignment before sending its handoff.
+   Preserve the selected role contract and assigned worktree. If launch fails,
    report the blocker rather than silently switching to an internal subagent.
 4. Supply a bounded handoff: objective, source paths, ownership, dependencies, checks, write authority,
    commit policy and no nested delegation. Workers implement, verify and commit their own changes.
@@ -129,6 +149,12 @@ less flexible and are not recommended.
 Trial one ordinary path: allocate, launch visibly, inspect progress, receive a tested commit, obtain
 landing approval and park the session. Confirm that the user can locate the worker without asking
 the coordinator, that its reported cwd/branch match its assignment, and that unrelated work survives.
+Confirm that explicit model/effort selection and its console justification precede dispatch, and that
+the observed startup settings match. The first CMIP6 trial inherited GPT-6-Astra at medium effort;
+it did not satisfy this requirement. Verify the corrected procedure on the next fresh worker launch.
+Also verify that a reused lane starts a new conversation for unrelated work and retains no prior-task
+conversation history. Record the previous and new conversation identities when available; an
+unverified context must not be reported as fresh.
 Walk one failure path: a launch interruption or a staged-primary landing blocker must leave one
 recoverable writer and preserved changes, with an explicit next action.
 

@@ -78,8 +78,8 @@ requires external review. Revisit if another tool consumes bundles.
 
 ## As shipped (2026-10-22)
 
-Commits `7a28671e` (record), `6d5220e3` (export), `434b0ccb` (import), `0719c9be` (docs),
-`207f5620` (lock wording, JSON-escaped paths, link-member test). Deviations and additions:
+Commits `d31df42a` (record), `94887b4d` (export), `381b5e39` (import), `98081bee` (docs),
+`96dcf2e0` (lock wording, JSON-escaped paths, link-member test). Deviations and additions:
 
 - Imported provenance uses 12-character directory ids (`_engine/imported/<bundle12>/configuration/<snap12>/`)
   to stay inside Windows' default MAX_PATH; manifests keep full digests.

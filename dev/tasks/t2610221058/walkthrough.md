@@ -1,6 +1,6 @@
 # Ntoum WF2 export/import walkthrough (2026-10-22)
 
-Toolbox: `feat/central-config` at `434b0ccb` (import) with export `6d5220e3`. Source:
+Toolbox: `feat/central-config` at `381b5e39` (import) with export `94887b4d`. Source:
 `cst-cases/runs/gabon-ntoum-v2-rapid` (read-only). Isolated destinations under session-1
 `.tmp/tasks/t2610221058/wt/`; full console output in `wt/walkthrough.log`.
 
@@ -39,18 +39,21 @@ worktree-root Snakemake lock (only `test_rapid` paths) was removed before the re
 
 | Run | Toolbox | Snakemake | Production record |
 |---|---|---|---|
-| 1 full | `207f5620` | 13 jobs, exit 0 | `complete`; 48 files credited, logs retained; 8 unattributed |
-| 2 plain | `207f5620` | Up to date | Byte-identical: no-op |
-| 3 `--forcerun plot_climate_projections` | `207f5620` | 2.06 reran | Unchanged: identical PNGs looked like a no-op (defect) |
-| 4 plain | `fd280b45` | 2.05 reran | 5 summary/report files credited (4 identical rewrites) |
-| 5 `--forcerun plot_climate_projections` | `fd280b45` | 2.06 reran | 21 PNGs + 2 figure manifests credited; tables keep producer |
-| 6 plain | `fd280b45` | Up to date | Byte-identical: no-op |
+| 1 full | `96dcf2e0` | 13 jobs, exit 0 | `complete`; 48 files credited, logs retained; 8 unattributed |
+| 2 plain | `96dcf2e0` | Up to date | Byte-identical: no-op |
+| 3 `--forcerun plot_climate_projections` | `96dcf2e0` | 2.06 reran | Unchanged: identical PNGs looked like a no-op (defect) |
+| 4 plain | `316252ab` | 2.05 reran | 5 summary/report files credited (4 identical rewrites) |
+| 5 `--forcerun plot_climate_projections` | `316252ab` | 2.06 reran | 21 PNGs + 2 figure manifests credited; tables keep producer |
+| 6 plain | `316252ab` | Up to date | Byte-identical: no-op |
 
 Run 1's 8 unattributed files exposed the same defect: rule 2.05 rewrote three `summary/` CSVs
-identically. Fix `fd280b45` adds write-time comparison under the project lock. After it, the 5
+identically. Fix `316252ab` adds write-time comparison under the project lock. After it, the 5
 unattributed files are the 4 retired `plots/overview/`/`plots/windows/` leftovers and the unchanged
 `_engine/stage_b_settings.json`, all correctly uncredited.
 
 Export of the rapid product: `production-record` mode, `complete`, 85 members, 2 configuration snapshots
 (generations captured under different toolbox states). Import into an empty root published 66 product
 files with region `unverified`.
+
+Commit hashes above are the post-rebase equivalents (2026-10-22 rebase onto `main`); the runs used
+the pre-rebase commits with identical tree content for these files.

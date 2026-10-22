@@ -33,8 +33,12 @@ SELECTION_KEYS = (
     "indicator_sets",
     "indicator_set_definitions",
     "indicator_selection",
+    "indicator_evaluation",
 )
 SELECTION_MODES = ("include", "exclude")
+#: ``strict`` refuses a selected indicator lacking an input; ``partial`` publishes
+#: it as unavailable. Evaluation never enters numerical identity.
+EVALUATION_MODES = ("strict", "partial")
 
 
 class IndicatorSetError(ValueError):
@@ -117,6 +121,11 @@ class Selection:
     legacy: bool
     #: Per-set ``(set_id, mode, indicator keys)``; mode is include or exclude.
     choices: tuple[tuple[str, str, tuple[str, ...]], ...] = ()
+    evaluation: str = "strict"
+
+    @property
+    def partial(self) -> bool:
+        return self.evaluation == "partial"
 
     @property
     def simulations(self) -> bool:
@@ -178,9 +187,15 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
                 f"indicator_set_definitions.{name} must be exactly {{config_path: <nonempty string>}}"
             )
     choices = _parse_choices(settings.get("indicator_selection", {}), names)
+    evaluation = settings.get("indicator_evaluation", "strict")
+    if evaluation not in EVALUATION_MODES:
+        raise IndicatorSetError(
+            f"indicator_evaluation must be one of {list(EVALUATION_MODES)}; "
+            f"got {evaluation!r}"
+        )
     ordered = tuple(item for item in OPERATIONS if item in operations)
     if not indicators:
-        return Selection(ordered, (), legacy=False)
+        return Selection(ordered, (), legacy=False, evaluation=evaluation)
     base = Path(workflow_path).resolve().parent
     sources = []
     for name in names:
@@ -204,7 +219,9 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
                 f"indicator set {name!r}: cannot read {path}: {exc}"
             ) from exc
         sources.append(SetSource(name, path, bundled, text))
-    return Selection(ordered, tuple(sources), legacy=False, choices=choices)
+    return Selection(
+        ordered, tuple(sources), legacy=False, choices=choices, evaluation=evaluation
+    )
 
 
 def _parse_choices(value, names) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
@@ -638,6 +655,7 @@ def write_selection_snapshot(selection: Selection, path: Path) -> Path:
             {"set_id": set_id, "mode": mode, "indicators": list(keys)}
             for set_id, mode, keys in selection.choices
         ],
+        "evaluation": selection.evaluation,
         "legacy": selection.legacy,
         "sets": [
             {
@@ -673,6 +691,7 @@ def read_selection_snapshot(path) -> Selection:
             (item["set_id"], item["mode"], tuple(item["indicators"]))
             for item in payload["choices"]
         ),
+        evaluation=payload["evaluation"],
     )
 
 

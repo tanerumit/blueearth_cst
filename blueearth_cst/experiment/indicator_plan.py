@@ -289,18 +289,24 @@ def current_indicator_requests(experiment_root, calculation_sets, anchor):
         )
     environment = resolve_indicator_environment()
     validation = return_level_validation.build_declaration()
+    response_request = read_simulation_intent_v2(root)["documents"]["response_request"]
     code_by_sets = {}
     requests = []
     for calculations in calculation_sets:
-        contributing = _calculation_sets(declarations_for_calculations(calculations))
+        available, _, _ = split_availability(calculations, response_request)
+        contributing = _calculation_sets(declarations_for_calculations(available))
         if contributing not in code_by_sets:
-            code_by_sets[contributing] = _indicator_code_inventory(contributing)
+            # A request with nothing calculable observes no calculation code.
+            code_by_sets[contributing] = (
+                _indicator_code_inventory(contributing) if contributing else []
+            )
         request = indicator_request(
             record["simulation_id"],
             calculations,
             anchor,
             environment,
             validation,
+            response_request,
             code_inventory=code_by_sets[contributing],
         )
         request["simulation_schema_version"] = schema
@@ -308,15 +314,80 @@ def current_indicator_requests(experiment_root, calculation_sets, anchor):
     return requests
 
 
+def split_availability(calculations, response_request):
+    """Split selected records into calculable ones and explicit unavailable entries.
+
+    An indicator needing a response the simulation never requested is dropped
+    whole; a set-declared absent input (``loader.unavailable``) marks locations
+    unavailable while the indicator stays calculable elsewhere. Returns sorted
+    ``(calculations, unavailable_calculations, unavailable_results)``.
+    """
+    locations = {
+        item["variable"]: item["locations"] for item in response_request["variables"]
+    }
+    calculations = sorted(calculations, key=lambda record: record["indicator"])
+    available, dropped, results = [], [], []
+    for record, declaration in zip(
+        calculations, declarations_for_calculations(calculations), strict=True
+    ):
+        missing = sorted(
+            {item.variable for item in declaration.requirements} - set(locations)
+        )
+        if missing:
+            dropped.append(
+                {
+                    "calculation": record,
+                    "reasons": [f"missing_response:{item}" for item in missing],
+                }
+            )
+            continue
+        available.append(record)
+        retained = [str(item) for item in locations[declaration.table_variable]]
+        for location, reason in loader.unavailable(declaration, retained):
+            for item in retained if location is None else [location]:
+                results.append(
+                    {"indicator": declaration.name, "location": item, "reason": reason}
+                )
+    results.sort(key=lambda row: (row["indicator"], row["location"], row["reason"]))
+    return available, dropped, results
+
+
+def selected_calculations(request):
+    """Every selected record of a request or manifest, calculable or unavailable.
+
+    Manifests before indicator-set/6 have no unavailable calculations.
+    """
+    return sorted(
+        [
+            *request.get("calculations", []),
+            *(
+                item["calculation"]
+                for item in request.get("unavailable_calculations", [])
+            ),
+        ],
+        key=lambda record: record["indicator"],
+    )
+
+
 def indicator_request(
-    simulation_id, calculations, anchor, environment, validation, *, code_inventory=None
+    simulation_id,
+    calculations,
+    anchor,
+    environment,
+    validation,
+    response_request,
+    *,
+    code_inventory=None,
 ):
     """Compute a scheduling request before response values or reference months exist.
 
-    ``calculations`` are resolved set records; they are sorted by indicator key so
-    selection order, set ids and presentation never enter numerical identity.
+    ``calculations`` are the selected set records; they are sorted by indicator key
+    so selection order, set ids and presentation never enter numerical identity.
+    Availability against the frozen ``response_request`` is part of the request.
     """
-    calculations = sorted(calculations, key=lambda record: record["indicator"])
+    calculations, dropped, unavailable = split_availability(
+        calculations, response_request
+    )
     registry = declarations_for_calculations(calculations)
     # A NEW request must carry the D4 declaration. Legacy acceptance is a read
     # compatibility guarantee (D6), never a write escape hatch, so the retained
@@ -335,7 +406,7 @@ def indicator_request(
         else code_inventory
     )
     return {
-        "schema_version": "indicator-request/4",
+        "schema_version": "indicator-request/5",
         "simulation_id": simulation_id,
         "tokens": sorted({item.table_variable for item in registry}),
         "response_variables": sorted(
@@ -346,6 +417,8 @@ def indicator_request(
             }
         ),
         "calculations": _plain(calculations),
+        "unavailable_calculations": _plain(dropped),
+        "unavailable_results": unavailable,
         "declarations": [_plain(asdict(item)) for item in registry],
         "grouping": "stochastic/st_id including empty unperturbed key",
         "reference": "unperturbed evaluated runs; first native q location; monthly sum; first month on ties",
@@ -504,16 +577,17 @@ def build_indicator_plan(experiment_root, request, *, _observed_code=None):
     }
     if request["simulation_id"] != simulation["simulation_id"]:
         raise IndicatorPlanStale("indicator request selects a different simulation")
-    if request.get("schema_version") != "indicator-request/4":
+    if request.get("schema_version") != "indicator-request/5":
         raise IndicatorPlanStale(
             f"unsupported indicator request {request.get('schema_version')!r}"
         )
     live = indicator_request(
         simulation["simulation_id"],
-        request["calculations"],
+        selected_calculations(request),
         request["water_year_anchor"],
         request["indicator_environment"],
         request["return_level_validation"],
+        intent_v2["documents"]["response_request"],
         code_inventory=_observed_code,
     )
     live["simulation_schema_version"] = "simulation/3"
@@ -620,6 +694,8 @@ def build_indicator_plan(experiment_root, request, *, _observed_code=None):
     expected_keys.sort()
     definition = {
         "declarations": request["declarations"],
+        "unavailable_calculations": request["unavailable_calculations"],
+        "unavailable_results": request["unavailable_results"],
         "grouping": request["grouping"],
         "reference": request["reference"],
         "resolved_references": references,
@@ -654,7 +730,7 @@ def build_indicator_plan(experiment_root, request, *, _observed_code=None):
     # results/<digest>/ roots are never adopted by a new request.
     destination = engine / "data"
     plan = {
-        "schema_version": "indicator-request/4",
+        "schema_version": "indicator-request/5",
         "indicator_request_id": content_sha256(request),
         "request": request,
         "response_inventory_sha256": inventory["response_inventory_sha256"],
@@ -847,6 +923,9 @@ def reduce_indicator_plan(
         for key, value in plan["resolved_references"].items()
     }
     output = {token: [] for token in plan["request"]["tokens"]}
+    unavailable = {}
+    for row in plan["request"]["unavailable_results"]:
+        unavailable.setdefault(row["indicator"], {})[row["location"]] = row["reason"]
     evidence = []
     coverage = {}
     anchor = plan["request"]["water_year_anchor"]
@@ -866,13 +945,23 @@ def reduce_indicator_plan(
         for indicator, local in local_registry:
             token = indicator.table_variable
             required_variables = {item.variable for item in indicator.requirements}
-            variable = [item for item in series if item.variable in required_variables]
+            # Unavailable locations never reach the calculation; they are
+            # published as explicit rows below.
+            blocked = unavailable.get(indicator.name, {})
+            variable = [
+                item
+                for item in series
+                if item.variable in required_variables
+                and str(item.location_id) not in blocked
+            ]
             reference = (
                 references["wet" if indicator.statistic == "wetmonth_mean" else "dry"]
                 if indicator.reference
                 else None
             )
-            if indicator.grain == "bundle":
+            if not variable:
+                batches = []
+            elif indicator.grain == "bundle":
                 result = loader.evaluate(
                     local,
                     variable,
@@ -965,8 +1054,24 @@ def reduce_indicator_plan(
                             "location": str(location),
                             "run_group_id": unit,
                             "value": _format_value(np.float32(value)),
+                            "status": "undefined" if np.isnan(value) else "available",
+                            "reason": "",
                         }
                     )
+            units = list(members) if indicator.grain == "run" else []
+            units.append(plan["bundle_run_group_ids"][group])
+            for location, reason in sorted(blocked.items()):
+                output[token].extend(
+                    {
+                        "indicator": indicator.name,
+                        "location": location,
+                        "run_group_id": unit,
+                        "value": "",
+                        "status": "unavailable",
+                        "reason": reason,
+                    }
+                    for unit in units
+                )
     actual = [
         (row["indicator"], row["location"], row["run_group_id"])
         for rows in output.values()
@@ -983,7 +1088,7 @@ def reduce_indicator_plan(
 
 def publish_indicator_set(experiment_root, plan):
     """Publish a whole declared set, preserving all bytes on exact ready reuse."""
-    if plan["schema_version"] != "indicator-request/4":
+    if plan["schema_version"] != "indicator-request/5":
         raise IndicatorPlanStale(
             f"unsupported indicator plan {plan['schema_version']!r}"
         )
@@ -1031,7 +1136,7 @@ def _publish_indicator_set_v2(experiment_root, plan):
     )
     payloads = {
         f"{token}_{scope}_indicators.csv": _csv_bytes(
-            ["indicator", "location", f"{scope}_id", "value"],
+            ["indicator", "location", f"{scope}_id", "value", "status", "reason"],
             sorted(
                 [
                     {
@@ -1126,7 +1231,7 @@ def _publish_indicator_set_v2(experiment_root, plan):
         }
     )
     manifest = {
-        "schema_version": "indicator-set/5",
+        "schema_version": "indicator-set/6",
         "canonicalization_id": "collection-canon/1",
         "status": "ready",
         "indicator_set_id": plan["indicator_set_id"],
@@ -1145,6 +1250,8 @@ def _publish_indicator_set_v2(experiment_root, plan):
             f"{result_relative}/group_metadata.csv", metadata_payload
         ),
         "calculations": plan["request"]["calculations"],
+        "unavailable_calculations": plan["request"]["unavailable_calculations"],
+        "unavailable_results": plan["request"]["unavailable_results"],
         "declarations": plan["request"]["declarations"],
         "execution_context": {
             "request": plan["request"],

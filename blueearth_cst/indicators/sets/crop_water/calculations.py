@@ -290,3 +290,18 @@ PARAMETERS = {
         "ratio": _fraction,
     },
 }
+
+
+def _qcrit_availability(parameters, locations):
+    """Report absent fixed Qcrit; supplied records are validated by ``PARAMETERS``."""
+    reason = "missing_parameter:thresholds"
+    if not parameters["thresholds"]:
+        return [(None, reason)]
+    return [
+        (location, reason)
+        for location in locations or ()
+        if location not in parameters["thresholds"]
+    ]
+
+
+AVAILABILITY = {low_flow: _qcrit_availability}

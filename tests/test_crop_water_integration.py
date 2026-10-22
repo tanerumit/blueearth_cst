@@ -28,7 +28,8 @@ from tests._v2_experiment import (
 )
 
 
-def _responses():
+def _responses(locations=("9",)):
+    """Retained responses at ``locations``; Qcrit is prepared at location 9 only."""
     from datetime import timedelta
 
     time = pd.date_range("2046-10-01", "2047-10-31", freq="D")
@@ -37,11 +38,15 @@ def _responses():
         rows[run] = (
             pd.DataFrame(
                 {
-                    "Q_9": np.full(len(time), scale),
-                    "p_9": np.full(len(time), 2.0),
-                    "pet_9": np.full(len(time), 3.0),
-                    "aet_9": np.full(len(time), 1.0),
-                    "gwr_9": np.full(len(time), 2.0),
+                    f"{header}_{location}": np.full(len(time), value)
+                    for location in locations
+                    for header, value in (
+                        ("Q", scale),
+                        ("p", 2.0),
+                        ("pet", 3.0),
+                        ("aet", 1.0),
+                        ("gwr", 2.0),
+                    )
                 },
                 index=time,
             )
@@ -78,7 +83,7 @@ def _responses():
     variables = [
         {
             "variable": variable,
-            "locations": ["9"],
+            "locations": list(locations),
             "units": units,
             "calendar": "standard",
             "timestep": "P1D",

@@ -243,6 +243,28 @@ def local_declaration(indicator: IndicatorDeclaration) -> IndicatorDeclaration:
     )
 
 
+def unavailable(indicator: IndicatorDeclaration, locations=None) -> tuple:
+    """``(location, reason)`` pairs an indicator cannot evaluate for absent inputs.
+
+    A set declares absence through an optional callable-keyed ``AVAILABILITY``
+    beside ``PARAMETERS``. ``locations=None`` asks only for location-independent
+    absence; a ``None`` location in the result means every location. Malformed
+    parameters are refused at resolution and are never reported here.
+    """
+    indicator = local_declaration(indicator)
+    registry = load(indicator.calculation_set)
+    function = registry.METHODS.get(indicator.calculation_method) or next(
+        item.calculate
+        for item in registry.INDICATORS
+        if item.calculate.__name__ == indicator.calculation_method
+    )
+    module = importlib.import_module(function.__module__)
+    check = getattr(module, "AVAILABILITY", {}).get(function)
+    if check is None:
+        return ()
+    return tuple(check(indicator.calculation_parameters, locations))
+
+
 def registration(indicator: IndicatorDeclaration):
     """Return the set-owned registration supplying units and descriptive text."""
     indicator = local_declaration(indicator)

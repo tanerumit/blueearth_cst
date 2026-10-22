@@ -293,6 +293,8 @@ def test_old_publication_inspection_without_rewriting_inputs(publication):
     root, marker = publication
     document = json.loads(marker.read_text(encoding="utf-8"))
     document.pop("execution_context")
+    for field in ("unavailable_calculations", "unavailable_results"):
+        document.pop(field)
     document["schema_version"] = "indicator-set/4"
     document["identity_projection"]["schema_version"] = "indicator-set-identity/4"
     document["indicator_set_id"] = content_sha256(document["identity_projection"])
@@ -303,9 +305,18 @@ def test_old_publication_inspection_without_rewriting_inputs(publication):
     document = json.loads(
         json.dumps(document).replace(original_root, old_engine_relative)
     )
+    marker.parent.rename(old_engine)
+    # Sets before indicator-set/6 carry four-column tables.
+    for item in document["tables"]:
+        path = root / item["file"]["path"]
+        lines = path.read_text(encoding="utf-8").splitlines()
+        path.write_text(
+            "".join(",".join(line.split(",")[:4]) + "\n" for line in lines),
+            encoding="utf-8",
+        )
+        item["file"]["sha256"] = file_sha256(path)
     document.pop("indicators_manifest_sha256")
     document["indicators_manifest_sha256"] = content_sha256(document)
-    marker.parent.rename(old_engine)
     old_marker = old_engine / "indicators.json"
     atomic_record(old_marker, document, replace=True)
     before = old_marker.read_bytes()

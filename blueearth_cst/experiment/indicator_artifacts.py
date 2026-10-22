@@ -15,13 +15,37 @@ from blueearth_cst.shared.provenance import file_sha256
 
 RETURN_LEVEL_EVIDENCE_FILENAME = "return_level_evidence.json"
 COVERAGE_EVIDENCE_FILENAME = "coverage_evidence.json"
+SUPPORTED_VERSIONS = tuple(f"indicator-set/{v}" for v in (3, 4, 5, 6))
+#: Versions carrying an execution context; /6 adds status/reason columns and
+#: the request's unavailable entries.
+CONTEXT_VERSIONS = ("indicator-set/5", "indicator-set/6")
+UNAVAILABLE_FIELDS = ("unavailable_calculations", "unavailable_results")
 
 
 class ImmutableIndicatorSetError(ValueError):
     """A result set is incomplete or inconsistent with its saved contract."""
 
 
-def _validate_tables(tables, expected_keys, declarations_by_name, units):
+#: indicator-set/6 result status: a value, a native-reduction NaN, or an input
+#: the request declared absent (with its reason).
+RESULT_STATUSES = ("available", "undefined", "unavailable")
+
+
+def _validate_status(row, bundle):
+    status, value, reason = row["status"], row["value"], row["reason"]
+    if (
+        status not in RESULT_STATUSES
+        or (status == "available") != (value != "")
+        or (status == "unavailable") != (reason != "")
+        or (bundle and status == "undefined")
+    ):
+        raise ImmutableIndicatorSetError(
+            "indicator row status, value and reason are inconsistent"
+        )
+
+
+def _validate_tables(tables, expected_keys, declarations_by_name, units, statused=True):
+    """Check rows against the declared schema; ``statused`` for indicator-set/6."""
     grains = {}
     key = "run_group_id"
     for row in units:
@@ -32,6 +56,8 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
     for token, rows in tables.items():
         for row in rows:
             expected_fields = {"indicator", "location", key, "value"}
+            if statused:
+                expected_fields |= {"status", "reason"}
             if set(row) != expected_fields:
                 raise ImmutableIndicatorSetError(
                     "indicator table fields are not the declared indicator schema"
@@ -54,12 +80,17 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
             ):
                 raise ImmutableIndicatorSetError("indicator and unit grain differ")
             value = float(row["value"]) if row["value"] != "" else float("nan")
+            unavailable = statused and row["status"] == "unavailable"
             if np.isinf(value) or (
-                declaration["grain"] == "bundle" and not np.isfinite(value)
+                declaration["grain"] == "bundle"
+                and not np.isfinite(value)
+                and not unavailable
             ):
                 raise ImmutableIndicatorSetError(
                     "indicator value violates declared validity"
                 )
+            if statused:
+                _validate_status(row, declaration["grain"] == "bundle")
             actual.append((row["indicator"], row["location"], row[key]))
     if len(actual) != len(set(actual)) or sorted(actual) != [
         tuple(key) for key in expected_keys
@@ -113,7 +144,7 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
     prefix = "metric" if legacy else "indicator"
     if (
         manifest.get("schema_version")
-        not in tuple(f"{prefix}-set/{v}" for v in (3, 4, 5))
+        not in tuple(f"{prefix}-set/{v}" for v in (3, 4, 5, 6))
         or manifest.get("status") != "ready"
     ):
         raise ImmutableIndicatorSetError("unsupported or unready indicator set")
@@ -124,7 +155,7 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
         raise ImmutableIndicatorSetError("indicator manifest digest differs")
     if content_sha256(manifest["identity_projection"]) != manifest[f"{prefix}_set_id"]:
         raise ImmutableIndicatorSetError("indicator-set identity projection differs")
-    if manifest.get("schema_version") == f"{prefix}-set/5":
+    if manifest.get("schema_version") in (f"{prefix}-set/5", f"{prefix}-set/6"):
         if (
             content_sha256(manifest["execution_context"][f"{prefix}_definition"])
             != (manifest["identity_projection"][f"{prefix}_definition_sha256"])
@@ -135,14 +166,11 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
     if legacy:
         manifest = indicator_names(manifest)
     version = manifest.get("schema_version")
-    if (
-        version not in ("indicator-set/3", "indicator-set/4", "indicator-set/5")
-        or manifest.get("status") != "ready"
-    ):
+    if version not in SUPPORTED_VERSIONS or manifest.get("status") != "ready":
         raise ImmutableIndicatorSetError(
             "unsupported or unready indicator set; legacy mixed-ID indicator sets must be recomputed from a new simulation"
         )
-    if version == "indicator-set/5":
+    if version in CONTEXT_VERSIONS:
         context = manifest["execution_context"]
         request = context["request"]
         if (
@@ -150,6 +178,14 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
             or request["calculations"] != manifest["calculations"]
             or context["indicator_definition"]["declarations"]
             != request["declarations"]
+            or (
+                version == "indicator-set/6"
+                and any(
+                    request[field] != manifest[field]
+                    or context["indicator_definition"][field] != request[field]
+                    for field in UNAVAILABLE_FIELDS
+                )
+            )
         ):
             raise ImmutableIndicatorSetError(
                 "saved execution context differs from publication identity"
@@ -174,10 +210,10 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
         allowed_roots.append(f"results/{prefix}_sets/{short}")
     if result_relative not in allowed_roots:
         raise ImmutableIndicatorSetError("indicator-set result identity differs")
-    if version in ("indicator-set/4", "indicator-set/5"):
+    if version != "indicator-set/3":
         if manifest["identity_projection"].get("schema_version") != (
             "indicator-set-identity/5"
-            if version == "indicator-set/5"
+            if version in CONTEXT_VERSIONS
             else "indicator-set-identity/4"
         ):
             raise ImmutableIndicatorSetError(
@@ -205,14 +241,14 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
     if manifest["response_inventory"]["path"] != "../../response_inventory.json":
         raise ImmutableIndicatorSetError("indicator inventory reference differs")
     artifacts = [manifest["environment"], manifest["return_level_benchmark"]]
-    if version == "indicator-set/5":
+    if version in CONTEXT_VERSIONS:
         if manifest["diagnostics"]["path"] != f"{prefix}_diagnostics.json":
             raise ImmutableIndicatorSetError("diagnostic artifact reference differs")
         artifacts.append(manifest["diagnostics"])
     if manifest["return_level_evidence"]["path"] != RETURN_LEVEL_EVIDENCE_FILENAME:
         raise ImmutableIndicatorSetError("return-level evidence reference differs")
     artifacts.append(manifest["return_level_evidence"])
-    if version in ("indicator-set/4", "indicator-set/5"):
+    if version != "indicator-set/3":
         if manifest["coverage_evidence"]["path"] != COVERAGE_EVIDENCE_FILENAME:
             raise ImmutableIndicatorSetError("coverage evidence reference differs")
         artifacts.append(manifest["coverage_evidence"])
@@ -284,6 +320,7 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
                 "location",
                 f"{scope}_id",
                 "value",
+                *(("status", "reason") if version == "indicator-set/6" else ()),
             ]:
                 raise ImmutableIndicatorSetError("indicator table schema differs")
             scoped_rows = list(reader)
@@ -373,7 +410,23 @@ def _read_indicator_set_v2(experiment_root, marker, *, integrity_only=False):
         expected_keys,
         {item["name"]: item for item in manifest["declarations"]},
         manifest["run_groups"],
+        statused=version == "indicator-set/6",
     )
+    if version == "indicator-set/6":
+        declared = {
+            (item["indicator"], item["location"], item["reason"])
+            for item in manifest["unavailable_results"]
+        }
+        published = {
+            (row["indicator"], row["location"], row["reason"])
+            for rows in tables.values()
+            for row in rows
+            if row["status"] == "unavailable"
+        }
+        if declared != published:
+            raise ImmutableIndicatorSetError(
+                "unavailable rows differ from the declared unavailable results"
+            )
     if (
         manifest["response_inventory"]["sha256"]
         != inventory["response_inventory_sha256"]

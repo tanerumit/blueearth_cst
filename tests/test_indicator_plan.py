@@ -13,6 +13,7 @@ from blueearth_cst.experiment.indicator_sets import default_calculations
 from tests._v2_experiment import FIXTURE_ENVIRONMENT
 
 SIMULATION_ID = "a" * 64
+GWR_RESPONSES = {"variables": [{"variable": "gwr", "locations": ["9"]}]}
 
 
 def fixture_declaration():
@@ -31,6 +32,7 @@ def test_new_requests_refuse_the_legacy_validation_record():
             "YS-JAN",
             FIXTURE_ENVIRONMENT,
             {"status": "provisional_operational", "benchmark": "not assessed"},
+            GWR_RESPONSES,
         )
 
 
@@ -45,6 +47,7 @@ def test_new_requests_refuse_an_unsupported_declaration():
             "YS-JAN",
             FIXTURE_ENVIRONMENT,
             altered,
+            GWR_RESPONSES,
         )
 
 
@@ -104,7 +107,13 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
     projection = {
         "simulation_id": simulation["simulation_id"],
         "response_identity_sha256": inventory["response_identity_sha256"],
-        "indicator_definition_sha256": content_sha256({"declarations": [declaration]}),
+        "indicator_definition_sha256": content_sha256(
+            {
+                "declarations": [declaration],
+                "unavailable_calculations": [],
+                "unavailable_results": [],
+            }
+        ),
         "indicator_environment_sha256": content_sha256(environment),
         "groups": {"": ["run_01"]},
         "run_groups": [
@@ -114,16 +123,22 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
         "schema_version": "indicator-set-identity/5",
     }
     plan = {
-        "schema_version": "indicator-request/4",
+        "schema_version": "indicator-request/5",
         "indicator_set_id": content_sha256(projection),
         "request": {
             "calculations": default_calculations(["gwr"]),
+            "unavailable_calculations": [],
+            "unavailable_results": [],
             "declarations": [declaration],
             "indicator_environment": environment,
             "return_level_validation": {"schema_version": "fixture/1"},
         },
         "identity_projection": projection,
-        "indicator_definition": {"declarations": [declaration]},
+        "indicator_definition": {
+            "declarations": [declaration],
+            "unavailable_calculations": [],
+            "unavailable_results": [],
+        },
         "indicator_definition_sha256": projection["indicator_definition_sha256"],
         "indicator_environment_sha256": projection["indicator_environment_sha256"],
         "response_inventory_sha256": inventory["response_inventory_sha256"],
@@ -160,6 +175,8 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
                         "location": "9",
                         "run_group_id": unit,
                         "value": "1",
+                        "status": "available",
+                        "reason": "",
                     }
                     for unit in ("run_01", "group_01")
                 ]
@@ -216,7 +233,7 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
         assert not (engine / "indicators.json").exists()
         return
     marker = indicator_plan._publish_indicator_set_v2(tmp_path, plan)
-    assert marker["schema_version"] == "indicator-set/5"
+    assert marker["schema_version"] == "indicator-set/6"
     assert engine.joinpath("indicators.json").is_file()
     assert result.joinpath("group_members.csv").is_file()
     assert marker["group_members"]["path"] == (
@@ -238,6 +255,8 @@ def test_indicator_set_v2_publishes_paired_paths_and_headers(
             "location",
             "run_id",
             "value",
+            "status",
+            "reason",
         ]
     assert (
         indicator_plan.read_indicator_set(tmp_path, engine / "indicators.json")
@@ -254,7 +273,7 @@ def test_v2_indicator_plan_reads_collection_from_intent(tmp_path, monkeypatch):
     (root / "_engine").mkdir(parents=True)
     (root / "_engine/simulation.json").write_bytes(b"{}\n")
     request = {
-        "schema_version": "indicator-request/4",
+        "schema_version": "indicator-request/5",
         "simulation_schema_version": "simulation/3",
         "simulation_id": "a" * 64,
         "tokens": ["gwr"],
@@ -270,7 +289,10 @@ def test_v2_indicator_plan_reads_collection_from_intent(tmp_path, monkeypatch):
     }
     intent = root / "_engine/simulation_intent.json"
     inventory = root / "_engine/response_inventory.json"
-    atomic_record(intent, {"collection": collection})
+    atomic_record(
+        intent,
+        {"collection": collection, "documents": {"response_request": GWR_RESPONSES}},
+    )
     atomic_record(inventory, {})
     monkeypatch.setattr(
         indicator_plan,

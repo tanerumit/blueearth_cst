@@ -242,6 +242,7 @@ def capture_request(
         "indicator_sets",
         "indicator_set_definitions",
         "indicator_selection",
+        "indicator_evaluation",
     }
     if unknown:
         raise ValueError(f"unclassified simulate_system fields: {sorted(unknown)}")

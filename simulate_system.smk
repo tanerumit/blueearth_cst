@@ -6,7 +6,7 @@ from pathlib import Path
 REPOSITORY = Path(workflow.basedir)
 sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
-from blueearth_cst.experiment.simulation_runner import simulation_settings
+from blueearth_cst.experiment.simulation_runner import simulation_selection, simulation_settings
 from blueearth_cst.shared.snake_utils import declare_warning_tally, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.execution_outputs import declare_warning_tally
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, run_summary, target_banner
@@ -15,6 +15,8 @@ patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
 _, _settings = simulation_settings(config_path)
 OPERATION = _settings["operation"]
+# strict or partial; read from the runner snapshot, never part of a request.
+INDICATOR_EVALUATION = simulation_selection(config_path)[2].evaluation
 if os.environ.get("CST_SIMULATION_OPERATION") != OPERATION or not os.environ.get("CST_SIMULATION_INVOCATION_ID"):
     raise ValueError("Use python scripts/simulate_system.py --config <project> (operations/indicator_sets infer the target; a legacy operation config takes --target all, or --target simulations_and_indicators for indicators-only); bare simulate_system.smk is unsupported")
 if OPERATION == "indicators-only":
@@ -61,7 +63,7 @@ def _current_indicator_requests(wc=None):
     for records, request in zip(INDICATOR_CALCULATIONS, resolved, strict=True):
         identity = short_digest(content_sha256(request))
         requests[identity] = request
-        register_indicator_context("indicator_request_id", identity, [item.set_id for item in matching_sets(INDICATOR_SETS, records)])
+        register_indicator_context("indicator_request_id", identity, [item.set_id for item in matching_sets(INDICATOR_SETS, request)])
     # Per-process scheduling only. Rule execution/publication retain their fresh
     # code, response and environment checks; subsequent invocations start empty.
     _INDICATOR_REQUESTS = requests
@@ -84,7 +86,7 @@ checkpoint prepare_indicator_plan:
         from blueearth_cst.experiment.console_reporting import prepare_indicator_plan as report_plan
         if wildcards.indicator_request_id != short_digest(content_sha256(params.request)):
             raise ValueError("indicator request differs from its exact checkpoint")
-        report_plan(exp_dir, params.request, INDICATOR_SETS)
+        report_plan(exp_dir, params.request, INDICATOR_SETS, INDICATOR_EVALUATION)
 
 
 def _indicator_plan_paths(wc):
@@ -119,7 +121,7 @@ def _indicator_set_plan(wc):
         plan = read_canonical_json(Path(path))
         if short_digest(plan["indicator_set_id"]) == wc.indicator_set_id:
             request = plan["request"]
-            register_indicator_context("indicator_set_id", wc.indicator_set_id, [item.set_id for item in matching_sets(INDICATOR_SETS, request["calculations"])])
+            register_indicator_context("indicator_set_id", wc.indicator_set_id, [item.set_id for item in matching_sets(INDICATOR_SETS, request)])
             return path
     raise ValueError("indicator set is not produced by any selected plan")
 

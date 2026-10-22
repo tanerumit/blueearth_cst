@@ -81,29 +81,68 @@ def current_targets(targets):
     return [LEGACY_TARGETS.get(target, target) for target in targets]
 
 
-def check_required_variables(sets, available, where):
-    """Refuse a selection whose response variables are not available.
+def check_required_variables(
+    sets, available, where, *, evaluation="strict", locations=None
+):
+    """Refuse (strict) or return (partial) selected indicators lacking inputs.
 
-    Names the set, indicator, method and variable; never schedules a simulation.
+    ``available`` names the response variables. Set-declared absent parameters
+    are checked at ``locations`` (variable -> retained ids) when known, else only
+    where absence is location-independent. Names the set, indicator, method and
+    input; never schedules a simulation.
     """
-    missing = [
-        f"{item.set_id}:{indicator.indicator} ({indicator.method}) needs "
-        f"{requirement.variable}"
-        for item in sets
-        for indicator in item.indicators
-        for requirement in indicator.declaration.requirements
-        if requirement.variable not in available
-    ]
-    if missing:
+    from blueearth_cst.indicators import loader
+    from blueearth_cst.shared.run_log_core import plural
+
+    missing = []
+    for item in sets:
+        for indicator in item.indicators:
+            label = f"{item.set_id}:{indicator.indicator} ({indicator.method})"
+            declaration = indicator.declaration
+            absent = [
+                requirement.variable
+                for requirement in declaration.requirements
+                if requirement.variable not in available
+            ]
+            if absent:
+                missing.append(f"{label} needs response {', '.join(absent)}")
+                continue
+            retained = (locations or {}).get(declaration.table_variable)
+            gaps = loader.unavailable(declaration, retained)
+            if gaps:
+                where_absent = (
+                    "every location"
+                    if any(location is None for location, _ in gaps)
+                    else plural(len(gaps), "location")
+                )
+                reasons = ", ".join(sorted({reason for _, reason in gaps}))
+                missing.append(f"{label} lacks {reasons} at {where_absent}")
+    if missing and evaluation == "strict":
         raise ValueError(
-            f"selected indicators need responses absent from {where}: "
+            f"selected indicators lack inputs in {where}: "
             + "; ".join(missing)
-            + ". Request a separate simulation with those model.outvars."
+            + ". A missing response needs a separate simulation with those "
+            "model.outvars (--new-experiment); otherwise supply the parameter, "
+            "exclude the indicator with indicator_selection, or set "
+            "indicator_evaluation: partial."
         )
+    return missing
 
 
-def simulation_indicator_sets(project, settings, selection):
-    """Resolve sets for the simulation path and preflight model outputs."""
+def report_unavailable(gaps):
+    """One warning row per selected indicator a partial invocation cannot calculate."""
+    from blueearth_cst.shared.run_log_core import log_row
+
+    for gap in gaps:
+        log_row(f"Unavailable in partial evaluation: {gap}", level="WARNING")
+
+
+def simulation_indicator_sets(project, settings, selection, *, report=False):
+    """Resolve sets for the simulation path and preflight model outputs.
+
+    ``report`` logs partial-mode gaps once, from the runner rather than every
+    Snakemake parse.
+    """
     from blueearth_cst.experiment import indicator_sets
     from blueearth_cst.shared.indicator_tables import indicator_tables
     from blueearth_cst.shared.snake_utils import DEFAULT_WFLOW_OUTVARS
@@ -118,9 +157,14 @@ def simulation_indicator_sets(project, settings, selection):
     )
     if not selection.legacy:
         outvars = (project.get("model") or {}).get("outvars", DEFAULT_WFLOW_OUTVARS)
-        check_required_variables(
-            sets, set(indicator_tables(outvars)), "the configured model.outvars"
+        gaps = check_required_variables(
+            sets,
+            set(indicator_tables(outvars)),
+            "the configured model.outvars",
+            evaluation=selection.evaluation,
         )
+        if report:
+            report_unavailable(gaps)
     from blueearth_cst.experiment.simulation_runs import include_unperturbed
 
     if not include_unperturbed(settings):
@@ -157,7 +201,7 @@ def resolve_targets(config_path, targets):
             )
         if selection.indicators:
             if selection.simulations:
-                simulation_indicator_sets(project, settings, selection)
+                simulation_indicator_sets(project, settings, selection, report=True)
             else:
                 from blueearth_cst.experiment.indicator_plan import (
                     indicators_only_configuration,
@@ -170,10 +214,17 @@ def resolve_targets(config_path, targets):
                 request = read_simulation_intent_v2(root)["documents"][
                     "response_request"
                 ]
-                check_required_variables(
-                    sets,
-                    {item["variable"] for item in request["variables"]},
-                    "the retained simulation responses",
+                report_unavailable(
+                    check_required_variables(
+                        sets,
+                        {item["variable"] for item in request["variables"]},
+                        "the retained simulation responses",
+                        evaluation=selection.evaluation,
+                        locations={
+                            item["variable"]: [str(v) for v in item["locations"]]
+                            for item in request["variables"]
+                        },
+                    )
                 )
         return operation, ["all" if selection.indicators else "simulations_only"]
     supported = (

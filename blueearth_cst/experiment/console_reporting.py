@@ -36,13 +36,37 @@ def record_indicator_detail(root, message):
             _write_console(sys.stdout, "Indicator details: " + message + "\n")
 
 
-def matching_sets(sets, calculations):
-    """Return every user-facing set sharing this calculation request."""
+def matching_sets(sets, document):
+    """Return every user-facing set sharing this request or manifest.
+
+    ``document`` is a request, plan request or manifest; its calculable and
+    unavailable records together are the set's selection.
+    """
+    from blueearth_cst.experiment.indicator_plan import selected_calculations
     from blueearth_cst.experiment.indicator_sets import calculation_records
 
+    calculations = selected_calculations(document)
     return [
         item for item in sets if calculation_records(item.indicators) == calculations
     ]
+
+
+def unavailable_summary(document) -> list[str]:
+    """One short phrase per unavailable indicator: its locations or response."""
+    phrases = [
+        f"{item['calculation']['indicator']} ({', '.join(item['reasons'])})"
+        for item in document.get("unavailable_calculations", [])
+    ]
+    by_indicator = {}
+    for row in document.get("unavailable_results", []):
+        by_indicator.setdefault((row["indicator"], row["reason"]), []).append(
+            row["location"]
+        )
+    phrases += [
+        f"{indicator} at {plural(len(locations), 'location')} ({reason})"
+        for (indicator, reason), locations in sorted(by_indicator.items())
+    ]
+    return phrases
 
 
 class _PlanStream:
@@ -66,13 +90,25 @@ class _PlanStream:
         return self.stream.write(text)
 
 
-def prepare_indicator_plan(root, request, sets):
-    """Keep numerical planning unchanged and present its outcome by set name."""
-    from blueearth_cst.experiment.indicator_plan import write_indicator_plan
+def prepare_indicator_plan(root, request, sets, evaluation="strict"):
+    """Keep numerical planning unchanged and present its outcome by set name.
 
+    Strict evaluation refuses a request with unavailable entries before planning.
+    """
+    from blueearth_cst.experiment.indicator_plan import write_indicator_plan
+    from blueearth_cst.shared.snake_utils import listed
+
+    unavailable = unavailable_summary(request)
+    if unavailable and evaluation == "strict":
+        names = ", ".join(item.set_id for item in matching_sets(sets, request))
+        raise ValueError(
+            f"{names or 'selected set'}: selected indicators lack inputs: "
+            f"{listed(unavailable)}. Exclude them with indicator_selection, supply "
+            "the missing parameter, or set indicator_evaluation: partial"
+        )
     with redirect_stdout(_PlanStream(sys.stdout, root)):
         plan = write_indicator_plan(root, request)
-    for item in matching_sets(sets, request["calculations"]):
+    for item in matching_sets(sets, request):
         log_row(
             f"{item.set_id}: ready to calculate {plural(len(item.indicators), 'indicator')}",
             module="indicators",
@@ -80,20 +116,25 @@ def prepare_indicator_plan(root, request, sets):
     return plan
 
 
-def result_counts(root: Path, manifest: dict) -> tuple[int, int]:
-    """Count available and missing/invalid results in validated tables."""
-    finite = nonfinite = 0
+def result_counts(root: Path, manifest: dict) -> tuple[int, int, int]:
+    """Count available, undefined and unavailable results in validated tables.
+
+    Tables before indicator-set/6 have no status; their NaN is undefined.
+    """
+    counts = {"available": 0, "undefined": 0, "unavailable": 0}
     for table in manifest["tables"]:
         with (root / table["file"]["path"]).open(
             encoding="utf-8", newline=""
         ) as handle:
             for row in csv.DictReader(handle):
                 value = row["value"]
-                if value and math.isfinite(float(value)):
-                    finite += 1
-                else:
-                    nonfinite += 1
-    return finite, nonfinite
+                status = row.get("status") or (
+                    "available"
+                    if value and math.isfinite(float(value))
+                    else "undefined"
+                )
+                counts[status] += 1
+    return counts["available"], counts["undefined"], counts["unavailable"]
 
 
 def report_indicator_set(root: Path, manifest: dict, sets=(), *, reused=False) -> None:
@@ -103,6 +144,16 @@ def report_indicator_set(root: Path, manifest: dict, sets=(), *, reused=False) -
         f"Indicator set {manifest['indicator_set_id']}; "
         f"manifest → {root / manifest['engine_root'] / 'indicators.json'}",
     )
-    for item in matching_sets(sets, manifest.get("calculations", [])):
+    from blueearth_cst.shared.snake_utils import listed
+
+    unavailable = unavailable_summary(manifest)
+    for item in matching_sets(sets, manifest):
         action = "reusing calculated results" if reused else "calculations complete"
         log_row(f"{item.set_id}: {action}", module="indicators")
+        if unavailable:
+            log_row(
+                f"{item.set_id}: unavailable indicators: {listed(unavailable)}; "
+                "details in coverage evidence",
+                module="indicators",
+                level="WARNING",
+            )

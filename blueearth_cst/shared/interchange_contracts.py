@@ -855,7 +855,10 @@ def validate_hm7_v2(
     series,
     collection_run_ids,
 ) -> list[str]:
-    """HM-7 for indicator-set/3 (read-only) and /4; table keys are ``<token>_<run|group>``.
+    """HM-7 for indicator-set/3 (read-only) to /6; table keys are ``<token>_<run|group>``.
+
+    indicator-set/6 tables add ``status`` and ``reason``; an unavailable bundle row
+    carries no value.
 
     The historical function name remains for callers. Legacy /2 manifests are
     refused. Declarations, retained locations and collection runs independently
@@ -869,9 +872,10 @@ def validate_hm7_v2(
         "indicator-set/3",
         "indicator-set/4",
         "indicator-set/5",
+        "indicator-set/6",
     ):
         return [
-            f"{label}: expected indicator-set/3 or /4; legacy mixed-ID sets must be recomputed"
+            f"{label}: expected indicator-set/3 to /6; legacy mixed-ID sets must be recomputed"
         ]
     if tuple(lookup.columns) != HM7_V2_LOOKUP_COLUMNS:
         return [f"{label}: lookup header is not group_id,run_id"]
@@ -912,6 +916,9 @@ def validate_hm7_v2(
         or len(entries) != len(table_names)
     ):
         diffs.append(f"{label}: tables differ from declared token scopes")
+    statused = (
+        ("status", "reason") if manifest["schema_version"] == "indicator-set/6" else ()
+    )
     for entry in entries:
         token, scope = entry["token"], entry["scope"]
         table = tables.get(f"{token}_{scope}")
@@ -922,6 +929,7 @@ def validate_hm7_v2(
             "location",
             f"{scope}_id",
             "value",
+            *statused,
         ):
             diffs.append(f"{label}: {token}/{scope} table schema differs")
             continue
@@ -945,14 +953,19 @@ def validate_hm7_v2(
                 f"{label}: {token}/{scope} keys differ from declarations, locations and membership"
             )
         bundle_indicators = {d["name"] for d in declarations if d["grain"] == "bundle"}
-        for indicator, value in zip(table["indicator"], table["value"]):
+        statuses = table["status"] if statused else [""] * len(table["indicator"])
+        for indicator, value, status in zip(
+            table["indicator"], table["value"], statuses
+        ):
             try:
                 number = float(value) if value != "" else float("nan")
             except (TypeError, ValueError):
                 diffs.append(f"{label}: {token}/{scope} has a non-numeric value")
                 break
             if math.isinf(number) or (
-                indicator in bundle_indicators and not math.isfinite(number)
+                indicator in bundle_indicators
+                and not math.isfinite(number)
+                and status != "unavailable"
             ):
                 diffs.append(f"{label}: {token}/{scope} violates indicator validity")
                 break

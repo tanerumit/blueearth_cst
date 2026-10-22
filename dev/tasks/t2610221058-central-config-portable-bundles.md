@@ -6,7 +6,6 @@ effort: 2
 area: workflows
 doc: dev/tasks/t2610221058/design.md
 queue:
-branch: feat/central-config
 created: 2026-10-22
 updated: 2026-10-22
 ---
@@ -32,11 +31,16 @@ Batch gate at `5149dd6e` (rebased on `main` `68ce458b`; config-read registry and
 launcher contract tests passed; `test-fast` 5039 passed, 1 failed. The failure,
 `test_crop_water_cli_publication`, was a parallel-worker `WinError 32` on the shared
 `.snakemake/iocache/latest.pkl`; rerun alone 3/3 passed. Paused wrt-egypt-v2 `stress_test_01` code inventory
-is identical to the branch. Evidence: session-1 `.tmp/tasks/t2610221058/gate/`. Not landed or pushed.
+is identical to the branch. Evidence: session-1 `.tmp/tasks/t2610221058/gate/`.
+
+Landed on local `main` at `76a2a874` (merged tree differs from the gated commit only in task records);
+branch deleted and session-1 freed. Not pushed.
 
 ## Work location
 
-- Owner: session-1; branch: `feat/central-config`.
+- Landed: `main` `76a2a874`; no open branch. Session-1 scratch `.tmp/tasks/t2610221058/` holds gate,
+  walkthrough and real-run evidence; retain until pushed and CI is green.
+- Next action: push on request, then close this item; blockers: none.
 
 ## Refs
 

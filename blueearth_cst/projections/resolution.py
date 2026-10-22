@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from typing import Iterable, Mapping, NamedTuple, Sequence
 
-from blueearth_cst.projections.series_identity import pinned_uri
+from blueearth_cst.projections.series_identity import selected_pins
 from blueearth_cst.shared.snake_utils import listed
 
 #: Resolution outcomes, in the order the ladder tests them (design §5.7).
@@ -404,7 +404,7 @@ def ambiguous_pins(
     """Resolved combinations whose store pin is ambiguous (design D8/D12).
 
     Multiple published versions are safe when the fetcher's policy selects one
-    shared newest grid/version for all variables. Only report multiple matches
+    newest version per variable on a common grid. Only report multiple matches
     that this policy cannot resolve, rather than rejecting older revisions that
     the fetcher never reads.
     """
@@ -418,7 +418,11 @@ def ambiguous_pins(
         for experiment in ("historical", c.scenario):
             key = entry_key(clim_project, c.dataset, experiment)
             pins = (sources.get(key) or {}).get(c.member) or {}
-            if pinned_uri("/{variable}/*/*", pins) is not None:
+            try:
+                if selected_pins(pins):
+                    continue
+            except ValueError as exc:
+                problems.append(f"{c.dataset} {experiment} {c.member}: {exc}")
                 continue
             for variable, paths in sorted(pins.items()):
                 if len(paths) > 1:

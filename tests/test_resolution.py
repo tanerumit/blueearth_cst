@@ -264,7 +264,7 @@ def test_matching_crawl_passes_and_missing_index_is_tolerated():
     res.assert_index_matches_catalog(FULL, {})
 
 
-@pytest.mark.parametrize("paths", [["gn/v1", "gn/v2"], ["gn/v1", "gr/v2"]])
+@pytest.mark.parametrize("paths", [["gn/v1", "gr/v2"], ["gr/v1"]])
 def test_ambiguous_pin_is_reported(paths):
     """D8/D12: ~6% of pinned stores really do match more than one grid/version."""
     combos = res.resolve(
@@ -284,8 +284,7 @@ def test_ambiguous_pin_is_reported(paths):
     }
     problems = res.ambiguous_pins(index, combos, CP)
     assert len(problems) == 1
-    assert "2 stores match" in problems[0]
-    assert "pr" in problems[0]
+    assert "multiple grid labels" in problems[0]
 
 
 def test_unambiguous_pins_report_nothing():

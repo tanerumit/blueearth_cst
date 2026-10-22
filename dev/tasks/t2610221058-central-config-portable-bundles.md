@@ -20,11 +20,12 @@ updated: 2026-10-22
 
 - [x] Capture agreed setup — linked brief preserves central configuration and explicit portable export/import.
 - [x] Define the WF2 bundle, import compatibility rules, and diagnostic ownership ([design](t2610221058/design.md)).
-- [x] Retain WF2 diagnostics beside outputs without losing successful-production attribution (`7a28671e`).
+- [x] Retain WF2 diagnostics beside outputs without losing successful-production attribution
+  (`7a28671e`; identical rewrites `fd280b45`).
 - [x] Implement portable export and validated import with conflict protection (`6d5220e3`, `434b0ccb`, `207f5620`).
-- [ ] Verify transfer, failure handling, and existing runner behavior; update authoritative documentation.
-  Docs `0719c9be`; [Ntoum walkthrough](t2610221058/walkthrough.md) passed. Open: real Snakemake
-  no-op/partial-rerun sequence (P-drive stall), batch gate before push.
+- [x] Verify transfer, failure handling, and existing runner behavior; update authoritative documentation.
+  Docs `0719c9be`; [walkthrough](t2610221058/walkthrough.md): Ntoum transfer and real rapid
+  run/no-op/plot-rerun sequence passed. Batch gate (`test-fast`, lint, format-check) owed before push.
 
 ## Work location
 

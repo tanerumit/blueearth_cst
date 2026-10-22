@@ -30,6 +30,27 @@ which deletes the source project before importing; the production Ntoum root was
 Not exercised on Ntoum: production-record mode (needs a fresh launcher WF2 run; covered by
 `tests/test_product_record.py` and `tests/test_result_bundle.py`).
 
-Real launcher sequence (run, immediate rerun, `--forcerun plot_climate_projections`) on the rapid tree
-was attempted 2026-10-22 and stopped after rule 2.01 stalled 29 min reading the P-drive basin index;
-no production record was written (hard kill). Script: session-1 `.tmp/tasks/t2610221058/real/sequence.ps1`.
+## Real launcher sequence on the rapid tree
+
+`scripts/run_workflow.py analyze_projections --config test_case/project_config_rapid.yml --project-dir
+test_case/test_rapid --cores 2`, evidence in session-1 `.tmp/tasks/t2610221058/real/`. A first attempt
+stalled 29 min in rule 2.01 on the P-drive basin index and was killed: no record was written; its stale
+worktree-root Snakemake lock (only `test_rapid` paths) was removed before the retry.
+
+| Run | Toolbox | Snakemake | Production record |
+|---|---|---|---|
+| 1 full | `207f5620` | 13 jobs, exit 0 | `complete`; 48 files credited, logs retained; 8 unattributed |
+| 2 plain | `207f5620` | Up to date | Byte-identical: no-op |
+| 3 `--forcerun plot_climate_projections` | `207f5620` | 2.06 reran | Unchanged: identical PNGs looked like a no-op (defect) |
+| 4 plain | `fd280b45` | 2.05 reran | 5 summary/report files credited (4 identical rewrites) |
+| 5 `--forcerun plot_climate_projections` | `fd280b45` | 2.06 reran | 21 PNGs + 2 figure manifests credited; tables keep producer |
+| 6 plain | `fd280b45` | Up to date | Byte-identical: no-op |
+
+Run 1's 8 unattributed files exposed the same defect: rule 2.05 rewrote three `summary/` CSVs
+identically. Fix `fd280b45` adds write-time comparison under the project lock. After it, the 5
+unattributed files are the 4 retired `plots/overview/`/`plots/windows/` leftovers and the unchanged
+`_engine/stage_b_settings.json`, all correctly uncredited.
+
+Export of the rapid product: `production-record` mode, `complete`, 85 members, 2 configuration snapshots
+(generations captured under different toolbox states). Import into an empty root published 66 product
+files with region `unverified`.

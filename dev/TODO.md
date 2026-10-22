@@ -12,7 +12,7 @@ cssclasses: [todo-board]
 | 3      | [t2608202352][]          | Publish docs site to GitHub Pages                      | docs       | blocked      |
 | 4      | [t2608091730][]          | Make waterbody layers for the basin map                | plotting   | blocked      |
 | 5      | [t2608071207][]          | Prove wflow log check fails without path_log           | wf3        | blocked      |
-| 6      | [t2610130703][]          | Pin CMIP6 variables independently when versions differ | wf2        | backlog      |
+| 6      | [t2610130703][]          | Pin CMIP6 variables independently when versions differ | wf2        | active (0/5) |
 | 7      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4    | wf4        | backlog      |
 | 8      | [t2610091622][]          | Triage unresolved geographic robustness findings       | validation | backlog      |
 | 9      | [t2610022259][]          | Scope conceptual workflow improvements                 | methods    | backlog      |
@@ -25,9 +25,7 @@ cssclasses: [todo-board]
 | 16     | [t2608121606][]          | Missing catalog source can hide a reservoir            | wf1        | backlog      |
 | 17     | [t2608071221][]          | Docker and Linux end-to-end runs untested              | platform   | backlog      |
 | 18     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard               | wf1        | backlog      |
-|        | [t2610221413][]          | Herdr multi-agent work setup                           | tooling    | backlog      |
-|        | [t2610221058][]          | Central configuration and portable workflow bundles    | workflows  | active (5/5) |
-|        | [t2610211633][]          | Add crop-water screening indicators to WF4             | wf4        | blocked      |
+|        | [t2610221413][]          | Herdr multi-agent work setup                           | tooling    | active (1/5) |
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions     | docs       | backlog      |
 |        | [t2610191347][]          | Retain logs and benchmark reports by execution         | runtime    | backlog      |
 |        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run | runtime    | backlog      |
@@ -51,8 +49,6 @@ cssclasses: [todo-board]
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
 [t2610221413]: tasks/t2610221413-herdr-multi-agent-work-setup.md
-[t2610221058]: tasks/t2610221058-central-config-portable-bundles.md
-[t2610211633]: tasks/t2610211633-crop-water-indicators.md
 [t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md
 [t2610191347]: tasks/t2610191347-execution-logs-benchmarks.md
 [t2610191323]: tasks/t2610191323-ntoum-workflow-performance.md

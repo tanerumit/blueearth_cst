@@ -89,6 +89,7 @@ def test_prose_in_a_template_is_not_a_declared_key(tmp_path):
         "n = model_cfg['wflow_threads']\n",
         "n = model_cfg.get('wflow_threads')\n",
         "n = climate.get('wflow_threads')\n",
+        "n = thresholds['wflow_threads']\n",
         "n = stress_test_cfg['temp']['wflow_threads']\n",
         "n = axis_cfg[axis_name]['wflow_threads']\n",
     ],

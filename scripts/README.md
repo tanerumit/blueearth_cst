@@ -21,3 +21,4 @@ repository inspection and maintenance tools live in `dev/scripts/` and are never
 | [`calibrate_batching.py`](calibrate_batching.py) | Time WF4 batch settings on your basin and machine. |
 | [`plot_workflow_dag.py`](plot_workflow_dag.py) | Render a workflow's DAG under the project's own `logs/dag/`. |
 | [`maintain_config_archives.py`](maintain_config_archives.py) | Inspect generated configuration history; `--apply` retains snapshots and removes completed launch bookkeeping. |
+| [`transfer_results.py`](transfer_results.py) | Export a WF2 product with its configuration and provenance as one bundle, or import a bundle into another project. |

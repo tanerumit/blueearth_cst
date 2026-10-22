@@ -15,6 +15,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture
 def project(tmp_path):
+    return make_project(tmp_path)
+
+
+def make_project(tmp_path):
     """A rapid project with only WF2 enabled and its catalogs local."""
     config = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
     output = tmp_path / "output"

@@ -90,7 +90,7 @@ def test_indicator_summary_counts_actual_finite_and_missing_estimates(tmp_path, 
         "engine_root": "_engine/indicator_sets/selected",
         "tables": [{"file": {"path": table.name}}],
     }
-    assert result_counts(tmp_path, manifest) == (2, 2)
+    assert result_counts(tmp_path, manifest) == (2, 2, 0)
     assert table.read_text(encoding="utf-8") == payload
 
 
@@ -100,7 +100,7 @@ def test_shared_calculations_keep_both_set_names_and_report_reuse(tmp_path, caps
     alias = replace(default, set_id="same_numbers")
     records = indicator_sets.calculation_records(default.indicators)
     sets = [default, alias]
-    assert matching_sets(sets, records) == sets
+    assert matching_sets(sets, {"calculations": records}) == sets
     manifest = {
         "indicator_set_id": "opaque",
         "engine_root": "_engine/indicators",

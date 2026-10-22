@@ -297,11 +297,18 @@ def read_indicators(indicators_path: Union[str, Path]) -> pd.DataFrame:
     """Read a group indicator table, preserving textual group and location IDs.
 
     Legacy mixed-ID and individual-run tables are refused by this surface reader.
+    indicator-set/6 status and reason columns are kept; their empty values are NaN.
     """
     import pandas as pd
 
-    table = pd.read_csv(indicators_path, dtype={"group_id": str, "location": str})
-    if list(table.columns) != ["indicator", "location", "group_id", "value"]:
+    table = pd.read_csv(
+        indicators_path,
+        dtype={"group_id": str, "location": str, "status": str, "reason": str},
+        keep_default_na=False,
+        na_values={"value": [""]},
+    )
+    columns = ["indicator", "location", "group_id", "value"]
+    if list(table.columns) not in (columns, [*columns, "status", "reason"]):
         raise SurfaceMemberMismatchError(
             "surface indicators must have indicator,location,group_id,value; regenerate legacy tables"
         )

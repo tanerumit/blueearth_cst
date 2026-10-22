@@ -35,6 +35,9 @@ from blueearth_cst.experiment.indicator_plan import (
     write_indicator_plan,
 )
 from blueearth_cst.experiment.indicator_sets import default_calculations
+from blueearth_cst.experiment.simulation_record import read_simulation_intent_v2
+from blueearth_cst.shared.indicator_tables import VARIABLE_TOKENS
+from blueearth_cst.shared.provenance import file_sha256
 from tests._v2_experiment import (
     FIXTURE_ENVIRONMENT,
     RUN_IDS,
@@ -175,6 +178,7 @@ def test_named_requests_share_provenance_but_new_observations_detect_drift(
             "YE-DEC",
             request["indicator_environment"],
             request["return_level_validation"],
+            read_simulation_intent_v2(experiment.root)["documents"]["response_request"],
             code_inventory=request["code_inventory"],
         )
         expected["simulation_schema_version"] = "simulation/3"
@@ -227,6 +231,12 @@ def test_request_identity_tracks_only_contributing_sets(tmp_path, monkeypatch, s
             "YE-DEC",
             FIXTURE_ENVIRONMENT,
             validation,
+            {
+                "variables": [
+                    {"variable": token, "locations": ["1"]}
+                    for token in VARIABLE_TOKENS.values()
+                ]
+            },
         )
 
     before = request()
@@ -332,10 +342,20 @@ def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(
     experiment, monkeypatch
 ):
     from blueearth_cst.experiment import indicator_plan
+    from blueearth_cst.indicators import loader
+
+    calculate = loader.evaluate
+    calls = []
+
+    def counted(indicator, series, **context):
+        calls.append(tuple(item.run_id for item in series))
+        return calculate(indicator, series, **context)
+
+    monkeypatch.setattr(loader, "evaluate", counted)
 
     root = experiment.root
     plan = _plan(root)
-    assert plan["schema_version"] == "indicator-request/4"
+    assert plan["schema_version"] == "indicator-request/5"
     assert len(plan["expected_result_keys"]) == 4
     assert plan["units"] == [
         {"run_group_id": run, "grain": "run", "run_id": run} for run in RUN_IDS
@@ -344,6 +364,7 @@ def test_a_v2_indicator_set_publishes_once_and_is_reused_byte_for_byte(
         for i, run in enumerate(RUN_IDS, 1)
     ]
     manifest = publish_indicator_set(root, plan)
+    assert calls == [(run,) for run in RUN_IDS], "group means must reuse run values"
     marker = _engine(root, plan) / "indicators.json"
     assert (_result(root, plan) / "gwr_run_indicators.csv").is_file()
     assert not (root / "results/indicator_sets").exists()
@@ -447,6 +468,17 @@ def _relocate_to_legacy_root(root, marker, result, schema):
     legacy = root / "results/indicator_sets" / marker.parent.name
     legacy.parent.mkdir(parents=True)
     shutil.move(result, legacy)
+    # Sets before indicator-set/6 carry four-column tables.
+    for item in manifest["tables"]:
+        path = legacy / item["file"]["path"].split("/")[-1]
+        lines = path.read_text(encoding="utf-8").splitlines()
+        path.write_text(
+            "".join(",".join(line.split(",")[:4]) + "\n" for line in lines),
+            encoding="utf-8",
+        )
+        item["file"]["sha256"] = file_sha256(path)
+    for field in ("unavailable_calculations", "unavailable_results"):
+        manifest.pop(field)
     manifest["schema_version"] = schema
     manifest["result_root"] = legacy.relative_to(root).as_posix()
     for reference in [

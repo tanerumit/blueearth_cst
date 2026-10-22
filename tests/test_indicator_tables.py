@@ -27,7 +27,7 @@ from blueearth_cst.shared.indicator_tables import (
     variable_token,
 )
 
-ALL_SIX = list(VARIABLE_TOKENS)
+ALL_VARIABLES = list(VARIABLE_TOKENS)
 
 
 def test_the_seed_config_yields_only_the_discharge_table():
@@ -42,9 +42,9 @@ def test_the_shipped_template_yields_two():
     ]
 
 
-@pytest.mark.parametrize("outvar", ALL_SIX)
+@pytest.mark.parametrize("outvar", ALL_VARIABLES)
 def test_every_documented_variable_has_a_table(outvar):
-    """Six entries, not five -- `precipitation` is one of them."""
+    """Every configurable model output has a table."""
     assert indicator_table_filename(outvar).endswith("_indicators.csv")
 
 
@@ -132,7 +132,7 @@ def test_overland_flow_reduces_with_a_mean_not_a_sum():
     assert basin_indicator_name("overland_flow") == "overland_flow_annual_mean"
 
 
-@pytest.mark.parametrize("token", ["aet", "gwr", "precip"])
+@pytest.mark.parametrize("token", ["aet", "pet", "gwr", "precip"])
 def test_fluxes_keep_their_annual_total_in_mm_per_year(token):
     """A daily sum of a mm Δt⁻¹ flux is a legitimate time-integral. Ruled
     2026-08-08 as scoped to overland flow, so these are deliberately NOT

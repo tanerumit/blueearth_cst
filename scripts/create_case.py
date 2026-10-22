@@ -74,6 +74,7 @@ def _template_comments(path: Path) -> dict[tuple[str, ...], str]:
                 if len(keys) >= 2 and keys[0] in {
                     "observations",
                     "indicator_set_definitions",
+                    "indicator_selection",
                 }:
                     keys = (keys[0], "*", *keys[2:])
                 elif len(keys) >= 3 and keys[:2] == ("members", "overrides"):

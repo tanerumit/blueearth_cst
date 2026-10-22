@@ -28,7 +28,17 @@ _WINDOWS_RESERVED = {"con", "prn", "aux", "nul"} | {
 }
 #: Toolbox-shipped sets, anchored to the installed repository, never the cwd.
 BUNDLED_ROOT = Path(__file__).resolve().parents[2] / "config" / "indicator_sets"
-SELECTION_KEYS = ("operations", "indicator_sets", "indicator_set_definitions")
+SELECTION_KEYS = (
+    "operations",
+    "indicator_sets",
+    "indicator_set_definitions",
+    "indicator_selection",
+    "indicator_evaluation",
+)
+SELECTION_MODES = ("include", "exclude")
+#: ``strict`` refuses a selected indicator lacking an input; ``partial`` publishes
+#: it as unavailable. Evaluation never enters numerical identity.
+EVALUATION_MODES = ("strict", "partial")
 
 
 class IndicatorSetError(ValueError):
@@ -109,6 +119,13 @@ class Selection:
     operations: tuple[str, ...]
     sets: tuple[SetSource, ...]
     legacy: bool
+    #: Per-set ``(set_id, mode, indicator keys)``; mode is include or exclude.
+    choices: tuple[tuple[str, str, tuple[str, ...]], ...] = ()
+    evaluation: str = "strict"
+
+    @property
+    def partial(self) -> bool:
+        return self.evaluation == "partial"
 
     @property
     def simulations(self) -> bool:
@@ -156,9 +173,9 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
         raise IndicatorSetError("indicator_set_definitions must be a mapping")
     for name, entry in definitions.items():
         validate_id(name, "indicator_set_definitions key")
-        if name == DEFAULT_SET or (BUNDLED_ROOT / f"{name}.yml").is_file():
+        if name == DEFAULT_SET:
             raise IndicatorSetError(
-                f"custom indicator set {name!r} collides with a bundled set"
+                f"custom indicator set {name!r} collides with the default preset"
             )
         if (
             not isinstance(entry, dict)
@@ -169,9 +186,16 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
             raise IndicatorSetError(
                 f"indicator_set_definitions.{name} must be exactly {{config_path: <nonempty string>}}"
             )
+    choices = _parse_choices(settings.get("indicator_selection", {}), names)
+    evaluation = settings.get("indicator_evaluation", "strict")
+    if evaluation not in EVALUATION_MODES:
+        raise IndicatorSetError(
+            f"indicator_evaluation must be one of {list(EVALUATION_MODES)}; "
+            f"got {evaluation!r}"
+        )
     ordered = tuple(item for item in OPERATIONS if item in operations)
     if not indicators:
-        return Selection(ordered, (), legacy=False)
+        return Selection(ordered, (), legacy=False, evaluation=evaluation)
     base = Path(workflow_path).resolve().parent
     sources = []
     for name in names:
@@ -195,7 +219,68 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
                 f"indicator set {name!r}: cannot read {path}: {exc}"
             ) from exc
         sources.append(SetSource(name, path, bundled, text))
-    return Selection(ordered, tuple(sources), legacy=False)
+    return Selection(
+        ordered, tuple(sources), legacy=False, choices=choices, evaluation=evaluation
+    )
+
+
+def _parse_choices(value, names) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+    """Validate ``indicator_selection``: one include or exclude list per selected set.
+
+    Indicator keys are checked against the resolved set by :func:`apply_choice`.
+    """
+    if not isinstance(value, dict):
+        raise IndicatorSetError("indicator_selection must be a mapping")
+    choices = []
+    for set_id, entry in value.items():
+        validate_id(set_id, "indicator_selection key")
+        if set_id not in names:
+            raise IndicatorSetError(
+                f"indicator_selection.{set_id} names a set absent from "
+                f"indicator_sets {list(names)}"
+            )
+        if (
+            not isinstance(entry, dict)
+            or len(entry) != 1
+            or not (set(entry) <= set(SELECTION_MODES))
+        ):
+            raise IndicatorSetError(
+                f"indicator_selection.{set_id} must be exactly one of "
+                "{include: [...]} or {exclude: [...]}"
+            )
+        mode = "include" if "include" in entry else "exclude"
+        keys = entry.get("include", entry.get("exclude"))
+        keys = _string_list(
+            keys, f"indicator_selection.{set_id}.{mode}", allow_empty=False
+        )
+        choices.append((set_id, mode, tuple(keys)))
+    return tuple(choices)
+
+
+def apply_choice(resolved: ResolvedSet, choices) -> ResolvedSet:
+    """Keep the indicators an include/exclude choice selects, in set order."""
+    choice = next((item for item in choices if item[0] == resolved.set_id), None)
+    if choice is None:
+        return resolved
+    _, mode, keys = choice
+    known = [item.indicator for item in resolved.indicators]
+    unknown = sorted(set(keys) - set(known))
+    if unknown:
+        raise IndicatorSetError(
+            f"indicator_selection.{resolved.set_id}.{mode} names indicators absent "
+            f"from the set: {unknown}; available: {known}"
+        )
+    kept = tuple(
+        item
+        for item in resolved.indicators
+        if (item.indicator in keys) == (mode == "include")
+    )
+    if not kept:
+        raise IndicatorSetError(
+            f"indicator_selection.{resolved.set_id} leaves no indicators; "
+            "remove the set from indicator_sets instead"
+        )
+    return replace(resolved, indicators=kept)
 
 
 def legacy_selection(settings: dict) -> Selection:
@@ -401,11 +486,38 @@ def resolve_set(
     elif kind == "registry":
         from blueearth_cst.indicators import loader
 
+        overrides = {}
+        if isinstance(value, dict):
+            if set(value) != {"set", "overrides"} or not isinstance(
+                value["overrides"], dict
+            ):
+                raise IndicatorSetError(
+                    f"{label}: registry mapping needs set and overrides"
+                )
+            overrides = value["overrides"]
+            value = value["set"]
         try:
             local = loader.declarations(value)
             module = loader.load_set(value)
         except ValueError as exc:
             raise IndicatorSetError(f"{label}: {exc}") from exc
+        unknown = set(overrides) - {item.name for item in local}
+        if unknown:
+            raise IndicatorSetError(
+                f"{label}: registry overrides name unknown indicators {sorted(unknown)}"
+            )
+        if overrides:
+            local = tuple(
+                loader.resolve(
+                    value,
+                    item.calculation_method,
+                    overrides[item.name],
+                    indicator_name=item.name,
+                )
+                if item.name in overrides
+                else item
+                for item in local
+            )
         descriptions = {item.id: item.description for item in module.INDICATORS}
         indicators = [
             ResolvedIndicator(
@@ -538,8 +650,13 @@ def write_selection_snapshot(selection: Selection, path: Path) -> Path:
     import json
 
     payload = {
-        "schema_version": "indicator-selection/1",
+        "schema_version": "indicator-selection/2",
         "operations": list(selection.operations),
+        "choices": [
+            {"set_id": set_id, "mode": mode, "indicators": list(keys)}
+            for set_id, mode, keys in selection.choices
+        ],
+        "evaluation": selection.evaluation,
         "legacy": selection.legacy,
         "sets": [
             {
@@ -562,7 +679,7 @@ def read_selection_snapshot(path) -> Selection:
     import json
 
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    if payload.get("schema_version") != "indicator-selection/1":
+    if payload.get("schema_version") != "indicator-selection/2":
         raise IndicatorSetError(f"unsupported indicator selection snapshot {path}")
     return Selection(
         tuple(payload["operations"]),
@@ -571,6 +688,11 @@ def read_selection_snapshot(path) -> Selection:
             for item in payload["sets"]
         ),
         legacy=payload["legacy"],
+        choices=tuple(
+            (item["set_id"], item["mode"], tuple(item["indicators"]))
+            for item in payload["choices"]
+        ),
+        evaluation=payload["evaluation"],
     )
 
 
@@ -597,6 +719,9 @@ def selected_sets(
 ) -> tuple[ResolvedSet, ...]:
     """Resolve every selected set, expanding the default preset by mode.
 
+    An ``indicator_selection`` choice then narrows each set before any caller
+    checks requirements, so deselected indicators are never requested.
+
     ``retained_variables`` is a callable; ``legacy_context`` names the legacy
     branch (see :func:`legacy_tokens`) whose precedence applies.
     """
@@ -613,7 +738,12 @@ def selected_sets(
                     retained_variables=retained_variables,
                 )
             )
-        resolved.append(resolve_set(source, tokens, legacy=selection.legacy))
+        resolved.append(
+            apply_choice(
+                resolve_set(source, tokens, legacy=selection.legacy),
+                selection.choices,
+            )
+        )
     return tuple(resolved)
 
 
@@ -652,7 +782,10 @@ def declarations_for_calculations(records) -> tuple[registry.IndicatorDeclaratio
     Each record's method and parameters are re-validated, so a changed
     parameter-to-reducer mapping is observed rather than trusted.
     """
+    records = tuple(records)
     result = []
+    legacy = None
+    revisions = {}
     for record in records:
         if "set" in record:
             from blueearth_cst.indicators import loader
@@ -669,12 +802,15 @@ def declarations_for_calculations(records) -> tuple[registry.IndicatorDeclaratio
                 raise IndicatorSetError(
                     f"{record['indicator']}: local identity differs"
                 )
+            if record["set"] not in revisions:
+                revisions[record["set"]] = loader.implementation_revision(record["set"])
             result.append(
                 loader.resolve(
                     record["set"],
                     record["method"],
                     record["parameters"],
                     indicator_name=record["indicator"],
+                    _revision=revisions[record["set"]],
                 )
             )
             continue
@@ -688,9 +824,11 @@ def declarations_for_calculations(records) -> tuple[registry.IndicatorDeclaratio
                 f"{record['indicator']}: calculation now resolves to {definition!r}, "
                 f"not the recorded {record['definition']!r}"
             )
-        result.append(
-            replace(registry.declaration_for(definition), name=record["indicator"])
-        )
+        if legacy is None:
+            legacy = registry.declaration_catalog(
+                [item["definition"] for item in records if "set" not in item]
+            )
+        result.append(replace(legacy[definition], name=record["indicator"]))
     return tuple(result)
 
 
@@ -699,5 +837,6 @@ def required_variables(sets) -> list[str]:
     seen = {}
     for item in sets:
         for declaration in item.declarations:
-            seen.setdefault(declaration.required_responses.variable, None)
+            for requirement in declaration.requirements:
+                seen.setdefault(requirement.variable, None)
     return list(seen)

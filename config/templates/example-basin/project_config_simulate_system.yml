@@ -36,17 +36,32 @@ include_unperturbed: true
 # Named sets, each published to results/indicator_sets/<set-id>/ with an
 # indicators.csv dictionary. `default` is bundled; omitted means [default].
 # Add eflow-erfa for 70 discharge median/IQR indicators: [default, eflow-erfa].
+# Crop-water also needs retained P, PET, AET, recharge and Q plus a custom
+# crop-water set file binding location-specific historical Qcrit thresholds.
 # Select named indicator sets to calculate. Input: list of registered set IDs.
 indicator_sets: [default]
 
 # Custom sets: set id -> file. A relative config_path resolves against THIS
 # file; absolute paths are allowed. Copy config/templates/indicator_set.template.yml.
+# An explicit file may replace a bundled set other than `default`.
 # Register custom indicator set definitions. Input: set-ID-to-definition mapping.
 #indicator_set_definitions:
 # Define a custom indicator set. Input: configuration path mapping.
 #  'example_subset':
 # Locate the indicator set definition. Input: YAML path relative to this file or absolute.
 #    config_path: indicator_sets/example_subset.yml
+
+# Calculate part of a selected set; omitted means all of its indicators.
+# Narrow selected sets to individual indicators. Input: set-ID-to-choice mapping.
+#indicator_selection:
+# Keep or drop named indicators of one set. Input: {include: [...]} or {exclude: [...]}.
+#  'crop-water':
+# Drop indicators by published name. Input: nonempty list of indicator names.
+#    exclude: [summer_low_flow_days]
+
+# strict refuses an indicator lacking an input; partial publishes it as unavailable.
+# Choose how missing indicator inputs are handled. Options: strict | partial.
+#indicator_evaluation: strict
 
 # The scalar `operation:` and `indicators:` keys are the legacy interface,
 # accepted for one feature release; they cannot be mixed with the keys above.

@@ -80,7 +80,55 @@ statistics. Group results average member indicators with equal weights, propagat
 See the [set conventions](https://github.com/tanerumit/blueearth_cst/blob/main/blueearth_cst/indicators/sets/eflow_erfa/README.md)
 for all fixed defaults and interpretation limits.
 
-Selected indicators must be available: before simulating, their variables are checked against `model.outvars`; when indicators run alone, against the retained responses. A missing variable fails with the set, indicator, method and variable; it never schedules a simulation.
+The `crop-water` set supplies ten seasonal or annual agricultural screening indicators from discharge,
+precipitation, PET, AET and net recharge. It requires daily retained responses for all five variables.
+Use `model.outvars` to retain them in a new simulation; existing experiments without PET must be
+regenerated under a fresh experiment name. The summer low-flow declaration also needs one fixed,
+location-keyed historical Qcrit with source and baseline provenance. Copy the bundled
+`config/indicator_sets/crop-water.yml` to a case file with the same `id`, replace `selection.registry`
+with a mapping that supplies `overrides.summer_low_flow_days`, and bind that file using
+`indicator_set_definitions.crop-water.config_path`. An explicit custom definition may replace this
+bundled selector; the `default` preset cannot be replaced. The
+[set conventions](../../../blueearth_cst/indicators/sets/crop_water/README.md) define periods,
+formulas, the Qcrit record, diagnostics and interpretation limits. The ET ratios use Wflow landscape
+AET and reference PET as screening proxies; subcatchment means do not represent crop or aquifer areas.
+
+To calculate part of a set, give `indicator_selection` one `include` or `exclude` list per selected
+set; omitted means every indicator. Keys are the published indicator names, kept in set order.
+
+```yaml
+indicator_sets: [default, crop-water]
+indicator_selection:
+  crop-water:
+    exclude: [summer_low_flow_days]   # runs the other nine without Qcrit or retained q
+```
+
+A deselected indicator is outside the request: it is neither calculated, published nor checked for
+inputs. Unknown names, a set absent from `indicator_sets`, both lists for one set, or a selection
+leaving no indicators are refused. A changed selection publishes a new indicator set under the same set
+id from retained responses; earlier publications remain unchanged.
+
+Selected indicators are checked for inputs: before simulating, their required variables against
+`model.outvars`; when indicators run alone, against the retained responses and their locations. A set
+may also declare a parameter as absent, such as crop-water's empty or location-incomplete Qcrit.
+`indicator_evaluation` decides what an indicator lacking an input does:
+
+```yaml
+indicator_evaluation: partial   # strict (default) refuses; partial publishes what it can
+```
+
+`strict` refuses the invocation and names the set, indicator, method and missing input. `partial`
+calculates every available indicator and location and publishes the others as unavailable: the result
+tables carry `status: unavailable` with a `reason` such as `missing_parameter:thresholds` or
+`missing_response:pet` and no value, `indicators.csv` marks the indicator `partial` or `unavailable`,
+and the console shows one warning row per set. A partial set counts as a successful invocation only in
+partial mode. Supplied but malformed parameters, such as an incomplete Qcrit record, still fail.
+
+Recovery recalculates from retained responses. Supplying the missing Qcrit, or selecting another
+indicator whose responses are retained, publishes a new immutable indicator set for the whole selection
+under the same set id, with no Wflow run; earlier publications remain unchanged. A response the
+simulation never requested cannot be recovered this way: add it to `model.outvars` and simulate a new
+experiment (`--new-experiment`). Results of different simulations are never combined in one set.
 
 The scalar `operation: simulate-and-indicators | indicators-only` and `indicators:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
 
@@ -95,7 +143,9 @@ WF4 requires the completed WF1 model and an explicitly selected ready WF3 collec
 ## Outputs
 
 An experiment retains native Wflow response CSVs and a response inventory. New immutable indicator sets use
-`indicator-set/5`, under `_engine/indicator_sets/<id>/`. They retain `indicators.json`, indicator tables, group
+`indicator-set/6`, under `_engine/indicator_sets/<id>/`; their tables add `status` (`available`, `undefined`
+for a calculated NaN, `unavailable`) and `reason` columns, and sets `/3` to `/5` remain readable. They
+retain `indicators.json`, indicator tables, group
 membership, declarations, return-level evidence, per-series block coverage and the execution context.
 Each selected set has a readable view at `results/indicator_sets/<set-id>/`: run and group tables, group
 lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.md).

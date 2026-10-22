@@ -266,6 +266,7 @@ METHODS = {
         {
             "q": {"statistic": ("mean", "max", "min", "p95")},
             "aet": {"statistic": ("sum",)},
+            "pet": {"statistic": ("sum",)},
             "gwr": {"statistic": ("sum",)},
             "precip": {"statistic": ("sum",)},
             "snow": {"statistic": ("max",)},
@@ -451,6 +452,10 @@ DEFINITION_TEXT = {
         "Mean water-year actual evapotranspiration depth",
         "Daily depths summed per water-year block, averaged with equal block weight.",
     ),
+    "pet_annual_total": (
+        "Mean water-year potential evapotranspiration depth",
+        "Daily depths summed per water-year block, averaged with equal block weight.",
+    ),
     "gwr_annual_total": (
         "Mean water-year groundwater recharge depth",
         "Daily depths summed per water-year block, averaged with equal block weight.",
@@ -556,18 +561,23 @@ def validate_calculation(method: str, parameters) -> tuple[str, dict]:
 
 def declaration_for(definition: str) -> IndicatorDeclaration:
     """The authoritative declaration of one registered definition id."""
-    if definition not in DEFINITIONS:
-        raise ValueError(f"unknown registered indicator definition {definition!r}")
-    optional = {item.name: item for item in optional_declarations()}
-    if definition in optional:
-        return optional[definition]
-    token = next(
-        token
-        for token in ("q", *tables.BASIN_INDICATOR_SUFFIXES)
-        if definition.startswith(f"{token}_")
-        and any(item.name == definition for item in declarations([token]))
+    return declaration_catalog([definition])[definition]
+
+
+def declaration_catalog(definitions: Sequence[str]) -> dict[str, IndicatorDeclaration]:
+    """Observe contributing source revisions once for this declaration batch."""
+    for definition in definitions:
+        if definition not in DEFINITIONS:
+            raise ValueError(f"unknown registered indicator definition {definition!r}")
+    selected = set(definitions)
+    optional = {name for name, _, _ in OPTIONAL_Q_CALCULATIONS.values()}
+    tokens = sorted(
+        {DEFINITIONS[name][1].get("variable", "q") for name in selected - optional}
     )
-    return next(item for item in declarations([token]) if item.name == definition)
+    catalog = list(declarations(tokens)) if tokens else []
+    if selected & optional:
+        catalog.extend(optional_declarations())
+    return {item.name: item for item in catalog if item.name in selected}
 
 
 def _reduce_optional(frame: pd.DataFrame, statistic: str, anchor: str) -> pd.Series:

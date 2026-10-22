@@ -390,16 +390,41 @@ def test_first_nonzero_stops_and_returns_code(tmp_path, capture_runs):
 # --- §7(g) assertion 6: --cores / -- <extra> forwarded to EVERY invocation ---
 
 
-def test_cores_and_extra_forwarded_to_every_invocation(tmp_path, capture_runs):
+@pytest.mark.parametrize("extra", [["--dry-run", "--unlock"], ["--unlock"]])
+def test_cores_and_extra_forwarded_to_every_invocation(tmp_path, capture_runs, extra):
     calls, _ = capture_runs
     cfg = tmp_path / "c.yml"
     _write_cfg(cfg, {n: "true" for n in rw.WORKFLOW_ORDER})
-    rw.run(str(cfg), cores=8, extra=["--dry-run", "--unlock"])
+    rw.run(str(cfg), cores=8, extra=extra)
     assert len(calls) == 5
     for cmd in calls:
         assert cmd[cmd.index("-c") + 1] == "8"
-        assert "--dry-run" in cmd
+        for flag in extra:
+            assert flag in cmd
         assert "--unlock" in cmd
+
+
+def test_unlock_skips_execution_setup_and_publication(
+    tmp_path, capture_runs, monkeypatch
+):
+    from blueearth_cst.experiment import indicator_export, simulation_runner
+    from blueearth_cst.shared import workflow_archive_launch
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("Unlock entered execution setup or publication")
+
+    monkeypatch.setattr(rw, "_check_wf1_leaves", unexpected)
+    monkeypatch.setattr(simulation_record, "capture_simulation_sources_v2", unexpected)
+    monkeypatch.setattr(
+        simulation_runner, "validate_retained_indicator_sets", unexpected
+    )
+    monkeypatch.setattr(indicator_export, "publish_selected_sets", unexpected)
+    monkeypatch.setattr(workflow_archive_launch, "prepare_workflow", unexpected)
+    calls, _ = capture_runs
+    cfg = tmp_path / "c.yml"
+    _write_cfg(cfg, {name: "true" for name in rw.WORKFLOW_ORDER})
+    assert rw.run(str(cfg), cores=1, extra=["--unlock"]) == 0
+    assert len(calls) == 5
 
 
 def test_cli_strips_double_dash_sentinel(tmp_path, capture_runs):

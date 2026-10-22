@@ -49,11 +49,21 @@ Add trusted code under a set package. User YAML selects declarations; it cannot 
 Keep `__init__.py`, `registry.py`, `calculations.py`, `checks.py` and `README.md` in each set.
 An optional `SET_ID` in `__init__.py` declares its public selector when it differs from the Python
 package name; `eflow_erfa` uses `eflow-erfa`. Keep package initializers free of calculation imports.
+An indicator can declare `additional_inputs` for paired variables. All requirements must have matching
+run, location, ordinal, daily labels, calendar and timestep. `output_variable` selects the table token;
+when omitted, the primary `input.variable` does. The complete input list and output binding enter
+calculation identity. A registry selection can supply closed, indicator-keyed parameter overrides via
+`selection.registry: {set: crop-water, overrides: {...}}`; this is used to bind case-specific Qcrit
+without changing the trusted calculation package.
 Put a formula in `calculations.py`; it receives `(declaration, responses, context)` and returns
 `IndicatorResult(values=pd.Series(...))`, indexed by location. Add its one parameter specification to local
 `PARAMETERS`, keyed by the callable. Every parameter value is explicit in the registration; unknown fields
 and missing fields fail before evaluation. Finite numeric constraints can be predicates with explanatory
 docstrings; method-specific conditional rules belong in local `validate(function, parameters)`.
+A parameter that may legitimately be absent can be reported through an optional callable-keyed
+`AVAILABILITY` mapping: `check(parameters, locations)` returns `(location, reason)` pairs, with a `None`
+location for every location. WF4 then refuses or, in partial evaluation, publishes them as unavailable;
+the calculation never receives those locations.
 
 Register it with keyword arguments, for example:
 
@@ -109,3 +119,22 @@ Calculation errors preserve their exception types, causes and structured estimat
 set/indicator/location context. Undefined returned scalars, unavailable variables, insufficient blocks,
 unqualified probabilities and unexpected programming faults remain distinct. Evaluation never converts an
 unexpected exception into a successful or scientifically undefined result.
+
+## Evaluation reuse
+
+WF4 evaluates each run indicator once per member and forms group means from those results. The same
+results supply diagnostics and independent numerical checks; checking still reconstructs expected values
+through the set's separate checker. Bundled return levels retain their pooled member-local blocks and
+qualified fitting path.
+
+Within each loaded response group, `EvaluationContext.prepared` holds shared frames and intermediate
+reductions. Default indicators reuse annual summaries and complete seven-day rolling blocks, including
+the blocks used by pooled return levels. ERFA computes each location's 35 annual metrics once and derives
+all median/IQR summaries together. Cache keys include response object identities and the water-year
+anchor; source objects remain retained for the scope's lifetime. Inputs and prepared tables must remain
+unchanged during evaluation. No prepared responses persist across reduction invocations.
+
+Declaration batches observe each contributing source revision once. Later batches observe sources again;
+live environment checks, dependency source qualification and retained-response integrity checks remain
+fresh. Existing result and diagnostic schemas are unchanged. Updated execution sources receive new
+implementation identities, while previously published sets remain readable without rewriting their bytes.

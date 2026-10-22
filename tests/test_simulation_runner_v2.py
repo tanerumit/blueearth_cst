@@ -368,6 +368,6 @@ def test_named_simulation_preflight_refuses_unavailable_outputs(monkeypatch, tmp
         project={"model": {"outvars": ["river discharge"]}},
     )
     with pytest.raises(
-        ValueError, match=r"q_only:aet_annual_total \(annual_summary/1\) needs aet"
+        ValueError, match=r"q_only:aet_annual_total \(annual_summary/1\) needs response aet"
     ):
         simulation_runner.resolve_targets("unused", ["all"])

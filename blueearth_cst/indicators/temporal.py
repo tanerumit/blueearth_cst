@@ -79,9 +79,13 @@ def validate_requirement(
 ) -> None:
     """Refuse metadata mismatches before an indicator performs any reduction."""
     validate_responses(series, evaluated_runs={item.run_id for item in series})
-    requirement = indicator.required_responses
+    requirements = {item.variable: item for item in indicator.requirements}
+    if len(requirements) != len(indicator.requirements):
+        raise ValueError(f"{indicator.name}: duplicate response requirements")
+    by_run = {}
     for item in series:
-        if (
+        requirement = requirements.get(item.variable)
+        if requirement is None or (
             item.variable,
             item.units,
             item.timestep.total_seconds(),
@@ -95,6 +99,28 @@ def validate_requirement(
             raise ValueError(
                 f"{indicator.name}: incompatible response requirement at {item.key}"
             )
+        by_run.setdefault(item.run_id, {}).setdefault(item.variable, {})[
+            item.location_id
+        ] = item
+    for run, variables in by_run.items():
+        if set(variables) != set(requirements):
+            raise ValueError(f"{indicator.name}: missing paired variables in {run}")
+        first = variables[indicator.required_responses.variable]
+        for variable in variables.values():
+            if set(variable) != set(first):
+                raise ValueError(f"{indicator.name}: paired location sets differ")
+            for location, item in variable.items():
+                primary = first[location]
+                if (
+                    item.calendar != primary.calendar
+                    or item.timestep != primary.timestep
+                    or item.time_label != primary.time_label
+                    or not item.time.equals(primary.time)
+                    or item.location_ordinal != primary.location_ordinal
+                ):
+                    raise ValueError(
+                        f"{indicator.name}: paired response support differs"
+                    )
 
 
 @dataclass(frozen=True)

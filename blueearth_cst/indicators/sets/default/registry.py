@@ -125,6 +125,13 @@ INDICATORS = (
         variable="aet",
     ),
     _indicator(
+        "pet_annual_total",
+        c.annual_summary,
+        {"variable": "pet", "statistic": "sum"},
+        "sum",
+        variable="pet",
+    ),
+    _indicator(
         "gwr_annual_total",
         c.annual_summary,
         {"variable": "gwr", "statistic": "sum"},

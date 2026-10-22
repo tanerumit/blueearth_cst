@@ -2,33 +2,28 @@
 
 from blueearth_cst.indicators.contract import IndicatorResult
 from blueearth_cst.indicators.extremes import reduce_bundle
-from blueearth_cst.indicators.series import response_frame
+from blueearth_cst.indicators.series import annual_blocks, prepared_frame
 
 
 def annual_summary(indicator, series, context) -> IndicatorResult:
     """Average the declared water-year summary, retaining partial blocks."""
-    frame = response_frame(series)
     statistic = indicator.calculation_parameters["statistic"]
-    annual = frame.resample(context.anchor)
-    blocks = (
-        annual.quantile(0.95) if statistic == "p95" else getattr(annual, statistic)()
-    )
+    blocks = annual_blocks(series, context, statistic)
     return IndicatorResult(blocks.mean())
 
 
 def annual_rolling7_extreme(indicator, series, context) -> IndicatorResult:
     """Reduce complete trailing seven-day windows, including across blocks."""
-    blocks = response_frame(series).rolling(7).mean().resample(context.anchor)
-    return IndicatorResult(
-        getattr(blocks, indicator.calculation_parameters["extreme"])().mean()
+    blocks = annual_blocks(
+        series, context, indicator.calculation_parameters["extreme"], window=7
     )
+    return IndicatorResult(blocks.mean())
 
 
 def annual_min7_mean_ratio(indicator, series, context) -> IndicatorResult:
     """Average each water year's minimum-seven-day / mean-flow ratio."""
-    frame = response_frame(series)
-    minimum = frame.rolling(7).mean().resample(context.anchor).min()
-    return IndicatorResult((minimum / frame.resample(context.anchor).mean()).mean())
+    minimum = annual_blocks(series, context, "min", window=7)
+    return IndicatorResult((minimum / annual_blocks(series, context, "mean")).mean())
 
 
 def reference_month_mean(indicator, series, context) -> IndicatorResult:
@@ -41,7 +36,7 @@ def reference_month_mean(indicator, series, context) -> IndicatorResult:
         or reference.month not in range(1, 13)
     ):
         raise ValueError("explicit resolved wet/dry month reference required")
-    frame = response_frame(series)
+    frame = prepared_frame(series, context)["frame"]
     return IndicatorResult(
         frame[frame.index.month == reference.month]
         .resample(context.anchor)
@@ -58,6 +53,7 @@ def pooled_return_level(indicator, series, context) -> IndicatorResult:
         expected_run_ids=context.expected_run_ids,
         anchor=context.anchor,
         validation=context.validation,
+        _prepared=context.prepared,
     )
     return IndicatorResult(
         values, metadata={"evidence": evidence, "estimator": "gf15-lmoments-c/1"}
@@ -66,7 +62,7 @@ def pooled_return_level(indicator, series, context) -> IndicatorResult:
 
 PARAMETERS = {
     annual_summary: {
-        "variable": ("q", "aet", "gwr", "precip", "snow", "overland_flow"),
+        "variable": ("q", "aet", "pet", "gwr", "precip", "snow", "overland_flow"),
         "statistic": ("mean", "sum", "max", "min", "p95"),
     },
     annual_rolling7_extreme: {"extreme": ("min", "max")},
@@ -82,6 +78,7 @@ def validate(function, parameters) -> None:
         accepted = {
             "q": ("mean", "max", "min", "p95"),
             "aet": ("sum",),
+            "pet": ("sum",),
             "gwr": ("sum",),
             "precip": ("sum",),
             "snow": ("max",),

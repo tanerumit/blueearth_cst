@@ -12,7 +12,7 @@ from blueearth_cst.indicators.contract import (
     IndicatorDeclaration,
     IndicatorResult,
 )
-from blueearth_cst.indicators.series import ResponseSeries, response_frame
+from blueearth_cst.indicators.series import ResponseSeries, prepared_frame
 
 
 def metric_definitions() -> dict[str, tuple[str, str, str]]:
@@ -182,22 +182,29 @@ def annual_statistic(
     context: EvaluationContext,
 ) -> IndicatorResult:
     """Summarize each location's retained years and retain coverage diagnostics."""
-    frame = response_frame(series)
+    prepared = prepared_frame(series, context)
+    frame = prepared["frame"]
     metric = indicator.calculation_parameters["metric"]
     statistic = indicator.calculation_parameters["statistic"]
     values, evidence = {}, []
+    if "erfa" not in prepared:
+        tables = {}
+        for location in frame:
+            annual, coverage = annual_metrics(frame[location], context.anchor)
+            quantiles = annual.quantile([0.25, 0.75])
+            summaries = pd.DataFrame(
+                {
+                    "med": annual.median(),
+                    "iqr": quantiles.loc[0.75] - quantiles.loc[0.25],
+                }
+            )
+            coverage.insert(0, "location_id", location)
+            coverage.insert(0, "run_id", series[0].run_id)
+            tables[location] = summaries, coverage
+        prepared["erfa"] = tables
     for location in frame:
-        annual, coverage = annual_metrics(frame[location], context.anchor)
-        sample = annual[metric].dropna()
-        values[location] = (
-            np.nan
-            if sample.empty
-            else float(sample.median())
-            if statistic == "med"
-            else float(sample.quantile(0.75) - sample.quantile(0.25))
-        )
-        coverage.insert(0, "location_id", location)
-        coverage.insert(0, "run_id", series[0].run_id)
+        summaries, coverage = prepared["erfa"][location]
+        values[location] = float(summaries.loc[metric, statistic])
         evidence.append(coverage)
     return IndicatorResult(
         pd.Series(values),

@@ -1,6 +1,7 @@
 """Tests for blueearth_cst/model/setup_gauges_and_outputs.py (R3 sections 7.1, 8)."""
 
 import sys
+from contextlib import nullcontext
 from types import SimpleNamespace
 
 import numpy as np
@@ -14,6 +15,15 @@ from blueearth_cst.model.setup_gauges_and_outputs import (
     update_wflow_gauges_outputs,  # noqa: E402
 )
 from blueearth_cst.shared.wflow_outputs import code_for
+
+
+@pytest.fixture(autouse=True)
+def _stub_progress_for_fake_models(monkeypatch):
+    """Keep fake-model tests focused on declarations without loading HydroMT."""
+    monkeypatch.setattr(
+        "blueearth_cst.model.setup_gauges_and_outputs.hydromt_progress",
+        lambda *_args: nullcontext(),
+    )
 
 
 def _install_write_components(mod, calls):

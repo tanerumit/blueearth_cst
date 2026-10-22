@@ -93,7 +93,7 @@ def run_owned(
         raise ValueError("cores must be positive")
     config_path = Path(config_path).resolve(strict=True)
     project_root = Path(project_root).resolve()
-    dry_run = "--dry-run" in extra or "-n" in extra
+    preview = any(flag in extra for flag in ("--dry-run", "-n", "--unlock"))
     command = _command(config_path, cores, extra)
     base_env = {
         **os.environ,
@@ -105,7 +105,7 @@ def run_owned(
     source_env = {**base_env, "CST_GENERATION_PHASE": "source"}
     if reservation_context is not None:
         reservation_context.recheck()
-    if dry_run:
+    if preview:
         source_code = run_project_child(
             command, cwd=REPO_ROOT, env=source_env, writing=False
         )
@@ -113,7 +113,7 @@ def run_owned(
         source_code = _run_source_phase_quietly(
             [*command, "--quiet", "all"], cwd=REPO_ROOT, env=source_env
         )
-    if source_code or dry_run:
+    if source_code or preview:
         return source_code
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     config, _ = compose_config(
@@ -251,7 +251,9 @@ def main(argv: list[str] | None = None) -> int:
             *extra,
         ],
         targets=["all"],
-        mode="dry_run" if "--dry-run" in extra or "-n" in extra else "execute",
+        mode="dry_run"
+        if any(flag in extra for flag in ("--dry-run", "-n", "--unlock"))
+        else "execute",
         contract_mode="new_schema",
     )
     try:

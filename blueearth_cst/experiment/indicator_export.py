@@ -11,6 +11,7 @@ from blueearth_cst.experiment import indicator_sets
 from blueearth_cst.experiment.console_reporting import (
     record_indicator_detail,
     result_counts,
+    unavailable_summary,
 )
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.indicator_plan import (
@@ -26,7 +27,7 @@ from blueearth_cst.experiment.named_export import (
     read_current_publication,
 )
 from blueearth_cst.experiment.simulation_record import read_simulation_intent_v2
-from blueearth_cst.shared.snake_utils import plural, resolve_water_year_start
+from blueearth_cst.shared.snake_utils import listed, plural, resolve_water_year_start
 
 
 def publish_selected_sets(
@@ -34,9 +35,10 @@ def publish_selected_sets(
 ) -> list[dict]:
     """Publish every selected set whose indicator set is ready; report each outcome.
 
-    Returns one record per set: ``status`` is ``current`` or ``failed``, with
-    the indicator-set and publication ids, the failure reason, and any prior
-    publication a failed set keeps (a mixed-age export).
+    Returns one record per set: ``status`` is ``current``, ``partial`` (published
+    with unavailable indicators; only under ``indicator_evaluation: partial``)
+    or ``failed``, with the indicator-set and publication ids, the failure
+    reason, and any prior publication a failed set keeps (a mixed-age export).
     """
     root = Path(root).resolve()
 
@@ -84,21 +86,27 @@ def publish_selected_sets(
             plan = verify_indicator_plan(
                 root, request, _observed_code=request["code_inventory"]
             )
-            counts = result_counts(
-                root, read_canonical_json(Path(plan["targets"]["manifest"]))
-            )
+            manifest = read_canonical_json(Path(plan["targets"]["manifest"]))
+            counts = result_counts(root, manifest)
+            unavailable = unavailable_summary(manifest)
+            if unavailable and not selection.partial:
+                raise ValueError(
+                    f"strict evaluation refuses unavailable indicators: {listed(unavailable)}"
+                )
             record = publish_named_set(
                 root, item, Path(plan["targets"]["manifest"]), water_year_start=month
             )
             outcomes.append(
                 {
                     "set_id": item.set_id,
-                    "status": "current",
+                    "status": "partial" if unavailable else "current",
                     "indicator_set_id": record["indicator_set_id"],
                     "publication_id": record["publication_id"],
                     "reused": previous == record["publication_id"],
                     "available_results": counts[0],
                     "missing_results": counts[1],
+                    "unavailable_results": counts[2],
+                    "unavailable": unavailable,
                 }
             )
         except (OSError, KeyError, ValueError) as exc:
@@ -118,7 +126,7 @@ def publish_selected_sets(
 
 
 def report_publication(root: Path, outcomes) -> bool:
-    """Log one row per set and any preserved legacy flat export; True if all current."""
+    """Log one row per set and any preserved legacy flat export; True if none failed."""
     from blueearth_cst.shared.run_log_core import log_row
 
     legacy = legacy_flat_export(root)
@@ -129,7 +137,7 @@ def report_publication(root: Path, outcomes) -> bool:
             module="indicators",
         )
     for outcome in outcomes:
-        if outcome["status"] == "current":
+        if outcome["status"] in ("current", "partial"):
             action = (
                 "results unchanged; reusing saved results"
                 if outcome.get("reused")
@@ -144,6 +152,14 @@ def report_publication(root: Path, outcomes) -> bool:
                 log_row(
                     f"{outcome['set_id']}: {plural(outcome['missing_results'], 'result')} missing or invalid; "
                     f"{plural(outcome['available_results'], 'result')} available; check result tables and coverage evidence",
+                    module="indicators",
+                    level="WARNING",
+                )
+            if outcome["status"] == "partial":
+                log_row(
+                    f"{outcome['set_id']}: partial results; unavailable: "
+                    f"{listed(outcome['unavailable'])}; see the availability column "
+                    "of indicators.csv",
                     module="indicators",
                     level="WARNING",
                 )
@@ -165,4 +181,5 @@ def report_publication(root: Path, outcomes) -> bool:
                 module="indicators",
                 level="ERROR",
             )
-    return all(outcome["status"] == "current" for outcome in outcomes)
+    # A partial set is only ever published under indicator_evaluation: partial.
+    return all(outcome["status"] in ("current", "partial") for outcome in outcomes)

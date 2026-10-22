@@ -14,6 +14,7 @@ import pandas as pd
 WFLOW_VARS = {
     "river discharge": "river_water__volume_flow_rate",
     "precipitation": "atmosphere_water__precipitation_volume_flux",
+    "potential evapotranspiration": "land_surface_water__potential_evaporation_volume_flux",
     "overland flow": "land_surface_water__volume_flow_rate",
     "actual evapotranspiration": "land_surface__evapotranspiration_volume_flux",
     "groundwater recharge": "soil_water_saturated_zone_top__net_recharge_volume_flux",

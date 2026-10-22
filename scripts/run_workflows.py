@@ -6,6 +6,8 @@ Disabled workflows are reported and skipped; the first failure stops the run.
 Preflights occur immediately before their consumer, after preceding producers.
 Simulation uses the dedicated runner's operation/target validation and starts
 one Snakemake invocation. Its execution-option allowlist also applies here.
+Forwarded --unlock unlocks each enabled workflow without generating scenarios,
+capturing execution sources, or publishing indicators.
 
 Each invocation records resolved configuration provenance, checked commands,
 selected simulation operation/targets, stage timing and final status in a
@@ -1127,7 +1129,7 @@ def run(
                     ),
                     targets=["all"],
                     mode="dry_run"
-                    if "--dry-run" in extra or "-n" in extra
+                    if any(flag in extra for flag in ("--dry-run", "-n", "--unlock"))
                     else "execute",
                     contract_mode="new_schema",
                     requested_workflows=(
@@ -1258,6 +1260,7 @@ def _run_owned(
         cores=cores,
         extra=extra,
     )
+    preview = manifest["dry_run"] or "--unlock" in extra
     history_path, history = history_pair or invocation_history.start(
         project_dir,
         workflow=None,
@@ -1266,7 +1269,7 @@ def _run_owned(
             ["run_workflows", "--config", config_path, "--cores", str(cores), *extra]
         ),
         targets=["all"],
-        mode="dry_run" if manifest["dry_run"] else "execute",
+        mode="dry_run" if preview else "execute",
         contract_mode="new_schema",
         requested_workflows=[name for name in WORKFLOW_ORDER if flags[name]],
     )
@@ -1301,7 +1304,7 @@ def _run_owned(
                     new_experiment=new_experiment,
                     note=note,
                     recover=recover_reservation,
-                    preview=manifest["dry_run"] or "--unlock" in extra,
+                    preview=preview,
                     announce=False,
                 )
     except BaseException as exc:
@@ -1451,7 +1454,10 @@ def _run_owned(
 
                     _, settings = simulation_settings(config_path)
                     workflow["operation"] = settings["operation"]
-                    if settings["operation"] == "simulate-and-indicators":
+                    if (
+                        "--unlock" not in extra
+                        and settings["operation"] == "simulate-and-indicators"
+                    ):
                         _check_wf1_leaves(flags, project_dir, config_path)
                     cmd, environment = simulation_command(
                         config_path,
@@ -1463,7 +1469,7 @@ def _run_owned(
                         ),
                     )
                     if reservation_context is not None:
-                        if not manifest["dry_run"]:
+                        if not preview:
                             from blueearth_cst.experiment.simulation_runner import (
                                 validate_retained_indicator_sets,
                             )
@@ -1481,14 +1487,14 @@ def _run_owned(
                         entry_point="scripts/run_workflows.py",
                         command=sanitize_argv(cmd),
                         targets=list(simulation_targets),
-                        mode="dry_run" if manifest["dry_run"] else "execute",
+                        mode="dry_run" if preview else "execute",
                         contract_mode="legacy_wf4_interim",
                         invocation_id=child_id,
                         parent_invocation_id=history["invocation_id"],
                     )
                     _link_child(history_path, history, child_path, name, child_id)
                     if (
-                        not manifest["dry_run"]
+                        not preview
                         and settings["operation"] == "simulate-and-indicators"
                     ):
                         capture = capture_simulation_sources_v2(
@@ -1515,7 +1521,7 @@ def _run_owned(
                         run_project_child(
                             cmd,
                             cwd=REPO_ROOT,
-                            writing=not manifest["dry_run"],
+                            writing=not preview,
                             env={
                                 **environment,
                                 **execution_outputs.environment(
@@ -1532,7 +1538,7 @@ def _run_owned(
                     resource_tracking.phase(child_path, "finalization")
                     snapshot = environment.get("CST_INDICATOR_SELECTION")
                     if (
-                        not manifest["dry_run"]
+                        not preview
                         and snapshot
                         and reservation_context is not None
                         and current_targets(list(simulation_targets))
@@ -1584,7 +1590,7 @@ def _run_owned(
                     if (
                         name
                         in {"analyze_climate", "build_model", "analyze_projections"}
-                        and not manifest["dry_run"]
+                        and not preview
                     ):
                         from blueearth_cst.shared.workflow_archive_launch import (
                             CONTEXT_ENV,
@@ -1616,7 +1622,7 @@ def _run_owned(
                         entry_point="scripts/run_workflows.py",
                         command=sanitize_argv(cmd),
                         targets=["all"],
-                        mode="dry_run" if manifest["dry_run"] else "execute",
+                        mode="dry_run" if preview else "execute",
                         contract_mode="new_schema",
                         invocation_id=child_id,
                         parent_invocation_id=history["invocation_id"],
@@ -1629,7 +1635,7 @@ def _run_owned(
                     if (
                         name
                         in {"analyze_climate", "build_model", "analyze_projections"}
-                        and not manifest["dry_run"]
+                        and not preview
                     ):
                         _bind_workflow_archive(
                             child_path, child_record, project_dir, name
@@ -1660,7 +1666,7 @@ def _run_owned(
                                 cmd,
                                 cwd=REPO_ROOT,
                                 env=env_for_child,
-                                writing=not manifest["dry_run"],
+                                writing=not preview,
                             ),
                         )
             except BaseException as exc:

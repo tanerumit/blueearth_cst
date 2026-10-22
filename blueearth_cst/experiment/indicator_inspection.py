@@ -217,6 +217,8 @@ def _recheck(root, marker, manifest, context):
                     "location": row["location"],
                     f"{scope}_id": row["run_group_id"],
                     "value": row["value"],
+                    "status": row["status"],
+                    "reason": row["reason"],
                 }
                 for row in tables[table["token"]]
                 if row["run_group_id"].startswith(f"{scope}_")

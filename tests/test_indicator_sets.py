@@ -10,7 +10,9 @@ import pytest
 from blueearth_cst.experiment import indicator_registry as registry
 from blueearth_cst.experiment import indicator_sets as sets
 from blueearth_cst.experiment.indicator_sets import IndicatorSetError
+from blueearth_cst.indicators import loader
 from blueearth_cst.shared.config_composition import normalize_indicator_settings
+from blueearth_cst.shared.indicator_tables import VARIABLE_TOKENS
 
 
 def test_old_scalar_settings_are_input_aliases_only():
@@ -59,13 +61,13 @@ AUTHORED = """
 def test_registry_covers_every_existing_definition_exactly():
     names = {
         item.name
-        for token in ("q", "aet", "gwr", "precip", "snow", "overland_flow")
+        for token in VARIABLE_TOKENS.values()
         for item in registry.declarations([token])
     }
     optional = {item.name for item in registry.optional_declarations()}
     assert not names & optional
     assert set(registry.DEFINITIONS) == names | optional
-    assert (len(names), len(optional)) == (16, 5)
+    assert (len(names), len(optional)) == (17, 5)
     for definition, (method, parameters, _) in registry.DEFINITIONS.items():
         assert registry.validate_calculation(method, parameters)[0] == definition
         assert registry.declaration_for(definition).name == definition
@@ -123,8 +125,19 @@ def test_output_units_are_declared_not_inferred():
     }
     assert units["q_baseflow_index"] == "1"
     assert units["precip_annual_total"] == units["aet_annual_total"] == "mm"
+    assert units["pet_annual_total"] == "mm"
     assert units["snow_annual_max"] == "mm"
     assert units["overland_flow_annual_mean"] == units["q_annual_mean"] == "m3 s-1"
+
+
+def test_default_set_resolves_legacy_pet_total_for_indicator_planning():
+    legacy = registry.declaration_for("pet_annual_total")
+    local = loader.local_declaration(legacy)
+    assert (local.calculation_set, local.calculation_method) == (
+        "default",
+        "annual_summary/1",
+    )
+    assert local.required_responses.variable == "pet"
 
 
 def test_default_preset_delegates_to_registry_declarations():
@@ -370,3 +383,102 @@ def test_the_shipped_indicator_set_template_resolves():
         "q_annual_mean",
         "q_mean_annual_7day_min",
     ]
+
+
+def test_legacy_declaration_batch_observes_revisions_once_and_refreshes(monkeypatch):
+    records = sets.default_calculations(["q", "gwr"])
+    calls = []
+
+    def revision(set_id="default"):
+        calls.append(set_id)
+        return str(len(calls)) * 64
+
+    monkeypatch.setattr(registry, "_revision", revision)
+    first = sets.declarations_for_calculations(records)
+    assert calls == ["default"]
+    assert {item.implementation_revision for item in first} == {"1" * 64}
+    fresh = sets.declarations_for_calculations(records)
+    assert calls == ["default", "default"]
+    assert {item.implementation_revision for item in fresh} == {"2" * 64}
+
+
+def _crop_water(tmp_path, choice):
+    settings = {
+        "operations": ["simulations", "indicators"],
+        "indicator_sets": ["crop-water"],
+        "indicator_selection": {"crop-water": choice},
+    }
+    selection = sets.parse_selection(settings, tmp_path / "wf4.yml")
+    resolved = sets.selected_sets(
+        {"model": {}},
+        settings,
+        selection,
+        simulation_path=True,
+        retained_variables=lambda: [],
+        legacy_context="simulation_rule",
+    )
+    return selection, resolved[0]
+
+
+def test_indicator_selection_excludes_without_authoring_declarations(tmp_path):
+    from blueearth_cst.experiment.simulation_runner import check_required_variables
+
+    _, full = _crop_water(tmp_path, {"exclude": ["annual_recharge"]})
+    selection, narrowed = _crop_water(tmp_path, {"exclude": ["summer_low_flow_days"]})
+    assert selection.choices == (("crop-water", "exclude", ("summer_low_flow_days",)),)
+    keys = [item.indicator for item in narrowed.indicators]
+    assert len(keys) == 9 and "summer_low_flow_days" not in keys
+    # A deselected indicator is outside the request: no Q is required.
+    assert "q" not in sets.required_variables([narrowed])
+    check_required_variables([narrowed], {"precip", "pet", "aet", "gwr"}, "outvars")
+    assert sets.calculation_records(narrowed.indicators) != sets.calculation_records(
+        full.indicators
+    )
+
+
+def test_indicator_selection_include_keeps_set_order(tmp_path):
+    _, narrowed = _crop_water(
+        tmp_path, {"include": ["annual_recharge", "winter_climatic_deficit"]}
+    )
+    assert [item.indicator for item in narrowed.indicators] == [
+        "winter_climatic_deficit",
+        "annual_recharge",
+    ]
+
+
+def test_indicator_selection_survives_the_invocation_snapshot(tmp_path):
+    selection, _ = _crop_water(tmp_path, {"include": ["annual_recharge"]})
+    path = sets.write_selection_snapshot(selection, tmp_path / "snapshot.json")
+    assert sets.read_selection_snapshot(path) == selection
+
+
+@pytest.mark.parametrize(
+    ("choice", "match"),
+    [
+        (None, "exactly one of"),
+        ({}, "exactly one of"),
+        ({"include": ["annual_recharge"], "exclude": ["x"]}, "exactly one of"),
+        ({"only": ["annual_recharge"]}, "exactly one of"),
+        ({"exclude": []}, "nonempty list"),
+        ({"exclude": "annual_recharge"}, "nonempty list"),
+        ({"exclude": ["annual_recharge", "annual_recharge"]}, "duplicate"),
+        ({"exclude": ["low_flow"]}, "absent from the set"),
+        ({"include": ["nope"]}, "absent from the set"),
+    ],
+)
+def test_indicator_selection_refusals(tmp_path, choice, match):
+    with pytest.raises(IndicatorSetError, match=match):
+        _crop_water(tmp_path, choice)
+
+
+def test_indicator_selection_refuses_unselected_sets_and_empty_results(tmp_path):
+    with pytest.raises(IndicatorSetError, match="must be a mapping"):
+        sets.parse_selection({"indicator_selection": []}, tmp_path / "wf4.yml")
+    with pytest.raises(IndicatorSetError, match="absent from indicator_sets"):
+        sets.parse_selection(
+            {"indicator_selection": {"crop-water": {"exclude": ["annual_recharge"]}}},
+            tmp_path / "wf4.yml",
+        )
+    all_keys = [item.name for item in loader.declarations("crop-water")]
+    with pytest.raises(IndicatorSetError, match="leaves no indicators"):
+        _crop_water(tmp_path, {"exclude": all_keys})

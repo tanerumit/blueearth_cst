@@ -32,6 +32,7 @@ from blueearth_cst.experiment.indicator_plan import (
 )
 from blueearth_cst.experiment.legacy_indicator_names import indicator_names
 from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.run_log_core import plural
 
 PUBLICATION_SCHEMA = "named-indicator-export/1"
 CURRENT_SCHEMA = "named-indicator-current/1"
@@ -62,6 +63,8 @@ DICTIONARY_COLUMNS = (
     "validity",
     "references",
     "authored_references",
+    "availability",
+    "unavailable_reason",
 )
 _FILE_NAME = re.compile(
     r"(?:group_members|group_metadata|indicators|[a-z][a-z0-9_]*_(?:run|group)_indicators)\.csv"
@@ -182,17 +185,37 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
         (item["run_id"], item["variable"], item["location_id"]) for item in evidence
     }
     declared = {item["name"]: item for item in manifest["declarations"]}
+    dropped = {
+        item["calculation"]["indicator"]: item["reasons"]
+        for item in manifest.get("unavailable_calculations", [])
+    }
+    gaps = {}
+    for item in manifest.get("unavailable_results", []):
+        gaps.setdefault(item["indicator"], {}).setdefault(item["reason"], set()).add(
+            item["location"]
+        )
     rows = []
     for indicator in sorted(resolved_set.indicators, key=lambda item: item.indicator):
         declaration = indicator.declaration
-        if (
+        if indicator.indicator in dropped:
+            availability = "unavailable"
+            reason = "; ".join(dropped[indicator.indicator])
+        elif indicator.indicator in gaps:
+            availability = "partial"
+            reason = "; ".join(
+                f"{key} at {plural(len(locations), 'location')}"
+                for key, locations in sorted(gaps[indicator.indicator].items())
+            )
+        else:
+            availability, reason = "available", ""
+        if availability != "unavailable" and (
             declared.get(indicator.indicator, {}).get("statistic")
             != declaration.statistic
         ):
             raise NamedExportError(
                 f"{resolved_set.set_id}: {indicator.indicator} differs from its immutable declaration"
             )
-        variable = declaration.required_responses.variable
+        required = {item.variable for item in declaration.requirements}
         contract = registry.METHODS.get(indicator.method)
         if indicator.calculation_set:
             from types import SimpleNamespace
@@ -209,7 +232,7 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
         pairs = {
             (run, var, location, "evaluated")
             for run, var, location in series
-            if var == variable
+            if var in required
         }
         if declaration.reference:
             which = "wet" if declaration.statistic == "wetmonth_mean" else "dry"
@@ -218,7 +241,14 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 (run, "q", resolved["reference_location_id"], "reference")
                 for run in resolved["run_ids"]
             }
-        cover = [item for item in evidence if item["variable"] == variable]
+        cover = [item for item in evidence if item["variable"] in required]
+        crop_water = declaration.calculation_set == "crop-water"
+        assignment = (
+            f"{assumptions['season_labels']}; {assumptions['recharge_year']}"
+            if crop_water
+            else f"{anchor} ({registry.block_bins(anchor)} water-year blocks); "
+            f"{contract.block_assignment}"
+        )
         rows.append(
             {
                 "indicator": indicator.indicator,
@@ -227,8 +257,13 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 "set_description": resolved_set.description,
                 "title": indicator.title,
                 "description": indicator.description,
-                "variable": variable,
-                "input_units": declaration.required_responses.units,
+                "variable": ", ".join(sorted(required)),
+                "input_units": ", ".join(
+                    f"{item.variable}: {item.units}"
+                    for item in declaration.requirements
+                )
+                if len(required) > 1
+                else declaration.required_responses.units,
                 "output_units": registry.output_units(declaration),
                 "quantity": registry.quantity(declaration),
                 "method": indicator.method,
@@ -236,21 +271,26 @@ def dictionary_rows(resolved_set, manifest, evidence, water_year_start) -> list[
                 "equivalent_definition": indicator.equivalent_definition,
                 "grain": declaration.grain,
                 "group_policy": declaration.group_reduction,
-                "water_year_start": water_year_start,
+                "water_year_start": (
+                    "Oct (recharge); fixed seasons" if crop_water else water_year_start
+                ),
                 "calendar": "; ".join(sorted({item["calendar"] for item in cover})),
                 "time_label": "; ".join(sorted({item["time_label"] for item in cover})),
-                "block_assignment": (
-                    f"{anchor} ({registry.block_bins(anchor)} water-year blocks); "
-                    f"{contract.block_assignment}"
-                ),
+                "block_assignment": assignment,
                 "partial_blocks": contract.partial_blocks,
-                "block_coverage": block_coverage(
-                    evidence, sorted((r, v, loc, role) for r, v, loc, role in pairs)
+                "block_coverage": (
+                    "Complete-period counts and coverage: indicator_diagnostics.json/period_values"
+                    if crop_water
+                    else block_coverage(
+                        evidence, sorted((r, v, loc, role) for r, v, loc, role in pairs)
+                    )
                 ),
                 "missingness": contract.missingness,
                 "validity": contract.validity,
                 "references": "; ".join(indicator.references),
                 "authored_references": "; ".join(indicator.authored_references),
+                "availability": availability,
+                "unavailable_reason": reason,
             }
         )
     return rows
@@ -361,8 +401,12 @@ def publish_named_set(
     root = Path(root).resolve()
     set_id = resolved_set.set_id
     manifest = read_indicator_set(root, Path(manifest_path))
-    if manifest["schema_version"] not in ("indicator-set/4", "indicator-set/5"):
-        raise NamedExportError(f"{set_id}: named exports require indicator-set/4 or /5")
+    if manifest["schema_version"] not in (
+        "indicator-set/4",
+        "indicator-set/5",
+        "indicator-set/6",
+    ):
+        raise NamedExportError(f"{set_id}: named exports require indicator-set/4 to /6")
     engine = root / manifest["engine_root"]
     evidence = read_canonical_json(engine / manifest["coverage_evidence"]["path"])
     if evidence.get("schema_version") != COVERAGE_EVIDENCE_SCHEMA:

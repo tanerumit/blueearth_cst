@@ -4,10 +4,77 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from blueearth_cst.shared import invocation_history, resource_tracking
+
+
+@pytest.mark.parametrize(
+    "scenario, expected_cpu",
+    [
+        ("new", 7),
+        ("existing", 4),
+        ("reused_pid", 7),
+        ("denied_census", 4),
+        ("denied_counters", 4),
+    ],
+)
+def test_cpu_baseline_uses_initial_census(
+    tmp_path, monkeypatch, scenario, expected_cpu
+):
+    """Rounded creation times must not erase a new child's observed CPU."""
+    monkeypatch.setattr(resource_tracking.time, "time", lambda: 100.005)
+    cpu = {"child": 3}
+    created = {"child": 100.0}
+    children = []
+
+    def process(pid, name):
+        return SimpleNamespace(
+            pid=pid,
+            create_time=lambda: created[name] if name == "child" else 1.0,
+            cpu_times=lambda: SimpleNamespace(user=cpu.get(name, 20), system=0),
+            memory_info=lambda: SimpleNamespace(rss=1024, vms=2048),
+            io_counters=lambda: SimpleNamespace(read_bytes=0, write_bytes=0),
+            name=lambda: name,
+            cpu_affinity=lambda: [0],
+            nice=lambda: 0,
+            children=lambda recursive: list(children),
+        )
+
+    root = process(1, "root")
+    child = process(2, "child")
+    monkeypatch.setattr(resource_tracking.psutil, "Process", lambda: root)
+    if scenario in {"existing", "reused_pid", "denied_counters"}:
+        children.append(child)
+    if scenario == "denied_census":
+
+        def denied(recursive):
+            raise resource_tracking.psutil.AccessDenied()
+
+        root.children = denied
+    if scenario == "denied_counters":
+
+        def denied_counters():
+            raise resource_tracking.psutil.AccessDenied()
+
+        child.cpu_times = denied_counters
+    monitor = resource_tracking.ResourceMonitor(tmp_path / "diagnostics", interval=60)
+    monitor.start()
+    try:
+        root.children = lambda recursive: [child]
+        child.cpu_times = lambda: SimpleNamespace(user=cpu["child"], system=0)
+        if scenario == "reused_pid":
+            created["child"] = 100.001
+        # Observe the child before and after additional work, then after exit.
+        monitor.sample()
+        cpu["child"] = 7
+        monitor.sample()
+        root.children = lambda recursive: []
+    finally:
+        summary = monitor.finish()
+    assert summary["sampled_tree_cpu_s"] == expected_cpu
 
 
 def test_trace_tracks_child_and_retains_cpu_after_exit(tmp_path):

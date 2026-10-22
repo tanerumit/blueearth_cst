@@ -24,6 +24,8 @@ class ResourceMonitor:
 
     CPU and I/O totals retain the last observation of exited processes. They
     are lower bounds: children that start and exit between samples are missed.
+    The initial census baselines existing processes; later descendants start
+    at zero. An incomplete initial census baselines all first observations.
     RSS sums can count shared pages more than once. Samples are flushed so a
     hard-killed launcher leaves useful evidence without a fabricated finish.
     """
@@ -33,11 +35,12 @@ class ResourceMonitor:
         self.interval = interval
         self.root = psutil.Process()
         self.started = time.monotonic()
-        self.started_epoch = time.time()
         self.phase = "preparation"
         self.phases: list[dict[str, Any]] = []
         self.errors: dict[str, int] = {}
         self.processes: dict[tuple[int, float], dict[str, Any]] = {}
+        self.initial_processes: set[tuple[int, float]] = set()
+        self.initial_census_complete = True
         self.samples = 0
         self.collection_wall_s = 0.0
         self.peak_rss = 0
@@ -137,13 +140,19 @@ class ResourceMonitor:
             children = self._read(
                 "children", lambda: self.root.children(recursive=True)
             )
+            if self.samples == 0 and children is None:
+                self.initial_census_complete = False
             rows = []
             for proc in [self.root, *(children or [])]:
                 try:
                     identity = (proc.pid, proc.create_time())
+                    if self.samples == 0:
+                        self.initial_processes.add(identity)
                     cpu = proc.cpu_times()
                     memory = proc.memory_info()
                 except psutil.Error:
+                    if self.samples == 0:
+                        self.initial_census_complete = False
                     self.errors["process_disappeared_or_denied"] = (
                         self.errors.get("process_disappeared_or_denied", 0) + 1
                     )
@@ -156,8 +165,15 @@ class ResourceMonitor:
                     "page_faults": getattr(memory, "num_page_faults", None),
                 }
                 if identity not in self.processes:
+                    # Creation timestamps can predate our wall-clock start due
+                    # to OS clock precision. Use census membership, retaining
+                    # create_time only as part of the PID-reuse-safe identity.
+                    preexisting = (
+                        identity in self.initial_processes
+                        or not self.initial_census_complete
+                    )
                     baseline = {
-                        key: (0 if identity[1] >= self.started_epoch else value)
+                        key: (value if preexisting else 0)
                         for key, value in counters.items()
                     }
                     self.processes[identity] = {"baseline": baseline}

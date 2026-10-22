@@ -19,6 +19,7 @@ WFLOW_VARS = {
     "actual evapotranspiration": "land_surface__evapotranspiration_volume_flux",
     "groundwater recharge": "soil_water_saturated_zone_top__net_recharge_volume_flux",
     "snow": "snowpack_liquid_water__depth",
+    "temperature": "atmosphere_air__temperature",
 }
 
 from blueearth_cst.shared.progress import hydromt_progress  # noqa: E402

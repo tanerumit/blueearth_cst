@@ -31,6 +31,7 @@ CODES = {
     "actual evapotranspiration": "aet",
     "groundwater recharge": "gwr",
     "snow": "swe",
+    "temperature": "temp",
 }
 
 #: How each code aggregates to a month, and how its axis is labelled. Keyed by
@@ -43,6 +44,7 @@ PLOT_META = {
     },
     "gwr": {"resample": "sum", "legend": "Groundwater Recharge (mm month$^{-1}$)"},
     "swe": {"resample": "mean", "legend": "Snowpack Liquid Water (mm)"},
+    "temp": {"resample": "mean", "legend": "Air Temperature (°C)"},
     "p": {"resample": "sum", "legend": "Precipitation (mm month$^{-1}$)"},
     "pet": {
         "resample": "sum",
@@ -69,6 +71,11 @@ for _code, _meta in PLOT_META.items():
     )
 del _code, _meta
 
+# Temperature is a state in degrees Celsius; depth/flux units never apply.
+PLOT_META["temp"].update(
+    kind="state", monthly_units="°C", annual_units="°C", trend_units="°C decade⁻¹"
+)
+
 SUBBASIN_PLOT_DIRNAME = "subbasins"
 BASAVG_FIGURE_STEMS = {
     "p": "precip",
@@ -77,6 +84,7 @@ BASAVG_FIGURE_STEMS = {
     "swe": "snow",
     "aet": "aet",
     "gwr": "gwr",
+    "temp": "temp",
 }
 
 #: hydromt names a csv-derived variable ``<header>_<mapname>``. Basin-average

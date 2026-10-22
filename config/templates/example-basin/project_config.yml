@@ -112,7 +112,7 @@ climate:
 # Select shared hydrological model outputs. Input: mapping.
 model:
   # Any of: river discharge, precipitation, potential evapotranspiration,
-  # overland flow, actual evapotranspiration, groundwater recharge, snow.
+  # overland flow, actual evapotranspiration, groundwater recharge, snow, temperature.
   # Select retained model outputs; non-discharge ones are subcatchment means. Input: list.
   outvars: ["river discharge", "precipitation", "potential evapotranspiration", "actual evapotranspiration", "groundwater recharge"]
 

@@ -507,6 +507,15 @@ def resolve_set(
                 f"{label}: registry overrides name unknown indicators {sorted(unknown)}"
             )
         if overrides:
+            if value == "crop-water":
+                from blueearth_cst.experiment.baseline_qcrit import resolve_thresholds
+
+                overrides = {
+                    name: resolve_thresholds(parameters, source.path)
+                    if name == "summer_low_flow_days" and isinstance(parameters, dict)
+                    else parameters
+                    for name, parameters in overrides.items()
+                }
             local = tuple(
                 loader.resolve(
                     value,

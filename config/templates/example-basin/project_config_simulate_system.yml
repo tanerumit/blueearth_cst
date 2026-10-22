@@ -37,7 +37,8 @@ include_unperturbed: true
 # indicators.csv dictionary. `default` is bundled; omitted means [default].
 # Add eflow-erfa for 70 discharge median/IQR indicators: [default, eflow-erfa].
 # Crop-water also needs retained P, PET, AET, recharge and Q plus a custom
-# crop-water set file binding location-specific historical Qcrit thresholds.
+# crop-water set file binding historical Qcrit thresholds or a baseline_quantile rule.
+# See blueearth_cst/indicators/sets/crop_water/README.md for the complete rule.
 # Select named indicator sets to calculate. Input: list of registered set IDs.
 indicator_sets: [default]
 

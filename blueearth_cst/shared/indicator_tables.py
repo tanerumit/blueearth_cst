@@ -57,9 +57,8 @@ from blueearth_cst.shared.wflow_outputs import CODES as _WFLOW_CODES
 #: → short token used in filenames and in the composite ``indicator``.
 #:
 #: Authoritative source for the semantic names: the ``WFLOW_VARS`` map in
-#: ``blueearth_cst/model/setup_gauges_and_outputs.py``. Seven entries —
-#: ``precipitation`` and ``potential evapotranspiration`` use subcatchment
-#: means, as do all non-discharge outputs.
+#: ``blueearth_cst/model/setup_gauges_and_outputs.py``. Non-discharge outputs
+#: use subcatchment means.
 VARIABLE_TOKENS = {
     "river discharge": "q",
     "precipitation": "precip",
@@ -68,6 +67,7 @@ VARIABLE_TOKENS = {
     "groundwater recharge": "gwr",
     "overland flow": "overland_flow",
     "snow": "snow",
+    "temperature": "temp",
 }
 
 #: Indicator token → the CODE that variable's columns carry in a wflow run csv.
@@ -237,6 +237,7 @@ BASIN_INDICATOR_SUFFIXES = {
     "precip": ("annual_total", "sum"),
     "snow": ("annual_max", "max"),
     "overland_flow": ("annual_mean", "mean"),
+    "temp": ("annual_mean", "mean"),
 }
 
 

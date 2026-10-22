@@ -233,3 +233,97 @@ def test_baseline_qcrit_uses_only_complete_summers_and_records_provenance():
     assert threshold["used_summers"] == [2024]
     assert threshold["excluded_summers"] == [2023]
     assert threshold["value"] == pytest.approx(18.3)
+    assert threshold["nonexceedance_probability"] == pytest.approx(0.1)
+    assert threshold["reference_period"] == "summer"
+    assert threshold["sample_count"] == 184
+    assert threshold["coverage"][1]["finite_days"] == 184
+
+
+@pytest.mark.parametrize(
+    "quantile,convention", [(0.8, "exceedance"), (0.2, "nonexceedance")]
+)
+def test_baseline_quantile_conventions_and_annual_reference(quantile, convention):
+    time = pd.date_range("2023-01-01", "2024-12-31")
+    values = np.arange(len(time), dtype=float)
+    values[0] = np.nan  # Exclude all of 2023 rather than pooling its remaining days.
+    thresholds = prepare_baseline_qcrit(
+        [_series("q", values, time=time)],
+        source_id="historical",
+        years=[2023, 2024],
+        quantile=quantile,
+        convention=convention,
+        reference_period="annual",
+    )
+    record = thresholds["basin"]
+    # Complete leap year contains 365..730; p20 is 365 + .2*365 = 438.
+    assert record["value"] == pytest.approx(438)
+    assert record["used_periods"] == [2024]
+    assert record["excluded_periods"] == [2023]
+    assert record["sample_count"] == 366
+    assert record["coverage"][0]["finite_days"] == 364
+    declaration = loader.resolve(
+        "crop-water",
+        "seasonal_low_flow_days/1",
+        {"season": "summer", "thresholds": thresholds},
+        indicator_name="summer_low_flow_days",
+    )
+    # The same fixed historical threshold is used for each scenario.
+    for flow, expected in [(400.0, 184.0), (500.0, 0.0)]:
+        response = _series("q", np.full(len(TIME), flow))
+        result = loader.evaluate(declaration, [response], anchor="YE-SEP")
+        assert result.values["basin"] == expected
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"quantile": 0},
+        {"quantile": 1},
+        {"quantile": True},
+        {"quantile": float("nan")},
+        {"convention": "percentile"},
+        {"reference_period": "wet"},
+        {"quantile_method": "unknown"},
+    ],
+)
+def test_invalid_baseline_quantile_rule(options):
+    with pytest.raises(ValueError, match="invalid Qcrit"):
+        prepare_baseline_qcrit(
+            [_series("q", np.ones(len(TIME)))],
+            source_id="historical",
+            years=[2024],
+            **options,
+        )
+
+
+def test_baseline_without_complete_period_refuses():
+    values = np.ones(len(TIME))
+    values[TIME == "2024-07-01"] = np.nan
+    with pytest.raises(ValueError, match="no complete baseline"):
+        prepare_baseline_qcrit(
+            [_series("q", values)], source_id="historical", years=[2024]
+        )
+
+
+@pytest.mark.parametrize(
+    "method,expected",
+    [
+        ("linear", 18.3),
+        ("lower", 18),
+        ("higher", 19),
+        ("midpoint", 18.5),
+        ("nearest", 18),
+    ],
+)
+def test_baseline_quantile_method_is_explicit(method, expected):
+    values = np.zeros(len(TIME))
+    summer = (TIME >= "2024-05-01") & (TIME <= "2024-10-31")
+    values[summer] = np.arange(184)
+    threshold = prepare_baseline_qcrit(
+        [_series("q", values)],
+        source_id="historical",
+        years=[2024],
+        quantile_method=method,
+    )["basin"]
+    assert threshold["value"] == pytest.approx(expected)
+    assert threshold["quantile_method"] == method

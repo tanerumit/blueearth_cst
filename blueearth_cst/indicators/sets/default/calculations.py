@@ -62,7 +62,16 @@ def pooled_return_level(indicator, series, context) -> IndicatorResult:
 
 PARAMETERS = {
     annual_summary: {
-        "variable": ("q", "aet", "pet", "gwr", "precip", "snow", "overland_flow"),
+        "variable": (
+            "q",
+            "aet",
+            "pet",
+            "gwr",
+            "precip",
+            "snow",
+            "overland_flow",
+            "temp",
+        ),
         "statistic": ("mean", "sum", "max", "min", "p95"),
     },
     annual_rolling7_extreme: {"extreme": ("min", "max")},
@@ -83,6 +92,7 @@ def validate(function, parameters) -> None:
             "precip": ("sum",),
             "snow": ("max",),
             "overland_flow": ("mean",),
+            "temp": ("mean",),
         }
         if parameters["statistic"] not in accepted[parameters["variable"]]:
             raise ValueError(

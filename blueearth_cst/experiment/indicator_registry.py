@@ -191,7 +191,13 @@ def declarations(tokens: Sequence[str]) -> tuple[IndicatorDeclaration, ...]:
             units = (
                 "m3 s-1"
                 if token == "overland_flow"
-                else ("mm" if token == "snow" else "mm dt-1")
+                else (
+                    "degC"
+                    if token == "temp"
+                    else "mm"
+                    if token == "snow"
+                    else "mm dt-1"
+                )
             )
         for statistic, (suffix, kind) in entries:
             period = None
@@ -271,6 +277,7 @@ METHODS = {
             "precip": {"statistic": ("sum",)},
             "snow": {"statistic": ("max",)},
             "overland_flow": {"statistic": ("mean",)},
+            "temp": {"statistic": ("mean",)},
         },
         f"water-year blocks; {_TEMPORAL}",
         _PARTIAL,
@@ -471,6 +478,10 @@ DEFINITION_TEXT = {
     "overland_flow_annual_mean": (
         "Mean annual overland flow",
         "Water-year mean overland flow averaged over years.",
+    ),
+    "temp_annual_mean": (
+        "Mean annual air temperature",
+        "Water-year mean air temperature averaged over years; degrees Celsius.",
     ),
     "q_mean_annual_30day_max": (
         "Mean annual 30-day maximum discharge",

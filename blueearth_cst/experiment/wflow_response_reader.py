@@ -49,6 +49,7 @@ NATIVE_VARIABLES = {
     ),
     "overland_flow": ("qof", "land_surface_water__volume_flow_rate", "m3 s-1"),
     "snow": ("swe", "snowpack_liquid_water__depth", "mm"),
+    "temp": ("temp", "atmosphere_air__temperature", "degC"),
 }
 
 
@@ -117,12 +118,12 @@ def open_responses(
             raise ValueError(
                 f"run_id={run_id}: {variable} native parameter must be {parameter}"
             )
-        if variable == "pet" and any(
+        if variable in ("pet", "temp") and any(
             item.get("map") != "subcatchment" or item.get("reducer") != "mean"
             for item in declarations
         ):
             raise ValueError(
-                f"run_id={run_id}: pet native output must be a subcatchment mean"
+                f"run_id={run_id}: {variable} native output must be a subcatchment mean"
             )
         prefix = native_header + "_"
         locations = [

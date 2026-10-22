@@ -10,6 +10,10 @@ defines blocks; January–December applies only to a January water year. Rolling
 boundaries, never member boundaries, and require seven nonmissing days. Reference months use pooled monthly
 sums and explicit reference membership/location. No new warm-up is removed.
 
+Temperature uses token `temp` and units `degC`. `temp_annual_mean` averages daily air temperature
+within water-year blocks, then averages block means with equal weight. It never sums daily values.
+The default preset selects it only when temperature is configured or retained for that simulation.
+
 Return levels retain member-local annual maxima / rolling-seven-day annual minima, finite-block filtering,
 max(ceil(T),10) sample screening, qualified estimator source verification and supplied probability-domain
 gating. `rolling_annual_min` accurately describes the fixed seven-day calculation; the old

@@ -37,30 +37,87 @@ def _fraction(value: object) -> bool:
 
 def _thresholds(value: object) -> bool:
     """Expected location-keyed Qcrit values with explicit baseline provenance."""
+    legacy = {
+        "value",
+        "source_id",
+        "years",
+        "used_summers",
+        "excluded_summers",
+        "method",
+        "units",
+    }
+    derived = {
+        "value",
+        "source_id",
+        "years",
+        "method",
+        "units",
+        "baseline_run_id",
+        "reference_period",
+        "quantile",
+        "convention",
+        "nonexceedance_probability",
+        "quantile_method",
+        "used_periods",
+        "excluded_periods",
+        "sample_count",
+        "coverage",
+    }
     return isinstance(value, dict) and all(
         isinstance(location, str)
         and isinstance(record, dict)
-        and set(record)
-        == {
-            "value",
-            "source_id",
-            "years",
-            "used_summers",
-            "excluded_summers",
-            "method",
-            "units",
-        }
+        and (
+            set(record) == legacy
+            or set(record) == derived
+            or set(record) == derived | {"used_summers", "excluded_summers"}
+        )
         and _positive(record["value"])
         and isinstance(record["source_id"], str)
         and bool(record["source_id"])
         and isinstance(record["years"], list)
         and bool(record["years"])
-        and isinstance(record["used_summers"], list)
-        and bool(record["used_summers"])
-        and isinstance(record["excluded_summers"], list)
-        and record["method"] in ("linear p=0.10", "supplied operational")
+        and (
+            _derived_threshold(record)
+            if "reference_period" in record
+            else (
+                isinstance(record["used_summers"], list)
+                and bool(record["used_summers"])
+                and isinstance(record["excluded_summers"], list)
+                and record["method"] in ("linear p=0.10", "supplied operational")
+            )
+        )
         and record["units"] == "m3 s-1"
         for location, record in value.items()
+    )
+
+
+QUANTILE_METHODS = ("linear", "lower", "higher", "midpoint", "nearest")
+
+
+def _derived_threshold(record: dict) -> bool:
+    """Validate the explicit quantile rule retained with a derived threshold."""
+    p = record["nonexceedance_probability"]
+    return (
+        record["reference_period"] in ("summer", "annual")
+        and record["convention"] in ("exceedance", "nonexceedance")
+        and _fraction(record["quantile"])
+        and _fraction(p)
+        and np.isclose(
+            p,
+            1 - record["quantile"]
+            if record["convention"] == "exceedance"
+            else record["quantile"],
+        )
+        and record["quantile_method"] in QUANTILE_METHODS
+        and record["method"] == f"{record['quantile_method']} p={p:.15g}"
+        and isinstance(record["baseline_run_id"], str)
+        and bool(record["baseline_run_id"])
+        and isinstance(record["used_periods"], list)
+        and bool(record["used_periods"])
+        and isinstance(record["excluded_periods"], list)
+        and type(record["sample_count"]) is int
+        and record["sample_count"] > 0
+        and isinstance(record["coverage"], list)
     )
 
 
@@ -89,11 +146,40 @@ def _longest(flags: np.ndarray) -> int:
 
 
 def prepare_baseline_qcrit(
-    responses: Sequence[ResponseSeries], *, source_id: str, years: Sequence[int]
+    responses: Sequence[ResponseSeries],
+    *,
+    source_id: str,
+    years: Sequence[int],
+    quantile: float = 0.9,
+    convention: str = "exceedance",
+    reference_period: str = "summer",
+    quantile_method: str = "linear",
 ) -> dict[str, dict]:
-    """Prepare fixed Q90-exceedance fallback from complete historical summers."""
-    if not source_id or not years or any(type(year) is not int for year in years):
+    """Pool complete historical periods into fixed location thresholds.
+
+    ``quantile=0.9, convention='exceedance'`` means Q90 (nonexceedance p=0.10).
+    Summer is May–October; annual is the calendar year. Incomplete/nonfinite
+    periods are excluded independently per location and recorded, never filled.
+    The caller must identify historical model discharge, not scenario responses.
+    """
+    if (
+        not isinstance(source_id, str)
+        or not source_id
+        or not years
+        or any(type(year) is not int or not 1 <= year <= 9998 for year in years)
+    ):
         raise ValueError("Qcrit requires source identity and explicit baseline years")
+    if (
+        isinstance(quantile, bool)
+        or not _fraction(quantile)
+        or convention not in ("exceedance", "nonexceedance")
+        or reference_period not in ("summer", "annual")
+        or quantile_method not in QUANTILE_METHODS
+    ):
+        raise ValueError(
+            "invalid Qcrit quantile, convention, reference_period or quantile_method"
+        )
+    probability = 1 - quantile if convention == "exceedance" else quantile
     validate_responses(responses, evaluated_runs={item.run_id for item in responses})
     if len({item.run_id for item in responses}) != 1 or any(
         (item.variable, item.units, item.time_label, item.timestep.total_seconds())
@@ -104,27 +190,52 @@ def prepare_baseline_qcrit(
     frame = response_frame(responses)
     result = {}
     for location in frame:
-        pooled, used, excluded = [], [], []
+        pooled, used, excluded, coverage = [], [], [], []
         for year in sorted(set(years)):
-            labels = pd.date_range(f"{year}-05-01", f"{year}-10-31", freq="D")
-            if labels.isin(frame.index).all():
-                values = frame.loc[labels, location].to_numpy(dtype=float)
-                if np.isfinite(values).all():
-                    pooled.extend(values)
-                    used.append(year)
-                    continue
+            start, end = (
+                (f"{year}-05-01", f"{year}-10-31")
+                if reference_period == "summer"
+                else (f"{year}-01-01", f"{year}-12-31")
+            )
+            labels = pd.date_range(start, end, freq="D")
+            available = frame[location].reindex(labels).to_numpy(dtype=float)
+            coverage.append(
+                {
+                    "year": year,
+                    "start": start,
+                    "end": end,
+                    "expected_days": len(labels),
+                    "finite_days": int(np.isfinite(available).sum()),
+                }
+            )
+            if np.isfinite(available).all():
+                pooled.extend(available)
+                used.append(year)
+                continue
             excluded.append(year)
         if not pooled:
-            raise ValueError(f"Qcrit has no complete baseline summer at {location}")
+            raise ValueError(
+                f"Qcrit has no complete baseline {reference_period} period at {location}"
+            )
         result[location] = {
-            "value": float(np.quantile(pooled, 0.10, method="linear")),
+            "value": float(np.quantile(pooled, probability, method=quantile_method)),
             "source_id": source_id,
             "years": list(sorted(set(years))),
-            "used_summers": used,
-            "excluded_summers": excluded,
-            "method": "linear p=0.10",
+            "baseline_run_id": responses[0].run_id,
+            "reference_period": reference_period,
+            "quantile": quantile,
+            "convention": convention,
+            "nonexceedance_probability": probability,
+            "quantile_method": quantile_method,
+            "used_periods": used,
+            "excluded_periods": excluded,
+            "sample_count": len(pooled),
+            "coverage": coverage,
+            "method": f"{quantile_method} p={probability:.15g}",
             "units": "m3 s-1",
         }
+        if reference_period == "summer":
+            result[location].update(used_summers=used, excluded_summers=excluded)
     return result
 
 

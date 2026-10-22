@@ -88,8 +88,8 @@ def check_required_variables(
 
     ``available`` names the response variables. Set-declared absent parameters
     are checked at ``locations`` (variable -> retained ids) when known, else only
-    where absence is location-independent. Names the set, indicator, method and
-    input; never schedules a simulation.
+    where absence is location-independent. Each gap names the set, indicator,
+    missing inputs and a full description; never schedules a simulation.
     """
     from blueearth_cst.indicators import loader
     from blueearth_cst.shared.run_log_core import plural
@@ -104,23 +104,40 @@ def check_required_variables(
                 for requirement in declaration.requirements
                 if requirement.variable not in available
             ]
+            gaps = (
+                ()
+                if absent
+                else loader.unavailable(
+                    declaration, (locations or {}).get(declaration.table_variable)
+                )
+            )
             if absent:
-                missing.append(f"{label} needs response {', '.join(absent)}")
-                continue
-            retained = (locations or {}).get(declaration.table_variable)
-            gaps = loader.unavailable(declaration, retained)
-            if gaps:
+                text = f"{label} needs response {', '.join(absent)}"
+                inputs = absent
+            elif gaps:
                 where_absent = (
                     "every location"
                     if any(location is None for location, _ in gaps)
                     else plural(len(gaps), "location")
                 )
-                reasons = ", ".join(sorted({reason for _, reason in gaps}))
-                missing.append(f"{label} lacks {reasons} at {where_absent}")
+                reasons = sorted({reason for _, reason in gaps})
+                # Reason codes are ``missing_<kind>:<input>``; rows name the input.
+                inputs = [reason.split(":", 1)[-1] for reason in reasons]
+                text = f"{label} lacks {', '.join(reasons)} at {where_absent}"
+            else:
+                continue
+            missing.append(
+                {
+                    "set_id": item.set_id,
+                    "indicator": indicator.indicator,
+                    "inputs": inputs,
+                    "text": text,
+                }
+            )
     if missing and evaluation == "strict":
         raise ValueError(
             f"selected indicators lack inputs in {where}: "
-            + "; ".join(missing)
+            + "; ".join(gap["text"] for gap in missing)
             + ". A missing response needs a separate simulation with those "
             "model.outvars (--new-experiment); otherwise supply the parameter, "
             "exclude the indicator with indicator_selection, or set "
@@ -130,11 +147,21 @@ def check_required_variables(
 
 
 def report_unavailable(gaps):
-    """One warning row per selected indicator a partial invocation cannot calculate."""
-    from blueearth_cst.shared.run_log_core import log_row
+    """One warning row per set naming what a partial invocation cannot calculate."""
+    from blueearth_cst.shared.run_log_core import log_row, plural
+    from blueearth_cst.shared.snake_utils import listed
 
+    by_set = {}
     for gap in gaps:
-        log_row(f"Unavailable in partial evaluation: {gap}", level="WARNING")
+        by_set.setdefault(gap["set_id"], []).append(gap)
+    for set_id, items in by_set.items():
+        inputs = sorted({value for gap in items for value in gap["inputs"]})
+        log_row(
+            f"{set_id}: inputs missing ({', '.join(inputs)}); "
+            f"{plural(len(items), 'indicator')} will be published as unavailable: "
+            f"{listed([gap['indicator'] for gap in items], limit=4)}",
+            level="WARNING",
+        )
 
 
 def simulation_indicator_sets(project, settings, selection, *, report=False):

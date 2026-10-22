@@ -63,7 +63,11 @@ def test_requests_wait_for_checkpoint_and_resolve_only_once(scheduling, monkeypa
         return [{"calculations": records} for records in calculations]
 
     monkeypatch.setitem(scheduling, "_frozen_simulation", frozen)
-    monkeypatch.setitem(scheduling, "INDICATOR_CALCULATIONS", [["a"], ["b"]])
+    monkeypatch.setitem(
+        scheduling,
+        "INDICATOR_CALCULATIONS",
+        [[{"indicator": "a"}], [{"indicator": "b"}]],
+    )
     monkeypatch.setitem(scheduling, "INDICATOR_SETS", ())
     monkeypatch.setattr(indicator_plan, "current_indicator_requests", resolve)
     current = scheduling["_current_indicator_requests"]

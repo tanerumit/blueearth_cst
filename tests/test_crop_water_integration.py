@@ -28,8 +28,12 @@ from tests._v2_experiment import (
 )
 
 
-def _responses(locations=("9",)):
-    """Retained responses at ``locations``; Qcrit is prepared at location 9 only."""
+def _responses(locations=("9",), *, without_pet=False):
+    """Retained responses at ``locations``; Qcrit is prepared at location 9 only.
+
+    ``without_pet`` omits PET, as a simulation that never requested it.
+    """
+    drop = {"pet"} if without_pet else set()
     from datetime import timedelta
 
     time = pd.date_range("2046-10-01", "2047-10-31", freq="D")
@@ -47,6 +51,7 @@ def _responses(locations=("9",)):
                         ("aet", 1.0),
                         ("gwr", 2.0),
                     )
+                    if header not in drop
                 },
                 index=time,
             )
@@ -67,6 +72,7 @@ def _responses(locations=("9",)):
             f'[[output.csv.column]]\nheader="{header}"\nmap="subcatchment"\n'
             f'reducer="mean"\nparameter="{parameter}"\n'
             for header, parameter in names.items()
+            if header not in drop
         )
     )
     temporal = {
@@ -99,6 +105,7 @@ def _responses(locations=("9",)):
             ("aet", "mm dt-1"),
             ("gwr", "mm dt-1"),
         )
+        if variable not in drop
     ]
     baseline = ResponseSeries(
         run_id="historical",

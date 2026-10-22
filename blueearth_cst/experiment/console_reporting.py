@@ -151,9 +151,7 @@ def report_indicator_set(root: Path, manifest: dict, sets=(), *, reused=False) -
         action = "reusing calculated results" if reused else "calculations complete"
         log_row(f"{item.set_id}: {action}", module="indicators")
         if unavailable:
-            log_row(
-                f"{item.set_id}: unavailable indicators: {listed(unavailable)}; "
-                "details in coverage evidence",
-                module="indicators",
-                level="WARNING",
+            # The warning row belongs to publication; keep the detail here.
+            record_indicator_detail(
+                root, f"{item.set_id}: unavailable indicators: {listed(unavailable)}"
             )

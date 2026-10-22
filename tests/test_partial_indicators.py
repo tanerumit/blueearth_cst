@@ -121,7 +121,7 @@ def test_empty_qcrit_is_refused_before_simulation_only_in_strict_mode(tmp_path):
     gaps = check_required_variables(
         [resolved], variables, "outvars", evaluation="partial"
     )
-    assert gaps == [
+    assert [gap["text"] for gap in gaps] == [
         "crop-water:summer_low_flow_days (seasonal_low_flow_days/1) lacks "
         f"{REASON} at every location"
     ]
@@ -237,3 +237,32 @@ def test_cli_partial_run_succeeds_with_warning_and_strict_refuses(experiment):
     availability = dict(zip(dictionary.indicator, dictionary.availability))
     assert availability.pop("summer_low_flow_days") == "partial"
     assert set(availability.values()) == {"available"}
+
+
+def test_a_set_with_nothing_calculable_publishes_only_unavailable_entries(
+    tmp_path, monkeypatch
+):
+    from blueearth_cst.experiment import indicator_plan
+
+    responses, _ = _responses(without_pet=True)
+    monkeypatch.setattr(
+        indicator_plan, "resolve_indicator_environment", lambda: FIXTURE_ENVIRONMENT
+    )
+    root = build_v2_experiment(tmp_path, responses).root
+    resolved = _crop_water(root / "crop-water.yml", {})
+    settings = {
+        "indicator_sets": ["crop-water"],
+        "indicator_selection": {
+            "crop-water": {"include": ["summer_relative_et_deficit"]}
+        },
+    }
+    narrowed = indicator_sets.apply_choice(
+        resolved, indicator_sets.parse_selection(settings, tmp_path / "w.yml").choices
+    )
+    request, plan, manifest = _publish(root, narrowed)
+    assert request["calculations"] == [] and request["code_inventory"] == []
+    assert manifest["tables"] == []
+    assert manifest["unavailable_calculations"][0]["reasons"] == [
+        "missing_response:pet"
+    ]
+    assert read_indicator_set(root, plan["targets"]["manifest"]) == manifest

@@ -248,7 +248,8 @@ def _parse_choices(value, names) -> tuple[tuple[str, str, tuple[str, ...]], ...]
                 f"indicator_selection.{set_id} must be exactly one of "
                 "{include: [...]} or {exclude: [...]}"
             )
-        ((mode, keys),) = entry.items()
+        mode = "include" if "include" in entry else "exclude"
+        keys = entry.get("include", entry.get("exclude"))
         keys = _string_list(
             keys, f"indicator_selection.{set_id}.{mode}", allow_empty=False
         )

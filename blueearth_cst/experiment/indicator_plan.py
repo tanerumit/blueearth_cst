@@ -400,8 +400,9 @@ def indicator_request(
     return_level_validation.verify_declaration(
         validation, return_level_validation.load_report_bytes()
     )
+    # A request with nothing calculable observes no calculation code.
     code = (
-        _indicator_code_inventory(_calculation_sets(registry))
+        (_indicator_code_inventory(_calculation_sets(registry)) if registry else [])
         if code_inventory is None
         else code_inventory
     )
@@ -929,15 +930,13 @@ def reduce_indicator_plan(
     evidence = []
     coverage = {}
     anchor = plan["request"]["water_year_anchor"]
+    variables = tuple(plan["request"]["response_variables"])
     for group, members in plan["groups"].items():
+        # A request with nothing calculable reads no responses.
         series = tuple(
             item
-            for run in members
-            for item in open_responses(
-                run,
-                native[run],
-                ResponseRequest(tuple(plan["request"]["response_variables"])),
-            )
+            for run in (members if variables else ())
+            for item in open_responses(run, native[run], ResponseRequest(variables))
         )
         for item in series:
             coverage.setdefault(item.key, series_coverage(item, anchor))

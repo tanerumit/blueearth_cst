@@ -28,26 +28,20 @@ or pumpable recharge; whether return flows and canal leakage are represented dep
 Q is a named outlet/gauge series and may describe drainage rather than irrigation supply.
 
 The low-flow declaration requires fixed, location-keyed `thresholds` before evaluation. WF4 can prepare
-them directly from WF1's historical model discharge. In a custom crop-water set file, use:
+them directly from WF1's historical model discharge. In `project_config_simulate_system.yml`, use:
 
 ```yaml
-schema_version: 1
-id: crop-water
-title: Crop-water with historical Qcrit
-description: Fixed historical model-discharge thresholds
-selection:
-  registry:
-    set: crop-water
-    overrides:
-      summer_low_flow_days:
-        season: summer
-        thresholds:
-          baseline_quantile:
-            model_root: /absolute/project/models/hydrology/wflow
-            source_id: historical-model-era5
+indicator_sets:
+  - set: crop-water
+    summer_low_flow_days:
+      thresholds:
+        baseline_quantile: {}
 ```
 
-`model_root` resolves against this set file. Preparation reads `run_default/output.csv` with
+The registered `season: summer` is inherited. WF4 binds the rule to its project's
+`models/hydrology/wflow` model and derives source identity from the historical artifacts.
+Legacy explicit `model_root` (relative to its set file) and `source_id` remain supported.
+Preparation reads `run_default/output.csv` with
 `wflow_sbm.toml`, verifies the historical forcing binding (`inmaps_historical.nc`), and refuses missing
 or incompatible inputs. With all workflows enabled, startup validates the rule without opening
 historical output; preparation happens at the WF4 boundary after upstream execution. A combined
@@ -64,7 +58,7 @@ Omit `years` (as in this minimal example) or use `years: all` to request every h
 year found in the discharge labels, including partial edge years which are reported and excluded
 when their reference period is incomplete. An explicit list such as `years: [1999, 2000, 2001]`
 restricts the request; unavailable requested years are also reported as excluded. No reference
-period or model directory is inferred from the project configuration.
+period is inferred from the project's climate window.
 For Q80 use 0.80 exceedance, or equivalently 0.20 nonexceedance. Probabilities must lie strictly between
 0 and 1. `reference_period: summer` pools complete May–October periods for compatibility; `annual`
 pools complete calendar years. This changes the reference distribution only: the indicator still

@@ -9,6 +9,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Support flat inline WF4 indicator-set configuration, inherited parameter defaults and per-indicator
+  `enabled` flags. Existing selectors and set files remain supported. Historical Q90 rules can use
+  `baseline_quantile: {}` with the project's WF1 model and automatically derived source provenance.
+
 - Defer historical Qcrit preparation until WF4 after enabled upstream workflows. Combined dry-runs
   report missing WF1-dependent Q90 preparation as pending; direct WF4 reports actionable missing
   historical CSV/TOML prerequisites. Distinguish absent indicator parameters from response variables.

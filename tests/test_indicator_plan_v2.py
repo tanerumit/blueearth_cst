@@ -309,7 +309,7 @@ def test_simulations_only_does_not_resolve_indicator_requirements(
     monkeypatch.setattr(
         simulation_runner,
         "resolve_targets",
-        lambda _, targets: (
+        lambda _, targets, **_kwargs: (
             "simulate-and-indicators",
             simulation_runner.current_targets(targets),
         ),

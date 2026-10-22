@@ -67,6 +67,51 @@ def source(path, parameters):
     )
 
 
+def test_inline_q90_binds_project_model_and_inherits_summer(baseline):
+    from blueearth_cst.experiment.indicator_sets import parse_selection, selected_sets
+
+    path, _ = baseline
+    model = path.parent / "models/hydrology/wflow"
+    model.parent.mkdir(parents=True)
+    (path.parent / "model").rename(model)
+    settings = {
+        "indicator_sets": [
+            {
+                "set": "crop-water",
+                "summer_low_flow_days": {"thresholds": {"baseline_quantile": {}}},
+            }
+        ]
+    }
+    selection = parse_selection(settings, path)
+    kwargs = dict(
+        simulation_path=True,
+        retained_variables=lambda: [],
+        legacy_context="simulation_rule",
+    )
+    project = {"project": {"project_dir": str(path.parent)}}
+    resolved = selected_sets(project, settings, selection, **kwargs)
+    low_flow = next(
+        i for i in resolved[0].indicators if i.indicator == "summer_low_flow_days"
+    )
+    assert low_flow.parameters["season"] == "summer"
+    threshold = low_flow.parameters["thresholds"]["9"]
+    # May 1 (index 120) through October 31 (303): p=.10 -> 138.3.
+    assert threshold["value"] == pytest.approx(138.3)
+    assert threshold["years"] == [1999]
+    assert threshold["year_selection"] == "all"
+    assert threshold["source_id"].startswith(
+        "wf1-historical-model-discharge;csv-sha256="
+    )
+    (model / "run_default/output.csv").unlink()
+    pending = selected_sets(
+        project, settings, selection, prepare_baseline=False, **kwargs
+    )
+    with pytest.raises(ValueError, match="pending"):
+        calculation_records(pending[0].indicators)
+    with pytest.raises(HistoricalQcritUnavailable, match="historical discharge CSV"):
+        selected_sets(project, settings, selection, **kwargs)
+
+
 def test_owned_set_resolution_prepares_fixed_thresholds_and_changes_identity(baseline):
     path, parameters = baseline
     resolved = resolve_set(source(path, parameters))
@@ -150,8 +195,9 @@ def test_static_resolution_validates_without_historical_io_or_identity(
 
 @pytest.mark.parametrize("missing", ["run_default/output.csv", "wflow_sbm.toml"])
 @pytest.mark.parametrize("extra", [[], ["--dry-run"]])
+@pytest.mark.parametrize("inline", [False, True])
 def test_direct_wf4_reports_missing_historical_prerequisite(
-    baseline, missing, extra, capsys
+    baseline, missing, extra, capsys, inline
 ):
     from scripts.simulate_system import main
 
@@ -185,6 +231,19 @@ def test_direct_wf4_reports_missing_historical_prerequisite(
         ),
         encoding="utf-8",
     )
+    if inline:
+        model = path.parent / "run/models/hydrology/wflow"
+        model.parent.mkdir(parents=True)
+        (path.parent / "model").rename(model)
+        settings = yaml.safe_load(workflow.read_text())
+        settings.pop("indicator_set_definitions")
+        settings["indicator_sets"] = [
+            {
+                "set": "crop-water",
+                "summer_low_flow_days": {"thresholds": {"baseline_quantile": {}}},
+            }
+        ]
+        workflow.write_text(yaml.safe_dump(settings), encoding="utf-8")
     with pytest.raises(SystemExit) as error:
         main(["--config", str(project), *extra])
     assert error.value.code == 2

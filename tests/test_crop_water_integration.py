@@ -223,8 +223,23 @@ def _run_indicators(experiment, *extra):
 @pytest.mark.skipif(
     os.name != "nt", reason="run_project_child refuses project writers off Windows"
 )
-def test_crop_water_cli_publication(crop_water_experiment):
-    experiment, _ = crop_water_experiment
+@pytest.mark.parametrize("inline", [False, True])
+def test_crop_water_cli_publication(crop_water_experiment, inline):
+    experiment, source = crop_water_experiment
+    if inline:
+        workflow = experiment.config.parent / "simulate_system.yml"
+        settings = yaml.safe_load(workflow.read_text())
+        settings.pop("indicator_set_definitions")
+        overrides = yaml.safe_load(source.text)["selection"]["registry"]["overrides"]
+        settings["indicator_sets"] = [
+            {
+                "set": "crop-water",
+                **overrides,
+                "winter_longest_dry_spell": {"enabled": False},
+                "summer_longest_dry_spell": {"dry_day_mm": 2.0},
+            }
+        ]
+        workflow.write_text(yaml.safe_dump(settings), encoding="utf-8")
     run = _run_indicators(experiment)
     assert run.returncode == 0, run.stdout + run.stderr
     assert (
@@ -233,7 +248,7 @@ def test_crop_water_cli_publication(crop_water_experiment):
     dictionary = pd.read_csv(
         experiment.root / "results/indicator_sets/crop-water/indicators.csv"
     )
-    assert len(dictionary) == 10
+    assert len(dictionary) == (9 if inline else 10)
     assert set(dictionary.water_year_start) == {"Oct (recharge); fixed seasons"}
     assert dictionary.block_assignment.str.contains("1 Nov-31 May").all()
 

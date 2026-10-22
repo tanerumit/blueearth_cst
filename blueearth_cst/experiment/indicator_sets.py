@@ -164,8 +164,22 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
             f"operations has unknown entries {unknown}; allowed: {list(OPERATIONS)}"
         )
     indicators = "indicators" in operations
-    names = settings.get("indicator_sets", [DEFAULT_SET])
-    names = _string_list(names, "indicator_sets", allow_empty=not indicators)
+    entries = settings.get("indicator_sets", [DEFAULT_SET])
+    if not isinstance(entries, list) or (indicators and not entries):
+        raise IndicatorSetError("indicator_sets must be a nonempty list")
+    inline = {}
+    names = []
+    for entry in entries:
+        if isinstance(entry, dict):
+            document = _flat_document(entry)
+            name = document["id"]
+            inline[name] = document
+        else:
+            name = entry
+        validate_id(name, "indicator set")
+        names.append(name)
+    if len(set(names)) != len(names):
+        raise IndicatorSetError("indicator_sets has duplicate entries")
     for name in names:
         validate_id(name, "indicator set")
     definitions = settings.get("indicator_set_definitions", {})
@@ -186,6 +200,10 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
             raise IndicatorSetError(
                 f"indicator_set_definitions.{name} must be exactly {{config_path: <nonempty string>}}"
             )
+    if set(inline) & set(definitions):
+        raise IndicatorSetError(
+            "inline sets cannot also have indicator_set_definitions"
+        )
     choices = _parse_choices(settings.get("indicator_selection", {}), names)
     evaluation = settings.get("indicator_evaluation", "strict")
     if evaluation not in EVALUATION_MODES:
@@ -199,6 +217,24 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
     base = Path(workflow_path).resolve().parent
     sources = []
     for name in names:
+        if name in inline:
+            document = inline[name]
+            # The unmodified default keeps its response-driven preset semantics.
+            if document == _flat_document({"set": DEFAULT_SET}):
+                path = BUNDLED_ROOT / "default.yml"
+                sources.append(
+                    SetSource(name, path, True, path.read_text(encoding="utf-8"))
+                )
+            else:
+                sources.append(
+                    SetSource(
+                        name,
+                        Path(workflow_path).resolve(),
+                        False,
+                        yaml.safe_dump(document),
+                    )
+                )
+            continue
         if name in definitions:
             path = Path(definitions[name]["config_path"])
             path = (path if path.is_absolute() else base / path).resolve()
@@ -222,6 +258,30 @@ def parse_selection(settings: dict, workflow_path) -> Selection:
     return Selection(
         ordered, tuple(sources), legacy=False, choices=choices, evaluation=evaluation
     )
+
+
+def _flat_document(entry: dict) -> dict:
+    """Normalize an inline or standalone registry declaration without reading data."""
+    owner = validate_id(entry.get("set"), "registry set")
+    name = validate_id(entry.get("id", owner), "indicator set")
+    version = entry.get("schema_version", SET_SCHEMA_VERSION)
+    if type(version) is not int or version != SET_SCHEMA_VERSION:
+        raise IndicatorSetError(f"schema_version must be {SET_SCHEMA_VERSION}")
+    metadata = {"set", "id", "title", "description", "schema_version"}
+    return {
+        "schema_version": version,
+        "id": name,
+        "title": entry.get("title", name),
+        "description": entry.get("description", ""),
+        "selection": {
+            "registry": {
+                "set": owner,
+                "overrides": {
+                    key: value for key, value in entry.items() if key not in metadata
+                },
+            }
+        },
+    }
 
 
 def _parse_choices(value, names) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
@@ -437,6 +497,7 @@ def resolve_set(
     *,
     legacy: bool = False,
     prepare_baseline: bool = True,
+    model_root: Path | None = None,
 ) -> ResolvedSet:
     """Validate one captured set file and resolve its entries.
 
@@ -449,6 +510,8 @@ def resolve_set(
         document = load_unique_yaml(source.text)
     except yaml.YAMLError as exc:
         raise IndicatorSetError(f"{label}: invalid YAML: {exc}") from exc
+    if isinstance(document, dict) and "set" in document:
+        document = _flat_document(document)
     expected = {"schema_version", "id", "title", "description", "selection"}
     if not isinstance(document, dict) or set(document) != expected:
         raise IndicatorSetError(
@@ -512,36 +575,60 @@ def resolve_set(
                 f"{label}: registry overrides name unknown indicators {sorted(unknown)}"
             )
         pending = set()
-        if overrides:
-            if value == "crop-water":
+        configured = []
+        for item in local:
+            patch = overrides.get(item.name, {})
+            if not isinstance(patch, dict):
+                raise IndicatorSetError(
+                    f"{label}/{item.name}: parameters must be a mapping"
+                )
+            enabled = patch.get("enabled", True)
+            if type(enabled) is not bool:
+                raise IndicatorSetError(
+                    f"{label}/{item.name}: enabled must be a boolean"
+                )
+            parameters = {
+                **item.calculation_parameters,
+                **{k: v for k, v in patch.items() if k != "enabled"},
+            }
+            thresholds = parameters.get("thresholds")
+            baseline = (
+                value == "crop-water"
+                and item.name == "summer_low_flow_days"
+                and isinstance(thresholds, dict)
+                and "baseline_quantile" in thresholds
+            )
+            if baseline:
                 from blueearth_cst.experiment.baseline_qcrit import resolve_thresholds
 
-                if not prepare_baseline:
-                    pending = {
-                        name
-                        for name, parameters in overrides.items()
-                        if isinstance(parameters, dict)
-                        and isinstance(parameters.get("thresholds"), dict)
-                        and "baseline_quantile" in parameters["thresholds"]
-                    }
-                overrides = {
-                    name: resolve_thresholds(
-                        parameters, source.path, prepare=prepare_baseline
-                    )
-                    if name == "summer_low_flow_days" and isinstance(parameters, dict)
-                    else parameters
-                    for name, parameters in overrides.items()
-                }
-            local = tuple(
-                loader.resolve(
-                    value,
-                    item.calculation_method,
-                    overrides[item.name],
-                    indicator_name=item.name,
+                parameters = resolve_thresholds(
+                    parameters, source.path, prepare=False, model_root=model_root
                 )
-                if item.name in overrides
-                else item
-                for item in local
+            # Validate disabled entries too, without preparing their historical data.
+            declaration = loader.resolve(
+                value, item.calculation_method, parameters, indicator_name=item.name
+            )
+            if not enabled:
+                continue
+            if baseline and prepare_baseline:
+                parameters = resolve_thresholds(
+                    {**parameters, "thresholds": thresholds},
+                    source.path,
+                    model_root=model_root,
+                )
+                declaration = loader.resolve(
+                    value, item.calculation_method, parameters, indicator_name=item.name
+                )
+            elif baseline:
+                pending.add(item.name)
+            configured.append(declaration)
+        local = tuple(configured)
+        if value == DEFAULT_SET and default_tokens is not None:
+            preset_names = {item.name for item in registry.declarations(default_tokens)}
+            local = tuple(item for item in local if item.name in preset_names)
+        if not local:
+            raise IndicatorSetError(
+                f"{label}: no enabled indicators; remove the set from indicator_sets instead"
             )
         descriptions = {item.id: item.description for item in module.INDICATORS}
         indicators = [
@@ -758,7 +845,30 @@ def selected_sets(
     unavailable = []
     for source in selection.sets:
         tokens = None
-        if source.bundled and source.set_id == DEFAULT_SET:
+        try:
+            document = load_unique_yaml(source.text)
+        except yaml.YAMLError as exc:
+            raise IndicatorSetError(
+                f"indicator set {source.set_id!r}: invalid YAML: {exc}"
+            ) from exc
+        authored_selection = (
+            document.get("selection") if isinstance(document, dict) else None
+        )
+        registry_selection = (
+            authored_selection.get("registry")
+            if isinstance(authored_selection, dict)
+            else None
+        )
+        owner = (
+            registry_selection.get("set")
+            if isinstance(registry_selection, dict)
+            else registry_selection
+        )
+        if (
+            (source.bundled and source.set_id == DEFAULT_SET)
+            or owner == DEFAULT_SET
+            or (isinstance(document, dict) and document.get("set") == DEFAULT_SET)
+        ):
             tokens = (
                 legacy_tokens(project, settings, legacy_context, retained_variables)
                 if selection.legacy
@@ -774,6 +884,12 @@ def selected_sets(
                 tokens,
                 legacy=selection.legacy,
                 prepare_baseline=prepare_baseline,
+                model_root=(
+                    Path(project["project"]["project_dir"]).resolve()
+                    / "models/hydrology/wflow"
+                )
+                if (project.get("project") or {}).get("project_dir")
+                else None,
             )
         except HistoricalQcritUnavailable as exc:
             # Inspect the remaining sets: a pending producer must not hide

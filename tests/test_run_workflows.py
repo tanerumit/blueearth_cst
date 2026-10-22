@@ -207,10 +207,13 @@ def _q90_config(tmp_path, *, build_model=True):
     return cfg, model
 
 
+@pytest.mark.parametrize("inline", [False, True])
 def test_combined_q90_dry_run_leaves_wf4_pending_without_historical_output(
-    tmp_path, capture_runs, monkeypatch, capsys
+    tmp_path, capture_runs, monkeypatch, capsys, inline
 ):
     cfg, model = _q90_config(tmp_path)
+    if inline:
+        _inline_q90_config(tmp_path)
     calls, _ = capture_runs
     # A dry-run child must not manufacture WF1's outputs.
     monkeypatch.setattr(
@@ -231,8 +234,43 @@ def test_combined_q90_dry_run_leaves_wf4_pending_without_historical_output(
     assert "simulate_system" in history["pending_workflows"]
 
 
+def _inline_q90_config(tmp_path):
+    """Use the project's model context without a separate set file."""
+    import yaml
+
+    path = tmp_path / "q90-project-simulation.yml"
+    settings = yaml.safe_load(path.read_text())
+    settings.pop("indicator_set_definitions")
+    settings["indicator_sets"] = [
+        {
+            "set": "crop-water",
+            "summer_low_flow_days": {"thresholds": {"baseline_quantile": {}}},
+        }
+    ]
+    path.write_text(yaml.safe_dump(settings), encoding="utf-8")
+
+
+def test_inline_duplicate_indicator_keys_are_not_silently_overwritten(
+    tmp_path, capture_runs
+):
+    cfg, _ = _q90_config(tmp_path)
+    _inline_q90_config(tmp_path)
+    path = tmp_path / "q90-project-simulation.yml"
+    path.write_text(
+        path.read_text().replace(
+            "  summer_low_flow_days:",
+            "  summer_low_flow_days: {}\n  summer_low_flow_days:",
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="duplicate YAML key"):
+        rw.run(str(cfg), cores=3, extra=[])
+    assert capture_runs[0] == []
+
+
+@pytest.mark.parametrize("inline", [False, True])
 def test_combined_q90_execution_prepares_only_after_wf1(
-    tmp_path, capture_runs, monkeypatch
+    tmp_path, capture_runs, monkeypatch, inline
 ):
     import numpy as np
     import pandas as pd
@@ -240,6 +278,8 @@ def test_combined_q90_execution_prepares_only_after_wf1(
     from blueearth_cst.experiment import baseline_qcrit
 
     cfg, model = _q90_config(tmp_path)
+    if inline:
+        _inline_q90_config(tmp_path)
     calls, _ = capture_runs
     child = rw.run_project_child
     prepare = baseline_qcrit.resolve_thresholds

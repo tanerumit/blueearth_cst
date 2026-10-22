@@ -19,11 +19,16 @@ class HistoricalQcritUnavailable(ValueError):
 
 
 def resolve_thresholds(
-    parameters: dict, set_path: Path, *, prepare: bool = True
+    parameters: dict,
+    set_path: Path,
+    *,
+    prepare: bool = True,
+    model_root: Path | None = None,
 ) -> dict:
     """Replace a baseline_quantile rule with sealed per-location thresholds.
 
-    Paths resolve against the authored set file. Only the owned WF1 historical
+    Omitted model roots use the WF4 project model context; legacy explicit paths
+    resolve against the authored set file. Only the owned WF1 historical
     output layout is accepted; observations and retained scenario responses
     cannot be selected through this interface. Input digests enter calculation
     parameters and therefore the indicator identity, including on reuse.
@@ -34,7 +39,7 @@ def resolve_thresholds(
     if set(thresholds) != {"baseline_quantile"}:
         raise ValueError("baseline_quantile cannot be mixed with explicit thresholds")
     rule = thresholds["baseline_quantile"]
-    required = {"model_root", "source_id"}
+    legacy_keys = {"model_root", "source_id"}
     optional = {
         "years",
         "quantile",
@@ -42,17 +47,16 @@ def resolve_thresholds(
         "reference_period",
         "quantile_method",
     }
-    if (
-        not isinstance(rule, dict)
-        or not required <= set(rule)
-        or set(rule) - required - optional
-    ):
+    if not isinstance(rule, dict) or set(rule) - legacy_keys - optional:
         raise ValueError(
-            "baseline_quantile needs model_root, source_id and optional years/quantile settings"
+            "baseline_quantile must be a mapping of supported years/quantile settings"
         )
-    if not isinstance(rule["model_root"], str) or not rule["model_root"]:
+    if "model_root" in rule and (
+        not isinstance(rule["model_root"], str) or not rule["model_root"]
+    ):
         raise ValueError("baseline_quantile.model_root must be a path string")
-    if not isinstance(rule["source_id"], str) or not rule["source_id"]:
+    source_id = rule.get("source_id", "wf1-historical-model-discharge")
+    if not isinstance(source_id, str) or not source_id:
         raise ValueError(
             "baseline_quantile.source_id must identify historical model discharge"
         )
@@ -65,12 +69,19 @@ def resolve_thresholds(
         raise ValueError(
             "baseline_quantile.years must be all or a nonempty list of calendar years"
         )
-    validate_qcrit_options(source_id=rule["source_id"], **options)
+    validate_qcrit_options(source_id=source_id, **options)
     if not prepare:
         # Validate the remaining calculation with its ordinary absent-parameter
         # declaration. This transient declaration must never enter an identity.
         return {**parameters, "thresholds": {}}
-    model = (set_path.parent / rule["model_root"]).resolve()
+    if "model_root" in rule:
+        model = (set_path.parent / rule["model_root"]).resolve()
+    elif model_root is not None:
+        model = Path(model_root).resolve()
+    else:
+        raise ValueError(
+            "baseline_quantile requires WF4 project model context when model_root is omitted"
+        )
     csv_path = model / "run_default/output.csv"
     toml_path = model / "wflow_sbm.toml"
     # Parse any existing model configuration even when its CSV is still absent.
@@ -97,7 +108,7 @@ def resolve_thresholds(
     before = [file_sha256(csv_path), toml_digest]
     # Hash the exact native input bytes; recheck after reading to refuse concurrent
     # WF1 writes rather than assign an identity to a mixed snapshot.
-    identity = f"{rule['source_id']};csv-sha256={before[0]};toml-sha256={before[1]}"
+    identity = f"{source_id};csv-sha256={before[0]};toml-sha256={before[1]}"
     responses = open_responses(
         identity, NativeRunArtifacts(csv_path, toml_path), ResponseRequest(("q",))
     )

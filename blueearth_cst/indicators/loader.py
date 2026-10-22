@@ -192,7 +192,19 @@ def resolve(
             item for item in registry.INDICATORS if item.calculate is function
         ]
         exact = [item for item in candidates if dict(item.parameters) == normalized]
-        if exact:
+        named = [item for item in candidates if item.id == indicator_name]
+        if named:
+            template = named[0]
+            # Parameters encoded in a registered name cannot silently change its meaning.
+            for key in ("season", "window", "extreme", "return_period", "direction"):
+                if (
+                    key in template.parameters
+                    and normalized.get(key) != template.parameters[key]
+                ):
+                    raise ValueError(
+                        f"{key} must remain {template.parameters[key]!r} for registered indicator {indicator_name}"
+                    )
+        elif exact:
             template = exact[0]
         elif len(candidates) == 1:
             template = candidates[0]

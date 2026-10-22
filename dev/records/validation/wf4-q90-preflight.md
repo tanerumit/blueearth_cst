@@ -8,6 +8,38 @@ Python engineer, implement mode; no delegation. Applied Python discipline, testi
 bug diagnosis, console formatting, scientific workflows, scientific software documentation,
 Git workflow and project system guidance.
 
+## Follow-up: inline configuration
+
+The follow-up to `f19445c2` supports flat inline `indicator_sets` entries and optional standalone flat
+files. Registered defaults are inherited; `enabled: false` validates the entry but removes its inputs
+and historical preparation. Empty enabled sets, unknown names, contradictory season/window parameters,
+duplicate set ids and duplicate WF4 YAML keys fail explicitly. The default preset retains its
+response-driven scope. Existing selectors, nested files, snapshots and explicit baseline bindings remain
+supported. Omitted historical bindings use the project's WF1 model and artifact-digest source identity.
+
+Verification on Windows in the existing Pixi environment:
+
+```powershell
+pixi run pytest tests/test_indicator_sets.py tests/test_baseline_qcrit.py tests/test_crop_water.py tests/test_run_workflows.py tests/test_simulation_runner_v2.py tests/test_indicators_module.py -q --durations=5
+pixi run pytest tests/test_indicator_sets.py tests/test_baseline_qcrit.py tests/test_run_workflows.py tests/test_simulation_runner_v2.py tests/test_indicator_plan_v2.py -q --durations=5
+pixi run pytest tests/test_indicator_plan_v2.py::test_simulations_only_does_not_resolve_indicator_requirements -q
+pixi run pytest tests/test_config_composition.py -q --durations=5
+pixi run pytest tests/test_crop_water_integration.py tests/test_named_indicator_sets_workflow.py tests/test_partial_indicators.py -xq --durations=5
+```
+
+- Initial core run: 244 passed in 103.96 seconds.
+- Expanded final run: 245 passed, one old mock signature failed in 402.28 seconds. The mock was updated
+  to accept the earlier `prepare_baseline` keyword; its isolated regression then passed in 23.68 seconds.
+- Composition: 134 passed in 11.47 seconds, including the native Snakemake configuration smoke.
+- Three inline documentation/starter examples parsed and resolved statically. Scoped Ruff checks,
+  formatting, compilation and whitespace checks passed. No site rendering or production runs.
+- Native CLI verification: 19 passed in 668.01 seconds. An initial attempt correctly refused
+  publication because source edits occurred during the run; final CLI verification freezes executable
+  sources. Sandbox composition stalls were stopped and rerun with normal permissions.
+
+The final logs are retained under `.tmp/tasks/wf4-q90-preflight/inline-*.log` through owner review.
+Original numerical checks below still cover the unchanged Q90 formula and period exclusions.
+
 ## Result and boundaries
 
 - Startup validates authored WF4 selections and Qcrit settings without opening historical output.

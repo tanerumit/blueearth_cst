@@ -125,6 +125,7 @@ def indicators_only_configuration(config_path, *, prepare_baseline=True):
     """
     import yaml
 
+    from blueearth_cst.experiment.indicator_sets import load_unique_yaml
     from blueearth_cst.shared.snake_utils import validate_experiment_name
 
     path = Path(config_path).resolve()
@@ -136,7 +137,7 @@ def indicators_only_configuration(config_path, *, prepare_baseline=True):
         raise ValueError(
             "indicators-only requires an enabled simulate_system config_path"
         )
-    workflow = yaml.safe_load(
+    workflow = load_unique_yaml(
         (path.parent / descriptor["config_path"]).read_text(encoding="utf-8")
     )
     from blueearth_cst.shared.config_composition import normalize_indicator_settings

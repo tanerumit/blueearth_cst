@@ -30,6 +30,147 @@ def _source(text, set_id="example_subset", bundled=False):
     return sets.SetSource(set_id, Path(f"{set_id}.yml"), bundled, textwrap.dedent(text))
 
 
+def test_inline_sets_inherit_defaults_disable_inputs_and_snapshot(tmp_path):
+    settings = {
+        "indicator_sets": [
+            {
+                "set": "crop-water",
+                "id": "crops",
+                "summer_low_flow_days": {
+                    "enabled": False,
+                    "thresholds": {"baseline_quantile": {}},
+                },
+                "summer_longest_dry_spell": {"dry_day_mm": 2.0},
+                "summer_et_limitation_days": {"ratio": 0.6},
+            },
+            {"set": "flow_regime", "q_mean_annual_90day_min": {"enabled": False}},
+            {"set": "default"},
+        ]
+    }
+    selection = sets.parse_selection(settings, tmp_path / "wf4.yml")
+    snapshot = sets.write_selection_snapshot(selection, tmp_path / "selection.json")
+    assert sets.read_selection_snapshot(snapshot) == selection
+    resolved = sets.selected_sets(
+        {"model": {"outvars": ["river discharge"]}},
+        settings,
+        selection,
+        simulation_path=True,
+        retained_variables=lambda: [],
+        legacy_context="simulation_rule",
+    )
+    crops, flow, default = resolved
+    parameters = {item.indicator: item.parameters for item in crops.indicators}
+    assert parameters["summer_longest_dry_spell"] == {
+        "season": "summer",
+        "dry_day_mm": 2.0,
+    }
+    assert parameters["summer_et_limitation_days"] == {
+        "season": "summer",
+        "pet_min_mm": 1.0,
+        "ratio": 0.6,
+    }
+    assert "summer_low_flow_days" not in parameters
+    assert "q" not in sets.required_variables([crops])
+    assert "q_mean_annual_90day_min" not in {i.indicator for i in flow.indicators}
+    assert sets.calculation_records(default.indicators) == sets.default_calculations(
+        ["q"]
+    )
+
+
+@pytest.mark.parametrize(
+    "patch, message",
+    [
+        ({"summer_low_flow_days": {"enabled": "false"}}, "boolean"),
+        ({"typo": {}}, "unknown indicators"),
+        (
+            {"summer_longest_dry_spell": {"enabled": False, "dry_day_mm": -1}},
+            "dry_day_mm",
+        ),
+        (
+            {
+                "summer_low_flow_days": {
+                    "enabled": False,
+                    "thresholds": {"baseline_quantile": {"years": None}},
+                }
+            },
+            "years",
+        ),
+        ({"summer_longest_dry_spell": {"season": "winter"}}, "season must remain"),
+        ({"summer_longest_dry_spell": {"typo": 1}}, "typo"),
+    ],
+)
+def test_inline_rejects_malformed_disabled_entries_and_name_drift(
+    tmp_path, patch, message
+):
+    selection = sets.parse_selection(
+        {"indicator_sets": [{"set": "crop-water", **patch}]}, tmp_path / "wf4.yml"
+    )
+    with pytest.raises(ValueError, match=message):
+        sets.resolve_set(selection.sets[0])
+
+
+def test_flat_file_and_inline_have_same_calculation_identity(tmp_path):
+    import yaml
+
+    entry = {"set": "flow_regime", "q_mean_annual_90day_min": {"enabled": False}}
+    inline = sets.parse_selection({"indicator_sets": [entry]}, tmp_path / "wf4.yml")
+    file_source = sets.SetSource(
+        "flow_regime",
+        tmp_path / "flow.yml",
+        False,
+        yaml.safe_dump({"schema_version": 1, **entry}),
+    )
+    assert sets.calculation_records(
+        sets.resolve_set(inline.sets[0]).indicators
+    ) == sets.calculation_records(sets.resolve_set(file_source).indicators)
+
+
+def test_inline_duplicate_set_ids(tmp_path):
+    with pytest.raises(ValueError, match="duplicate"):
+        sets.parse_selection(
+            {"indicator_sets": ["crop-water", {"set": "crop-water"}]},
+            tmp_path / "wf4.yml",
+        )
+
+
+def test_configured_default_keeps_response_driven_scope(tmp_path):
+    settings = {
+        "indicator_sets": [{"set": "default", "q_annual_mean": {"enabled": False}}]
+    }
+    selection = sets.parse_selection(settings, tmp_path / "wf4.yml")
+    resolved = sets.selected_sets(
+        {"model": {"outvars": ["river discharge"]}},
+        settings,
+        selection,
+        simulation_path=True,
+        retained_variables=lambda: [],
+        legacy_context="simulation_rule",
+    )
+    assert sets.required_variables(resolved) == ["q"]
+    assert "q_annual_mean" not in {i.indicator for i in resolved[0].indicators}
+
+
+def test_inline_definition_conflicts(tmp_path):
+    with pytest.raises(ValueError, match="also have"):
+        sets.parse_selection(
+            {
+                "indicator_sets": [{"set": "crop-water"}],
+                "indicator_set_definitions": {
+                    "crop-water": {"config_path": "crop.yml"}
+                },
+            },
+            tmp_path / "wf4.yml",
+        )
+
+
+def test_inline_default_rejects_boolean_schema_version(tmp_path):
+    with pytest.raises(ValueError, match="schema_version"):
+        sets.parse_selection(
+            {"indicator_sets": [{"set": "default", "schema_version": True}]},
+            tmp_path / "wf4.yml",
+        )
+
+
 EXAMPLE = """
     schema_version: 1
     id: example_subset

@@ -44,7 +44,9 @@ def simulation_selection(config_path):
             "project configuration file, then rerun the command."
         )
     workflow_path = path.parent / stanza["config_path"]
-    settings = yaml.safe_load(workflow_path.read_text(encoding="utf-8")) or {}
+    settings = (
+        indicator_sets.load_unique_yaml(workflow_path.read_text(encoding="utf-8")) or {}
+    )
     from blueearth_cst.shared.config_composition import normalize_indicator_settings
 
     settings = normalize_indicator_settings(settings)

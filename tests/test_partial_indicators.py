@@ -174,3 +174,66 @@ def test_evaluation_mode_is_validated_and_snapshotted(tmp_path):
         indicator_sets.parse_selection(
             {"indicator_evaluation": "lenient"}, Path(tmp_path / "wf4.yml")
         )
+
+
+def test_cli_partial_run_succeeds_with_warning_and_strict_refuses(experiment):
+    import os
+    import subprocess
+    import sys
+
+    import pandas as pd
+
+    built, thresholds = experiment
+    source = built.config.parent / "crop-water.yml"
+    source.write_text(_crop_water(source, thresholds).source.text, encoding="utf-8")
+    workflow = built.config.parent / "simulate_system.yml"
+    environment = os.environ.copy()
+    environment.pop("SNAKEMAKE_PROFILE", None)
+    environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
+
+    def run(evaluation, *extra):
+        workflow.write_text(
+            yaml.safe_dump(
+                {
+                    "experiment_name": built.root.name,
+                    "operations": ["indicators"],
+                    "indicator_sets": ["crop-water"],
+                    "indicator_set_definitions": {
+                        "crop-water": {"config_path": source.name}
+                    },
+                    "indicator_evaluation": evaluation,
+                }
+            ),
+            encoding="utf-8",
+        )
+        return subprocess.run(
+            [
+                sys.executable,
+                "scripts/simulate_system.py",
+                "--config",
+                str(built.config),
+                "--cores",
+                "1",
+                *extra,
+            ],
+            cwd=Path(__file__).resolve().parents[1],
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=1200,
+        )
+
+    strict = run("strict")
+    assert strict.returncode != 0
+    assert "summer_low_flow_days" in strict.stdout + strict.stderr
+    assert "indicator_evaluation: partial" in strict.stdout + strict.stderr
+    for extra in (("--dry-run",), ()):
+        partial = run("partial", *extra)
+        assert partial.returncode == 0, partial.stdout + partial.stderr
+    assert "partial results; unavailable: summer_low_flow_days" in partial.stdout
+    dictionary = pd.read_csv(
+        built.root / "results/indicator_sets/crop-water/indicators.csv"
+    )
+    availability = dict(zip(dictionary.indicator, dictionary.availability))
+    assert availability.pop("summer_low_flow_days") == "partial"
+    assert set(availability.values()) == {"available"}

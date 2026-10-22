@@ -108,9 +108,27 @@ inputs. Unknown names, a set absent from `indicator_sets`, both lists for one se
 leaving no indicators are refused. A changed selection publishes a new indicator set under the same set
 id from retained responses; earlier publications remain unchanged.
 
-Selected indicators must be available: before simulating, all their required variables are checked
-against `model.outvars`; when indicators run alone, against the retained responses. A missing variable
-fails with the set, indicator, method and variable; it never schedules a simulation.
+Selected indicators are checked for inputs: before simulating, their required variables against
+`model.outvars`; when indicators run alone, against the retained responses and their locations. A set
+may also declare a parameter as absent, such as crop-water's empty or location-incomplete Qcrit.
+`indicator_evaluation` decides what an indicator lacking an input does:
+
+```yaml
+indicator_evaluation: partial   # strict (default) refuses; partial publishes what it can
+```
+
+`strict` refuses the invocation and names the set, indicator, method and missing input. `partial`
+calculates every available indicator and location and publishes the others as unavailable: the result
+tables carry `status: unavailable` with a `reason` such as `missing_parameter:thresholds` or
+`missing_response:pet` and no value, `indicators.csv` marks the indicator `partial` or `unavailable`,
+and the console shows one warning row per set. A partial set counts as a successful invocation only in
+partial mode. Supplied but malformed parameters, such as an incomplete Qcrit record, still fail.
+
+Recovery recalculates from retained responses. Supplying the missing Qcrit, or selecting another
+indicator whose responses are retained, publishes a new immutable indicator set for the whole selection
+under the same set id, with no Wflow run; earlier publications remain unchanged. A response the
+simulation never requested cannot be recovered this way: add it to `model.outvars` and simulate a new
+experiment (`--new-experiment`). Results of different simulations are never combined in one set.
 
 The scalar `operation: simulate-and-indicators | indicators-only` and `indicators:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
 
@@ -125,7 +143,9 @@ WF4 requires the completed WF1 model and an explicitly selected ready WF3 collec
 ## Outputs
 
 An experiment retains native Wflow response CSVs and a response inventory. New immutable indicator sets use
-`indicator-set/5`, under `_engine/indicator_sets/<id>/`. They retain `indicators.json`, indicator tables, group
+`indicator-set/6`, under `_engine/indicator_sets/<id>/`; their tables add `status` (`available`, `undefined`
+for a calculated NaN, `unavailable`) and `reason` columns, and sets `/3` to `/5` remain readable. They
+retain `indicators.json`, indicator tables, group
 membership, declarations, return-level evidence, per-series block coverage and the execution context.
 Each selected set has a readable view at `results/indicator_sets/<set-id>/`: run and group tables, group
 lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.md).

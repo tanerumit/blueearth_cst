@@ -37,6 +37,9 @@ calculation identity; scenarios never refit them. A zero threshold makes a stric
 uninformative. The bundled registry uses an empty threshold mapping so case preparation must supply it
 through a case-specific `selection.registry.overrides.summer_low_flow_days` mapping before a complete
 `crop-water` evaluation. Bind the custom file with `indicator_set_definitions.crop-water.config_path`.
+`AVAILABILITY` reports an empty mapping, or a retained Q location without a record, as
+`missing_parameter:thresholds`: strict WF4 evaluation refuses it, partial evaluation publishes those
+locations as unavailable, and `indicator_selection` can exclude the indicator.
 
 `period_values` and `period_summary` diagnostics retain period status, coverage, thresholds, eligible
 PET days and AET-above-PET counts. No crop calendar, yield, irrigation demand or damage is inferred.

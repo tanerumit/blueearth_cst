@@ -60,6 +60,10 @@ Put a formula in `calculations.py`; it receives `(declaration, responses, contex
 `PARAMETERS`, keyed by the callable. Every parameter value is explicit in the registration; unknown fields
 and missing fields fail before evaluation. Finite numeric constraints can be predicates with explanatory
 docstrings; method-specific conditional rules belong in local `validate(function, parameters)`.
+A parameter that may legitimately be absent can be reported through an optional callable-keyed
+`AVAILABILITY` mapping: `check(parameters, locations)` returns `(location, reason)` pairs, with a `None`
+location for every location. WF4 then refuses or, in partial evaluation, publishes them as unavailable;
+the calculation never receives those locations.
 
 Register it with keyword arguments, for example:
 

@@ -59,6 +59,10 @@ indicator_sets: [default]
 # Drop indicators by published name. Input: nonempty list of indicator names.
 #    exclude: [summer_low_flow_days]
 
+# strict refuses an indicator lacking an input; partial publishes it as unavailable.
+# Choose how missing indicator inputs are handled. Options: strict | partial.
+#indicator_evaluation: strict
+
 # The scalar `operation:` and `indicators:` keys are the legacy interface,
 # accepted for one feature release; they cannot be mixed with the keys above.
 

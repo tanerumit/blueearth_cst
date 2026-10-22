@@ -908,6 +908,42 @@ def test_pinned_uri_narrows_the_glob_to_the_recorded_store():
     assert "{member}" in si.pinned_uri(uri, pins)
 
 
+def test_selected_pins_choose_newest_independently_of_index_order():
+    assert si.selected_pins({"pr": ["gn/v3", "gn/v1"], "tas": ["gn/v2"]}) == {
+        "pr": "gn/v3",
+        "tas": "gn/v2",
+    }
+
+
+@pytest.mark.parametrize(
+    "pins",
+    [
+        {"pr": ["gn/v1", "gr/v2"]},
+        {"pr": ["gn/v1"], "tas": ["gr/v1"]},
+    ],
+)
+def test_selected_pins_require_explicit_common_grid(pins):
+    with pytest.raises(ValueError, match="select one common grid explicitly"):
+        si.selected_pins(pins)
+
+
+def test_only_differing_versions_invalidate_previous_cache_identity(catalog):
+    ordinary = _components(catalog)
+    assert "per_variable_sources" not in ordinary
+    changed = _components(
+        catalog,
+        pins_by_member={
+            "r1i1p1f1": {"pr": ["gr1/v20180701"], "tas": ["gr1/v20170101"]},
+        },
+    )
+    legacy = {
+        key: value for key, value in changed.items() if key != "per_variable_sources"
+    }
+    assert si.raw_digest(changed, "region") != si.raw_digest(legacy, "region")
+    assert si.series_digest(changed, "region") != si.series_digest(legacy, "region")
+    assert ordinary["schema_version"] == legacy["schema_version"] == "6"
+
+
 def test_pinned_uri_takes_the_newest_when_a_variable_records_several():
     """Owner ruling 2026-08-19: a newer version is a revision, and it wins.
 

@@ -547,6 +547,23 @@ def load_pins(
 STORE_GLOB_SUFFIX = "/*/*"
 
 
+def selected_pins(pins: Mapping[str, Sequence[str]]) -> dict[str, str]:
+    """Select each variable's newest indexed version on one common grid.
+
+    Missing pins retain the legacy unindexed read. Competing grids require an
+    explicit catalog/index choice; lexical ordering must never choose a grid.
+    """
+    if not pins or not all(pins.values()):
+        return {}
+    grids = {path.rsplit("/", 1)[0] for paths in pins.values() for path in paths}
+    if len(grids) != 1:
+        raise ValueError(
+            f"CMIP6 pins span multiple grid labels ({', '.join(sorted(grids))}); "
+            "select one common grid explicitly in the catalog and store index."
+        )
+    return {var: max(paths) for var, paths in sorted(pins.items())}
+
+
 def pinned_uri(uri: str, pins: Mapping[str, Sequence[str]]) -> str | None:
     """Narrow a catalog URI's trailing ``/*/*`` to the pin the index recorded.
 
@@ -582,9 +599,11 @@ def pinned_uri(uri: str, pins: Mapping[str, Sequence[str]]) -> str | None:
 
     Measured over the 289-entry index (2426 member combinations): 2205 already
     pin one version and are untouched; **182 are resolved by taking the newest
-    per variable**; 39 still refuse, because ``pr``'s newest and ``tas``'s newest
+    per variable**; 39 cannot share a URI, because ``pr``'s newest and ``tas``'s newest
     are different locations and one URI cannot express both — the ``{variable}``
-    placeholder is expanded inside a single path.
+    placeholder is expanded inside a single path. The fetcher now uses
+    :func:`selected_pins` for separate reads of those variables; this shared-URI
+    helper keeps its public return contract.
 
     Refuses when the pins name more than one **grid label**, which no member in
     today's index does. Choosing between ``gn`` and ``gr`` is choosing a
@@ -716,7 +735,7 @@ def digest_components(
     series as ``cst_region_bounds`` for provenance.
     """
     members = sorted(members)
-    return {
+    components = {
         "schema_version": SCHEMA_VERSION,
         "catalog_entry": catalog_entry,
         "members": members,
@@ -733,6 +752,17 @@ def digest_components(
         "acquisition_window": list(acquisition_window(experiment)),
         "reducer_module_hash": reducer_module_hash,
     }
+    # Only the previously globbed, differing-version sources change identity.
+    # Ordinary shared-pin caches keep their exact schema-6 digest recipe.
+    split_sources = {}
+    if str(entry.get("uri", "")).endswith(STORE_GLOB_SUFFIX):
+        for member in members:
+            chosen = selected_pins(pins_by_member.get(member, {}))
+            if len(set(chosen.values())) > 1:
+                split_sources[member] = chosen
+    if split_sources:
+        components["per_variable_sources"] = split_sources
+    return components
 
 
 def raw_components(components: Mapping) -> dict:

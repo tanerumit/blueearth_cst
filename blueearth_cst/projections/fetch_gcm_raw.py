@@ -118,36 +118,20 @@ AMBIGUOUS_VERSION_PHRASE = "more than one published version"
 
 
 def ambiguous_pins(uri, pins_for_member):
-    """The per-variable version lists when they cannot name ONE store, else ``{}``.
+    """Return unresolved indexed choices for diagnostics, preserving path lists.
 
-    DELEGATES to :func:`series_identity.pinned_uri` rather than restating its
-    rule, so the two cannot drift apart -- and they would have: since the owner
-    ruling of 2026-08-19 the newest version wins, which resolves 182 of the 221
-    combinations this used to report. A second copy of the logic here would
-    still be naming versions for sources that now pin cleanly.
-
-    Two situations reach ``pinned_uri``'s ``None`` without being ambiguity, and
-    are screened out first:
-
-    * the catalog URI does not end in the glob suffix -- it already names one
-      store, so nothing is being chosen;
-    * the index recorded no pins for this member -- the glob is all there is,
-      and we cannot report versions we never crawled. The bucket may still hold
-      several and that read can still fail; the honest boundary is that we do
-      not claim to know.
-
-    What remains is the 39 combinations where ``pr``'s newest and ``tas``'s
-    newest are different locations and one URI cannot express both, plus any
-    member pinning more than one grid label. Returns the pins verbatim so the
-    caller can name every version, which is the whole point: the operator's next
-    action is to pick one, and they cannot without seeing the list.
+    Different versions on one grid are resolved by separate variable reads.
+    Explicit URIs and absent indexes do not imply observed ambiguity.
     """
     if not str(uri).endswith(series_identity.STORE_GLOB_SUFFIX):
         return {}
     if not pins_for_member:
         return {}
-    if series_identity.pinned_uri(uri, pins_for_member) is not None:
-        return {}
+    try:
+        if series_identity.selected_pins(pins_for_member):
+            return {}
+    except ValueError:
+        return {name: list(paths) for name, paths in pins_for_member.items()}
     return {name: list(paths) for name, paths in pins_for_member.items()}
 
 
@@ -604,7 +588,7 @@ def calendar_store_uri(template, member, calendar_var, pins_for_member):
     if store_uri.endswith(series_identity.STORE_GLOB_SUFFIX):
         matches = pins_for_member.get(calendar_var) or []
         store_uri = (
-            store_uri[: -len(series_identity.STORE_GLOB_SUFFIX)] + "/" + matches[-1]
+            store_uri[: -len(series_identity.STORE_GLOB_SUFFIX)] + "/" + max(matches)
             if matches
             else ""
         )
@@ -658,6 +642,105 @@ def raw_slice_attrs(
             components, member
         ),
     }
+
+
+def merge_variable_slices(slices, calendars, entry):
+    """Merge only spatially and temporally identical, calendar-compatible reads."""
+    import xarray as xr
+
+    if (
+        len(set(calendars.values())) != 1
+        or series_identity.CALENDAR_UNKNOWN in calendars.values()
+    ):
+        raise ValueError(
+            f"{entry}: incompatible or unknown variable calendars: {calendars}"
+        )
+    first = next(iter(slices.values()))
+    for variable, data in slices.items():
+        if data.raster.crs != first.raster.crs:
+            raise ValueError(f"{entry}: incompatible CRS for {variable}")
+        if dict(data.sizes) != dict(first.sizes):
+            raise ValueError(
+                f"{entry}: incompatible spatial/time coordinates for {variable}"
+            )
+        # Scalar auxiliary coordinates such as tas's measurement height need
+        # not exist on precipitation. Every dimension coordinate must agree.
+        for name in first.dims:
+            if not data[name].variable.equals(first[name].variable):
+                raise ValueError(
+                    f"{entry}: incompatible coordinate {name!r} for {variable}"
+                )
+    return xr.merge(
+        list(slices.values()), join="exact", compat="equals", combine_attrs="override"
+    )
+
+
+def read_variable_slices(
+    read_spec, catalog_entry, member, variables, chosen, bbox, buffer, window
+):
+    """Read differing versions through HydroMT, checking compatibility before merge."""
+    import hydromt
+    import xarray as xr
+
+    rename = (read_spec.get("data_adapter") or {}).get("rename", {})
+    source_names = {target: source for source, target in rename.items()}
+    entry = resolve_entry_name(catalog_entry, member)
+    slices, calendars = {}, {}
+    try:
+        for variable in variables:
+            source = source_names.get(variable, variable)
+            if source not in chosen:
+                raise ValueError(
+                    f"{entry}: no indexed pin for requested variable {source!r}"
+                )
+            spec = dict(read_spec)
+            spec["uri"] = (
+                str(read_spec["uri"])[: -len(series_identity.STORE_GLOB_SUFFIX)]
+                + "/"
+                + chosen[source]
+            ).replace("{variable}", source)
+            store_uri = spec["uri"].replace("{member}", member)
+            calendars[source] = series_identity.read_store_calendar(store_uri)
+            log_row(f"Using source {source}: {store_uri}", module="fetch")
+            catalog = hydromt.DataCatalog()
+            catalog.from_dict({catalog_entry: spec})
+            try:
+                data = catalog.get_rasterdataset(
+                    entry,
+                    bbox=bbox,
+                    buffer=buffer,
+                    time_range=window,
+                    variables=[variable],
+                )
+            except ValueError as exc:
+                if not is_irregular_grid_error(exc):
+                    raise
+                data = catalog.get_rasterdataset(
+                    entry, time_range=window, variables=[variable]
+                )
+                data = clip_to_bbox(
+                    data,
+                    bbox,
+                    buffer,
+                    data.raster.y_dim,
+                    data.raster.x_dim,
+                    source=entry,
+                )
+            if isinstance(data, xr.DataArray):
+                data = data.to_dataset(name=variable)
+            slices[source] = data
+            driver_index = data.indexes.get("time")
+            data = data.sel(time=slice(*window))
+            check_time_axis(
+                f"{entry} {source}", data.indexes.get("time"), driver_index, window
+            )
+            slices[source] = data
+        merged = merge_variable_slices(slices, calendars, entry)
+        # Materialize within this ownership scope so all sources close on failure too.
+        return merged.load(), next(iter(calendars.values()))
+    finally:
+        for data in slices.values():
+            data.close()
 
 
 def fetch_raw_slice(
@@ -842,9 +925,8 @@ def fetch_raw_slice(
     # a wildcard URI, NOT a slow network listing -- describe it that way. The
     # second reason to keep it is determinism: one known store rather than a
     # pattern whose match set can change under the job.
-    # Falls back to the globbed catalog whenever the pins cannot name one
-    # location (per-variable divergence, or >1 match, which is D8's ambiguity and
-    # must stay globbed so the duplicate-time assertion still fires).
+    # Differing versions on one grid use separate reads below; unindexed
+    # sources retain the catalog fallback. Multiple grids require a choice.
     entry_spec = series_identity.load_catalog_entry(catalog_path, catalog_entry)
     # Both branches below register ONE entry from a spec of our own rather than
     # loading the whole catalog, which is what lets the preprocess override
@@ -855,13 +937,21 @@ def fetch_raw_slice(
     register_wide_time_preprocess()
     read_spec = with_read_overrides(entry_spec)
     pins_for_member = (components.get("pins") or {}).get(member, {})
+    chosen = (
+        series_identity.selected_pins(pins_for_member)
+        if str(entry_spec.get("uri", "")).endswith(series_identity.STORE_GLOB_SUFFIX)
+        else {}
+    )
+    split_pins = len(set(chosen.values())) > 1
     pin_uri = series_identity.pinned_uri(
         str(entry_spec.get("uri", "")), pins_for_member
     )
     # Empty whenever `pinned_uri` succeeded, so the pinned branch carries no
     # explanation it does not need.
     ambiguous = ambiguous_pins(str(entry_spec.get("uri", "")), pins_for_member)
-    if pin_uri is None:
+    if split_pins:
+        ambiguous = {}
+    elif pin_uri is None:
         # The GLOB is named in full, and this is the branch where that
         # matters. The console mutes hydromt's `data_source - Reading <entry>
         # from <uri>` echo, which repeats the URI at ~175 characters; the
@@ -929,52 +1019,65 @@ def fetch_raw_slice(
     # a source whose two published versions differ merely in metadata merges
     # cleanly and still stages. The duplicate-axis face of the same ambiguity
     # is caught by `check_time_axis` below, which carries its own message.
-    with explaining_ambiguous_versions(entry, ambiguous):
-        try:
-            data = data_catalog.get_rasterdataset(
-                entry,
-                bbox=bbox,
-                buffer=buffer,
-                time_range=acquisition_window,
-                variables=variables,
-            )
-        except ValueError as exc:
-            if not is_irregular_grid_error(exc):
-                raise
-            # The WHY -- Gaussian latitudes against hydromt's 5e-4 regularity
-            # tolerance -- is in `is_irregular_grid_error` and in
-            # dev/reference/wf2-cmip6-source-readability.md,
-            # section 1, which carries the measured table of which models. On the
-            # console this row has one job: say that this source took the fallback
-            # read, and which source. The WARNING level is what makes it findable;
-            # 175 characters of explanation on every one of ~27 affected models is
-            # not.
-            log_row(
-                f"Irregular grid: clipping directly to basin bounds ({entry})",
-                module="fetch",
-                level="WARNING",
-            )
+    split_calendar = None
+    if split_pins:
+        data, split_calendar = read_variable_slices(
+            read_spec,
+            catalog_entry,
+            member,
+            variables,
+            chosen,
+            bbox,
+            buffer,
+            acquisition_window,
+        )
+    else:
+        with explaining_ambiguous_versions(entry, ambiguous):
             try:
                 data = data_catalog.get_rasterdataset(
                     entry,
+                    bbox=bbox,
+                    buffer=buffer,
                     time_range=acquisition_window,
                     variables=variables,
                 )
-                data = clip_to_bbox(
-                    data,
-                    bbox,
-                    buffer,
-                    data.raster.y_dim,
-                    data.raster.x_dim,
-                    source=entry,
+            except ValueError as exc:
+                if not is_irregular_grid_error(exc):
+                    raise
+                # The WHY -- Gaussian latitudes against hydromt's 5e-4 regularity
+                # tolerance -- is in `is_irregular_grid_error` and in
+                # dev/reference/wf2-cmip6-source-readability.md,
+                # section 1, which carries the measured table of which models. On the
+                # console this row has one job: say that this source took the fallback
+                # read, and which source. The WARNING level is what makes it findable;
+                # 175 characters of explanation on every one of ~27 affected models is
+                # not.
+                log_row(
+                    f"Irregular grid: clipping directly to basin bounds ({entry})",
+                    module="fetch",
+                    level="WARNING",
                 )
-            except Exception as fallback_exc:
-                # hydromt's own errors name neither the entry nor the member, and
-                # this one is now two reads deep -- say which series died.
-                raise RuntimeError(
-                    f"{entry}: the irregular-grid read path failed after hydromt "
-                    f"refused the grid ({type(fallback_exc).__name__}: {fallback_exc})"
-                ) from fallback_exc
+                try:
+                    data = data_catalog.get_rasterdataset(
+                        entry,
+                        time_range=acquisition_window,
+                        variables=variables,
+                    )
+                    data = clip_to_bbox(
+                        data,
+                        bbox,
+                        buffer,
+                        data.raster.y_dim,
+                        data.raster.x_dim,
+                        source=entry,
+                    )
+                except Exception as fallback_exc:
+                    # hydromt's own errors name neither the entry nor the member, and
+                    # this one is now two reads deep -- say which series died.
+                    raise RuntimeError(
+                        f"{entry}: the irregular-grid read path failed after hydromt "
+                        f"refused the grid ({type(fallback_exc).__name__}: {fallback_exc})"
+                    ) from fallback_exc
     # Kept for the empty-window error below: `time_range` is applied by the
     # driver and `.sel` narrows it again, so "the driver returned 1850..2014"
     # is the diagnostic that tells the two apart.
@@ -1025,7 +1128,7 @@ def fetch_raw_slice(
         calendar_var,
         pins_for_member,
     )
-    store_calendar = (
+    store_calendar = split_calendar or (
         series_identity.read_store_calendar(store_uri)
         if store_uri
         else series_identity.CALENDAR_UNKNOWN
@@ -1054,6 +1157,11 @@ def fetch_raw_slice(
             buffer,
         )
     )
+    if chosen:
+        data.attrs["cst_selected_source_paths"] = json.dumps(
+            {member: {var: [path] for var, path in chosen.items()}},
+            sort_keys=True,
+        )
     # ...and drop the inherited attrs that describe ONE source file. This
     # slice merges pr and tas, so a single `variable_id` is wrong whichever
     # way the merge resolved it; `cst_source_paths` above carries the real

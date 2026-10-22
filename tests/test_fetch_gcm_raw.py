@@ -48,14 +48,120 @@ from blueearth_cst.projections.fetch_gcm_raw import (
     harmonise_dims_wide_time,
     hns_switch_row,
     is_irregular_grid_error,
+    merge_variable_slices,
     pin_tail,
     raw_slice_attrs,
+    read_variable_slices,
     register_wide_time_preprocess,
     resolve_entry_name,
     seconds_resolution_index,
     stale_units,
     with_read_overrides,
 )
+
+
+@pytest.fixture
+def variable_slices():
+    import hydromt  # noqa: F401 -- registers the raster accessor
+
+    coords = {
+        "time": pd.date_range("2000-01-01", periods=2, freq="MS"),
+        "lat": [1.0, 0.0],
+        "lon": [9.0, 10.0],
+    }
+    slices = {}
+    for name in ("precip", "temp"):
+        ds = xr.Dataset(
+            {name: (("time", "lat", "lon"), np.ones((2, 2, 2)))}, coords=coords
+        )
+        ds.raster.set_crs(4326)
+        slices[name] = ds
+    return slices
+
+
+def test_compatible_variable_slices_merge_without_alignment(variable_slices):
+    variable_slices["temp"] = variable_slices["temp"].assign_coords(height=2.0)
+    merged = merge_variable_slices(
+        variable_slices, {"pr": "noleap", "tas": "noleap"}, "source"
+    )
+    assert set(merged.data_vars) == {"precip", "temp"}
+    np.testing.assert_array_equal(merged.temp, variable_slices["temp"].temp)
+
+
+@pytest.mark.parametrize("coordinate", ["lat", "lon", "time"])
+def test_variable_merge_rejects_shifted_coordinates(variable_slices, coordinate):
+    delta = pd.Timedelta(days=1) if coordinate == "time" else 0.1
+    variable_slices["temp"] = variable_slices["temp"].assign_coords(
+        {coordinate: variable_slices["temp"][coordinate] + delta}
+    )
+    with pytest.raises(ValueError, match="incompatible coordinate"):
+        merge_variable_slices(
+            variable_slices, {"pr": "noleap", "tas": "noleap"}, "source"
+        )
+
+
+@pytest.mark.parametrize("calendar", ["360_day", "unknown"])
+def test_variable_merge_rejects_calendar_mismatch(variable_slices, calendar):
+    with pytest.raises(ValueError, match="variable calendars"):
+        merge_variable_slices(
+            variable_slices, {"pr": "noleap", "tas": calendar}, "source"
+        )
+
+
+def test_variable_merge_rejects_crs_mismatch(variable_slices):
+    variable_slices["temp"].raster.set_crs(3857)
+    with pytest.raises(ValueError, match="incompatible CRS"):
+        merge_variable_slices(
+            variable_slices, {"pr": "noleap", "tas": "noleap"}, "source"
+        )
+
+
+@pytest.mark.parametrize("mismatch", [False, True])
+def test_split_reads_use_exact_variable_uris_and_validate_before_merge(
+    variable_slices, monkeypatch, mismatch
+):
+    import hydromt
+
+    calls = []
+
+    class Catalog:
+        def from_dict(self, entries):
+            self.spec = next(iter(entries.values()))
+
+        def get_rasterdataset(self, entry, **kwargs):
+            variable = kwargs["variables"][0]
+            calls.append((self.spec["uri"], variable))
+            data = variable_slices[variable]
+            if mismatch and variable == "temp":
+                data = data.assign_coords(lon=data.lon + 0.1)
+            return data[variable]
+
+    monkeypatch.setattr(hydromt, "DataCatalog", Catalog)
+    monkeypatch.setattr(series_identity, "read_store_calendar", lambda uri: "noleap")
+    args = (
+        {
+            "uri": "gs://s/{member}/{variable}/*/*",
+            "data_adapter": {"rename": {"pr": "precip", "tas": "temp"}},
+        },
+        "entry_{member}",
+        "r1",
+        ["precip", "temp"],
+        {"pr": "gn/v2", "tas": "gn/v1"},
+        [9, 0, 10, 1],
+        1,
+        ("2000", "2001"),
+    )
+    if mismatch:
+        with pytest.raises(ValueError, match="incompatible coordinate 'lon'"):
+            read_variable_slices(*args)
+    else:
+        merged, calendar = read_variable_slices(*args)
+        assert calendar == "noleap"
+        assert set(merged.data_vars) == {"precip", "temp"}
+    assert calls == [
+        ("gs://s/{member}/pr/gn/v2", "precip"),
+        ("gs://s/{member}/tas/gn/v1", "temp"),
+    ]
 
 
 def test_local_input_mode_refuses_a_cmip_cache_miss(tmp_path, monkeypatch):
@@ -855,16 +961,16 @@ def test_from_dict_honours_the_override_and_still_expands_the_member():
 GLOB = f"gs://cmip6/x/{{member}}/{{variable}}{SUFFIX}"
 
 
-def test_two_versions_of_one_variable_are_ambiguous():
-    """The case that raises `MergeError`: the glob opens both stores."""
+def test_newest_versions_per_variable_resolve_multiple_revisions():
+    """Separate pinned reads no longer open old revisions."""
     pins = {"pr": ["gn/v20200302", "gn/v20201227"], "tas": ["gn/v20200302"]}
-    assert ambiguous_pins(GLOB, pins) == pins
+    assert ambiguous_pins(GLOB, pins) == {}
 
 
-def test_variables_pinning_different_locations_are_ambiguous():
-    """`pr` and `tas` disagree, so no single store answers for the source."""
+def test_variables_pinning_different_versions_are_resolved():
+    """Each variable has an explicit source on the same grid."""
     pins = {"pr": ["gn/v20190429"], "tas": ["gn/v20210317"]}
-    assert ambiguous_pins(GLOB, pins) == pins
+    assert ambiguous_pins(GLOB, pins) == {}
 
 
 def test_one_version_each_is_not_ambiguous():

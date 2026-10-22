@@ -12,19 +12,18 @@ cssclasses: [todo-board]
 | 3      | [t2608202352][]          | Publish docs site to GitHub Pages                      | docs       | blocked      |
 | 4      | [t2608091730][]          | Make waterbody layers for the basin map                | plotting   | blocked      |
 | 5      | [t2608071207][]          | Prove wflow log check fails without path_log           | wf3        | blocked      |
-| 6      | [t2610130703][]          | Pin CMIP6 variables independently when versions differ | wf2        | active (0/5) |
-| 7      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4    | wf4        | backlog      |
-| 8      | [t2610091622][]          | Triage unresolved geographic robustness findings       | validation | backlog      |
-| 9      | [t2610022259][]          | Scope conceptual workflow improvements                 | methods    | backlog      |
-| 10     | [t2609251520][]          | Decide naming of generation_inputs snapshots           | wf3        | backlog      |
-| 11     | [t2609251025][]          | Wflow sysimage to cut Julia startup                    | runtime    | backlog      |
-| 12     | [t2609181302][]          | Snakemake preamble cannot be suppressed                | console    | backlog      |
-| 13     | [t2608222252][]          | Make climate extraction variables configurable         | climate    | backlog      |
-| 14     | [t2608202351a][]         | Publish pipeline notebooks on the docs site            | docs       | backlog      |
-| 15     | [t2608191733][]          | Ship a sample dataset bundle                           | data       | backlog      |
-| 16     | [t2608121606][]          | Missing catalog source can hide a reservoir            | wf1        | backlog      |
-| 17     | [t2608071221][]          | Docker and Linux end-to-end runs untested              | platform   | backlog      |
-| 18     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard               | wf1        | backlog      |
+| 6      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4    | wf4        | backlog      |
+| 7      | [t2610091622][]          | Triage unresolved geographic robustness findings       | validation | backlog      |
+| 8      | [t2610022259][]          | Scope conceptual workflow improvements                 | methods    | backlog      |
+| 9      | [t2609251520][]          | Decide naming of generation_inputs snapshots           | wf3        | backlog      |
+| 10     | [t2609251025][]          | Wflow sysimage to cut Julia startup                    | runtime    | backlog      |
+| 11     | [t2609181302][]          | Snakemake preamble cannot be suppressed                | console    | backlog      |
+| 12     | [t2608222252][]          | Make climate extraction variables configurable         | climate    | backlog      |
+| 13     | [t2608202351a][]         | Publish pipeline notebooks on the docs site            | docs       | backlog      |
+| 14     | [t2608191733][]          | Ship a sample dataset bundle                           | data       | backlog      |
+| 15     | [t2608121606][]          | Missing catalog source can hide a reservoir            | wf1        | backlog      |
+| 16     | [t2608071221][]          | Docker and Linux end-to-end runs untested              | platform   | backlog      |
+| 17     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard               | wf1        | backlog      |
 |        | [t2610221413][]          | Herdr multi-agent work setup                           | tooling    | active (1/5) |
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions     | docs       | backlog      |
 |        | [t2610191347][]          | Retain logs and benchmark reports by execution         | runtime    | backlog      |
@@ -35,7 +34,6 @@ cssclasses: [todo-board]
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
 [t2608091730]: tasks/t2608091730-produce-waterbody-layers-data-side-so-basin-area-can-show-them-again.md
 [t2608071207]: tasks/t2608071207-r7-8.md
-[t2610130703]: tasks/t2610130703-cmip6-per-variable-pinning.md
 [t2610091737]: tasks/t2610091737-bounded-window-forcing.md
 [t2610091622]: tasks/t2610091622-triage-unresolved-geographic-robustness-findings.md
 [t2610022259]: tasks/t2610022259-conceptual-workflow-improvements.md

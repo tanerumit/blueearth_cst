@@ -20,7 +20,9 @@ _DIAGNOSTIC_CODE = {"blueearth_cst/shared/execution_outputs.py"}
 _BOUNDARY_BEFORE = "69dcf9de9882f029d615873460572f1a1d9f639dee8bc2a7ab51e01514085a2c"
 # Re-audited after merging main's reference migration: scientific-source
 # comments/docstrings changed, while executable calculations stayed identical.
-_BOUNDARY_AFTER = "632d9eb763ab007100f8c8fd2a0a9f5800363c4fafd41f410721d1c3732498af"
+# Re-audited after 14e423cc: the response reader only gained the native PET
+# mapping and a PET-only declaration check; existing variables read unchanged.
+_BOUNDARY_AFTER = "fe2e4d92b48cbbca8a29ade215e55951dba5bfbf1417ff29ebde3845212f5cfa"
 
 # Audited archive-lifecycle migration: input staging and execution settings are
 # unchanged. Pin BOTH versions, rather than exempting this launcher wholesale:

@@ -86,6 +86,10 @@ Treat these measurements as diagnostic evidence with explicit limits:
 
 - Process CPU and I/O totals retain the last sample of exited processes, but miss children that start
   and exit between samples. Peaks are sampled. Summed RSS may count shared pages more than once.
+- The initial process census excludes prior usage of existing processes. Descendants discovered later
+  contribute their observed lifetime counters, without comparing process creation and wall-clock times.
+  If the initial census is incomplete, first-observed counters are subtracted for all processes;
+  this conservatively omits some work, with read failures recorded in the measurement errors.
 - System CPU, swap and disk counters include other applications. Process I/O can include cached I/O;
   it does not directly measure physical storage throughput or I/O wait.
 - Reported CPU MHz can be nominal on Windows. The trace cannot prove effective clock speed, thermal

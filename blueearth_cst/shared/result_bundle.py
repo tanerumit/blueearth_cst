@@ -97,18 +97,23 @@ def _region(project: Path, product: Path, expected: str) -> Path:
     )
 
 
-def _snapshots(project: Path) -> list[Path]:
+def _snapshots(project: Path, product: Path) -> list[Path]:
+    """Retained project snapshots, then snapshots an earlier import carried."""
     root = project / "config/_engine/configuration-snapshots" / WORKFLOW
-    if not root.is_dir():
-        return []
+    local = sorted(root.iterdir()) if root.is_dir() else []
+    carried = sorted((product / "_engine/imported").glob("*/configuration/*"))
     return [
         item
-        for item in sorted(root.iterdir())
-        if item.is_dir() and not item.name.startswith(".")
+        for item in (*local, *carried)
+        if item.is_dir()
+        and not item.name.startswith(".")
+        and (item / "run_record.yml").is_file()
     ]
 
 
-def _snapshot_by_digest(project: Path, provenance: Mapping[str, Any]) -> Path:
+def _snapshot_by_digest(
+    project: Path, product: Path, provenance: Mapping[str, Any]
+) -> Path:
     """The retained snapshot whose configuration digests produced provenance."""
     from blueearth_cst.shared.workflow_config_snapshot import validate_archive
 
@@ -116,7 +121,7 @@ def _snapshot_by_digest(project: Path, provenance: Mapping[str, Any]) -> Path:
         provenance.get("effective_config_sha256"),
         provenance.get("configuration_inputs_sha256"),
     )
-    for directory in _snapshots(project):
+    for directory in _snapshots(project, product):
         projection = validate_archive(directory)["configuration_projection"]
         if (
             projection["effective_config_sha256"],
@@ -129,16 +134,17 @@ def _snapshot_by_digest(project: Path, provenance: Mapping[str, Any]) -> Path:
     )
 
 
-def _snapshot_of(project: Path, generation: Mapping[str, Any]) -> Path:
+def _snapshot_of(project: Path, product: Path, generation: Mapping[str, Any]) -> Path:
+    """A generation's snapshot by run-record digest, wherever it is retained."""
     from blueearth_cst.shared.provenance import file_sha256
 
     reference = generation["configuration"]["run_record"]
     if not reference:
         raise BundleError("a producing generation has no configuration reference")
-    path = project / reference["path"]
-    if not path.is_file() or file_sha256(path) != reference["sha256"]:
-        raise BundleError(f"configuration snapshot unavailable: {reference['path']}")
-    return path.parent
+    for directory in _snapshots(project, product):
+        if file_sha256(directory / "run_record.yml") == reference["sha256"]:
+            return directory
+    raise BundleError(f"configuration snapshot unavailable: {reference['path']}")
 
 
 def _snapshot_files(directory: Path) -> list[str]:
@@ -229,7 +235,7 @@ def export_bundle(
     project_root: Path, output: Path, *, ensemble: str | None = None
 ) -> dict[str, Any]:
     """Write one verified WF2 bundle; refuse rather than omit or overclaim."""
-    from blueearth_cst.shared.provenance import toolbox_identity
+    from blueearth_cst.shared.provenance import file_sha256, toolbox_identity
     from blueearth_cst.shared.workflow_config_snapshot import (
         archive_lock,
         validate_archive,
@@ -258,25 +264,30 @@ def export_bundle(
             (product / "summary/provenance.json").read_text(encoding="utf-8")
         )
         region = _region(project, product, provenance["region_fingerprint"])
-        primary = _snapshot_by_digest(project, provenance)
+        primary = _snapshot_by_digest(project, product, provenance)
         directories = {primary}
         if record is not None:
             owners = {value for value in producers.values() if value is not None}
             directories |= {
-                _snapshot_of(project, record["generations"][owner]) for owner in owners
+                _snapshot_of(project, product, record["generations"][owner])
+                for owner in owners
             }
         members: dict[str, Path] = {
             f"product/{product.name}/{name}": path for name, path in zip(names, files)
         }
         snapshots = []
-        for directory in sorted(directories):
+        keys = {
+            directory: file_sha256(directory / "run_record.yml")
+            for directory in directories
+        }
+        for directory in sorted(directories, key=keys.get):
             archive = validate_archive(directory)
             projection = archive["configuration_projection"]
             for name in _snapshot_files(directory):
-                members[f"configuration/{directory.name}/{name}"] = directory / name
+                members[f"configuration/{keys[directory]}/{name}"] = directory / name
             snapshots.append(
                 {
-                    "path": f"configuration/{directory.name}",
+                    "path": f"configuration/{keys[directory]}",
                     "effective_config_sha256": projection["effective_config_sha256"],
                     "configuration_inputs_sha256": projection[
                         "configuration_inputs_sha256"
@@ -313,7 +324,7 @@ def export_bundle(
             "source": {"project_root": str(project), "historical_only": True},
             "attribution": attribution,
             "configuration": {
-                "provenance_snapshot": f"configuration/{primary.name}",
+                "provenance_snapshot": f"configuration/{keys[primary]}",
                 "snapshots": snapshots,
             },
             "compatibility": _compatibility(
@@ -367,3 +378,271 @@ def _safe_member(name: str) -> str:
     ):
         raise BundleError(f"unsafe bundle member name: {name!r}")
     return name
+
+
+IMPORT_RECORD_VERSION = "cst-result-import/1"
+IMPORTED = "_engine/imported"
+# Short directory names keep extracted paths inside Windows' default MAX_PATH.
+_SHORT = 12
+
+
+def _read_bundle(bundle: Path) -> tuple[dict[str, Any], dict[str, bytes]]:
+    """Validate a bundle's structure and every checksum; nothing is written."""
+    try:
+        archive = zipfile.ZipFile(bundle)
+    except (OSError, zipfile.BadZipFile) as error:
+        raise BundleError(f"not a readable bundle: {error}") from error
+    with archive:
+        infos = archive.infolist()
+        names = [info.filename for info in infos]
+        if len(set(names)) != len(names):
+            raise BundleError("bundle repeats a member name")
+        for info in infos:
+            _safe_member(info.filename)
+            if info.is_dir() or (info.external_attr >> 16) & 0o170000 == 0o120000:
+                raise BundleError(f"bundle member is not a file: {info.filename}")
+        if MANIFEST not in names:
+            raise BundleError("bundle has no manifest.json")
+        try:
+            manifest = json.loads(archive.read(MANIFEST))
+        except (ValueError, zipfile.BadZipFile) as error:
+            raise BundleError(f"unreadable manifest: {error}") from error
+        if manifest.get("schema_version") != SCHEMA_VERSION:
+            raise BundleError(
+                f"unsupported bundle schema: {manifest.get('schema_version')!r}"
+            )
+        if manifest.get("workflow") != WORKFLOW:
+            raise BundleError(f"unsupported workflow: {manifest.get('workflow')!r}")
+        product = _safe_member(manifest["product"]["name"])
+        if "/" in product or manifest["product"]["path"] != f"product/{product}":
+            raise BundleError("manifest names an invalid product directory")
+        listed: dict[str, Mapping[str, Any]] = {}
+        for item in manifest["files"]:
+            name = _safe_member(item["path"])
+            if name in listed or not (
+                name.startswith((f"product/{product}/", "configuration/"))
+                or name == REGION_MEMBER
+            ):
+                raise BundleError(f"manifest lists an invalid member: {name}")
+            listed[name] = item
+        unlisted = sorted(set(names) - set(listed) - {MANIFEST})
+        missing = sorted(set(listed) - set(names))
+        if unlisted or missing:
+            raise BundleError(
+                f"bundle members differ from manifest: unlisted {unlisted}, "
+                f"missing {missing}"
+            )
+        payload = {}
+        for name, item in listed.items():
+            try:
+                data = archive.read(name)
+            except zipfile.BadZipFile as error:
+                raise BundleError(f"damaged member {name}: {error}") from error
+            if len(data) != item["size_bytes"] or _sha256_bytes(data) != item["sha256"]:
+                raise BundleError(f"member bytes differ from manifest: {name}")
+            payload[name] = data
+    identity = _sha256_bytes(
+        "\n".join(
+            f"{path} {listed[path]['sha256']}" for path in sorted(listed)
+        ).encode()
+    )
+    if identity != manifest.get("bundle_id"):
+        raise BundleError("manifest inventory differs from its bundle id")
+    absent = [name for name in REQUIRED if f"product/{product}/{name}" not in payload]
+    if absent or REGION_MEMBER not in payload:
+        raise BundleError(f"bundle lacks required files: {absent or [REGION_MEMBER]}")
+    return manifest, payload
+
+
+def _check_region(
+    project: Path, manifest: Mapping[str, Any], region: bytes
+) -> dict[str, Any]:
+    """Compare polygons by WKB fingerprint; equal bounding boxes prove nothing."""
+    import io
+
+    from blueearth_cst.projections.series_identity import region_fingerprint
+    from blueearth_cst.shared.wf3_science import region_geojson_path
+
+    expected = manifest["compatibility"]["region_fingerprint"]
+    if (
+        manifest["dependencies"]["region"]["fingerprint"] != expected
+        or region_fingerprint(io.BytesIO(region)) != expected
+    ):
+        raise BundleError("bundled region differs from the results' region")
+    destination = Path(region_geojson_path(project))
+    if not destination.is_file():
+        return {"status": "unverified", "reason": "destination has no region.geojson"}
+    if region_fingerprint(destination) != expected:
+        raise BundleError(
+            "destination basin polygon differs from the bundle's; "
+            "these results describe another region"
+        )
+    return {
+        "status": "verified",
+        "destination": destination.relative_to(project).as_posix(),
+    }
+
+
+def _check_configuration(
+    project: Path, manifest: Mapping[str, Any], config: Path | None
+) -> dict[str, Any]:
+    """Name every scientific setting the destination configures differently."""
+    if config is not None:
+        from blueearth_cst.shared.config_composition import load_composed_config
+
+        section = load_composed_config(config)["workflows"].get(WORKFLOW)
+        compared = str(Path(config).resolve())
+    elif (project / "config" / WORKFLOW / "run_record.yml").is_file():
+        from blueearth_cst.shared.workflow_config_snapshot import read_archive
+
+        record = read_archive(project, WORKFLOW, f"config/{WORKFLOW}")
+        section = record["loaded_config"]["workflows"][WORKFLOW]
+        compared = f"config/{WORKFLOW}/run_record.yml"
+    else:
+        return {"compared_with": None, "differences": {}}
+    if section is None:
+        return {"compared_with": compared, "differences": {}, "note": "no WF2 section"}
+    bundle = manifest["compatibility"]["configuration"]
+    differences = {
+        key: {"bundle": bundle.get(key), "destination": section.get(key)}
+        for key in CONFIGURATION_FACTS
+        if bundle.get(key) != section.get(key)
+    }
+    return {"compared_with": compared, "differences": differences}
+
+
+def _same_import(target: Path, manifest: Mapping[str, Any]) -> bool:
+    """An earlier import of exactly these bytes, untouched since."""
+    imported = target / IMPORTED / manifest["bundle_id"][:_SHORT]
+    if not (imported / MANIFEST).is_file():
+        return False
+    prefix = f"{manifest['product']['path']}/"
+    expected = {
+        item["path"].removeprefix(prefix): item["sha256"]
+        for item in manifest["files"]
+        if item["path"].startswith(prefix)
+    }
+    current = {
+        path.relative_to(target).as_posix(): path
+        for path in _payload(target)
+        if not path.is_relative_to(imported)
+    }
+    return set(current) == set(expected) and all(
+        _sha256_bytes(path.read_bytes()) == expected[name]
+        for name, path in current.items()
+    )
+
+
+def _staged_name(name: str, manifest: Mapping[str, Any], imported: str) -> str:
+    product = f"{manifest['product']['path']}/"
+    if name.startswith(product):
+        return name.removeprefix(product)
+    if name.startswith("configuration/"):
+        snapshot, rest = name.removeprefix("configuration/").split("/", 1)
+        return f"{imported}/configuration/{snapshot[:_SHORT]}/{rest}"
+    return f"{imported}/{name}"
+
+
+def import_bundle(
+    bundle: Path,
+    project_root: Path,
+    *,
+    config: Path | None = None,
+    accept_differences: bool = False,
+) -> dict[str, Any]:
+    """Publish a verified bundle's product atomically, or change nothing."""
+    from blueearth_cst.shared.provenance import toolbox_identity
+    from blueearth_cst.shared.workflow_config_snapshot import (
+        _replace,
+        _write_durable,
+        archive_lock,
+        validate_archive,
+    )
+
+    manifest, payload = _read_bundle(Path(bundle))
+    project = Path(project_root).resolve(strict=True)
+    name = manifest["product"]["name"]
+    target = project / "data/climate/projections" / name
+    imported = f"{IMPORTED}/{manifest['bundle_id'][:_SHORT]}"
+    with archive_lock(project, "project-execution"):
+        if target.exists():
+            if _same_import(target, manifest):
+                return {
+                    "status": "already_imported",
+                    "product": target.relative_to(project).as_posix(),
+                    "bundle_id": manifest["bundle_id"],
+                }
+            raise BundleError(
+                f"destination already has a WF2 product at {target}; "
+                "import refuses to replace or merge it"
+            )
+        region = _check_region(project, manifest, payload[REGION_MEMBER])
+        configuration = _check_configuration(project, manifest, config)
+        if configuration["differences"] and not accept_differences:
+            raise BundleError(
+                "destination configuration differs in "
+                f"{', '.join(configuration['differences'])}; "
+                "rerun with --accept-differences to import anyway"
+            )
+        configuration["accepted"] = bool(configuration["differences"])
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # The project lock is held, so any staged sibling is an interrupted import.
+        stale = sorted(target.parent.glob(f".{name}.import-*.staged"))
+        for directory in stale:
+            _remove_tree(target.parent, directory)
+        staging = target.parent / f".{name}.import-{os.urandom(8).hex()}.staged"
+        try:
+            for member, data in payload.items():
+                path = staging / _staged_name(member, manifest, imported)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                _write_durable(path, data)
+            for snapshot in manifest["configuration"]["snapshots"]:
+                short = snapshot["path"].removeprefix("configuration/")[:_SHORT]
+                validate_archive(staging / imported / "configuration" / short)
+            _write_durable(
+                staging / imported / MANIFEST,
+                json.dumps(manifest, indent=2, sort_keys=True).encode() + b"\n",
+            )
+            record = {
+                "schema_version": IMPORT_RECORD_VERSION,
+                "bundle_id": manifest["bundle_id"],
+                "imported_at_utc": _now(),
+                "imported_by": toolbox_identity(),
+                "source_project_root": manifest["source"]["project_root"],
+                "attribution": manifest["attribution"],
+                "region": region,
+                "configuration": configuration,
+                "runner_adoption": (
+                    "none: no runner invocation produced these files here; a later "
+                    "WF2 run may recompute them"
+                ),
+            }
+            _write_durable(
+                staging / imported / "import_record.json",
+                json.dumps(record, indent=2, sort_keys=True).encode() + b"\n",
+            )
+            _replace(staging, target)
+        finally:
+            if staging.exists():
+                _remove_tree(target.parent, staging)
+    return {
+        "status": "imported",
+        "product": target.relative_to(project).as_posix(),
+        "bundle_id": manifest["bundle_id"],
+        "files": sum(1 for item in payload if item.startswith("product/")),
+        "import_record": f"{target.relative_to(project).as_posix()}/{imported}/"
+        "import_record.json",
+        "region": region,
+        "configuration": configuration,
+        "removed_interrupted_imports": [path.name for path in stale],
+    }
+
+
+def _remove_tree(parent: Path, directory: Path) -> None:
+    import shutil
+
+    if directory.parent != parent or not directory.name.endswith(".staged"):
+        raise BundleError(f"refusing to remove {directory}")
+    if any(path.is_symlink() or path.is_junction() for path in directory.rglob("*")):
+        raise BundleError(f"staged import contains links: {directory}")
+    shutil.rmtree(directory)

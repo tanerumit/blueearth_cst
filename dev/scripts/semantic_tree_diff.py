@@ -476,6 +476,13 @@ def build_project_tree_rules(
     production = f"data/climate/projections/{re.escape(clim_project)}/_engine/execution"
     same(f"data/climate/projections/{clim_project}/_engine/execution/production.json")
     same_rx(rf"{production}/[0-9a-f]{{32}}/wf2(?:\.log|-benchmarks\.(?:md|tsv))")
+    # Provenance an import carried in (`blueearth_cst/shared/result_bundle.py`):
+    # bundle manifest, import record, region and exact configuration snapshots.
+    # Staged imports (`.<ensemble>.import-*.staged`) stay unmapped on purpose.
+    imported = f"data/climate/projections/{re.escape(clim_project)}/_engine/imported/[0-9a-f]{{12}}"
+    same_rx(rf"{imported}/(?:manifest|import_record)\.json")
+    same_rx(rf"{imported}/dependencies/region\.geojson")
+    same_rx(rf"{imported}/configuration/[0-9a-f]{{12}}/.+")
 
     # -- models/ --------------------------------------------------------------
     wflow = "models/hydrology/wflow"

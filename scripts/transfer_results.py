@@ -17,7 +17,11 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from blueearth_cst.shared.result_bundle import BundleError, export_bundle  # noqa: E402
+from blueearth_cst.shared.result_bundle import (  # noqa: E402
+    BundleError,
+    export_bundle,
+    import_bundle,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -31,9 +35,34 @@ def main(argv: list[str] | None = None) -> int:
         help="Product directory under data/climate/projections/ "
         "(default: the captured WF2 configuration's ensemble).",
     )
+    load = commands.add_parser("import", help="Publish a bundle into a project.")
+    load.add_argument("bundle", type=Path)
+    load.add_argument("--project-dir", type=Path, required=True)
+    load.add_argument(
+        "--config",
+        type=Path,
+        help="Destination project config to compare WF2 settings with "
+        "(default: the destination's captured WF2 configuration, if any).",
+    )
+    load.add_argument(
+        "--accept-differences",
+        action="store_true",
+        help="Import although WF2 scientific settings differ; the differences "
+        "are recorded with the imported product.",
+    )
     args = parser.parse_args(argv)
     try:
-        report = export_bundle(args.project_dir, args.output, ensemble=args.ensemble)
+        if args.command == "export":
+            report = export_bundle(
+                args.project_dir, args.output, ensemble=args.ensemble
+            )
+        else:
+            report = import_bundle(
+                args.bundle,
+                args.project_dir,
+                config=args.config,
+                accept_differences=args.accept_differences,
+            )
     except BundleError as error:
         print(f"Refused: {error}", file=sys.stderr)
         return 2

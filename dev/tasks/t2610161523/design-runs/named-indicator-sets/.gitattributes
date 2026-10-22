@@ -1,6 +1,0 @@
-# Preserve the exact bytes cited by review and protocol SHA256 identities.
-design-v*.md -text
-internal-review-*.md -text
-external-review-*.md -text
-review-brief*.md -text
-protocol/** -text

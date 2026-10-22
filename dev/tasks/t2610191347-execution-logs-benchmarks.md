@@ -59,5 +59,7 @@ No numerical-equivalence claim.
 Board check reports nine unrelated existing errors.
 
 Final landing: fresh all-five local execution and final software gate passed; execution logs and
-benchmark artifacts passed assertions. Evidence: `t2610161523/.tmp/landing-20261019/`.
-Task evidence remains intact pending archival. No push.
+benchmark artifacts passed assertions. See the
+[retained acceptance evidence](../records/validation/named-indicator-sets.md).
+Raw task scratch was removed at the owner's request; the retained record preserves the reported
+results and Git recovery identities.

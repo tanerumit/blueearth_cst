@@ -31,7 +31,6 @@ cssclasses: [todo-board]
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions     | docs       | backlog      |
 |        | [t2610191347][]          | Retain logs and benchmark reports by execution         | runtime    | backlog      |
 |        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run | runtime    | backlog      |
-|        | [t2610161523][]          | Integrate multiple metric sets                         | wf4        | active (3/3) |
 
 [t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
@@ -57,4 +56,3 @@ cssclasses: [todo-board]
 [t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md
 [t2610191347]: tasks/t2610191347-execution-logs-benchmarks.md
 [t2610191323]: tasks/t2610191323-ntoum-workflow-performance.md
-[t2610161523]: tasks/t2610161523-integrate-multiple-metric-sets.md

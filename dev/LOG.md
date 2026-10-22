@@ -21,6 +21,7 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-22 | t2610161523 | Integrate multiple metric sets | wf4  |
 | 2026-10-22 | t2610221807 | Audit temperature compatibility for retained simulation reuse | toolbox |
 | 2026-10-22 | t2610221645 | Configurable baseline Qcrit and retained temperature outputs | toolbox |
 | 2026-10-22 | t2609161642 | Scope R15: run workflows as one DAG [dropped] | workflows |

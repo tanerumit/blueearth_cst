@@ -1803,7 +1803,12 @@ class _ConsoleHandler(logging.StreamHandler):
                 + sum(
                     planned
                     for name, planned in _AFTER_CHECKPOINT_RULES.items()
-                    if pending and planned and name not in counts
+                    # Only this workflow's rules, as `_plan_rows` lists them;
+                    # the registry outlives one parsed Snakefile.
+                    if pending
+                    and planned
+                    and name in _RULE_NUMBERS
+                    and name not in counts
                 )
             )
         plan = _plan_lines(counts) if counts else None

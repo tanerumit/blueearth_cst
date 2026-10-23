@@ -4722,6 +4722,8 @@ def test_console_target_jobs_are_not_counted_as_work(monkeypatch):
     by one, so the last work job still ends at N/N.
     """
     monkeypatch.setattr(cs, "_RULE_NUMBERS", {"work": "1.01"})
+    # Left by another parsed Snakefile; not this workflow's rule, so not counted.
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"derive_system_indicators": 2})
     stats = "Job stats:\njob  count\n----  ---\nall  1\nsimulations_only  1\nwork  2\ntotal  4\n"
     out = _emit(
         _console_handler(),

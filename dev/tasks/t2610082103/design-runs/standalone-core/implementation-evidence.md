@@ -42,6 +42,22 @@ Scratch root: `session-1 :: .tmp/scratchpad/t2610082103-step7/` (harness, probes
 | Raising probe during `after` | No hits in any of 9 workflow runs |
 | Raising probe over affected tests (27 files) | 1601 passed, 11 skipped. 1 intentional neutral call: `test_wf0_diagnostic_contracts.py::test_short_record_acf_confidence_limits_fit_inside_axes` calls the WF0 `acf` chart directly and asserts data-driven limits only |
 
+## Coverage limits
+
+The pixel comparison and the raising probe cover only paths that rendered. Two migrated sites were not
+rendered by the rapid run:
+
+- **WF0 subbasin charts** (`diagnostic_subbasins.py`). The rapid config does not enable them.
+  - Under the probe, `test_opt_in_subbasin_tables_pngs_and_caption_inventory` renders them with
+    captions and passes, so there is no unscoped call.
+  - The same test was run on the exported `a860d6da` and on HEAD with kept temp dirs; all 5 captioned
+    PNGs are pixel-identical.
+- **`plot_map.plot_basin_map_from_model`.** No rule calls it; its only caller is
+  `dev/scripts/preview_basin_map.py`. Its token-only scope is unexercised, and no preservation is
+  claimed for it.
+
+"No unscoped production call" therefore holds for the exercised paths and the subbasin test.
+
 ## Equality and boundary probes
 
 - **`STYLE`:** the new value equals the old one key for key, in the same order, with equal values.
@@ -61,8 +77,14 @@ Scratch root: `session-1 :: .tmp/scratchpad/t2610082103-step7/` (harness, probes
   - The 5 failures are in `tests/test_simulation_reuse.py` (boundary-bridge audit).
   - The same 5 fail on an exported, unmodified `a860d6da`, and the inventories they hash contain none
     of the changed files. They are a pre-existing baseline failure, unrelated to this change.
+  - Cause: main commit `094bab3a` (2026-10-23) changed `blueearth_cst/shared/provenance.py`, which
+    is in the simulation inventory, without re-auditing `_BOUNDARY_AFTER`.
+  - The same tests pass at its parent (66 passed). This is a real source change, not line endings.
+  - It needs its own fix on main.
+- **At branch HEAD `f4c06321`:** 921 tests passed across `test_script_module_importability.py`
+  and the 18 test files that reference `dev/scripts`.
 - **`pixi run lint`:** pass.
-- **`pixi run format-check`:** 553 files formatted.
+- **`pixi run format-check`:** 554 files formatted.
 - **`git diff --check`:** pass.
 - **Reference rebuild, partly shown:** every `after` run rebuilt the deleted historical reference with
   the new code, and WF1 forcing then passed its `validate_current()` check before export.

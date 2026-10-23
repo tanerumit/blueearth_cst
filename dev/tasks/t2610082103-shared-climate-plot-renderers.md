@@ -30,6 +30,8 @@ branch: refactor/t2610082103
 - [ ] Prove standalone reuse and scope external packaging — implemented and verified on
   `refactor/t2610082103`; batch gate and landing pending. R/WF3 remain later increments.
 
+Next: owner reviews the demo figures; on a landing request, run the batch gate (fresh rapid WF0→WF1).
+
 Current evidence: [internal v1 landing](t2610082103/landing-evidence.md).
 
 ## Scope and acceptance
@@ -205,10 +207,12 @@ in `eff4bb2b`) on 2026-10-23; implementation follows its §5 commit plan in sess
 Commits `26fd59d7` (presets and caller migration), `93ed89ef` (standalone demo) and `f4c06321` (docs)
 are on `refactor/t2610082103`; not landed or pushed. Matched WF0–WF2 renders under annotation none,
 caption and title keep all 336 PNGs pixel-identical; only map-reference identity fields change, as
-declared. A raising probe found no unscoped production call. The core imports and renders under
-`python -I` with numpy and matplotlib only. Five `test_simulation_reuse.py` failures also occur on
-unmodified `a860d6da` and are unrelated. See [implementation evidence](t2610082103/design-runs/standalone-core/implementation-evidence.md)
-and the [packaging scope](t2610082103/design-runs/standalone-core/packaging-scope.md).
+declared. A raising probe found no unscoped call on the exercised paths. WF0 subbasin charts were
+checked by a test pair, and the dev-only `plot_basin_map_from_model` was not exercised. The core
+imports and renders under `python -I` with numpy and matplotlib only. Five `test_simulation_reuse.py`
+failures come from main commit `094bab3a` and need their own fix. See the
+[implementation evidence](t2610082103/design-runs/standalone-core/implementation-evidence.md) and the
+[packaging scope](t2610082103/design-runs/standalone-core/packaging-scope.md).
 
 ## Work location
 

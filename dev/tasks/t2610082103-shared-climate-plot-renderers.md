@@ -8,6 +8,7 @@ queue: 1
 created: 2026-10-08
 updated: 2026-10-23
 doc: dev/tasks/t2610082103/landscape-and-plan.md
+branch: refactor/t2610082103
 ---
 
 > [!note] Overview
@@ -26,7 +27,14 @@ doc: dev/tasks/t2610082103/landscape-and-plan.md
 - [x] Share annual/monthly chart rendering — scientific preparation remains workflow-owned.
 - [x] Verify numerical/visual preservation — full suite, fresh all-five and independent review pass.
 - [x] Retire replaced paths and land internal v1 — local main merge `761c8e54`; no push or release.
-- [ ] Prove standalone reuse and scope external packaging; R/WF3 remain later increments.
+- [ ] Prove standalone reuse and scope external packaging — implemented and verified on
+  `refactor/t2610082103`; batch gate and landing pending. R/WF3 remain later increments.
+
+The owner approved the six standalone demo figures on 2026-10-23 and requested the landing checks.
+
+Landing checks passed on 2026-10-23: fresh rapid WF0→WF1 at `f4c06321`, 95 figures pixel-identical.
+
+Next: await the owner's go to land `refactor/t2610082103` on local main (no push).
 
 Current evidence: [internal v1 landing](t2610082103/landing-evidence.md).
 
@@ -188,3 +196,38 @@ The owner decided:
 
 Next: a bounded step 7 design under `t2610082103/design-runs/standalone-core/`, including the identity-hash
 impact of moving style ownership, before implementation.
+
+The [step 7 design draft](t2610082103/design-runs/standalone-core/design-v1.md) proposes a scoped `Preset`
+(`use_preset` replaces the nine `rc_context(STYLE)` entries) with the CST preset kept in
+`blueearth_cst.shared`. A probe found no plotting/style path in the WF3, WF4 or indicator code-identity
+inventories. The internal-v1 comparison harness no longer exists, so the design rebuilds one covering
+every migrated caller. The independent review requested revision;
+[design-v2](t2610082103/design-runs/standalone-core/design-v2.md) resolves all findings, including a
+declared one-time map-reference rebuild. The owner approved exact v2 (git blob `61afa94a`, committed
+in `eff4bb2b`) on 2026-10-23; implementation follows its §5 commit plan in session-1.
+
+### Step 7 implemented (2026-10-23)
+
+Commits `26fd59d7` (presets and caller migration), `93ed89ef` (standalone demo) and `f4c06321` (docs)
+are on `refactor/t2610082103`; not landed or pushed. Matched WF0–WF2 renders under annotation none,
+caption and title keep all 336 PNGs pixel-identical; only map-reference identity fields change, as
+declared. A raising probe found no unscoped call on the exercised paths. WF0 subbasin charts were
+checked by a test pair, and the dev-only `plot_basin_map_from_model` was not exercised. The core
+imports and renders under `python -I` with numpy and matplotlib only. Five `test_simulation_reuse.py`
+failures come from main commit `094bab3a` and need their own fix. See the
+[implementation evidence](t2610082103/design-runs/standalone-core/implementation-evidence.md) and the
+[packaging scope](t2610082103/design-runs/standalone-core/packaging-scope.md).
+
+## Work location
+
+- Owner: session-1; branch: refactor/t2610082103; implementation commits: `26fd59d7`, `93ed89ef`, `f4c06321`.
+- Implementation: session-1 :: `blueearth_cst/plotting/`, `blueearth_cst/shared/plot_preset.py`, migrated
+  callers listed in the design §2.4.
+- Coordination: main :: dev/tasks/t2610082103/design-runs/standalone-core/.
+- Scratch: session-1 :: .tmp/scratchpad/t2610082103-step7/ (harness, probes, logs, renders, venv-min).
+- Outputs: session-1 :: .tmp/scratchpad/t2610082103-step7/verification/{base,before,control,after}-*;
+  input root session-1 :: .tmp/pytest/run-4bf42bbc57744ddb8ec629e34230630c/test_all_five_workflows_run_en0.
+- Verification: see implementation evidence; tested commit `26fd59d7` (render harness, affected tests,
+  lint, format), `93ed89ef` (demo in Pixi and venv-min).
+- Retention: the step 7 scratch and the input root until landing; then clean them.
+- Next action: land on local main when the owner says go; blockers: owner decision.

@@ -196,7 +196,8 @@ The [step 7 design draft](t2610082103/design-runs/standalone-core/design-v1.md) 
 inventories. The internal-v1 comparison harness no longer exists, so the design rebuilds one covering
 every migrated caller. The independent review requested revision;
 [design-v2](t2610082103/design-runs/standalone-core/design-v2.md) resolves all findings, including a
-declared one-time map-reference rebuild. Awaiting owner approval; no implementation.
+declared one-time map-reference rebuild. The owner approved exact v2 (git blob `61afa94a`, committed
+in `eff4bb2b`) on 2026-10-23; implementation follows its §5 commit plan in session-1.
 
 ## Work location
 
@@ -209,4 +210,4 @@ declared one-time map-reference rebuild. Awaiting owner approval; no implementat
 - Verification: identity-inventory probe on `a860d6da`: no plotting/style paths in generation, simulation
   or indicator inventories.
 - Retention: probe script until the implementation commit repeats it.
-- Next action: owner approval of design-v2 (independent review of v1 resolved); blockers: approval.
+- Next action: design-v2 §5 step 0 (caller inventory, harness, before render); blockers: none.

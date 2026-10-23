@@ -1,6 +1,6 @@
 # Step 7 design v1: portable plotting core, standalone proof and packaging scope
 
-Status: draft for owner review, 2026-10-23. Not approved; no implementation.
+Status: draft for owner review, 2026-10-23 (revised once after an advisory pass). Not approved; no implementation.
 Task: t2610082103, step 7. Branch: `refactor/t2610082103` (session-1), base main `a860d6da`.
 Framing decisions: task note § "Step 7 framing decisions (2026-10-23)". Plan: `../../landscape-and-plan.md` §5.4.
 
@@ -26,6 +26,11 @@ Constraints found by inspection:
 - Nine render entry points already scope style with `plt.rc_context(STYLE)`: `diagnostic_render.py:312`,
   `diagnostic_subbasins.py:121`, `forcing_figures.py:206,341`, `plot_proj_timeseries.py:210`,
   `projection_suite_figures.py:983`, `plot_evaluation.py:395,853,1272`.
+- No code mutates `STYLE` (`STYLE[...] =`, `.update`, `.setdefault`: no match in `blueearth_cst/` or
+  `tests/`). Freezing it inside `CST_PRESET` therefore changes no behaviour.
+- No render module uses threads or process pools (no `threading`, `concurrent.futures`, `multiprocessing`
+  or `joblib` in the plotting, climate-analysis, forcing, projection or shared plot modules). A
+  `ContextVar` therefore has the same reach as the process-global rcParams it accompanies.
 - Identity hashes are unaffected. A probe of `repository_code_inventory` on this branch found no
   `plotting/`, `shared/plot_*` or `config/plotting` path in the generation (18 files), simulation (22) or
   indicator (5 sets, 47 files) inventories. Re-run the probe on the implementation commit.
@@ -83,7 +88,10 @@ with unchanged values so that by-value imports keep working after a one-line imp
    `use_preset(<explicit mapping>)`, to show injection without CST.
 
 A second, minimal environment (python, numpy, matplotlib only) runs the same script. This confirms the
-dependency claim independently of the Pixi environment. Install it under `.tmp/`, never in Pixi.
+dependency claim independently of the Pixi environment. Build it with
+`python -m venv .tmp/scratchpad/t2610082103-step7/venv-min` and install with
+`pip install --cache-dir .tmp/scratchpad/t2610082103-step7/pip-cache numpy matplotlib`, using the Pixi
+Python as the base interpreter. It is never added to Pixi.
 
 ### 2.6 Packaging scoping record
 
@@ -107,10 +115,34 @@ It creates no distribution, build table or release.
 
 ## 4. Acceptance
 
+The main risk is the change from module constants to scoped values. A core call made outside a
+`use_preset` scope silently gets `NEUTRAL`, for example a caption, legend or export after a `with` block
+exits. The checks below target that risk.
+
+**Matched render harness.** The internal-v1 harness (`.tmp/scratchpad/shared-rendering/...`) no longer
+exists in any worktree, so commit 1 rebuilds one under `.tmp/scratchpad/t2610082103-step7/verification/`:
+
+- `render.py before|after` captures saved PNGs plus artist and geometry records: line data, colors,
+  widths, fonts, axes/figure boxes and caption text.
+- The baseline is rendered from main `a860d6da` in a separate detached checkout, using the same inputs.
+- It covers **every migrated caller**, using retained `test_case/test_local` outputs where they exist and
+  synthetic inputs fingerprinted in the harness otherwise:
+
+| Caller group | Source | Minimum coverage |
+|---|---|---|
+| WF0 diagnostics and subbasins | `diagnostic_render`, `diagnostic_subbasins` | All chart kinds, all source maps, captioned variants |
+| WF1 forcing | `forcing_figures` (both scopes) | All nine products |
+| WF1 evaluation | `plot_evaluation` (3 scopes), `func_plot_signature` | Hydrograph/performance, extremes, basin/subbasin summaries |
+| WF1 spatial captions | `plot_spatial_maps` | Captioned and uncaptioned spatial maps |
+| Map reference | `map_reference` | Reference record bytes and rendered frame |
+| WF2 | `plot_proj_timeseries`, `projection_suite_figures` | All 17 suite products |
+
+The inventory of input roots and counts is fixed in the harness before the `before` render.
+
 | Claim | Check |
 |---|---|
-| CST output unchanged | Re-render the internal-v1 comparison set: 109 chart pairs, the WF0/WF1 maps and captions. Values, artists and saved geometry must be identical to `main`. |
-| No silent neutral fallback in CST | Same render set, plus a temporary probe that fails if `active()` is `NEUTRAL` during a CST render |
+| CST output unchanged | Matched before/after harness over all caller groups. Values, artists, saved geometry, caption text and map-reference bytes must be identical. |
+| No silent neutral fallback in CST | A temporary `active()` that **raises** outside any `use_preset` scope, run across the full harness and the plotting-related tests. Every hit is either covered with a scope or recorded as an intentional neutral call. |
 | Portable import | Demo import guard passes in Pixi and in the minimal environment |
 | Neutral and injected presets render | Visual inspection of the 6 demo PNGs, published for review |
 | Identity hashes unchanged | Repeat the §1 inventory probe on the implementation commit |
@@ -122,12 +154,14 @@ Temporary probes stay under `.tmp/scratchpad/t2610082103-step7/`. None are added
 
 | # | Lands | Estimate |
 |---|---|---|
+| 0 | (not a commit) Build the harness and capture the `before` render from `a860d6da` | 0.5 day |
 | 1 | `preset.py`, CST `plot_preset.py`, core reads `active()`; `location_labels` drops pandas | 0.5 day |
 | 2 | Migrate the 9 scopes and the token imports; cover the unscoped calls | 0.5 day |
 | 3 | Standalone demo script plus minimal-environment run | 0.25 day |
-| 4 | Preservation and visual evidence; packaging scoping record (main, docs-only) | 0.5 day |
+| 4 | Docs: `dev/reference/toolbox-plot-style.md` and `config/plotting/README.md` name the CST preset as authoritative and describe `NEUTRAL`/`use_preset`; `fundamentals.py` docstring no longer claims the CST preset | 0.25 day |
+| 5 | Preservation and visual evidence; packaging scoping record (main, docs-only) | 0.5 day |
 
-Total is about 1.75 focused days, plus review. Commits 1–2 may squash if splitting them leaves an
+Total is about 2.5 focused days, plus review. Commits 1–2 may squash if splitting them leaves an
 intermediate commit that renders CST output with `NEUTRAL`.
 
 ## 6. Open points for the reviewer

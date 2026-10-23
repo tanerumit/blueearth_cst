@@ -6,7 +6,7 @@ effort: 2
 area: plotting
 queue: 1
 created: 2026-10-08
-updated: 2026-10-15
+updated: 2026-10-23
 doc: dev/tasks/t2610082103/landscape-and-plan.md
 ---
 
@@ -167,3 +167,24 @@ identities, output roots, gate records, coverage limits and cleanup proofs. No p
 
 Internal v1 is complete. This broader item stays active for standalone reuse and external packaging;
 R/WF3 migration and residual spatial title clipping remain later work.
+
+### Step 7 framing decisions (2026-10-23)
+
+A read-only boundary audit of `blueearth_cst/plotting/` found no Snakemake, HydroMT, xarray, geopandas or
+Cartopy import and no backend selection at import. Blockers: `fundamentals.py` reaches the
+checkout-relative `config/plotting/*.yml` through `shared/plot_style`, `plot_colors` and `plot_setup`
+(PyYAML), and `location_labels.py` imports pandas for one missing-value check. `blueearth_cst` is not
+installed; it imports only from a checkout.
+
+The owner decided:
+
+- Proof of reuse: a standalone script outside Snakemake, importing only the core, drawing annual/monthly
+  charts and a map from retained WF0 tables. A second, non-CST use case still gates extraction.
+- Style: the core ships neutral defaults and accepts an explicit style mapping; the CST preset stays in
+  `blueearth_cst.shared` and injects it. PyYAML leaves the core.
+- Core dependencies: numpy and matplotlib only; geospatial stays optional.
+- Packaging: a scoping record only (candidate API, name options, dependency set, extraction trigger);
+  no distribution, build metadata or release.
+
+Next: a bounded step 7 design under `t2610082103/design-runs/standalone-core/`, including the identity-hash
+impact of moving style ownership, before implementation.

@@ -1,6 +1,7 @@
-"""Shared Matplotlib drawing fundamentals and the reviewed CST style preset.
+"""Shared Matplotlib drawing fundamentals.
 
-Backend selection belongs to callers; STYLE is a shared mutable dictionary.
+Helpers draw with the active preset (``blueearth_cst.plotting.preset``); wrap
+rendering in ``use_preset`` to choose one. Backend selection belongs to callers.
 """
 
 from collections.abc import Sequence
@@ -12,65 +13,9 @@ from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.transforms import Affine2D, Bbox
 
-from blueearth_cst.shared import plot_style
-from blueearth_cst.shared.plot_colors import NEUTRAL_COLORS
-from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
-
-_CHARTS = STYLE_SETTINGS["charts"]
-W_COL1, W_PANEL, W_MID, W_FULL = (
-    _CHARTS["widths"][key] for key in ("col1", "panel", "mid", "full")
-)
-
+from blueearth_cst.plotting.preset import active
 
 MM = 1 / 25.4
-
-
-H_SINGLE, H_STACK2, H_SIDE2, H_ROW3, H_GRID4 = (
-    _CHARTS["heights"][key] for key in ("single", "stack2", "side2", "row3", "grid4")
-)
-
-
-OUTER_PAD_X_MM, OUTER_PAD_Y_MM = (_CHARTS["padding"][key] for key in ("x", "y"))
-
-
-FS_LABEL, FS_TICK, FS_NOTE = (
-    _CHARTS["fonts"][key] for key in ("label", "tick", "note")
-)
-
-
-INK = NEUTRAL_COLORS["ink"]
-
-
-MUTED = NEUTRAL_COLORS["muted"]
-
-
-AXIS = NEUTRAL_COLORS["axis"]
-
-
-GRID = NEUTRAL_COLORS["grid"]
-
-
-BOUNDARY = NEUTRAL_COLORS["boundary"]
-
-
-LW_LINE, LW_MEAN, LW_REF, LW_EDGE, LW_RANGE, LW_IQR, LW_STEM = (
-    _CHARTS["lines"][key]
-    for key in ("line", "mean", "ref", "edge", "range", "iqr", "stem")
-)
-
-
-LW_BOUNDARY = _CHARTS["lines"]["boundary"]
-
-
-MS_LINE, MS_POINT, S_SCATTER = (
-    _CHARTS["markers"][key] for key in ("line", "point", "scatter")
-)
-
-
-BAND_ALPHA = _CHARTS["band_alpha"]
-
-
-LABEL_BOX = dict(_CHARTS["label_box"])
 
 
 MONTH_ABBR = (
@@ -89,37 +34,17 @@ MONTH_ABBR = (
 )
 
 
-STYLE = {
-    **_CHARTS["rcparams"],
-    "axes.prop_cycle": plot_style.rcparams()["axes.prop_cycle"],
-    "font.size": FS_LABEL,
-    "axes.titlesize": FS_LABEL,
-    "axes.titlecolor": INK,
-    "axes.labelsize": FS_LABEL,
-    "axes.labelcolor": INK,
-    "axes.edgecolor": BOUNDARY,
-    "axes.linewidth": LW_BOUNDARY,
-    "xtick.color": AXIS,
-    "ytick.color": AXIS,
-    "xtick.labelcolor": MUTED,
-    "ytick.labelcolor": MUTED,
-    "xtick.labelsize": FS_TICK,
-    "ytick.labelsize": FS_TICK,
-    "xtick.major.width": LW_EDGE,
-    "ytick.major.width": LW_EDGE,
-    "grid.color": GRID,
-    "grid.linewidth": LW_EDGE,
-    "legend.fontsize": FS_TICK,
-    "legend.title_fontsize": FS_TICK,
-    "legend.labelcolor": INK,
-    "savefig.dpi": plot_style.RASTER_DPI,
-}
-
-
 def new_fig(
-    height_mm: float, nrows: int = 1, ncols: int = 1, width_mm: float = W_MID, **kw
+    height_mm: float,
+    nrows: int = 1,
+    ncols: int = 1,
+    width_mm: float | None = None,
+    **kw,
 ):
-    """Constrained-layout figure at its printed size."""
+    """Constrained-layout figure at its printed size; width defaults to ``mid``."""
+    preset = active()
+    if width_mm is None:
+        width_mm = preset.widths["mid"]
     fig, axs = plt.subplots(
         nrows,
         ncols,
@@ -128,7 +53,9 @@ def new_fig(
         squeeze=False,
         **kw,
     )
-    fig.get_layout_engine().set(w_pad=OUTER_PAD_X_MM * MM, h_pad=OUTER_PAD_Y_MM * MM)
+    fig.get_layout_engine().set(
+        w_pad=preset.padding["x"] * MM, h_pad=preset.padding["y"] * MM
+    )
     return fig, axs
 
 
@@ -148,8 +75,9 @@ def year_ticks(ax: plt.Axes, years: np.ndarray, continuous: bool = False) -> Non
     tick_step = max(1, int(np.ceil((years[-1] - years[0]) / 60)))
     ticks = np.arange(years[0] + (-years[0]) % tick_step, years[-1] + 1, tick_step)
     ax.set_xticks(np.setdiff1d(ticks, major), minor=True)
-    ax.tick_params(axis="x", which="major", length=3, width=LW_EDGE, color=AXIS)
-    ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
+    edge, axis = active().lines["edge"], active().colors["axis"]
+    ax.tick_params(axis="x", which="major", length=3, width=edge, color=axis)
+    ax.tick_params(axis="x", which="minor", length=2, width=edge, color=axis)
 
 
 def five_year_ticks(ax: plt.Axes, years: np.ndarray, rotation: int = 0) -> None:
@@ -157,16 +85,18 @@ def five_year_ticks(ax: plt.Axes, years: np.ndarray, rotation: int = 0) -> None:
     major = np.arange(years[0] + (-years[0]) % 5, years[-1] + 1, 5)
     ax.set_xticks(major)
     ax.set_xticks(np.setdiff1d(years, major), minor=True)
+    preset = active()
+    edge, axis = preset.lines["edge"], preset.colors["axis"]
     ax.tick_params(
         axis="x",
         which="major",
         length=3,
-        width=LW_EDGE,
-        color=AXIS,
+        width=edge,
+        color=axis,
         labelrotation=rotation,
-        labelsize=FS_TICK,
+        labelsize=preset.fonts["tick"],
     )
-    ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
+    ax.tick_params(axis="x", which="minor", length=2, width=edge, color=axis)
 
 
 def heatmap_frame(ax: plt.Axes) -> None:
@@ -216,11 +146,17 @@ def colourbar(
         anchor=(0.0, 0.0),
         aspect=max(stack_mm / 3.0, 8),
     )
-    cb.ax.set_title(label, color=INK, fontsize=FS_TICK, pad=10)
-    cb.outline.set_edgecolor(AXIS)
-    cb.outline.set_linewidth(LW_EDGE)
+    preset = active()
+    colors, tick, edge = preset.colors, preset.fonts["tick"], preset.lines["edge"]
+    cb.ax.set_title(label, color=colors["ink"], fontsize=tick, pad=10)
+    cb.outline.set_edgecolor(colors["axis"])
+    cb.outline.set_linewidth(edge)
     cb.ax.tick_params(
-        labelsize=FS_TICK, labelcolor=MUTED, color=AXIS, width=LW_EDGE, length=2.5
+        labelsize=tick,
+        labelcolor=colors["muted"],
+        color=colors["axis"],
+        width=edge,
+        length=2.5,
     )
 
 
@@ -243,6 +179,7 @@ def add_caption(
     ``crop=True`` freezes the tight artist bounds plus ``pad_inches`` before
     adding the band; export that finalized canvas without another tight crop.
     """
+    preset = active()
     original_dpi = fig.dpi
     try:
         export_dpi = mpl.rcParams["savefig.dpi"]
@@ -281,8 +218,8 @@ def add_caption(
             "",
             ha="left",
             va="bottom",
-            fontsize=FS_LABEL if above else FS_NOTE,
-            color=INK if above else MUTED,
+            fontsize=preset.fonts["label" if above else "note"],
+            color=preset.colors["ink" if above else "muted"],
             linespacing=1.3,
         )
         available = (right - left) * width * fig.dpi

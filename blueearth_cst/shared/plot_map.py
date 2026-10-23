@@ -39,6 +39,7 @@ import matplotlib.pyplot as plt
 import xarray as xr
 
 from blueearth_cst.plotting.figure_captions import write_figure_captions
+from blueearth_cst.plotting.preset import use_preset
 from blueearth_cst.shared.cartographic_map import (
     ELEVATION_LABEL,
     RASTER_DPI,
@@ -48,6 +49,7 @@ from blueearth_cst.shared.cartographic_map import (
     _mask_nodata,
     plot_raster_map,
 )
+from blueearth_cst.shared.plot_preset import CST_PRESET
 from blueearth_cst.shared.snake_utils import save_figure
 
 # ---------------------------------------------------------------------------
@@ -280,14 +282,16 @@ def plot_basin_map_from_spatial(spatial_dir, plot_dir=None, *, annotation="none"
         "caption": "Elevation within the basin, with basin and subbasin boundaries, rivers and supplied observation locations. "
         + (source_caveat(elevation) or ""),
     }
-    save_figure(
-        os.path.join(str(plot_dir), "elevation_basin.png"),
-        fig=fig,
-        annotation=annotation,
-        **record,
-        dpi=RASTER_DPI,
-        metadata={"Software": None},
-    )
+    # Caption tokens only: the cartographic map keeps its own rcParams.
+    with use_preset(CST_PRESET, rcparams=False):
+        save_figure(
+            os.path.join(str(plot_dir), "elevation_basin.png"),
+            fig=fig,
+            annotation=annotation,
+            **record,
+            dpi=RASTER_DPI,
+            metadata={"Software": None},
+        )
     plt.close(fig)
     write_figure_captions(plot_dir, {"elevation_basin.png": record})
 
@@ -349,16 +353,18 @@ def plot_basin_map_from_model(
         "title": "Model basin elevation and river network",
         "caption": "Elevation on the model grid, with basin and subbasin boundaries, river network, and supplied gauges, outlets and water bodies.",
     }
-    save_figure(
-        os.path.join(plot_dir, "elevation_basin.png"),
-        fig=fig,
-        annotation=annotation,
-        **record,
-        dpi=RASTER_DPI,
-        # Same reason: the default embeds the matplotlib version, which
-        # would move the baseline fingerprint on every env bump.
-        metadata={"Software": None},
-    )
+    # Caption tokens only: the cartographic map keeps its own rcParams.
+    with use_preset(CST_PRESET, rcparams=False):
+        save_figure(
+            os.path.join(plot_dir, "elevation_basin.png"),
+            fig=fig,
+            annotation=annotation,
+            **record,
+            dpi=RASTER_DPI,
+            # Same reason: the default embeds the matplotlib version, which
+            # would move the baseline fingerprint on every env bump.
+            metadata={"Software": None},
+        )
     plt.close(fig)
     write_figure_captions(plot_dir, {"elevation_basin.png": record})
 

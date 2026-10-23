@@ -21,8 +21,9 @@ from blueearth_cst.climate_analysis.diagnostics import (
 )
 from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
-from blueearth_cst.plotting.fundamentals import STYLE, new_fig
+from blueearth_cst.plotting.fundamentals import new_fig
 from blueearth_cst.plotting.prepared_maps import MapFrame, RasterMap, draw_raster_map
+from blueearth_cst.plotting.preset import use_preset
 from blueearth_cst.shared.map_reference import (
     drawing_frame,
     drawing_scale,
@@ -33,6 +34,7 @@ from blueearth_cst.shared.map_reference import (
     reference_arguments,
     validate_fields,
 )
+from blueearth_cst.shared.plot_preset import CST_PRESET
 from blueearth_cst.shared.snake_utils import listed, log_row, plural
 
 
@@ -309,7 +311,7 @@ def render(
             if form.startswith("map-")
             else view.support
         )
-        with plt.rc_context(STYLE):
+        with use_preset(CST_PRESET):
             if form.startswith("map-"):
                 variable = form.removeprefix("map-")
                 field = retained[variable]

@@ -40,7 +40,7 @@ def test_expanded_original_cycle_and_comparison_identity():
 
 
 def test_shared_contexts_apply_cycle_without_changing_process_defaults():
-    from blueearth_cst.plotting.fundamentals import STYLE
+    from blueearth_cst.shared.plot_preset import STYLE
 
     original = mpl.rcParams["axes.prop_cycle"]
     for settings in (plot_style.rcparams(), STYLE):

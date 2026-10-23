@@ -18,7 +18,9 @@ from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
 from blueearth_cst.plotting import prepared_charts as pc
 from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
-from blueearth_cst.plotting.fundamentals import MONTH_ABBR, STYLE
+from blueearth_cst.plotting.fundamentals import MONTH_ABBR
+from blueearth_cst.plotting.preset import use_preset
+from blueearth_cst.shared.plot_preset import CST_PRESET
 from blueearth_cst.shared.variable_registry import CLIMATE_VARS
 
 
@@ -203,7 +205,7 @@ def render_forcing_figures(
                 )
             )
         for kind in ("map", "annual", "monthly"):
-            with plt.rc_context(STYLE):
+            with use_preset(CST_PRESET):
                 if kind == "map":
                     field = fields[variable]
                     fig, map_info, reference_text = prepared_map(
@@ -338,7 +340,7 @@ def render_forcing_figures(
                     )
             try:
                 validate_current()
-                with plt.rc_context(STYLE):
+                with use_preset(CST_PRESET):
                     export_figure(
                         fig,
                         path,

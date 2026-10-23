@@ -13,7 +13,8 @@ from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_json
 from blueearth_cst.climate_analysis.figure_naming import figure_filename
 from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
-from blueearth_cst.plotting.fundamentals import STYLE
+from blueearth_cst.plotting.preset import use_preset
+from blueearth_cst.shared.plot_preset import CST_PRESET
 
 
 def render_subbasins(sm, settings, sources):
@@ -118,7 +119,7 @@ def render_subbasins(sm, settings, sources):
             carriers = [s for s, r in results.items() if r["tclim"] is not None]
             if variable == "temp" and len(carriers) < (2 if comparison else 1):
                 continue
-            with plt.rc_context(STYLE):
+            with use_preset(CST_PRESET):
                 fig = artists.CHARTS[form](view)
                 name = figure_filename(dataset, variable, context, f"{id_}_avg")
                 text = (

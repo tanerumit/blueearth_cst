@@ -254,7 +254,7 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
     """
     import numpy as np
 
-    from blueearth_cst.plotting import fundamentals as artists
+    from blueearth_cst.shared import plot_preset as cst
 
     count = simulated.time.size
     b = 1.0 - 2.0 * _PLOTTING_POSITION_A
@@ -273,7 +273,7 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
         reduced,
         simulated.sortby(simulated, ascending=ascending),
         "o",
-        ms=artists.MS_POINT,
+        ms=cst.MS_POINT,
         mfc=COLOR_SIMULATED,
         mec=COLOR_NEUTRAL,
         mew=0.5,
@@ -286,7 +286,7 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
     top = ax.get_ylim()[1]
     for period in RETURN_PERIODS:
         position = -np.log(-np.log(1 - 1.0 / period))
-        ax.axvline(position, color=artists.BOUNDARY, lw=0.5, alpha=0.7, zorder=1)
+        ax.axvline(position, color=cst.BOUNDARY, lw=0.5, alpha=0.7, zorder=1)
         ax.text(
             position,
             top,
@@ -294,9 +294,9 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
             rotation=90,
             va="top",
             ha="right",
-            fontsize=artists.FS_NOTE,
-            color=artists.MUTED,
-            bbox=artists.LABEL_BOX,
+            fontsize=cst.FS_NOTE,
+            color=cst.MUTED,
+            bbox=cst.LABEL_BOX,
         )
     ax.set_xlabel("Gumbel reduced variate (–)")
     ax.set_ylabel(ylabel)
@@ -381,10 +381,12 @@ def plot_hydrograph(
     """
     import matplotlib.pyplot as plt
     import numpy as np
-    from matplotlib import gridspec, rc_context
+    from matplotlib import gridspec
     from matplotlib.ticker import PercentFormatter
 
     from blueearth_cst.plotting import fundamentals as artists
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared import plot_preset as cst
 
     prepared = _hydrograph_data(simulated, observed)
     years = prepared["years"]
@@ -392,13 +394,13 @@ def plot_hydrograph(
     annual_obs = prepared["observed"]["annual"] if observed is not None else None
     cycle_obs = prepared["observed"]["cycle"] if observed is not None else None
 
-    with rc_context(artists.STYLE):
+    with use_preset(cst.CST_PRESET):
         fig = plt.figure(
             figsize=_figure_size(HEIGHT_HYDROGRAPH_MM), layout="constrained"
         )
         fig.get_layout_engine().set(
-            w_pad=artists.OUTER_PAD_X_MM * artists.MM,
-            h_pad=artists.OUTER_PAD_Y_MM * artists.MM,
+            w_pad=cst.OUTER_PAD_X_MM * artists.MM,
+            h_pad=cst.OUTER_PAD_Y_MM * artists.MM,
         )
         grid = gridspec.GridSpec(3, 2, figure=fig, height_ratios=[1.15, 1.0, 1.0])
         ax_daily = fig.add_subplot(grid[0, :])
@@ -635,11 +637,7 @@ def _hydrograph_fdc(ax, prepared, log_scale):
     """Finite-only Weibull positions, retaining zero mass on the log panel."""
     import numpy as np
 
-    from blueearth_cst.plotting.fundamentals import (
-        FS_NOTE,
-        LABEL_BOX,
-        MUTED,
-    )
+    from blueearth_cst.shared.plot_preset import FS_NOTE, LABEL_BOX, MUTED
 
     positive = []
     for key, color, style in (
@@ -838,9 +836,11 @@ def plot_extremes(
     import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
     import pandas as pd
-    from matplotlib import gridspec, rc_context
+    from matplotlib import gridspec
 
     from blueearth_cst.plotting import fundamentals as artists
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared import plot_preset as cst
 
     if kind not in ("peaks", "lows"):
         raise ValueError(f"kind={kind!r}; expected 'peaks' or 'lows'")
@@ -850,11 +850,11 @@ def plot_extremes(
     wet, dry = wettest_and_driest_year(simulated)
     year = wet if peaks else dry
 
-    with rc_context(artists.STYLE):
+    with use_preset(cst.CST_PRESET):
         fig = plt.figure(figsize=_figure_size(HEIGHT_EXTREMES_MM), layout="constrained")
         fig.get_layout_engine().set(
-            w_pad=artists.OUTER_PAD_X_MM * artists.MM,
-            h_pad=artists.OUTER_PAD_Y_MM * artists.MM,
+            w_pad=cst.OUTER_PAD_X_MM * artists.MM,
+            h_pad=cst.OUTER_PAD_Y_MM * artists.MM,
         )
         grid = gridspec.GridSpec(2, 2, figure=fig, height_ratios=[1.32, 1.0])
         ax_frequency = fig.add_subplot(grid[0, 0])
@@ -874,7 +874,7 @@ def plot_extremes(
             obs_extreme,
             sim_extreme,
             "o",
-            ms=artists.MS_POINT,
+            ms=cst.MS_POINT,
             mfc=COLOR_SIMULATED,
             mec=COLOR_NEUTRAL,
             mew=0.5,
@@ -918,16 +918,16 @@ def plot_extremes(
             transform=ax_scatter.transAxes,
             ha="right",
             va="top",
-            fontsize=artists.FS_NOTE,
-            bbox=artists.LABEL_BOX,
+            fontsize=cst.FS_NOTE,
+            bbox=cst.LABEL_BOX,
         )
 
         _draw_series(ax_year, simulated, observed)
         ax_year.axvspan(
             pd.Timestamp(year, 1, 1),
             pd.Timestamp(year + 1, 1, 1),
-            facecolor=artists.MUTED,
-            edgecolor=artists.MUTED,
+            facecolor=cst.MUTED,
+            edgecolor=cst.MUTED,
             alpha=0.16,
             linewidth=0.6,
             label=f"{'Wettest' if peaks else 'Driest'} year ({year})",
@@ -956,9 +956,9 @@ def plot_extremes(
                 textcoords="offset points",
                 ha="left",
                 va="top",
-                fontsize=artists.FS_LABEL,
+                fontsize=cst.FS_LABEL,
                 fontweight="normal",
-                bbox=artists.LABEL_BOX,
+                bbox=cst.LABEL_BOX,
                 zorder=5,
             )
         handles, _ = ax_year.get_legend_handles_labels()
@@ -1266,16 +1266,18 @@ def plot_performance(
     from matplotlib import gridspec
 
     from blueearth_cst.plotting import fundamentals as artists
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared import plot_preset as cst
 
     pairs, support = _performance_pairs(simulated, observed)
     finite = pairs.dropna()
-    with plt.rc_context(artists.STYLE):
+    with use_preset(cst.CST_PRESET):
         fig = plt.figure(
             figsize=_figure_size(HEIGHT_PERFORMANCE_MM), layout="constrained"
         )
         fig.get_layout_engine().set(
-            w_pad=artists.OUTER_PAD_X_MM * artists.MM,
-            h_pad=artists.OUTER_PAD_Y_MM * artists.MM,
+            w_pad=cst.OUTER_PAD_X_MM * artists.MM,
+            h_pad=cst.OUTER_PAD_Y_MM * artists.MM,
         )
         grid = gridspec.GridSpec(2, 2, figure=fig, height_ratios=[2.0, 1.0])
         ax_scatter = fig.add_subplot(grid[0, 0])
@@ -1289,7 +1291,7 @@ def plot_performance(
             finite["observed"],
             finite["simulated"],
             "o",
-            ms=artists.MS_POINT,
+            ms=cst.MS_POINT,
             mfc=COLOR_SIMULATED,
             mec="none",
             alpha=0.45,
@@ -1307,9 +1309,9 @@ def plot_performance(
                 transform=ax.transAxes,
                 ha="left",
                 va="top",
-                fontsize=artists.FS_LABEL,
+                fontsize=cst.FS_LABEL,
                 fontweight="bold",
-                bbox=artists.LABEL_BOX,
+                bbox=cst.LABEL_BOX,
                 zorder=5,
             )
         ax_scatter.grid(alpha=0.7)
@@ -1327,7 +1329,7 @@ def plot_performance(
                 cumulative[key],
                 color=color,
                 ls=style,
-                lw=artists.LW_LINE,
+                lw=cst.LW_LINE,
                 label=label,
             )
             lines.append(line)
@@ -1383,15 +1385,15 @@ def plot_performance(
                     transform=ax.transAxes,
                     ha="center",
                     va="center",
-                    fontsize=artists.FS_NOTE,
-                    color=artists.MUTED,
+                    fontsize=cst.FS_NOTE,
+                    color=cst.MUTED,
                 )
         _draw_indicators_table(ax_table, indicators)
         for text in ax_table.texts:
             text.set_fontsize(
-                artists.FS_TICK
+                cst.FS_TICK
                 if text.get_text() in ("EFFICIENCY", "ERROR")
-                else artists.FS_LABEL
+                else cst.FS_LABEL
             )
         score = _performance_r_squared(pairs)
         support["squared_pearson_r"] = float(score) if np.isfinite(score) else None

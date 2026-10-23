@@ -853,11 +853,16 @@ def plot_spatial_maps(
             + (source_caveat(layer) or ""),
         }
         from blueearth_cst.plotting.fundamentals import add_caption
+        from blueearth_cst.plotting.preset import use_preset
+        from blueearth_cst.shared.plot_preset import CST_PRESET
 
         if annotation != "none":
             if annotation not in ("caption", "title"):
                 raise ValueError("annotation must be none, caption, or title")
-            with plt.rc_context({"savefig.dpi": dpi or RASTER_DPI}):
+            with (
+                use_preset(CST_PRESET, rcparams=False),
+                plt.rc_context({"savefig.dpi": dpi or RASTER_DPI}),
+            ):
                 add_caption(fig, record[annotation], above=annotation == "title")
         for extension in formats:
             path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")

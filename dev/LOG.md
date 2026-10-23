@@ -21,6 +21,7 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-23 | t2610232335 | Re-audit simulation reuse pin after release-tag display | experiment |
 | 2026-10-23 | t2610230016 | Investigate incomplete skill loading in delegated workers | tooling |
 | 2026-10-23 | t2610221413 | Herdr multi-agent work setup | tooling |
 | 2026-10-22 | t2610130703 | Pin CMIP6 variables independently when versions differ | wf2  |

@@ -5,28 +5,27 @@ cssclasses: [todo-board]
 
 # TODO
 
-| #      | ID                       | Item                                                    | Area       | Status       |
-| ------ | ------------------------ | ------------------------------------------------------- | ---------- | ------------ |
-| 1      | [t2610082103][]          | Share plot renderers across climate workflows           | plotting   | active (7/7) |
-| 2      | [t2609281102][]          | Finish Wflow model revisions design                     | wf1        | blocked      |
-| 3      | [t2608202352][]          | Publish docs site to GitHub Pages                       | docs       | blocked      |
-| 4      | [t2608091730][]          | Make waterbody layers for the basin map                 | plotting   | blocked      |
-| 5      | [t2608071207][]          | Prove wflow log check fails without path_log            | wf3        | blocked      |
-| 6      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4     | wf4        | backlog      |
-| 7      | [t2610091622][]          | Triage unresolved geographic robustness findings        | validation | backlog      |
-| 8      | [t2610022259][]          | Scope conceptual workflow improvements                  | methods    | backlog      |
-| 9      | [t2609251520][]          | Decide naming of generation_inputs snapshots            | wf3        | backlog      |
-| 10     | [t2609251025][]          | Wflow sysimage to cut Julia startup                     | runtime    | backlog      |
-| 11     | [t2609181302][]          | Snakemake preamble cannot be suppressed                 | console    | backlog      |
-| 12     | [t2608222252][]          | Make climate extraction variables configurable          | climate    | backlog      |
-| 13     | [t2608202351a][]         | Publish pipeline notebooks on the docs site             | docs       | backlog      |
-| 14     | [t2608191733][]          | Ship a sample dataset bundle                            | data       | backlog      |
-| 15     | [t2608121606][]          | Missing catalog source can hide a reservoir             | wf1        | backlog      |
-| 16     | [t2608071221][]          | Docker and Linux end-to-end runs untested               | platform   | backlog      |
-| 17     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                | wf1        | backlog      |
-|        | [t2610232335][]          | Re-audit simulation reuse pin after release-tag display | experiment | active (0/1) |
-|        | [t2610211349][]          | Improving repo-wide documentation and instructions      | docs       | backlog      |
-|        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run  | runtime    | backlog      |
+| #      | ID                       | Item                                                   | Area       | Status       |
+| ------ | ------------------------ | ------------------------------------------------------ | ---------- | ------------ |
+| 1      | [t2610082103][]          | Share plot renderers across climate workflows          | plotting   | active (7/7) |
+| 2      | [t2609281102][]          | Finish Wflow model revisions design                    | wf1        | blocked      |
+| 3      | [t2608202352][]          | Publish docs site to GitHub Pages                      | docs       | blocked      |
+| 4      | [t2608091730][]          | Make waterbody layers for the basin map                | plotting   | blocked      |
+| 5      | [t2608071207][]          | Prove wflow log check fails without path_log           | wf3        | blocked      |
+| 6      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4    | wf4        | backlog      |
+| 7      | [t2610091622][]          | Triage unresolved geographic robustness findings       | validation | backlog      |
+| 8      | [t2610022259][]          | Scope conceptual workflow improvements                 | methods    | backlog      |
+| 9      | [t2609251520][]          | Decide naming of generation_inputs snapshots           | wf3        | backlog      |
+| 10     | [t2609251025][]          | Wflow sysimage to cut Julia startup                    | runtime    | backlog      |
+| 11     | [t2609181302][]          | Snakemake preamble cannot be suppressed                | console    | backlog      |
+| 12     | [t2608222252][]          | Make climate extraction variables configurable         | climate    | backlog      |
+| 13     | [t2608202351a][]         | Publish pipeline notebooks on the docs site            | docs       | backlog      |
+| 14     | [t2608191733][]          | Ship a sample dataset bundle                           | data       | backlog      |
+| 15     | [t2608121606][]          | Missing catalog source can hide a reservoir            | wf1        | backlog      |
+| 16     | [t2608071221][]          | Docker and Linux end-to-end runs untested              | platform   | backlog      |
+| 17     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard               | wf1        | backlog      |
+|        | [t2610211349][]          | Improving repo-wide documentation and instructions     | docs       | backlog      |
+|        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run | runtime    | backlog      |
 
 [t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
@@ -45,6 +44,5 @@ cssclasses: [todo-board]
 [t2608121606]: tasks/t2608121606-a-missing-catalog-source-is-logged-identically-to-an-empty-basin-so-1-08-can-silently-omit-a-real-reservoir.md
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
-[t2610232335]: tasks/t2610232335-re-audit-simulation-reuse-pin-after-release-tag-display.md
 [t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md
 [t2610191323]: tasks/t2610191323-ntoum-workflow-performance.md

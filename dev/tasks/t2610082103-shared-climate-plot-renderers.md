@@ -27,7 +27,8 @@ branch: refactor/t2610082103
 - [x] Share annual/monthly chart rendering — scientific preparation remains workflow-owned.
 - [x] Verify numerical/visual preservation — full suite, fresh all-five and independent review pass.
 - [x] Retire replaced paths and land internal v1 — local main merge `761c8e54`; no push or release.
-- [ ] Prove standalone reuse and scope external packaging; R/WF3 remain later increments.
+- [ ] Prove standalone reuse and scope external packaging — implemented and verified on
+  `refactor/t2610082103`; batch gate and landing pending. R/WF3 remain later increments.
 
 Current evidence: [internal v1 landing](t2610082103/landing-evidence.md).
 
@@ -199,15 +200,27 @@ every migrated caller. The independent review requested revision;
 declared one-time map-reference rebuild. The owner approved exact v2 (git blob `61afa94a`, committed
 in `eff4bb2b`) on 2026-10-23; implementation follows its §5 commit plan in session-1.
 
+### Step 7 implemented (2026-10-23)
+
+Commits `26fd59d7` (presets and caller migration), `93ed89ef` (standalone demo) and `f4c06321` (docs)
+are on `refactor/t2610082103`; not landed or pushed. Matched WF0–WF2 renders under annotation none,
+caption and title keep all 336 PNGs pixel-identical; only map-reference identity fields change, as
+declared. A raising probe found no unscoped production call. The core imports and renders under
+`python -I` with numpy and matplotlib only. Five `test_simulation_reuse.py` failures also occur on
+unmodified `a860d6da` and are unrelated. See [implementation evidence](t2610082103/design-runs/standalone-core/implementation-evidence.md)
+and the [packaging scope](t2610082103/design-runs/standalone-core/packaging-scope.md).
+
 ## Work location
 
-- Owner: session-1; branch: refactor/t2610082103; implementation commit: none yet (branch at main `a860d6da`).
+- Owner: session-1; branch: refactor/t2610082103; implementation commits: `26fd59d7`, `93ed89ef`, `f4c06321`.
 - Implementation: session-1 :: `blueearth_cst/plotting/`, `blueearth_cst/shared/plot_preset.py`, migrated
   callers listed in the design §2.4.
 - Coordination: main :: dev/tasks/t2610082103/design-runs/standalone-core/.
-- Scratch: session-1 :: .tmp/scratchpad/t2610082103-step7/ (identity probe; later render harness).
-- Outputs: none yet; the harness will reuse retained `test_case/test_local` outputs.
-- Verification: identity-inventory probe on `a860d6da`: no plotting/style paths in generation, simulation
-  or indicator inventories.
-- Retention: probe script until the implementation commit repeats it.
-- Next action: design-v2 §5 step 0 (caller inventory, harness, before render); blockers: none.
+- Scratch: session-1 :: .tmp/scratchpad/t2610082103-step7/ (harness, probes, logs, renders, venv-min).
+- Outputs: session-1 :: .tmp/scratchpad/t2610082103-step7/verification/{base,before,control,after}-*;
+  input root session-1 :: .tmp/pytest/run-4bf42bbc57744ddb8ec629e34230630c/test_all_five_workflows_run_en0.
+- Verification: see implementation evidence; tested commit `26fd59d7` (render harness, affected tests,
+  lint, format), `93ed89ef` (demo in Pixi and venv-min).
+- Retention: the step 7 scratch and the input root until landing; then clean them.
+- Next action: owner review of the demo figures, then the batch gate (fresh rapid WF0→WF1 run,
+  validation-reference landing checks) when landing is requested; blockers: owner decision to land.

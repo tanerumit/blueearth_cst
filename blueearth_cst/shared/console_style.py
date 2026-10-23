@@ -1539,6 +1539,10 @@ class _ConsoleHandler(logging.StreamHandler):
         # from where the work actually is.
         self._target_jobs = 0
         self._targets_done = 0
+        # Work jobs the plan expects, including jobs Snakemake adds only after a
+        # checkpoint resolves; None until the job table is seen. See
+        # `_progress_label`.
+        self._planned_jobs = None
         # Rule names whose summary clause has already been printed once. Held on
         # the INSTANCE, unlike `_RULE_NUMBERS`/`_RULE_SUMMARIES`, which are
         # module-level and outlive one workflow: `run_workflows.py` drives five
@@ -1770,6 +1774,18 @@ class _ConsoleHandler(logging.StreamHandler):
         text = self.format(record)
         counts = _run_info_counts(text)
         self._target_jobs = sum(counts.get(name, 0) for name in _PLAN_EXCLUDED_RULES)
+        if counts:
+            # The same planned counts the plan block lists for checkpoint-gated
+            # rules, so the counter's denominator agrees with the plan above it.
+            self._planned_jobs = (
+                sum(counts.values())
+                - self._target_jobs
+                + sum(
+                    planned
+                    for name, planned in _AFTER_CHECKPOINT_RULES.items()
+                    if planned and name not in counts
+                )
+            )
         plan = _plan_lines(counts) if counts else None
         opening = self._opening(plan)
         if opening:
@@ -2014,12 +2030,20 @@ class _ConsoleHandler(logging.StreamHandler):
     # -- decoration --------------------------------------------------------
 
     def _progress_label(self, counter, total):
-        """Render a stable completed-job counter for static or dynamic DAGs."""
+        """Render a stable completed-job counter for static or dynamic DAGs.
+
+        Snakemake's total grows when a checkpoint adds jobs (WF4's 4.08 after
+        4.07), which read as `[job 112/112]` then `[job 113/114]`. The
+        denominator therefore starts at the plan's count, which already includes
+        those rules' declared jobs, and grows only if Snakemake reports more.
+        """
         if counter is None:
             return ""
         counter -= self._targets_done
         if total:
             total -= self._target_jobs
+            if self._planned_jobs:
+                total = max(total, self._planned_jobs)
         if self._dynamic_progress:
             return f"job {counter}"
         return f"job {counter}/{total}" if total else ""

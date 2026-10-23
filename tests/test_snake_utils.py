@@ -4723,3 +4723,27 @@ def test_console_target_jobs_are_not_counted_as_work(monkeypatch):
     assert "[job" not in done[1], done
     assert done[2].endswith("[job 2/2]"), done
     assert done[3].endswith("- DONE all"), done
+
+
+def test_console_counter_includes_jobs_planned_after_a_checkpoint(monkeypatch):
+    """WF4 read `[job 112/112]` then `[job 113/114]` once 4.08 was added.
+
+    The plan already lists a checkpoint-gated rule's declared jobs, so the
+    denominator starts there instead of growing mid-run.
+    """
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {"plan": "4.07", "derive": "4.08"})
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan": 1, "derive": 1})
+    stats = "Job stats:\njob  count\n----  ---\nall  1\nplan  1\ntotal  2\n"
+    out = _emit(
+        _console_handler(),
+        _console_record(stats, event="run_info"),
+        _job_info(1, "plan", "Rule 4.07: plan"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=2),
+        _job_info(2, "derive", "Rule 4.08: derive"),
+        _console_record(event="job_finished", job_id=2),
+        _console_record(event="progress", done=2, total=3),
+    )
+    done = [line for line in out.splitlines() if "- DONE " in line]
+    assert done[0].endswith("[job 1/2]"), done
+    assert done[1].endswith("[job 2/2]"), done

@@ -299,6 +299,15 @@ def _pre_temperature_code():
     )
 
 
+def _pre_release_tag_code():
+    """Normalized inventory captured from 094bab3a^, before the release-tag helper."""
+    return json.loads(
+        (
+            Path(__file__).parent / "data/simulation-code-before-release-tag.json"
+        ).read_text(encoding="utf-8")
+    )
+
+
 def test_boundary_bridge_matches_audited_sources():
     from blueearth_cst.experiment.content_identity import content_sha256
     from blueearth_cst.experiment.simulation_code import simulation_code_inventory
@@ -306,10 +315,12 @@ def test_boundary_bridge_matches_audited_sources():
         _BOUNDARY_AFTER,
         _BOUNDARY_BEFORE,
         _BOUNDARY_PREVIOUS,
+        _BOUNDARY_TEMPERATURE,
     )
 
     assert content_sha256(_historical_code()) == _BOUNDARY_BEFORE
     assert content_sha256(_pre_temperature_code()) == _BOUNDARY_PREVIOUS
+    assert content_sha256(_pre_release_tag_code()) == _BOUNDARY_TEMPERATURE
     assert (
         content_sha256(simulation_code_inventory(Path(__file__).resolve().parents[1]))
         == _BOUNDARY_AFTER
@@ -372,16 +383,19 @@ def test_source_boundary_drives_actual_reuse_guard(
     "change",
     [None, "old_code", "new_code", "duplicate", "settings", "environment", "response"],
 )
-@pytest.mark.parametrize("transition", ["boundary", "temperature", "previous"])
+@pytest.mark.parametrize(
+    "transition", ["boundary", "temperature", "previous", "release_tag"]
+)
 def test_boundary_bridge_accepts_only_the_audited_transition(
     retained, change, transition
 ):
     from blueearth_cst.experiment.simulation_code import simulation_code_inventory
 
     previous = deepcopy(retained)
-    previous["documents"]["simulator_adapter_code"] = (
-        _pre_temperature_code() if transition == "temperature" else _historical_code()
-    )
+    previous["documents"]["simulator_adapter_code"] = {
+        "temperature": _pre_temperature_code,
+        "release_tag": _pre_release_tag_code,
+    }.get(transition, _historical_code)()
     current = deepcopy(retained)
     current["documents"]["simulator_adapter_code"] = simulation_code_inventory(
         Path(__file__).resolve().parents[1]
@@ -412,7 +426,9 @@ def test_boundary_bridge_accepts_only_the_audited_transition(
     assert (previous, current) == before
 
 
-@pytest.mark.parametrize("inventory", [_historical_code, _pre_temperature_code])
+@pytest.mark.parametrize(
+    "inventory", [_historical_code, _pre_temperature_code, _pre_release_tag_code]
+)
 def test_completed_legacy_inventory_reuses_records_without_rewriting_bytes(
     tmp_path, monkeypatch, inventory
 ):

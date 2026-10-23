@@ -27,7 +27,20 @@ _BOUNDARY_PREVIOUS = "fe2e4d92b48cbbca8a29ade215e55951dba5bfbf1417ff29ebde384521
 # declaration guard only; all seven existing variables read identically.
 # Model TOML bytes and response requirements remain independently checked.
 # See dev/records/validation/qcrit-temperature-outputs.md for audit evidence.
-_BOUNDARY_AFTER = "12c02734236bbb1d4fa0cf9b4538f815d0c9d196074432f11378b5baed3a1b76"
+_BOUNDARY_TEMPERATURE = (
+    "12c02734236bbb1d4fa0cf9b4538f815d0c9d196074432f11378b5baed3a1b76"
+)
+# Re-audited after 094bab3a: provenance.py only gained the display helper
+# toolbox_release_tag and its `re` import; no existing function changed and no
+# simulation path calls the helper.
+_BOUNDARY_AFTER = "96e3512bf017e8a92cd95e574cf8785d21bd32c10f5470aa64a901cc83dd8991"
+# Audited inventories, oldest first. Any older-to-newer transition is accepted.
+_AUDITED_BOUNDARIES = (
+    _BOUNDARY_BEFORE,
+    _BOUNDARY_PREVIOUS,
+    _BOUNDARY_TEMPERATURE,
+    _BOUNDARY_AFTER,
+)
 
 # Audited archive-lifecycle migration: input staging and execution settings are
 # unchanged. Pin BOTH versions, rather than exempting this launcher wholesale:
@@ -89,9 +102,9 @@ def check_simulation_reuse(retained: dict[str, Any], current: dict[str, Any]) ->
         content_sha256(retained_code),
         content_sha256(current_code),
     ) in {
-        (_BOUNDARY_BEFORE, _BOUNDARY_PREVIOUS),
-        (_BOUNDARY_BEFORE, _BOUNDARY_AFTER),
-        (_BOUNDARY_PREVIOUS, _BOUNDARY_AFTER),
+        (old, new)
+        for index, old in enumerate(_AUDITED_BOUNDARIES)
+        for new in _AUDITED_BOUNDARIES[index + 1 :]
     }
     comparable = {
         **current,

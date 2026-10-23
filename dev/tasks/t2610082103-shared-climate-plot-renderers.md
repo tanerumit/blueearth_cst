@@ -194,7 +194,7 @@ The [step 7 design draft](t2610082103/design-runs/standalone-core/design-v1.md) 
 (`use_preset` replaces the nine `rc_context(STYLE)` entries) with the CST preset kept in
 `blueearth_cst.shared`. A probe found no plotting/style path in the WF3, WF4 or indicator code-identity
 inventories. The internal-v1 comparison harness no longer exists, so the design rebuilds one covering
-every migrated caller. Awaiting review and owner approval; no implementation.
+every migrated caller. The independent review requested revision; [design-v2](t2610082103/design-runs/standalone-core/design-v2.md) resolves all findings, including a declared one-time map-reference rebuild. Awaiting owner approval; no implementation.
 
 ## Work location
 
@@ -207,4 +207,4 @@ every migrated caller. Awaiting review and owner approval; no implementation.
 - Verification: identity-inventory probe on `a860d6da`: no plotting/style paths in generation, simulation
   or indicator inventories.
 - Retention: probe script until the implementation commit repeats it.
-- Next action: review of design-v1, then owner approval of its exact revision; blockers: approval.
+- Next action: owner approval of design-v2 (independent review of v1 resolved); blockers: approval.

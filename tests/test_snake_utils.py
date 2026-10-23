@@ -4768,3 +4768,23 @@ def test_console_counter_includes_jobs_planned_after_a_checkpoint(monkeypatch):
     done = [line for line in out.splitlines() if "- DONE " in line]
     assert done[0].endswith("[job 1/2]"), done
     assert done[1].endswith("[job 2/2]"), done
+
+
+def test_console_counter_and_plan_skip_checkpoint_rules_a_target_excludes(monkeypatch):
+    """`--target simulations_only` never reaches 4.07/4.08: no planned jobs."""
+    monkeypatch.setattr(
+        cs, "_RULE_NUMBERS", {"simulate": "4.05", "plan": "4.07", "derive": "4.08"}
+    )
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan": 1, "derive": 1})
+    counts = {"simulations_only": 1, "simulate": 1}
+    assert [row[2] for row in cs._plan_rows(counts)] == [1, 0, 0]
+    stats = "Job stats:\njob  count\n----  ---\nsimulations_only  1\nsimulate  1\ntotal  2\n"
+    out = _emit(
+        _console_handler(),
+        _console_record(stats, event="run_info"),
+        _job_info(1, "simulate", "Rule 4.05: simulate"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=2),
+    )
+    done = [line for line in out.splitlines() if "- DONE " in line]
+    assert done[0].endswith("[job 1/1]"), done

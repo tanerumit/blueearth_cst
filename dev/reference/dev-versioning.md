@@ -12,8 +12,12 @@ Git release tags `vX.Y.Z` are the authoritative toolbox version. Milestone tags
 are development checkpoints. Existing `v0.1.0-alpha` and `v0.2.0-alpha` tags
 remain historical releases; future release tags use plain `vX.Y.Z`. Do not
 rewrite historical tags or infer a released version from the current branch.
-For an untagged checkout, report its commit and development status alongside
-the last ancestral release tag; that tag does not version subsequent changes.
+The runner's opening `toolbox` row uses `vX.Y.Z (<short-commit>)`: the nearest
+ancestral release tag plus the current commit, also recorded in the invocation JSON.
+That tag does not version subsequent changes; the commit identifies the checkout.
+Append `local changes` for a modified checkout. Without a release tag, display
+`unversioned (<short-commit>)`; without a commit, display `version unavailable`.
+An unknown working-tree status is marked explicitly.
 
 Compatibility covers documented user commands, configuration keys and meaning,
 durable output paths and formats, and scientific calculation methods. Internal

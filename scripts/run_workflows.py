@@ -67,6 +67,7 @@ from blueearth_cst.shared.provenance import (  # noqa: E402
     environment_file_hashes,
     file_sha256,
     toolbox_identity,
+    toolbox_release_tag,
 )
 from blueearth_cst.shared.run_log_core import (  # noqa: E402
     RUN_WARNING_TALLY_ENV,
@@ -879,6 +880,19 @@ def _settings_rows(cfg: Mapping[str, Any], project_dir: Path) -> list[tuple[str,
     return rows
 
 
+def _toolbox_label(identity: Mapping[str, Any]) -> str:
+    """Show the ancestral release and the commit actually used by this run."""
+    commit = identity.get("commit")
+    if not commit:
+        return "version unavailable"
+    details = str(commit)[:8]
+    if identity.get("dirty") is True:
+        details += "; local changes"
+    elif identity.get("dirty") is None:
+        details += "; working tree unknown"
+    return f"{identity.get('release_tag') or 'unversioned'} ({details})"
+
+
 def _opening_block(
     *,
     cfg: Mapping[str, Any],
@@ -887,6 +901,7 @@ def _opening_block(
     config_path: str,
     dry_run: bool,
     flags: Mapping[str, bool],
+    toolbox: Mapping[str, Any],
     experiment: tuple[str, str | None] | None = None,
     include_banner: bool = True,
 ) -> str:
@@ -919,6 +934,7 @@ def _opening_block(
         name, action = experiment
         rows.append(("experiment", f"{name} ({action})" if action else name))
     rows.extend(_settings_rows(cfg, project_dir))
+    rows.append(("toolbox", _toolbox_label(toolbox)))
     rows.append(("repository", os.fspath(_REPO_ROOT_PATH).replace(os.sep, "/")))
     rows.append(("folder", os.fspath(project_dir).replace(os.sep, "/")))
     rows.append(("config", os.fspath(config_path).replace(os.sep, "/")))
@@ -1384,6 +1400,7 @@ def _run_owned(
                 config_path=config_path,
                 dry_run=manifest["dry_run"],
                 flags=flags,
+                toolbox=manifest["git"],
                 experiment=(reservation_context.name, reservation_context.action)
                 if reservation_context is not None
                 else None,
@@ -2054,6 +2071,7 @@ def _initialize_manifest(
         "environment_files": environment_file_hashes(),
         "runtime": _runtime_versions(),
     }
+    manifest["git"]["release_tag"] = toolbox_release_tag(manifest["git"]["commit"])
     return runs_dir / filename, manifest
 
 

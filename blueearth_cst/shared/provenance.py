@@ -6,6 +6,7 @@ import hashlib
 import json
 import logging
 import math
+import re
 import subprocess
 from collections.abc import Iterable, Mapping, Sequence
 from datetime import datetime, timezone
@@ -513,6 +514,34 @@ def toolbox_identity(repo_root: str | Path | None = None) -> dict[str, Any]:
         return {"commit": baked, "commit_source": "baked", "dirty": None}
 
     return {"commit": None, "commit_source": None, "dirty": None}
+
+
+def toolbox_release_tag(
+    commit: str | None, repo_root: str | Path | None = None
+) -> str | None:
+    """Find the nearest ancestral release, excluding milestone/non-release tags.
+
+    Historical alpha releases remain eligible. Missing Git metadata returns None.
+    This display metadata is separate from the identity used in source digests.
+    """
+    if not commit:
+        return None
+    root = Path(repo_root) if repo_root is not None else _REPO_ROOT
+    tags = _run_metadata_command(
+        ["git", "tag", "--merged", commit, "--list", "v*"], root
+    )
+    releases = [
+        tag
+        for tag in (tags or "").splitlines()
+        if re.fullmatch(r"v\d+\.\d+\.\d+(?:-alpha)?", tag)
+    ]
+    if not releases:
+        return None
+    command = ["git", "describe", "--tags", "--abbrev=0"]
+    for tag in releases:
+        command.extend(["--match", tag])
+    result = _run_metadata_command([*command, commit], root)
+    return result.strip() if result else None
 
 
 def environment_file_hashes(repo_root: str | Path | None = None) -> dict[str, Any]:

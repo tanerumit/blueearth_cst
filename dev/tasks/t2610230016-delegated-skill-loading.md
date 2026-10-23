@@ -18,18 +18,19 @@ updated: 2026-10-23
 
 ## Progress
 
-*Blocked — Awaiting owner disposition of the shared-guidance proposal; revisit on the owner's reply.*
+*Blocked — Awaiting brain-infrastructure's shared-guidance result; revisit when its agent returns.*
 
-Next: Decide whether to adopt the tested handoff clarification with its recorded reference-trigger limitation.
+Next: Reconcile brain-infrastructure's result against the recorded body-loading and reference-trigger evidence.
 
 - [x] Reproduce partial reads — fresh control delivered only 90 lines from each of three skill bodies.
 - [x] Separate causes — explicit read limits confirmed; no model/effort attribution established.
 - [x] Test a correction — treatment delivered four complete bodies; reference-trigger compliance still failed.
-- [ ] Obtain disposition of the proposed shared handoff clarification; no infrastructure edits authorized.
+- [ ] Reconcile the authorized brain-infrastructure handoff and record its correction and verification limits.
 
 - [x] Inspect the original trace — explicit line-limited skill reads preceded the first edit.
 
 Investigation and proposed comparison: [evidence](t2610230016/investigation.md).
+Recipient assignment: [brain-infra handoff](t2610230016/brain-infra-handoff.md).
 
 ## Work location
 
@@ -43,5 +44,28 @@ The original Claude Code 2.1.308 incident and fresh 2.1.309 comparison are recor
 Both used Sonnet 5.5 / medium; no model/effort cause is established. The tested handoff paragraph corrected
 body loading in one pair, but linked-reference trigger application remains unresolved.
 
-Shared fixes belong to `agent-routing` under `BRAIN_INFRA_ROOT/artifacts/`. This project task does not
-authorize cross-repository edits. No shared correction has been installed or adopted.
+Shared fixes belong to `agent-routing` under `BRAIN_INFRA_ROOT/artifacts/`. On 2026-10-23 the user
+authorized handing the correction to brain-infrastructure through Herdr. Its fresh recipient conversation
+is `01a169c7-99e2-7140-9d97-761053630c68`, role skill-artifact-developer, observed GPT-6-Astra / low.
+No shared adoption result has yet been received.
+
+## Closure result — 2026-10-23
+
+The user approved closure after the infrastructure correction and fresh refinement trial.
+Shared changes are committed on infrastructure master: `9b61b3b` requires complete governing skill-body
+reads; `458a990` resolves reference triggers before each governed action, including verification.
+Static case 41 and infrastructure history/status are aligned.
+
+Fresh refinement conversation `68aa92e6-d59c-4581-ba6c-2f03350bc707`, Claude Code 2.1.309 / Sonnet 5.5 /
+medium, delivered all four applicable bodies and all three required references before editing, including
+the formerly missed documentation-review reference. This supports the loading correction in one reused,
+unblinded development scenario; general reliability and fresh-coordinator discovery remain unverified.
+Task-quality/reporting limits survive in the infrastructure commit body. Author conformance passes;
+strict infrastructure health retains unrelated navigation and assessment-coverage failures.
+
+Durable outcomes: infrastructure commits `9b61b3b` and `458a990`; original BlueEarth comparison and prompt
+are recoverable from `1df74b5cfd4b951bd6e8728b3c553a15d3c5fb0b` at their original task paths.
+The previously untracked handoff and pre-closure task note were preserved byte-for-byte in ignored
+infrastructure scratch. No further shared correction is required by this bounded task.
+Session-2 has no commits outside main; its branch and trial scratch are retained under the handoff's
+no-merge/no-deletion boundary. No push is authorized.

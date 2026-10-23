@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from blueearth_cst.plotting.figure_titles import write_figure_titles
-from blueearth_cst.plotting.fundamentals import STYLE
+from blueearth_cst.plotting.preset import use_preset
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
 from blueearth_cst.projections.projection_captions import caption, title
 from blueearth_cst.projections.projection_figures import (
@@ -24,6 +24,7 @@ from blueearth_cst.projections.projection_figures import (
     period_folder,
 )
 from blueearth_cst.projections.projection_suite_figures import render_product
+from blueearth_cst.shared.plot_preset import CST_PRESET
 from blueearth_cst.shared.snake_utils import (
     listed,
     log_row,
@@ -207,7 +208,7 @@ def render_suite(
         window_id = row.get("window_id") or ""
         counts = figure_counts(row["filename"], tables, window_id)
         text = caption(row["filename"], record, window_id, counts)
-        with plt.rc_context(STYLE):
+        with use_preset(CST_PRESET):
             fig = render_product(
                 row["filename"],
                 tables,

@@ -6,7 +6,6 @@ matplotlib.use("Agg")
 import zlib
 from datetime import date
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.colors import to_rgb
@@ -15,6 +14,15 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
 
 from blueearth_cst.plotting.fundamentals import (
+    inside_legend,
+    new_fig,
+    year_ticks,
+    ygrid,
+)
+from blueearth_cst.plotting.preset import use_preset
+from blueearth_cst.projections.projection_figures import SCENARIO_COLORS, figure_key
+from blueearth_cst.shared.plot_preset import (
+    CST_PRESET,
     FS_NOTE,
     H_SINGLE,
     H_STACK2,
@@ -22,15 +30,9 @@ from blueearth_cst.plotting.fundamentals import (
     LW_RANGE,
     LW_REF,
     MUTED,
-    STYLE,
     W_FULL,
     W_MID,
-    inside_legend,
-    new_fig,
-    year_ticks,
-    ygrid,
 )
-from blueearth_cst.projections.projection_figures import SCENARIO_COLORS, figure_key
 
 STRIP_PERIODS = ("annual", "DJF", "MAM", "JJA", "SON")
 MONTHS = (
@@ -980,7 +982,7 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
             else data
         )
 
-    with plt.rc_context(STYLE):
+    with use_preset(CST_PRESET):
         if filename == "availability.png":
             return availability_matrix(table("coverage"), scenarios)
         variable = "temp" if "temperature" in filename else "precip"

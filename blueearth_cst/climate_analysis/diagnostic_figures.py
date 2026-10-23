@@ -22,141 +22,18 @@ from matplotlib.ticker import FixedLocator, MaxNLocator, StrMethodFormatter
 
 from blueearth_cst.climate_analysis.diagnostics import SPI_SCALES, month_order
 from blueearth_cst.plotting import prepared_charts as pc
-from blueearth_cst.plotting.fundamentals import (
-    AXIS as AXIS,
-)
-from blueearth_cst.plotting.fundamentals import (
-    BAND_ALPHA as BAND_ALPHA,
-)
-from blueearth_cst.plotting.fundamentals import (
-    BOUNDARY as BOUNDARY,
-)
-from blueearth_cst.plotting.fundamentals import (
-    FS_LABEL as FS_LABEL,
-)
-from blueearth_cst.plotting.fundamentals import (
-    FS_NOTE as FS_NOTE,
-)
-from blueearth_cst.plotting.fundamentals import (
-    FS_TICK as FS_TICK,
-)
-from blueearth_cst.plotting.fundamentals import (
-    GRID as GRID,
-)
-from blueearth_cst.plotting.fundamentals import (
-    H_GRID4 as H_GRID4,
-)
-from blueearth_cst.plotting.fundamentals import (
-    H_ROW3 as H_ROW3,
-)
-from blueearth_cst.plotting.fundamentals import (
-    H_SIDE2 as H_SIDE2,
-)
-from blueearth_cst.plotting.fundamentals import (
-    H_SINGLE as H_SINGLE,
-)
-from blueearth_cst.plotting.fundamentals import (
-    H_STACK2 as H_STACK2,
-)
-from blueearth_cst.plotting.fundamentals import (
-    INK as INK,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LABEL_BOX as LABEL_BOX,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_BOUNDARY as LW_BOUNDARY,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_EDGE as LW_EDGE,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_IQR as LW_IQR,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_LINE as LW_LINE,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_MEAN as LW_MEAN,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_RANGE as LW_RANGE,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_REF as LW_REF,
-)
-from blueearth_cst.plotting.fundamentals import (
-    LW_STEM as LW_STEM,
-)
-from blueearth_cst.plotting.fundamentals import (
-    MM as MM,
-)
-from blueearth_cst.plotting.fundamentals import (
-    MONTH_ABBR as MONTH_ABBR,
-)
-from blueearth_cst.plotting.fundamentals import (
-    MS_LINE as MS_LINE,
-)
-from blueearth_cst.plotting.fundamentals import (
-    MS_POINT as MS_POINT,
-)
-from blueearth_cst.plotting.fundamentals import (
-    MUTED as MUTED,
-)
-from blueearth_cst.plotting.fundamentals import (
-    OUTER_PAD_X_MM as OUTER_PAD_X_MM,
-)
-from blueearth_cst.plotting.fundamentals import (
-    OUTER_PAD_Y_MM as OUTER_PAD_Y_MM,
-)
-from blueearth_cst.plotting.fundamentals import (
-    S_SCATTER as S_SCATTER,
-)
-from blueearth_cst.plotting.fundamentals import (
-    STYLE as STYLE,
-)
-from blueearth_cst.plotting.fundamentals import (
-    W_COL1 as W_COL1,
-)
-from blueearth_cst.plotting.fundamentals import (
-    W_FULL as W_FULL,
-)
-from blueearth_cst.plotting.fundamentals import (
-    W_MID as W_MID,
-)
-from blueearth_cst.plotting.fundamentals import (
-    W_PANEL as W_PANEL,
-)
-from blueearth_cst.plotting.fundamentals import (
-    add_caption as add_caption,
-)
-from blueearth_cst.plotting.fundamentals import (
-    blank as blank,
-)
-from blueearth_cst.plotting.fundamentals import (
-    colourbar as colourbar,
-)
-from blueearth_cst.plotting.fundamentals import (
-    five_year_ticks as five_year_ticks,
-)
-from blueearth_cst.plotting.fundamentals import (
-    heatmap_frame as heatmap_frame,
-)
-from blueearth_cst.plotting.fundamentals import (
-    inside_legend as inside_legend,
-)
-from blueearth_cst.plotting.fundamentals import (
-    new_fig as new_fig,
-)
-from blueearth_cst.plotting.fundamentals import (
-    top_legend as top_legend,
-)
-from blueearth_cst.plotting.fundamentals import (
-    year_ticks as year_ticks,
-)
-from blueearth_cst.plotting.fundamentals import (
-    ygrid as ygrid,
-)
+from blueearth_cst.plotting.fundamentals import MM as MM
+from blueearth_cst.plotting.fundamentals import MONTH_ABBR as MONTH_ABBR
+from blueearth_cst.plotting.fundamentals import add_caption as add_caption
+from blueearth_cst.plotting.fundamentals import blank as blank
+from blueearth_cst.plotting.fundamentals import colourbar as colourbar
+from blueearth_cst.plotting.fundamentals import five_year_ticks as five_year_ticks
+from blueearth_cst.plotting.fundamentals import heatmap_frame as heatmap_frame
+from blueearth_cst.plotting.fundamentals import inside_legend as inside_legend
+from blueearth_cst.plotting.fundamentals import new_fig as new_fig
+from blueearth_cst.plotting.fundamentals import top_legend as top_legend
+from blueearth_cst.plotting.fundamentals import year_ticks as year_ticks
+from blueearth_cst.plotting.fundamentals import ygrid as ygrid
 from blueearth_cst.plotting.prepared_charts import TREND_DASH as TREND_DASH
 from blueearth_cst.shared.plot_colors import (
     DATASET_COLORS,
@@ -164,6 +41,39 @@ from blueearth_cst.shared.plot_colors import (
     NEUTRAL_COLORS,
     PRECIP_ANOMALY_COLORMAP,
 )
+from blueearth_cst.shared.plot_preset import AXIS as AXIS
+from blueearth_cst.shared.plot_preset import BAND_ALPHA as BAND_ALPHA
+from blueearth_cst.shared.plot_preset import BOUNDARY as BOUNDARY
+from blueearth_cst.shared.plot_preset import FS_LABEL as FS_LABEL
+from blueearth_cst.shared.plot_preset import FS_NOTE as FS_NOTE
+from blueearth_cst.shared.plot_preset import FS_TICK as FS_TICK
+from blueearth_cst.shared.plot_preset import GRID as GRID
+from blueearth_cst.shared.plot_preset import H_GRID4 as H_GRID4
+from blueearth_cst.shared.plot_preset import H_ROW3 as H_ROW3
+from blueearth_cst.shared.plot_preset import H_SIDE2 as H_SIDE2
+from blueearth_cst.shared.plot_preset import H_SINGLE as H_SINGLE
+from blueearth_cst.shared.plot_preset import H_STACK2 as H_STACK2
+from blueearth_cst.shared.plot_preset import INK as INK
+from blueearth_cst.shared.plot_preset import LABEL_BOX as LABEL_BOX
+from blueearth_cst.shared.plot_preset import LW_BOUNDARY as LW_BOUNDARY
+from blueearth_cst.shared.plot_preset import LW_EDGE as LW_EDGE
+from blueearth_cst.shared.plot_preset import LW_IQR as LW_IQR
+from blueearth_cst.shared.plot_preset import LW_LINE as LW_LINE
+from blueearth_cst.shared.plot_preset import LW_MEAN as LW_MEAN
+from blueearth_cst.shared.plot_preset import LW_RANGE as LW_RANGE
+from blueearth_cst.shared.plot_preset import LW_REF as LW_REF
+from blueearth_cst.shared.plot_preset import LW_STEM as LW_STEM
+from blueearth_cst.shared.plot_preset import MS_LINE as MS_LINE
+from blueearth_cst.shared.plot_preset import MS_POINT as MS_POINT
+from blueearth_cst.shared.plot_preset import MUTED as MUTED
+from blueearth_cst.shared.plot_preset import OUTER_PAD_X_MM as OUTER_PAD_X_MM
+from blueearth_cst.shared.plot_preset import OUTER_PAD_Y_MM as OUTER_PAD_Y_MM
+from blueearth_cst.shared.plot_preset import S_SCATTER as S_SCATTER
+from blueearth_cst.shared.plot_preset import STYLE as STYLE
+from blueearth_cst.shared.plot_preset import W_COL1 as W_COL1
+from blueearth_cst.shared.plot_preset import W_FULL as W_FULL
+from blueearth_cst.shared.plot_preset import W_MID as W_MID
+from blueearth_cst.shared.plot_preset import W_PANEL as W_PANEL
 from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
 
 MISSING = NEUTRAL_COLORS["missing"]

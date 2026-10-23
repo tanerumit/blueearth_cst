@@ -16,6 +16,7 @@ from matplotlib.text import Annotation
 from numpy.typing import NDArray
 
 from blueearth_cst.plotting import fundamentals as f
+from blueearth_cst.plotting.preset import active
 
 TREND_DASH = (0, (5, 2.5))
 
@@ -81,8 +82,8 @@ def _identity_handles(sources: Sequence[AnnualLine | MonthlyBand]) -> list[Line2
             [],
             color=source.color,
             marker=source.marker,
-            ms=f.MS_LINE + 1,
-            lw=f.LW_LINE,
+            ms=active().markers["line"] + 1,
+            lw=active().lines["line"],
             label=source.label,
         )
         for source in sources
@@ -103,9 +104,9 @@ def draw_annual_lines(
                 years,
                 line.values,
                 color=line.color,
-                lw=f.LW_LINE,
+                lw=active().lines["line"],
                 marker=line.marker,
-                ms=f.MS_LINE,
+                ms=active().markers["line"],
                 label=line.label,
             )
         )
@@ -128,7 +129,7 @@ def draw_annual_trends(
                 trend.years,
                 trend.values,
                 color=trend.color,
-                lw=f.LW_REF,
+                lw=active().lines["ref"],
                 ls=TREND_DASH,
                 alpha=0.6,
             )
@@ -148,9 +149,9 @@ def draw_annual_trends(
             textcoords="offset points",
             ha="right",
             va="bottom",
-            fontsize=f.FS_TICK,
+            fontsize=active().fonts["tick"],
             color=color,
-            bbox=f.LABEL_BOX,
+            bbox=dict(active().label_box),
         )
         for y, text, color in labels
     ]
@@ -167,7 +168,7 @@ def annual_series(
     """Draw the standard annual chart from aligned values and retained fits."""
     _annual_inputs(years, lines)
     _trend_inputs(trends)
-    fig, axes = f.new_fig(f.H_SINGLE)
+    fig, axes = f.new_fig(active().heights["single"])
     ax = axes[0, 0]
     draw_annual_lines(ax, years, lines)
     f.year_ticks(ax, years)
@@ -193,7 +194,7 @@ def monthly_cycle(
     for band in bands:
         for name in ("mean", "lower", "upper"):
             _vector(getattr(band, name), f"monthly {name}", 12)
-    fig, axes = f.new_fig(f.H_SINGLE)
+    fig, axes = f.new_fig(active().heights["single"])
     ax = axes[0, 0]
     x = np.arange(12)
     top = 0.0
@@ -206,7 +207,7 @@ def monthly_cycle(
                 band.lower,
                 band.upper,
                 color=band.color,
-                alpha=f.BAND_ALPHA,
+                alpha=active().band_alpha,
                 lw=0,
             )
         )
@@ -215,9 +216,9 @@ def monthly_cycle(
                 x,
                 band.mean,
                 color=band.color,
-                lw=f.LW_MEAN,
+                lw=active().lines["mean"],
                 marker=band.marker,
-                ms=f.MS_LINE,
+                ms=active().markers["line"],
             )
         )
         finite = np.ma.asarray(band.upper).compressed()
@@ -233,7 +234,10 @@ def monthly_cycle(
     ax.set_ylabel(ylabel)
     f.ygrid(ax)
     spread = Patch(
-        facecolor=f.MUTED, alpha=f.BAND_ALPHA, edgecolor="none", label=band_label
+        facecolor=active().colors["muted"],
+        alpha=active().band_alpha,
+        edgecolor="none",
+        label=band_label,
     )
     f.inside_legend(fig, ax, [*_identity_handles(bands), spread], fills, lines)
     return fig

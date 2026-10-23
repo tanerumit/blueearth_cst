@@ -266,6 +266,8 @@ def plot_basavg(
     from blueearth_cst.climate_analysis import diagnostics as dg
     from blueearth_cst.plotting import fundamentals
     from blueearth_cst.plotting import prepared_charts as pc
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared import plot_preset as cst
     from blueearth_cst.shared.plot_evaluation import COLOR_SIMULATED
     from blueearth_cst.shared.wflow_outputs import (
         BASAVG_FIGURE_STEMS,
@@ -322,9 +324,9 @@ def plot_basavg(
                     )
                 )
             for kind in ("annual_ts", "monthly_clim_band"):
-                with plt.rc_context(fundamentals.STYLE):
+                with use_preset(cst.CST_PRESET):
                     if kind == "annual_ts":
-                        fig, axes = fundamentals.new_fig(fundamentals.H_SINGLE)
+                        fig, axes = fundamentals.new_fig(cst.H_SINGLE)
                         ax = axes[0, 0]
                         (line,) = pc.draw_annual_lines(
                             ax,

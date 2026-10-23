@@ -984,7 +984,9 @@ def _closing_block(
     did not is worse than not printing them.
 
     `logs` names this execution's directory; workflow details are linked from
-    its summary rather than reconstructing individual filenames here.
+    its summary rather than reconstructing individual filenames here. The
+    invocation record and command receipt are not listed: they are machine
+    files under `config/_engine/`, and the summary is the reader's entry point.
     """
     root = os.fspath(project_dir).replace(os.sep, "/")
     verdict = "FAILED" if failed else "done"
@@ -1040,16 +1042,11 @@ def _closing_block(
     if launched:
         directory = manifest.get("execution_directory", "logs")
         wrote.append(("logs", f"<project>/{directory}/"))
-    wrote.append(("invocation", _under_project(manifest_path, project_dir)))
     from blueearth_cst.shared.invocation_summary import summary_path
 
     run_summary_path = summary_path(manifest_path)
     if run_summary_path.is_file():
         wrote.append(("run summary", _under_project(run_summary_path, project_dir)))
-    if manifest.get("command_receipt"):
-        wrote.append(
-            ("commands", _under_project(Path(manifest["command_receipt"]), project_dir))
-        )
     groups.append(("wrote", wrote))
 
     not_run = [

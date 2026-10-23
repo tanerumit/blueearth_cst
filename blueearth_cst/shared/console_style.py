@@ -1255,6 +1255,20 @@ def open_run_header(workflow, project_dir, config_path=None, **details):
 #: is every workflow's; the other two are WF4's partial targets.
 _PLAN_EXCLUDED_RULES = ("all", "simulations_only", "simulations_and_indicators")
 
+#: Targets that stop before every checkpoint-gated rule: WF4's
+#: ``simulations_only`` ends at the retained responses, before 4.07.
+_PRE_CHECKPOINT_TARGETS = ("simulations_only",)
+
+
+def _after_checkpoint_pending(counts):
+    """Whether this run's targets reach the rules a checkpoint will add.
+
+    Under ``--target simulations_only`` the indicator rules are absent from the
+    job table because they will not run, not because a checkpoint is pending.
+    """
+    targets = [name for name in _PLAN_EXCLUDED_RULES if counts.get(name)]
+    return not targets or any(name not in _PRE_CHECKPOINT_TARGETS for name in targets)
+
 
 def _run_info_counts(text):
     """Parse Snakemake's ``Job stats:`` table into ``{rule name: job count}``.
@@ -1308,9 +1322,14 @@ def _plan_rows(counts):
             continue
         by_number.setdefault(number, []).append(name)
     rows = []
+    pending = _after_checkpoint_pending(counts)
     for number, names in by_number.items():
         jobs = sum(counts.get(name, 0) for name in names)
-        if not jobs and all(name in _AFTER_CHECKPOINT_RULES for name in names):
+        if (
+            not jobs
+            and pending
+            and all(name in _AFTER_CHECKPOINT_RULES for name in names)
+        ):
             # Absent only because the checkpoint has not resolved: its planned
             # count, or an empty cell when it declared none.
             planned = [_AFTER_CHECKPOINT_RULES[name] for name in names]
@@ -1539,6 +1558,10 @@ class _ConsoleHandler(logging.StreamHandler):
         # from where the work actually is.
         self._target_jobs = 0
         self._targets_done = 0
+        # Work jobs the plan expects, including jobs Snakemake adds only after a
+        # checkpoint resolves; None until the job table is seen. See
+        # `_progress_label`.
+        self._planned_jobs = None
         # Rule names whose summary clause has already been printed once. Held on
         # the INSTANCE, unlike `_RULE_NUMBERS`/`_RULE_SUMMARIES`, which are
         # module-level and outlive one workflow: `run_workflows.py` drives five
@@ -1770,6 +1793,19 @@ class _ConsoleHandler(logging.StreamHandler):
         text = self.format(record)
         counts = _run_info_counts(text)
         self._target_jobs = sum(counts.get(name, 0) for name in _PLAN_EXCLUDED_RULES)
+        if counts:
+            # The same planned counts the plan block lists for checkpoint-gated
+            # rules, so the counter's denominator agrees with the plan above it.
+            pending = _after_checkpoint_pending(counts)
+            self._planned_jobs = (
+                sum(counts.values())
+                - self._target_jobs
+                + sum(
+                    planned
+                    for name, planned in _AFTER_CHECKPOINT_RULES.items()
+                    if pending and planned and name not in counts
+                )
+            )
         plan = _plan_lines(counts) if counts else None
         opening = self._opening(plan)
         if opening:
@@ -2014,12 +2050,20 @@ class _ConsoleHandler(logging.StreamHandler):
     # -- decoration --------------------------------------------------------
 
     def _progress_label(self, counter, total):
-        """Render a stable completed-job counter for static or dynamic DAGs."""
+        """Render a stable completed-job counter for static or dynamic DAGs.
+
+        Snakemake's total grows when a checkpoint adds jobs (WF4's 4.08 after
+        4.07), which read as `[job 112/112]` then `[job 113/114]`. The
+        denominator therefore starts at the plan's count, which already includes
+        those rules' declared jobs, and grows only if Snakemake reports more.
+        """
         if counter is None:
             return ""
         counter -= self._targets_done
         if total:
             total -= self._target_jobs
+            if self._planned_jobs:
+                total = max(total, self._planned_jobs)
         if self._dynamic_progress:
             return f"job {counter}"
         return f"job {counter}/{total}" if total else ""

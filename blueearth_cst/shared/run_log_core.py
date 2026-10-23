@@ -2094,9 +2094,15 @@ def log_row(message, module="cst", level="INFO"):
     message = _relativize_paths(
         str(message), os.environ.get(_PROJECT_ROOT_ENV, ""), _path_tokens()
     )
+    # Painted here only when stdout IS the terminal: a `run:` rule writes from
+    # Snakemake's own process, with no tee to dim the stamp and module column.
+    # A tee reports `isatty() == False`, so a teed row is painted once, by it.
     _write_console(
         sys.stdout,
-        _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n",
+        _paint_body(
+            _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n",
+            _console_colour(sys.stdout),
+        ),
     )
     # Flushed, because off a terminal Python block-buffers stdout: under a
     # redirect or in CI a rule's rows then all arrived AFTER its DONE line,

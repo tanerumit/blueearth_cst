@@ -1463,8 +1463,8 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     # Rows under the project use the token the project row defines.
     assert wrote["logs"].startswith("<project>/logs/")
     assert wrote["logs"].count("/") == 3
-    assert wrote["invocation"].startswith("<project>/config/_engine/invocations/")
-    assert wrote["commands"].startswith("<project>/config/_engine/invocations/")
+    # Machine records under `_engine/` are not user-facing outputs.
+    assert "invocation" not in wrote and "commands" not in wrote
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()

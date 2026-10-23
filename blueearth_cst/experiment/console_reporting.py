@@ -80,12 +80,14 @@ class _PlanStream:
         return getattr(self.stream, name)
 
     def write(self, text):
+        # On a terminal `log_row` paints the row; match and record it plain.
+        plain = re.sub(r"\x1b\[[0-9;]*m", "", text)
         if re.fullmatch(
             r"\d{2}:\d{2}:\d{2} - indicators - Indicator set \w+ planned: "
             r"\d+ indicator declarations?; \d+ expected result keys?\n",
-            text,
+            plain,
         ):
-            record_indicator_detail(self.root, text.rstrip())
+            record_indicator_detail(self.root, plain.rstrip())
             return len(text)
         return self.stream.write(text)
 

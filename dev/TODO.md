@@ -7,7 +7,7 @@ cssclasses: [todo-board]
 
 | #      | ID                       | Item                                                   | Area       | Status       |
 | ------ | ------------------------ | ------------------------------------------------------ | ---------- | ------------ |
-| 1      | [t2610082103][]          | Share plot renderers across climate workflows          | plotting   | active (6/7) |
+| 1      | [t2610082103][]          | Share plot renderers across climate workflows          | plotting   | active (7/7) |
 | 2      | [t2609281102][]          | Finish Wflow model revisions design                    | wf1        | blocked      |
 | 3      | [t2608202352][]          | Publish docs site to GitHub Pages                      | docs       | blocked      |
 | 4      | [t2608091730][]          | Make waterbody layers for the basin map                | plotting   | blocked      |

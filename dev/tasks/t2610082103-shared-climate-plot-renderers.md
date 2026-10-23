@@ -8,7 +8,6 @@ queue: 1
 created: 2026-10-08
 updated: 2026-10-23
 doc: dev/tasks/t2610082103/landscape-and-plan.md
-branch: refactor/t2610082103
 ---
 
 > [!note] Overview
@@ -27,14 +26,17 @@ branch: refactor/t2610082103
 - [x] Share annual/monthly chart rendering — scientific preparation remains workflow-owned.
 - [x] Verify numerical/visual preservation — full suite, fresh all-five and independent review pass.
 - [x] Retire replaced paths and land internal v1 — local main merge `761c8e54`; no push or release.
-- [ ] Prove standalone reuse and scope external packaging — implemented and verified on
-  `refactor/t2610082103`; batch gate and landing pending. R/WF3 remain later increments.
+- [x] Prove standalone reuse and scope external packaging — landed on local main in `15e1519b`; no push.
 
 The owner approved the six standalone demo figures on 2026-10-23 and requested the landing checks.
 
 Landing checks passed on 2026-10-23: fresh rapid WF0→WF1 at `f4c06321`, 95 figures pixel-identical.
 
-Next: await the owner's go to land `refactor/t2610082103` on local main (no push).
+Landed on local main in `15e1519b` (task-land, verify: 251 plotting tests passed); session-1 is parked
+and the branch is deleted. No push.
+
+Next: owner decides whether to close this item or keep it open for R/WF3 adoption and the spatial
+title clipping.
 
 Current evidence: [internal v1 landing](t2610082103/landing-evidence.md).
 
@@ -220,7 +222,7 @@ failures come from main commit `094bab3a` and need their own fix. See the
 
 ## Work location
 
-- Owner: session-1; branch: refactor/t2610082103; implementation commits: `26fd59d7`, `93ed89ef`, `f4c06321`.
+- Owner: none (landed `15e1519b`); implementation commits `26fd59d7`, `93ed89ef`, `f4c06321`.
 - Implementation: session-1 :: `blueearth_cst/plotting/`, `blueearth_cst/shared/plot_preset.py`, migrated
   callers listed in the design §2.4.
 - Coordination: main :: dev/tasks/t2610082103/design-runs/standalone-core/.
@@ -230,4 +232,4 @@ failures come from main commit `094bab3a` and need their own fix. See the
 - Verification: see implementation evidence; tested commit `26fd59d7` (render harness, affected tests,
   lint, format), `93ed89ef` (demo in Pixi and venv-min).
 - Retention: the step 7 scratch and the input root until landing; then clean them.
-- Next action: land on local main when the owner says go; blockers: owner decision.
+- Next action: owner decision on closing the item; blockers: none.

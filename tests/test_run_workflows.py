@@ -1096,8 +1096,30 @@ def _run_and_capture(tmp_path, capsys, flags, *, cores=3, extra=None):
     return code, capsys.readouterr().out, project_dir
 
 
+@pytest.mark.parametrize(
+    ("identity", "expected"),
+    [
+        (
+            {"commit": "d0802bf054", "release_tag": "v0.4.1", "dirty": False},
+            "v0.4.1 (d0802bf0)",
+        ),
+        (
+            {"commit": "d0802bf054", "release_tag": "v0.4.1", "dirty": True},
+            "v0.4.1 (d0802bf0; local changes)",
+        ),
+        (
+            {"commit": "d0802bf054", "dirty": None},
+            "unversioned (d0802bf0; working tree unknown)",
+        ),
+        ({"commit": None}, "version unavailable"),
+    ],
+)
+def test_toolbox_label(identity, expected):
+    assert rw._toolbox_label(identity) == expected
+
+
 def test_opening_block_states_the_project_and_the_config_in_one_group(
-    tmp_path, capture_runs, capsys
+    tmp_path, capture_runs, capsys, monkeypatch
 ):
     """A console of four back-to-back Snakemake runs must say whose they are.
 
@@ -1110,6 +1132,12 @@ def test_opening_block_states_the_project_and_the_config_in_one_group(
     reader. `cores` went with the split -- it is not a property of the project,
     and every hand-off band prints the `-c N` it forwarded.
     """
+    monkeypatch.setattr(
+        rw,
+        "toolbox_identity",
+        lambda: {"commit": "d0802bf054", "commit_source": "git", "dirty": False},
+    )
+    monkeypatch.setattr(rw, "toolbox_release_tag", lambda commit: "v0.4.1")
     _, out, project_dir = _run_and_capture(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}, cores=7
     )
@@ -1118,6 +1146,7 @@ def test_opening_block_states_the_project_and_the_config_in_one_group(
     rows = _group_rows(out, "settings")
     assert rows["project"] == "gabon_project"  # basename, no project_name key
     assert rows["repository"] == str(rw._REPO_ROOT_PATH).replace(os.sep, "/")
+    assert rows["toolbox"] == "v0.4.1 (d0802bf0)"
     assert rows["folder"] == str(project_dir).replace(os.sep, "/")
     assert "c.yml" in rows["config"]
     assert "cores" not in rows
@@ -1270,7 +1299,14 @@ def test_the_basin_rows_are_omitted_when_the_config_declares_no_basin(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     rows = _group_rows(out, "settings")
-    assert set(rows) == {"project", "experiment", "repository", "folder", "config"}
+    assert set(rows) == {
+        "project",
+        "experiment",
+        "toolbox",
+        "repository",
+        "folder",
+        "config",
+    }
     # No orphaned continuation either: with no region asked for, there is
     # nothing whose absence is worth a line.
     assert "not delineated yet" not in out

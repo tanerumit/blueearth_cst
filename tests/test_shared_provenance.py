@@ -378,6 +378,34 @@ def test_toolbox_identity_ignores_an_empty_baked_file(
     assert toolbox_identity(repo_root=tmp_path)["commit"] is None
 
 
+def test_release_tag_excludes_milestones(monkeypatch: pytest.MonkeyPatch) -> None:
+    def metadata(command, root):
+        if command[1] == "tag":
+            return "v0.4.1\nv0.2.0-alpha\nmilestone-12\nv0.4.2-checkpoint\n"
+        assert command == [
+            "git",
+            "describe",
+            "--tags",
+            "--abbrev=0",
+            "--match",
+            "v0.4.1",
+            "--match",
+            "v0.2.0-alpha",
+            "abc123",
+        ]
+        return "v0.4.1\n"
+
+    monkeypatch.setattr(provenance, "_run_metadata_command", metadata)
+    assert provenance.toolbox_release_tag("abc123") == "v0.4.1"
+
+
+@pytest.mark.parametrize("tags", [None, "", "milestone-12\nv0.4.2-checkpoint\n"])
+def test_release_tag_unavailable(tags, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(provenance, "_run_metadata_command", lambda *_: tags)
+    assert provenance.toolbox_release_tag("abc123") is None
+    assert provenance.toolbox_release_tag(None) is None
+
+
 def test_environment_file_hashes_records_absence_explicitly(tmp_path: Path) -> None:
     """A null says the file was not there; a missing key says nobody looked."""
     (tmp_path / "pixi.lock").write_text("version: 6\n", encoding="utf-8")

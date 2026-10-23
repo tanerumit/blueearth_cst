@@ -30,7 +30,9 @@ branch: refactor/t2610082103
 - [ ] Prove standalone reuse and scope external packaging — implemented and verified on
   `refactor/t2610082103`; batch gate and landing pending. R/WF3 remain later increments.
 
-Next: owner reviews the demo figures; on a landing request, run the batch gate (fresh rapid WF0→WF1).
+The owner approved the six standalone demo figures on 2026-10-23 and requested the landing checks.
+
+Next: run the landing checks (fresh rapid WF0→WF1 in a new project directory), then await the go to land.
 
 Current evidence: [internal v1 landing](t2610082103/landing-evidence.md).
 

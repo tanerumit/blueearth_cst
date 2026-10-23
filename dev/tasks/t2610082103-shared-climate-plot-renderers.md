@@ -8,6 +8,7 @@ queue: 1
 created: 2026-10-08
 updated: 2026-10-23
 doc: dev/tasks/t2610082103/landscape-and-plan.md
+branch: refactor/t2610082103
 ---
 
 > [!note] Overview
@@ -188,3 +189,22 @@ The owner decided:
 
 Next: a bounded step 7 design under `t2610082103/design-runs/standalone-core/`, including the identity-hash
 impact of moving style ownership, before implementation.
+
+The [step 7 design draft](t2610082103/design-runs/standalone-core/design-v1.md) proposes a scoped `Preset`
+(`use_preset` replaces the nine `rc_context(STYLE)` entries) with the CST preset kept in
+`blueearth_cst.shared`. A probe found no plotting/style path in the WF3, WF4 or indicator code-identity
+inventories. The internal-v1 comparison harness no longer exists, so the design rebuilds one covering
+every migrated caller. Awaiting review and owner approval; no implementation.
+
+## Work location
+
+- Owner: session-1; branch: refactor/t2610082103; implementation commit: none yet (branch at main `a860d6da`).
+- Implementation: session-1 :: `blueearth_cst/plotting/`, `blueearth_cst/shared/plot_preset.py`, migrated
+  callers listed in the design §2.4.
+- Coordination: main :: dev/tasks/t2610082103/design-runs/standalone-core/.
+- Scratch: session-1 :: .tmp/scratchpad/t2610082103-step7/ (identity probe; later render harness).
+- Outputs: none yet; the harness will reuse retained `test_case/test_local` outputs.
+- Verification: identity-inventory probe on `a860d6da`: no plotting/style paths in generation, simulation
+  or indicator inventories.
+- Retention: probe script until the implementation commit repeats it.
+- Next action: review of design-v1, then owner approval of its exact revision; blockers: approval.

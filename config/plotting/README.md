@@ -11,9 +11,11 @@ Edit the YAML and restart any interactive plotting process. Workflow renderers r
 process and track both files by content digest. The historical display-reference producer also tracks
 `colors.yml`, because that record retains map colours. Neither file enters scenario or simulation identity.
 
-Use `shared.plot_colors` and `shared.plot_setup` as the loaders, and `shared.plot_style` or
-`plotting.fundamentals` as drawing adapters. Preserve their Python interfaces for existing callers.
-Do not add direct YAML readers to individual renderers or duplicate these defaults there.
+Use `shared.plot_colors` and `shared.plot_setup` as the loaders. `shared.plot_preset` builds the CST
+chart preset (`CST_PRESET`, `STYLE` and the token names) from these files, and `shared.plot_style` keeps
+the cartographic/evaluation adapter. The portable core in `blueearth_cst/plotting/` never reads this
+directory: CST renderers pass the preset in with `use_preset(CST_PRESET)`. Do not add direct YAML
+readers to individual renderers or duplicate these defaults there.
 
 Quote hex colours. Named dataset/evaluation entries reference `default_cycle` names; SSP entries remain
 independent. Neutral and map-feature inks also accept quoted grayscale fractions from 0 to 1.

@@ -42,7 +42,8 @@ Restart an interactive Python session after editing it. Matplotlib resolves colo
 
 `config/plotting/style.yml` owns page/export defaults, typography, shared chart dimensions, lines,
 markers, bands, label backgrounds and evaluation-sheet appearance. `shared.plot_setup` loads these
-preferences; `shared.plot_style` and `plotting.fundamentals` retain the existing drawing interfaces.
+preferences; `shared.plot_preset` turns them into the CST chart preset, and `shared.plot_style` keeps
+the cartographic/evaluation interface. See [Presets](#presets) for how the preset reaches drawing code.
 Figure-specific geometry stays with its renderer. Keep shared appearance preferences in this setup
 directory instead of adding new literals to individual plots.
 
@@ -388,7 +389,9 @@ in this visual review.
 
 ## Implementation entry points
 
-- Shared drawing fundamentals and reviewed CST preset: `blueearth_cst/plotting/fundamentals.py`.
+- Shared drawing fundamentals: `blueearth_cst/plotting/fundamentals.py`.
+- Portable presets, `use_preset` and the neutral default: `blueearth_cst/plotting/preset.py`.
+- Reviewed CST preset and its token names: `blueearth_cst/shared/plot_preset.py`.
 - Prepared annual lines, trend segments and monthly bands: `blueearth_cst/plotting/prepared_charts.py`.
 - Explicit-figure export without workflow logging: `blueearth_cst/plotting/export.py`.
 - Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
@@ -408,12 +411,25 @@ export_figure(fig, "plots/precip_annual_ts.png", dpi=600, metadata={"Software": 
 
 The caller closes the figure after its final export. Existing workflow callers keep using `save_figure`.
 
+### Presets
+
+The core in `blueearth_cst/plotting/` reads sizes, fonts, colours and line weights from the active
+`Preset` at call time and never loads `config/plotting/`. `use_preset(preset)` scopes one around
+rendering and also applies its rcParams; outside any scope the built-in `NEUTRAL` default applies.
+`CST_PRESET` is the authoritative CST appearance, built from `style.yml` and `colors.yml`.
+
+Every CST render entry point draws inside `use_preset(CST_PRESET)` through export. A caller that owns
+its rcParams, such as a caption added to a cartographic map, uses `use_preset(CST_PRESET,
+rcparams=False)`. A core helper called outside any scope silently draws with `NEUTRAL`, so new CST
+render paths must open a scope. Composition code may read the CST token names (`INK`, `W_FULL`, ...)
+from `shared.plot_preset`. `dev/scripts/plotting_standalone_demo.py` exercises the core outside CST.
+
 ### Prepared annual and monthly charts
 
 `prepared_charts.annual_series` and `monthly_cycle` draw supplied arrays and return a `Figure`.
 Use `draw_annual_lines` and `draw_annual_trends` on an existing axis when a composition needs its own
-ticks or legend, as WF1 hydrological summaries do. Call within the existing `rc_context(STYLE)` and
-keep that context active through export. The module does not select a backend or install global styles.
+ticks or legend, as WF1 hydrological summaries do. Call within `use_preset(CST_PRESET)` and keep that
+scope active through export. The module does not select a backend or install global styles.
 
 Adapters own aggregation, completeness, source order, units, reporting-year alignment and fitted trends.
 `AnnualLine` contains values aligned to the supplied years. `TrendSegment` contains already evaluated

@@ -24,9 +24,8 @@ cssclasses: [todo-board]
 | 15     | [t2608121606][]          | Missing catalog source can hide a reservoir               | wf1        | backlog      |
 | 16     | [t2608071221][]          | Docker and Linux end-to-end runs untested                 | platform   | backlog      |
 | 17     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                  | wf1        | backlog      |
-|        | [t2610230016][]          | Investigate incomplete skill loading in delegated workers | tooling    | backlog      |
+|        | [t2610230016][]          | Investigate incomplete skill loading in delegated workers | tooling    | blocked      |
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions        | docs       | backlog      |
-|        | [t2610191347][]          | Retain logs and benchmark reports by execution            | runtime    | backlog      |
 |        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run    | runtime    | backlog      |
 
 [t2610082103]: tasks/t2610082103-shared-climate-plot-renderers.md
@@ -48,5 +47,4 @@ cssclasses: [todo-board]
 [t2608071201]: tasks/t2608071201-r10-12.md
 [t2610230016]: tasks/t2610230016-delegated-skill-loading.md
 [t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md
-[t2610191347]: tasks/t2610191347-execution-logs-benchmarks.md
 [t2610191323]: tasks/t2610191323-ntoum-workflow-performance.md

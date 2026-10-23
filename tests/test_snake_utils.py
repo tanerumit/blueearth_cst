@@ -4419,6 +4419,27 @@ class _TTYWriter(io.StringIO):
         return True
 
 
+def test_log_row_dims_its_prefix_when_written_straight_to_a_terminal(monkeypatch):
+    """A `run:` rule's row reaches the terminal with no tee to paint it."""
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    console = _TTYWriter()
+    monkeypatch.setattr(su.sys, "stdout", console)
+    log_row("default: calculations complete", module="indicators")
+    out = console.getvalue()
+    assert re.fullmatch(
+        rf"\033\[{su._ANSI_DIM}m\d\d:\d\d:\d\d - indicators - {re.escape(su._ANSI_RESET)}"
+        r"default: calculations complete\n",
+        out,
+    ), repr(out)
+
+
+def test_log_row_stays_plain_off_a_terminal(monkeypatch):
+    console = io.StringIO()  # isatty() -> False, as a tee reports
+    monkeypatch.setattr(su.sys, "stdout", console)
+    log_row("default: calculations complete", module="indicators")
+    assert "\033[" not in console.getvalue()
+
+
 def test_paint_body_leaves_a_progress_bar_alone():
     """A carriage-return chunk is an in-place redraw: an SGR pair per frame
     would flicker, and a reset landing mid-bar would break it."""

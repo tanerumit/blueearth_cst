@@ -32,7 +32,9 @@ branch: refactor/t2610082103
 
 The owner approved the six standalone demo figures on 2026-10-23 and requested the landing checks.
 
-Next: run the landing checks (fresh rapid WF0→WF1 in a new project directory), then await the go to land.
+Landing checks passed on 2026-10-23: fresh rapid WF0→WF1 at `f4c06321`, 95 figures pixel-identical.
+
+Next: await the owner's go to land `refactor/t2610082103` on local main (no push).
 
 Current evidence: [internal v1 landing](t2610082103/landing-evidence.md).
 
@@ -228,5 +230,4 @@ failures come from main commit `094bab3a` and need their own fix. See the
 - Verification: see implementation evidence; tested commit `26fd59d7` (render harness, affected tests,
   lint, format), `93ed89ef` (demo in Pixi and venv-min).
 - Retention: the step 7 scratch and the input root until landing; then clean them.
-- Next action: owner review of the demo figures, then the batch gate (fresh rapid WF0→WF1 run,
-  validation-reference landing checks) when landing is requested; blockers: owner decision to land.
+- Next action: land on local main when the owner says go; blockers: owner decision.

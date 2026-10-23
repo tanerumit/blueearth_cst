@@ -88,5 +88,23 @@ rendered by the rapid run:
 - **`git diff --check`:** pass.
 - **Reference rebuild, partly shown:** every `after` run rebuilt the deleted historical reference with
   the new code, and WF1 forcing then passed its `validate_current()` check before export.
-- **Owed at the batch gate:** a fresh rapid WF0→WF1 run from a new project directory (design §4), plus
-  the validation-reference landing gate.
+
+## Landing check (2026-10-23)
+
+- **Run:** fresh rapid WF0 → WF1 through `scripts/run_workflow.py` at `f4c06321` (clean tree), using the
+  tracked `test_case/project_config_rapid*.yml` with only `project_dir` changed.
+  - New project root: `session-1 :: .tmp/scratchpad/t2610082103-step7/landing/project`.
+  - Log: `landing/run.out`.
+  - WF0 took 8 min 54 s and WF1 7 min 54 s, including a 2 min 45 s historical simulation. No errors;
+    the warnings were the routine catalog, location and unit notices.
+- **Map reference:** rebuilt from scratch and validated by WF1 forcing before export.
+  - Frame and every variable's boundaries, ticks, colours, under/over/missing colours, units, status
+    and extrema equal the harness `after-none` reference.
+  - Only two identity components differ. `plotting/preset.py`: the harness ran with the temporary
+    probe. The ERA5 preparation input hash: the fresh extraction writes a new NetCDF file.
+- **Figures:** 95 WF0/WF1 PNGs in 6 groups, the same inventory as the harness. All are pixel-identical
+  to the harness `after-none` renders.
+- **Gate status:** with the affected tests, lint and format above, the local landing checks for this
+  branch are complete.
+  - Before any push, the batch gate is still owed. It must also resolve the `094bab3a`
+    `test_simulation_reuse` baseline failure on main.

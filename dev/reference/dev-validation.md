@@ -153,10 +153,11 @@ moving that directory alone does not fix the failure. POSIX retains pytest's pri
 The adapter uses pytest's internal factory integration; verify the fixture test with `-n 2` after
 pytest upgrades. Existing inaccessible temporary directories are left untouched.
 
-Default run directories remain available for debugging; the usual three-run retention count does
-not prune these unique roots. Review `.tmp/pytest/run-*` after finishing a task and remove only its
-completed runs, after verifying their resolved paths remain inside this checkout's `.tmp/pytest`
-and contain no links. Never clean an active run or delete the shared parent during testing.
+Default run directories remain available for debugging; pytest's three-run retention count does
+not apply to these unique roots. Instead, each new default run first removes this checkout's
+`.tmp/pytest/run-*` roots untouched for two days (`STALE_RUN_SECONDS`), skipping links and roots it
+cannot delete. Copy any run you need to keep beyond that window elsewhere. Explicit `--basetemp`
+runs and xdist workers never prune. Never delete the shared parent during testing.
 `--basetemp <path>` remains an explicit override with pytest's destructive semantics: pytest clears
 that exact directory before use. Give concurrent invocations different paths. Tests that require a
 path outside the checkout must explicitly choose one; ordinary fixtures now live inside it.

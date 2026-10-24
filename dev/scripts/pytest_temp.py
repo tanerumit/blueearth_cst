@@ -6,6 +6,7 @@ The factory integration uses pytest internals and needs checking on upgrades.
 """
 
 import os
+import time
 from pathlib import Path
 from uuid import uuid4
 
@@ -13,9 +14,25 @@ import pytest
 from _pytest.pathlib import make_numbered_dir, rm_rf
 from _pytest.tmpdir import TempPathFactory
 
+# Runs younger than this stay for debugging and protect concurrent invocations.
+STALE_RUN_SECONDS = 2 * 24 * 3600
+
+
+def prune_stale_runs(parent: Path, now: float | None = None) -> None:
+    """Remove `run-*` roots under `parent` untouched for `STALE_RUN_SECONDS`."""
+    cutoff = (time.time() if now is None else now) - STALE_RUN_SECONDS
+    for run in parent.glob("run-*"):
+        try:
+            if run.is_symlink() or run.is_junction() or not run.is_dir():
+                continue
+            if run.stat().st_mtime < cutoff:
+                rm_rf(run)
+        except OSError:
+            continue  # In use or inaccessible: leave it for a later run.
+
 
 class WorktreeTempFactory(TempPathFactory):
-    """Retain independent runs and inherit Windows workspace directory ACLs."""
+    """Isolate independent runs, prune stale ones, inherit Windows directory ACLs."""
 
     def getbasetemp(self) -> Path:
         """Create a private run root, or honor explicit pytest basetemp semantics."""
@@ -31,6 +48,7 @@ class WorktreeTempFactory(TempPathFactory):
         else:
             parent = Path(__file__).resolve().parents[2] / ".tmp" / "pytest"
             parent.mkdir(parents=True, exist_ok=True)
+            prune_stale_runs(parent)
             base = parent / f"run-{uuid4().hex}"
             base.mkdir(mode=0o777 if os.name == "nt" else 0o700)
         self._basetemp = base.resolve()

@@ -183,6 +183,8 @@ def _compact_log_line(text):
     prefixed = _COMPONENT_PREFIX_RE.match(message)
     if prefixed and prefixed.group(1) == module:
         message = prefixed.group(2)
+    # The component column already says what is being written.
+    message = re.sub(rf"^Writing {re.escape(module)} to ", "Writing to ", message)
     message = _DATA_SOURCE_READ_RE.sub(r"\1 from ", message)
     message = _drop_repeated_source_name(message)
     message = _FORCING_EXISTS_RE.sub(
@@ -683,7 +685,7 @@ class _Heartbeat:
         # three. The identity is the job's console spelling (`_heartbeat_identity`).
         row = _log_row_text(
             f"{datetime.now():%H:%M:%S}",
-            "execution",
+            "fetch" if self._label.startswith("2.03") else "execution",
             "INFO",
             f"{_heartbeat_identity(self._label)} {text}",
         )
@@ -978,6 +980,14 @@ _REMOTE_READ_ECHO_RE = re.compile(
 )
 
 _TEE_CONSOLE_MUTED = (
+    # Rule start/end rows already identify these per-scenario steps. Keep the
+    # repeated file/parameter detail in the durable log.
+    (
+        "weathergen",
+        re.compile(
+            r"^\S+: (reading source realization|applying climate perturbations)"
+        ),
+    ),
     ("data_catalog", "Parsing data catalog from "),
     ("model", "Initializing wflow_sbm model from hydromt_wflow"),
     ("config", "Reading model config file from "),

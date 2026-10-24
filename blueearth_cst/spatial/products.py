@@ -1015,7 +1015,7 @@ def prepare_spatial_units(
         log_row(
             f"River network: {plural(len(rivers), 'reach', 'reaches')}; upstream-area threshold "
             f"{float(maps['river_mask'].attrs.get('upstream_area_threshold_km2', 0)):g}"
-            f" km²; connected output locations: {plural(len(locations), 'location')}",
+            f" km²; output locations: {len(locations)}",
             module="spatial",
         )
     for frame in (basins, subbasins, catchments):

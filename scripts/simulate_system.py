@@ -3,6 +3,8 @@
 import argparse
 import os
 import sys
+import time
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -19,13 +21,16 @@ from blueearth_cst.shared import (
     invocation_history,
     resource_tracking,
 )
+from blueearth_cst.shared.console_style import run_summary
 from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.snake_utils import warning_count
 from blueearth_cst.shared.windows_job import run_project_child
 from blueearth_cst.shared.workflow_config_snapshot import archive_lock
 
 
 @execution_outputs.capture_launch
 def main(argv=None):
+    console_started = time.monotonic()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--project-dir", type=Path)
@@ -86,6 +91,10 @@ def main(argv=None):
         invocation_id=os.environ.get(invocation_history.INVOCATION_ENV),
         parent_invocation_id=os.environ.get(invocation_history.PARENT_ENV),
     )
+    tally_key = "CST_WARNING_TALLY"
+    previous_tally = os.environ.get(tally_key)
+    directory = root / record["execution_directory"]
+    os.environ[tally_key] = str(directory / "_parts" / f".{record_path.stem}.warnings")
     try:
         project, settings, selection = simulation_selection(args.config)
         if Path(project["project"]["project_dir"]).resolve() != root:
@@ -135,6 +144,7 @@ def main(argv=None):
             environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
             started = record_path.with_suffix(".snakemake-started")
             environment["CST_SIMULATION_STARTED"] = str(started)
+            environment["CST_SIMULATION_FINALIZE"] = "1"
             if record.get("resources", {}).get("directory"):
                 environment[resource_tracking.DIRECTORY_ENV] = record["resources"][
                     "directory"
@@ -173,6 +183,24 @@ def main(argv=None):
                 if not report_publication(experiment_root, outcomes) and result == 0:
                     result = 1
         invocation_history.finish(record_path, record, exit_code=result)
+        if not preview:
+            sys.stdout.flush()
+            summary = run_summary(
+                "wf4 simulate_system",
+                root,
+                None,
+                None,
+                elapsed_seconds=time.monotonic() - console_started,
+                failed=result != 0,
+                log_parts_dir=str(
+                    directory / "_parts" / f"wf4-{record_path.stem}" / "logs"
+                ),
+                warnings=warning_count(),
+            )
+            sys.stderr.write("\n" + summary + "\n")
+            if result == 0:
+                sys.stderr.write(f"{datetime.now():%H:%M:%S} - DONE all\n")
+            sys.stderr.flush()
         return result
     except ValueError as exc:
         invocation_history.finish(record_path, record, exit_code=None, error=exc)
@@ -182,6 +210,11 @@ def main(argv=None):
     except BaseException as exc:
         invocation_history.finish(record_path, record, exit_code=None, error=exc)
         raise
+    finally:
+        if previous_tally is None:
+            os.environ.pop(tally_key, None)
+        else:
+            os.environ[tally_key] = previous_tally
 
 
 if __name__ == "__main__":

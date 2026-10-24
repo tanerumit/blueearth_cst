@@ -346,10 +346,15 @@ def skipped_product_messages(availability):
         if key == "variability-member-ratios.png":
             label = "Annual variability member-ratio boxplots"
             if reason == "no model with two eligible member ratios":
-                reason = "no model has at least two eligible ensemble members"
+                reason = "not enough eligible ensemble members"
         windows = list(dict.fromkeys(w for w in group.window_id if w))
-        scope = f" ({listed(windows)})" if windows else ""
-        yield f"{label[0].upper() + label[1:]} skipped{scope}: {reason}"
+        scope = (
+            f" ({listed(windows)})"
+            if windows and key != "variability-member-ratios.png"
+            else ""
+        )
+        detail = "" if key == "change-factor-cloud-combined.png" else f": {reason}"
+        yield f"{label[0].upper() + label[1:]} skipped{scope}{detail}"
 
 
 def run(sm):

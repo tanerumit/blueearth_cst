@@ -201,6 +201,8 @@ def _summary(failed):
     that captures one captures both. Never raises: a summary that broke a
     successful run would be the worst possible trade for a convenience.
     """
+    if os.environ.get("CST_SIMULATION_FINALIZE"):
+        return  # The launcher publishes results and owns the final verdict.
     try:
         # One write, blank line before it -- see the note on `_header`.
         sys.stderr.write(
@@ -246,12 +248,13 @@ def _header():
         if OPERATION == "indicators-only":
             details["responses"] = "Retained responses only; no generation, forcing preparation, or simulation"
         else:
-            details["collection"] = f"{COLLECTION['collection_id']}; {plural(len(RUN_IDS), 'explicit run ID')}; resolution: {SELECTION['resolution_mode']}"
+            details["scenarios"] = f"{plural(len(RUN_IDS), 'selected scenario')}"
             if globals().get("_simulation_complete"):
-                details["responses"] = f"Reusing simulation {stored['simulation_id']}; checking retained responses for requested indicators"
+                details["responses"] = "Reusing saved simulations; checking responses for requested indicators"
         open_run_header("wf4 simulate_system", project_dir, config_path,
-                        experiment=experiment, operation=OPERATION,
-                        **({"batching": batching} if batching else {}), **details)
+                        experiment=experiment,
+                        operation="Simulate and calculate indicators" if OPERATION == "simulate-and-indicators" else "Calculate indicators from saved simulations",
+                        **({"compute": batching} if batching else {}), **details)
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

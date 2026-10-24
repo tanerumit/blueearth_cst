@@ -1,11 +1,94 @@
 """WF4 selects a checked v2 marker without invoking WF3 producers."""
 
+import io
+import sys
+from contextlib import nullcontext
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from blueearth_cst.experiment import collection_resolution, simulation_runner
 from blueearth_cst.experiment.content_identity import atomic_record, content_sha256
+
+
+@pytest.mark.parametrize("published", [True, False])
+def test_launcher_verdict_follows_result_publication(tmp_path, monkeypatch, published):
+    """A failed export cannot leave a successful workflow verdict behind it."""
+    from blueearth_cst.experiment import indicator_export, reservation_context
+    from blueearth_cst.shared.run_log_core import log_row
+    from scripts import simulate_system as launcher
+
+    config = tmp_path / "project.yml"
+    config.write_text("{}", encoding="utf-8")
+    record_path = tmp_path / "logs/_engine/invocations/example.json"
+    record = {
+        "invocation_id": "example",
+        "execution_directory": "logs/example",
+        "configuration": {},
+    }
+    project = {"project": {"project_dir": str(tmp_path)}}
+    selection = SimpleNamespace(sets=[], indicators=True)
+    monkeypatch.setattr(
+        launcher.invocation_history, "start", lambda *a, **kw: (record_path, record)
+    )
+    monkeypatch.setattr(launcher.invocation_history, "update", lambda *a, **kw: None)
+    monkeypatch.setattr(launcher.invocation_history, "finish", lambda *a, **kw: None)
+    monkeypatch.setattr(launcher.resource_tracking, "phase", lambda *a, **kw: None)
+    monkeypatch.setattr(
+        launcher,
+        "simulation_selection",
+        lambda *a: (project, {"operation": "indicators-only"}, selection),
+    )
+    monkeypatch.setattr(launcher, "simulation_command", lambda *a, **kw: (["fake"], {}))
+    monkeypatch.setattr(launcher, "archive_lock", lambda *a: nullcontext())
+    context = SimpleNamespace(name="experiment_01", environment=lambda: {})
+    monkeypatch.setattr(
+        reservation_context, "admit_context_owned", lambda *a, **kw: context
+    )
+    monkeypatch.setattr(
+        simulation_runner, "validate_retained_indicator_sets", lambda *a: None
+    )
+
+    def child(*args, **kwargs):
+        assert kwargs["env"]["CST_SIMULATION_FINALIZE"] == "1"
+        log_row("Calculation warning", module="indicators", level="WARNING")
+        return 0
+
+    def publication(*args):
+        log_row(
+            "Results saved" if published else "Publication failed",
+            module="indicators",
+            level="WARNING" if published else "ERROR",
+        )
+        return published
+
+    monkeypatch.setattr(launcher, "run_project_child", child)
+    monkeypatch.setattr(indicator_export, "publish_selected_sets", lambda *a: [])
+    monkeypatch.setattr(indicator_export, "report_publication", publication)
+    stream = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", stream)
+    monkeypatch.setattr(sys, "stderr", stream)
+    monkeypatch.delenv("CST_LOG_LEVEL", raising=False)
+    previous_tally = "previous-warning-tally"
+    monkeypatch.setenv("CST_WARNING_TALLY", previous_tally)
+    assert launcher.main(["--config", str(config), "--project-dir", str(tmp_path)]) == (
+        0 if published else 1
+    )
+    output = stream.getvalue()
+    verdict = "completed" if published else "FAILED"
+    assert (
+        output.index("Calculation warning")
+        < output.index("Results saved" if published else "Publication failed")
+        < output.index(f"wf4 simulate_system {verdict}")
+    )
+    assert "2 warnings" in output
+    assert (
+        output.rstrip().endswith("- DONE all")
+        if published
+        else "DONE all" not in output
+    )
+    assert launcher.os.environ["CST_WARNING_TALLY"] == previous_tally
 
 
 def test_explicit_selector_uses_v2_reader(tmp_path, monkeypatch):

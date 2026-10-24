@@ -306,7 +306,7 @@ LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("0.01", "delineate_region", summary="delineate the basin boundary")
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers", summary="derive subbasins, rivers, and output locations")
 EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="extract a basin climate grid")
-PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference", summary="prepare the shared historical map display reference")
+PRODUCE_MAP_REFERENCE = RULES.logged("0.03b", "produce_historical_map_reference", summary="prepare the shared display reference")
 PREPARE_SOURCE_MAPS = RULES.logged("0.03c", "prepare_historical_map_fields", summary="prepare shared native-grid map fields")
 COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics", summary="compute source diagnostic tables")
 PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics", summary="render historical climate diagnostics")
@@ -639,9 +639,11 @@ def _header():
         reference = DIAGNOSTIC_SETTINGS["reference_period"]
         open_run_header(
             "wf0 analyze_climate", project_dir, config_path,
-            sources=f"{len(CANDIDATE_SOURCES)} ({listed(CANDIDATE_SOURCES)}); forcing: {clim_source}",
+            sources=f"{len(CANDIDATE_SOURCES)} ({listed(CANDIDATE_SOURCES)})",
+            forcing=clim_source,
             extraction=f"{historical_window['start']}–{historical_window['end']}",
-            reference=f"{reference['start']}–{reference['end']}; reporting year starts in {WATER_YEAR_START}",
+            reference=f"{reference['start']}–{reference['end']}",
+            **{"reporting year": f"Starts in {WATER_YEAR_START}"},
         )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more

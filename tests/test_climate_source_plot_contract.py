@@ -61,9 +61,11 @@ def test_workflow_defers_header_and_summarizes_requested_outputs(
     assert captured.out == captured.err == ""
     details = console_style._RUN_HEADER[3]
     if snakefile == "analyze_climate.smk":
-        assert "forcing:" in details["sources"]
+        assert details["sources"]
+        assert details["forcing"]
         assert details["extraction"]
-        assert "reporting year starts in" in details["reference"]
+        assert details["reference"]
+        assert details["reporting year"].startswith("Starts in")
     elif snakefile == "build_model.smk":
         assert details["forcing"]
         assert details["simulation"]

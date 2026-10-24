@@ -103,7 +103,7 @@ def test_an_outlet_and_a_gauge_on_one_cell_are_plotted_once(registry):
         log=messages.append,
     )
     assert sorted(s.wflow_id for s in stations.values()) == [1010, 1020]
-    assert any("same model cell" in message for message in messages)
+    assert any("same location" in message for message in messages)
 
 
 def test_an_unresolvable_series_keeps_its_index_and_says_so(registry):

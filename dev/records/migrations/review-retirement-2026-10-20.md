@@ -37,8 +37,8 @@ Paths in this list are relative to the former `dev/records/reviews/` unless stat
 - `dev-reference-transition-2026-10-20.md`: moved to this migrations directory.
 - `geographic-robustness-2026-09-28.md`: moved unchanged to main's
   `dev/tasks/t2610091622/geographic-robustness-2026-09-28.md`. Findings remain unresolved pending triage.
-- `agent-routing-diagnostics.md`: moved unchanged to main's
-  `dev/tasks/t2610082103/caption-layout/agent-routing-diagnostics.md`.
+- `agent-routing-diagnostics.md`: moved unchanged into task t2610082103's caption-layout folder. That
+  folder was removed when the task closed on 2026-10-24; the file is recoverable from Git at `65637fdc`.
   Both task transfers and their incoming pointers were committed separately on main as `65637fdc`.
 
 The climate-workflow split and Git-workflow simplification proposals, console wording implementation

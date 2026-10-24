@@ -22,14 +22,16 @@ import yaml
 
 from tests._v2_experiment import RUN_IDS, build_v2_experiment, default_responses
 
-pytestmark = pytest.mark.workflow_contract
+pytestmark = [
+    pytest.mark.workflow_contract,
+    pytest.mark.usefixtures("isolated_snakemake"),
+]
 
 REPO = Path(__file__).resolve().parents[1]
 
 
 def _simulate(experiment, *extra, target="indicators"):
     environment = os.environ.copy()
-    environment.pop("SNAKEMAKE_PROFILE", None)
     environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
     result = subprocess.run(
         [

@@ -28,6 +28,8 @@ from tests._v2_experiment import (
     build_v2_experiment,
 )
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
 
 def _responses(locations=("9",), *, without_pet=False):
     """Retained responses at ``locations``; Qcrit is prepared at location 9 only.
@@ -200,7 +202,6 @@ def crop_water_experiment(tmp_path, monkeypatch):
 def _run_indicators(experiment, *extra):
     """Invoke WF4 against the configured synthetic retained responses."""
     environment = os.environ.copy()
-    environment.pop("SNAKEMAKE_PROFILE", None)
     environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
     return subprocess.run(
         [

@@ -28,6 +28,9 @@ import pytest
 
 from blueearth_cst.shared.config_composition import load_composed_config
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 V2_CONFIG = REPO_ROOT / "tests" / "data" / "v2" / "project_config_v2_probe.yml"
 

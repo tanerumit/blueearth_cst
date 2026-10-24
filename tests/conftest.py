@@ -27,6 +27,17 @@ config_fn = join(TESTDIR, "project_config_fixture.yml")
 pytest_plugins = ["dev.scripts.pytest_temp"]
 
 
+@pytest.fixture
+def isolated_snakemake(tmp_path, monkeypatch):
+    """Keep real CLI calls, including launcher children, out of repo state."""
+    from tests.snakemake_state import prepare_workdir, write_profile
+
+    workdir = prepare_workdir(tmp_path / "snakemake")
+    monkeypatch.setenv("SNAKEMAKE_PROFILE", str(write_profile(workdir)))
+    monkeypatch.delenv("SNAKEMAKE_WORKFLOW_PROFILE", raising=False)
+    return workdir
+
+
 @pytest.fixture(autouse=True)
 def _no_ambient_path_tokens(monkeypatch):
     """Start every test with NO declared key folders.

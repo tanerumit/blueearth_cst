@@ -31,6 +31,9 @@ import yaml
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
 from tests.conftest import write_config  # noqa: E402
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
 CONFIG_FN = TESTDIR / "project_config_fixture.yml"

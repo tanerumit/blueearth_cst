@@ -15,7 +15,10 @@ from pathlib import Path
 import pytest
 import yaml
 
-pytestmark = pytest.mark.workflow_contract
+pytestmark = [
+    pytest.mark.workflow_contract,
+    pytest.mark.usefixtures("isolated_snakemake"),
+]
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent

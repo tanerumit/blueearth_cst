@@ -171,7 +171,17 @@ duration evidence before optimizing either tier. Count the selected cases with
 
 `test-fast` runs its workers in parallel (`-n auto --dist loadfile`). Keep `loadfile`: it puts every test in a file on one worker, which is what contains module-level state — a test that stubs a library process-globally stays confined to its own file. `--dist load` distributes per test and would break that. The floor is the per-worker import cost, so adding cores past a point buys nothing.
 
-`test-contract` stays serial. Those tests share a `project_dir` and take `.snakemake` locks, so parallelising them needs each group proved independent first.
+Repository-workflow CLI tests opt into `isolated_snakemake` in `tests/conftest.py`. It selects a fresh
+test-owned working directory through `SNAKEMAKE_PROFILE`, including for owned launchers' child calls.
+Keep that profile when constructing subprocess environments. Package sources and small relative-path
+inputs are copied; producing tests use test-owned project outputs and each test owns its `.snakemake`
+state. In-process simulation DAG checks
+set their working directory explicitly. Parse-only API helpers build rule declarations without
+initializing persistence or the IO cache. Synthetic Snakefiles already running in `tmp_path` retain
+their own state there.
+
+`test-contract` stays serial. Isolating engine state alone does not establish that every contract's
+project outputs and process-level resources are independent.
 
 CI runs the software suite on Windows and Linux. Fixture-dependent tests may skip and real workflow
 execution remains local; CI success does not establish those missing claims. Use a PR when

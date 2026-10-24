@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from tests.snakemake_state import prepare_workdir
+
 
 def parse_simulation_workflow(
     tmp_path, monkeypatch, *, config=None, dry_run=False, include_unperturbed=True
@@ -88,7 +90,7 @@ def parse_simulation_workflow(
             storage_settings=api.StorageSettings(),
             workflow_settings=api.WorkflowSettings(),
             snakefile=repo / "simulate_system.smk",
-            workdir=repo,
+            workdir=prepare_workdir(tmp_path / "snakemake"),
         )
         workflow = wf_api._workflow
         workflow.include(workflow.main_snakefile, overwrite_default_target=True)

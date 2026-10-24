@@ -20,7 +20,10 @@ import yaml
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from tests._v2_experiment import RUN_IDS, Responses, build_v2_experiment
 
-pytestmark = pytest.mark.workflow_contract
+pytestmark = [
+    pytest.mark.workflow_contract,
+    pytest.mark.usefixtures("isolated_snakemake"),
+]
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -68,7 +71,6 @@ def _named(experiment, settings):
 
 def _simulate(experiment, *extra):
     environment = os.environ.copy()
-    environment.pop("SNAKEMAKE_PROFILE", None)
     environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
     result = subprocess.run(
         [

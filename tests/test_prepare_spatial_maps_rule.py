@@ -11,6 +11,9 @@ import pytest
 from blueearth_cst.shared.config_composition import load_composed_config
 from tests.conftest import parse_workflow, write_config
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 REPO = Path(__file__).resolve().parents[1]
 SNAKEFILE = REPO / "build_model.smk"
 CONFIG = REPO / "tests" / "project_config_fixture.yml"

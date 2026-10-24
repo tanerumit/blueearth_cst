@@ -564,10 +564,28 @@ WF1_TARGETS = [
     *_paths.gather_targets.values(),
 ]
 
+# Figures are deliberately not targets: Snakemake's per-figure change checks
+# made every run slow. Instead, request only the plotting rules' declared
+# outputs that are missing now, so a deleted figure or plot folder is redrawn at
+# the cost of one stat per path. A file deleted inside a declared directory,
+# such as one station figure, is not detected.
+_FIGURE_RULES = ("plot_basin_map", "plot_model_forcing", "plot_model_evaluation")
+
+
+def _missing_figure_outputs(wildcards):
+    return [
+        path
+        for name in _FIGURE_RULES
+        for path in getattr(rules, name).output
+        if not os.path.exists(path)
+    ]
+
+
 rule all:
     message: target_banner("all", WF1_TARGETS, project_dir, compact=True)
     input:
         WF1_TARGETS,
+        missing_figures = _missing_figure_outputs,
 
 # 1.01  delineate_region — the one project region artifact.
 # Byte-identical to 2.01 and 3.03 except message/log/benchmark; everything

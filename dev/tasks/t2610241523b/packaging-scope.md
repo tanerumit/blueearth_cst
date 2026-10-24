@@ -1,6 +1,7 @@
 # Packaging scope for the plotting core
 
-Status: scoping record (design-v2 §2.6), 2026-10-23. Not a release decision. It creates no distribution,
+Status: scoping record from t2610082103 step 7 (design-v2 §2.6), 2026-10-23; that design and its
+evidence are recoverable from Git at the task's closure. Not a release decision. It creates no distribution,
 build metadata, package name or public commitment. Basis: branch `refactor/t2610082103` at `f4c06321`.
 
 ## Boundary as implemented
@@ -8,7 +9,7 @@ build metadata, package name or public commitment. Basis: branch `refactor/t2610
 The portable core is `blueearth_cst/plotting/`, plus the empty `blueearth_cst/__init__.py` it sits in.
 Under `python -I`, a copy of only those files imports and renders with numpy and matplotlib. No CST
 module, pandas, PyYAML, xarray, Snakemake or HydroMT module is loaded, and the backend is unchanged.
-`dev/scripts/plotting_standalone_demo.py` checks this; see [implementation evidence](implementation-evidence.md).
+`dev/scripts/plotting_standalone_demo.py` checks this, as the step 7 implementation evidence recorded.
 
 ## Candidate public API
 

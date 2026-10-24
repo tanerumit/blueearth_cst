@@ -42,8 +42,15 @@ an emptied `stations/`, is not detected.
 Contract tests: `_iofile_signature` compares input functions by name, and the parse-time banner
 counts fixed targets; the console recounts resolved inputs at run time.
 
-Runner dry-runs after a completed run report `delineate_region` "set of input files has changed"
-with or without this change; the proof used bare mtime-only dry-runs instead.
+Controls on the unmodified Snakefile also schedule nothing for one deleted basin-average PNG.
+Present-state dry-run timing, three runs each: branch 19.6, 16.8, 13.9 s; main 14.4, 14.6, 14.9 s
+(within noise; the first branch run includes warm-up).
+
+Runner execution (`scripts/run_workflow.py build_model`, default triggers) with `evaluation/plots/`
+moved aside: only 1.15 and 1.16 ran, in 39 s, and the folder was redrawn (4 basin-average figures,
+19 station figures). Runner dry-runs after a completed run nonetheless report `delineate_region`
+"set of input files has changed" and plan all 20 jobs, with or without this change; real execution
+does not rebuild, so the quirk is confined to the runner's dry-run.
 
 Work location: session-1 :: `fix/t2610241609`; scratch session-1 :: `.tmp/scratchpad/t2610241609/`.
 

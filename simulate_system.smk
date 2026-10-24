@@ -41,7 +41,7 @@ for _item in INDICATOR_SETS:
 # One plan and one indicator set per distinct request once the simulation
 # checkpoint resolves.
 PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=max(len(INDICATOR_CALCULATIONS), 1), summary="check retained responses against each indicator request")
-DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=max(len(INDICATOR_CALCULATIONS), 1), summary="compute and publish each immutable indicator set from retained responses")
+DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=max(len(INDICATOR_CALCULATIONS), 1), planned_from="prepare_indicator_plan", summary="compute and publish each immutable indicator set from retained responses")
 
 
 _INDICATOR_REQUESTS = None

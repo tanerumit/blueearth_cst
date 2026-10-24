@@ -4772,6 +4772,33 @@ def test_console_counter_includes_jobs_planned_after_a_checkpoint(monkeypatch):
     assert done[1].endswith("[job 2/2]"), done
 
 
+def test_console_counter_plans_only_the_checkpoint_jobs_this_run_lists(monkeypatch):
+    """Adding a set beside a current one ended WF4's counter at `[job 2/3]`.
+
+    Only the new set's 4.07 plan runs, so 4.08 publishes one set, not two.
+    """
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {"plan": "4.07", "derive": "4.08"})
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan": 2, "derive": 2})
+    monkeypatch.setattr(cs, "_PLANNED_FROM", {"derive": "plan"})
+    counts = {"all": 1, "plan": 1}
+    assert [row[2] for row in cs._plan_rows(counts)] == [1, 1]
+    assert [row[2] for row in cs._plan_rows({"all": 1})] == [2, 2]
+    stats = "Job stats:\njob  count\n----  ---\nall  1\nplan  1\ntotal  2\n"
+    out = _emit(
+        _console_handler(),
+        _console_record(stats, event="run_info"),
+        _job_info(1, "plan", "Rule 4.07: plan"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=2),
+        _job_info(2, "derive", "Rule 4.08: derive"),
+        _console_record(event="job_finished", job_id=2),
+        _console_record(event="progress", done=2, total=3),
+    )
+    done = [line for line in out.splitlines() if "- DONE " in line]
+    assert done[0].endswith("[job 1/2]"), done
+    assert done[1].endswith("[job 2/2]"), done
+
+
 def test_console_counter_and_plan_skip_checkpoint_rules_a_target_excludes(monkeypatch):
     """`--target simulations_only` never reaches 4.07/4.08: no planned jobs."""
     monkeypatch.setattr(

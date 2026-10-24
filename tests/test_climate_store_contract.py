@@ -59,10 +59,17 @@ _parse_workflow = parse_workflow
 
 
 def _iofile_signature(namedlist):
-    """(positional paths, sorted keyword->path) for an input/output namedlist."""
+    """(positional paths, sorted keyword->path) for an input/output namedlist.
+
+    Input functions are rebuilt on every parse, so they compare by name.
+    """
+
+    def plain(value):
+        return f"<callable {value.__name__}>" if callable(value) else str(value)
+
     return (
-        tuple(str(item) for item in namedlist),
-        tuple(sorted((key, str(value)) for key, value in namedlist.items())),
+        tuple(plain(item) for item in namedlist),
+        tuple(sorted((key, plain(value)) for key, value in namedlist.items())),
     )
 
 

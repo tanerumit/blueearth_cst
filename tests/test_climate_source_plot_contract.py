@@ -70,7 +70,8 @@ def test_workflow_defers_header_and_summarizes_requested_outputs(
         assert details["resolution"]
 
     rule = workflow.get_rule("all")
-    count = len(rule.input)
+    # Input functions resolve at DAG time; the console recounts those inputs.
+    count = sum(1 for item in rule.input if not callable(item))
     assert rule.message == f"Requested outputs: {count}/{count} provided"
 
 

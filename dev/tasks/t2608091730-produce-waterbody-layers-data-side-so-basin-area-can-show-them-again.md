@@ -4,9 +4,9 @@ type: todo-item
 status: blocked
 effort: 1
 area: plotting
-queue: 4
+queue: 3
 created: 2026-08-09
-updated: 2026-10-22
+updated: 2026-10-24
 ---
 
 > [!note] Overview

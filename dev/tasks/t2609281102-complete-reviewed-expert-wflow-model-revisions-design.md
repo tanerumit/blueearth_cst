@@ -6,8 +6,8 @@ effort: 2
 area: wf1
 branch: feat/model-upgrading
 created: 2026-09-28
-updated: 2026-10-22
-queue: 2
+updated: 2026-10-24
+queue: 1
 ---
 
 > [!note] Overview

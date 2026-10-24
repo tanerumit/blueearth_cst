@@ -4,9 +4,9 @@ type: todo-item
 status: backlog
 effort: 1
 area: validation
-queue: 7
+queue: 6
 created: 2026-10-09
-updated: 2026-10-22
+updated: 2026-10-24
 ---
 
 > [!note] Overview

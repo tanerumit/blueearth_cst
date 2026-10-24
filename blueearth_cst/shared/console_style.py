@@ -373,6 +373,12 @@ _PRE_DAG_LABEL = "completed before DAG execution"
 # there is none to show.
 _AFTER_CHECKPOINT_RULES = {}
 
+# Checkpoint-gated rule name -> the rule whose job count in this run's table
+# replaces its declared ``planned_jobs``; filled by `rule_banner`'s
+# `planned_from`. WF4 declares one 4.08 job per indicator set, but adding a set
+# beside a current one runs one 4.07 plan, hence one 4.08 publication.
+_PLANNED_FROM = {}
+
 
 # Rule names belonging to a dynamic DAG whose progress denominator can change
 # after checkpoint expansion. A handler activates this mode only after seeing
@@ -420,6 +426,7 @@ class RuleIdentity:
     dynamic_progress: bool = False
     after_checkpoint: bool = False
     planned_jobs: int | None = None
+    planned_from: str | None = None
 
     @property
     def label(self) -> str:
@@ -441,6 +448,7 @@ class RuleIdentity:
             dynamic_progress=self.dynamic_progress,
             after_checkpoint=self.after_checkpoint,
             planned_jobs=self.planned_jobs,
+            planned_from=self.planned_from,
         )
 
     def log(self, part=None) -> str:
@@ -532,6 +540,7 @@ class RuleRegistry:
         dynamic_progress=False,
         after_checkpoint=False,
         planned_jobs=None,
+        planned_from=None,
     ) -> RuleIdentity:
         """Register a rule that writes a log part, and record its label.
 
@@ -547,6 +556,7 @@ class RuleRegistry:
             dynamic_progress=dynamic_progress,
             after_checkpoint=after_checkpoint,
             planned_jobs=planned_jobs,
+            planned_from=planned_from,
         )
         self.log_rules.append(identity.label)
         return identity
@@ -561,6 +571,7 @@ class RuleRegistry:
         dynamic_progress=False,
         after_checkpoint=False,
         planned_jobs=None,
+        planned_from=None,
     ) -> RuleIdentity:
         """A rule with a banner and no log part -- bookkeeping and terminal rules.
 
@@ -580,6 +591,7 @@ class RuleRegistry:
             dynamic_progress=dynamic_progress,
             after_checkpoint=after_checkpoint,
             planned_jobs=planned_jobs,
+            planned_from=planned_from,
         )
 
 
@@ -597,6 +609,7 @@ def rule_banner(
     dynamic_progress=False,
     after_checkpoint=False,
     planned_jobs=None,
+    planned_from=None,
 ):
     """Return a rule's ``message:`` string: a numbered console banner.
 
@@ -692,6 +705,8 @@ def rule_banner(
     checkpoint resolves, so it is absent from the opening job table without
     being up to date. ``planned_jobs`` is the count it will run then; the plan
     block shows it as the rule's job count, or an empty cell when not given.
+    ``planned_from`` names a rule with one job per job of this one; when that
+    rule is in the opening job table, its count replaces ``planned_jobs``.
 
     ``dynamic_progress`` marks a rule in a workflow whose job total can change
     after checkpoint expansion. Once a handler sees one, finish lines keep the
@@ -712,6 +727,8 @@ def rule_banner(
         _DYNAMIC_PROGRESS_RULES.add(name)
     if after_checkpoint:
         _AFTER_CHECKPOINT_RULES[name] = planned_jobs
+    if planned_from:
+        _PLANNED_FROM[name] = planned_from
     tag = f"{rule_id(number)} {name}"
     if summary:
         tag = f"{tag} - {summary}"
@@ -1270,6 +1287,19 @@ def _after_checkpoint_pending(counts):
     return not targets or any(name not in _PRE_CHECKPOINT_TARGETS for name in targets)
 
 
+def _planned_count(name, counts):
+    """Jobs a checkpoint-gated rule absent from ``counts`` will run, or None.
+
+    Its ``planned_from`` rule's count in this run's table when listed there,
+    else its declared ``planned_jobs``. Shared by the plan block and the job
+    counter so the two agree.
+    """
+    source = _PLANNED_FROM.get(name)
+    if source in counts:
+        return counts[source]
+    return _AFTER_CHECKPOINT_RULES[name]
+
+
 def _run_info_counts(text):
     """Parse Snakemake's ``Job stats:`` table into ``{rule name: job count}``.
 
@@ -1332,7 +1362,7 @@ def _plan_rows(counts):
         ):
             # Absent only because the checkpoint has not resolved: its planned
             # count, or an empty cell when it declared none.
-            planned = [_AFTER_CHECKPOINT_RULES[name] for name in names]
+            planned = [_planned_count(name, counts) for name in names]
             jobs = sum(planned) if all(n is not None for n in planned) else ""
         rows.append((number, _plan_rule_name(names), jobs))
     if rows:
@@ -1801,14 +1831,11 @@ class _ConsoleHandler(logging.StreamHandler):
                 sum(counts.values())
                 - self._target_jobs
                 + sum(
-                    planned
-                    for name, planned in _AFTER_CHECKPOINT_RULES.items()
+                    _planned_count(name, counts) or 0
+                    for name in _AFTER_CHECKPOINT_RULES
                     # Only this workflow's rules, as `_plan_rows` lists them;
                     # the registry outlives one parsed Snakefile.
-                    if pending
-                    and planned
-                    and name in _RULE_NUMBERS
-                    and name not in counts
+                    if pending and name in _RULE_NUMBERS and name not in counts
                 )
             )
         plan = _plan_lines(counts) if counts else None

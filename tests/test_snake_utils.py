@@ -59,6 +59,7 @@ def _no_ambient_no_color(monkeypatch):
     """
     monkeypatch.delenv("NO_COLOR", raising=False)
     monkeypatch.setattr(cs, "_DYNAMIC_PROGRESS_RULES", set())
+    monkeypatch.setattr(cs, "_HEADER_PRINTED", False)
 
 
 def test_missing_required_raises():
@@ -286,7 +287,7 @@ def test_compact_drops_a_component_prefix_that_repeats_the_module():
         "wflow_sbm.geoms: Writing geoms to staticgeoms/basins.geojson.\n"
     )
     assert _compact_log_line(line) == (
-        "11:13:01 - geoms - Writing geoms to staticgeoms/basins.geojson\n"
+        "11:13:01 - geoms - Writing to staticgeoms/basins.geojson\n"
     )
 
 
@@ -2882,7 +2883,7 @@ def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     done = out.splitlines()[1]
     assert re.fullmatch(
         r"\d\d:\d\d:\d\d - DONE Rule 3\.14: downscale_scenario_series  "
-        r"\[rlz 1 \| st 0\]  0:01:11  \[job 27/37\]",
+        r"\[rlz 1 \| st 0\]  0:01:11  \[27/37\]",
         done,
     ), done
 
@@ -2907,7 +2908,7 @@ def test_console_start_line_carries_no_progress_counter():
     assert lines[0].endswith("[rlz 1 | st 1]"), lines[0]
     assert lines[-1].endswith("[rlz 1 | st 2]"), lines[-1]
     # Once, on the finish line -- not three times across the pair.
-    assert out.count("[job 8/37]") == 1, out
+    assert out.count("[8/37]") == 1, out
 
 
 def test_console_quiet_start_prints_only_the_finish_line(monkeypatch):
@@ -2925,7 +2926,7 @@ def test_console_quiet_start_prints_only_the_finish_line(monkeypatch):
         _console_record(event="progress", done=6, total=24),
     )
     assert "RUN " not in out, out
-    assert re.search(r"DONE Rule 3\.09: retain .*\[job 6/24\]", out), out
+    assert re.search(r"DONE Rule 3\.09: retain .*\[6/24\]", out), out
 
 
 def test_console_quiet_start_is_opt_in(monkeypatch):
@@ -3064,9 +3065,9 @@ def test_console_a_wave_of_finishes_counts_up_to_the_progress_total():
     out = _emit(handler, *records)
     finished = [line for line in out.splitlines() if " - DONE " in line]
     assert [line.split("  ")[-1] for line in finished] == [
-        "[job 13/37]",
-        "[job 14/37]",
-        "[job 15/37]",
+        "[13/37]",
+        "[14/37]",
+        "[15/37]",
     ], finished
     assert [line.split(" - DONE ")[1].split("  ")[0] for line in finished] == [
         "rule_10",
@@ -3090,7 +3091,7 @@ def test_console_checkpoint_workflow_omits_provisional_job_totals(monkeypatch):
     )
 
     finished = [line for line in out.splitlines() if " - DONE " in line]
-    assert [line.split("  ")[-1] for line in finished] == ["[job 2]", "[job 3]"]
+    assert [line.split("  ")[-1] for line in finished] == ["[2]", "[3]"]
 
 
 def test_console_a_held_finish_is_flushed_uncounted_if_progress_never_comes():
@@ -3286,7 +3287,8 @@ def test_console_opening_puts_the_rules_under_the_title(monkeypatch):
     assert lines[4] == "   1.02  b"
     assert lines[5].startswith("1 of 2 rules to run  |  1 up to date")
     assert lines[6] == ""
-    assert lines[7] == "<project>  <repo>/test_case/test_rapid"
+    assert lines[7] == "Paths"
+    assert lines[8] == "<project>  <repo>/test_case/test_rapid"
 
 
 def test_the_opening_block_draws_no_rules_at_all(monkeypatch):
@@ -3519,6 +3521,36 @@ def test_deferred_warnings_drain_once(monkeypatch):
     assert cs._DEFERRED_WARNINGS == []
 
 
+def test_checkpoint_warning_prints_before_workflow_completion(monkeypatch, capsys):
+    """Warnings discovered after startup must not wait until process exit."""
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    monkeypatch.setattr(cs, "_HEADER_PRINTED", True)
+    cs.defer_rows("19:02:02 - responses - WARNING - Duplicate location kept once\n")
+    assert "Duplicate location kept once" in capsys.readouterr().err
+    assert cs._DEFERRED_WARNINGS == []
+
+
+def test_short_reference_warning_is_a_plain_note(monkeypatch):
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    message = (
+        "Reference period is short: 11 years (1995-2005); recommended minimum: 20 years"
+    )
+    cs.defer_warning(message, module="reference_window")
+    assert cs._drain_deferred_warnings(False) == [message]
+
+
+def test_owned_wf4_defers_done_all_to_its_launcher(monkeypatch):
+    monkeypatch.setenv("CST_SIMULATION_FINALIZE", "1")
+    handler = _console_handler()
+    output = _emit(
+        handler,
+        _job_info(0, "all", "Requested outputs: 1/1 provided"),
+        _console_record(event="job_finished", job_id=0),
+        _console_record(event="progress", done=1, total=1),
+    )
+    assert "DONE all" not in output
+
+
 def test_deferred_warning_flushes_when_the_console_style_did_not_take(monkeypatch):
     """The unstyled path prints its own header, so it flushes on the spot."""
     monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
@@ -3687,7 +3719,7 @@ def test_console_a_rule_without_a_message_still_gets_a_named_finish_line():
         _console_record(event="job_finished", job_id=2),
         _console_record(event="progress", done=9, total=10),
     )
-    assert out.splitlines()[-1].endswith("- DONE some_rule  [job 9/10]"), out
+    assert out.splitlines()[-1].endswith("- DONE some_rule  [9/10]"), out
 
 
 def test_console_a_sub_second_job_shows_no_duration():
@@ -3703,7 +3735,7 @@ def test_console_a_sub_second_job_shows_no_duration():
         _console_record(event="progress", done=3, total=37),
     )
     done = out.splitlines()[1]
-    assert done.endswith("Rule 3.04: snapshot_generation_inputs  [job 3/37]"), done
+    assert done.endswith("Rule 3.04: snapshot_generation_inputs  [3/37]"), done
 
 
 def test_console_no_escape_codes_when_the_stream_is_not_a_tty():
@@ -3749,7 +3781,7 @@ def test_console_a_finish_with_no_start_falls_back_to_snakemakes_own_text():
         _console_record(event="progress", done=4, total=10),
     )
     assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - DONE Finished jobid: 5 \(Rule: seed\)  \[job 4/10\]\n", out
+        r"\d\d:\d\d:\d\d - DONE Finished jobid: 5 \(Rule: seed\)  \[4/10\]\n", out
     ), out
 
 
@@ -4027,13 +4059,16 @@ def test_run_header_shape_matches_run_summary():
     assert lines[1] == "wf3 run_stress_test"
     assert lines[2] == ""
     assert lines[3:] == [
+        "Run settings",
+        "experiment  experiment_rapid",
+        "",
+        "Paths",
         # `<repo>`-marked since t2609162114; the `config` row beside it is not,
         # only because this test passes a CWD-relative path. Snakemake hands a
         # Snakefile an ABSOLUTE `configfiles[0]`, so in a real run both rows
         # carry the marking -- which is the point of routing them the same way.
         "<project>   <repo>/test_case/test_rapid2",
         "config      test_case/project_config_rapid.yml",
-        "experiment  experiment_rapid",
     ]
 
 
@@ -4716,7 +4751,7 @@ def test_path_legend_makes_the_project_base_explicit(declare_folders, tmp_path):
 
 
 def test_console_target_jobs_are_not_counted_as_work(monkeypatch):
-    """`all` finished as `[job 15/15]`; the counter now covers work jobs only.
+    """`all` finished as `[15/15]`; the counter now covers work jobs only.
 
     A mid-run target (WF4's `simulations_only`) shifts every later counter down
     by one, so the last work job still ends at N/N.
@@ -4742,14 +4777,14 @@ def test_console_target_jobs_are_not_counted_as_work(monkeypatch):
         _console_record(event="progress", done=4, total=4),
     )
     done = [line for line in out.splitlines() if "- DONE " in line]
-    assert done[0].endswith("[job 1/2]"), done
+    assert done[0].endswith("[1/2]"), done
     assert "[job" not in done[1], done
-    assert done[2].endswith("[job 2/2]"), done
+    assert done[2].endswith("[2/2]"), done
     assert done[3].endswith("- DONE all"), done
 
 
 def test_console_counter_includes_jobs_planned_after_a_checkpoint(monkeypatch):
-    """WF4 read `[job 112/112]` then `[job 113/114]` once 4.08 was added.
+    """WF4 read `[112/112]` then `[113/114]` once 4.08 was added.
 
     The plan already lists a checkpoint-gated rule's declared jobs, so the
     denominator starts there instead of growing mid-run.
@@ -4768,12 +4803,12 @@ def test_console_counter_includes_jobs_planned_after_a_checkpoint(monkeypatch):
         _console_record(event="progress", done=2, total=3),
     )
     done = [line for line in out.splitlines() if "- DONE " in line]
-    assert done[0].endswith("[job 1/2]"), done
-    assert done[1].endswith("[job 2/2]"), done
+    assert done[0].endswith("[1/2]"), done
+    assert done[1].endswith("[2/2]"), done
 
 
 def test_console_counter_plans_only_the_checkpoint_jobs_this_run_lists(monkeypatch):
-    """Adding a set beside a current one ended WF4's counter at `[job 2/3]`.
+    """Adding a set beside a current one ended WF4's counter at `[2/3]`.
 
     Only the new set's 4.07 plan runs, so 4.08 publishes one set, not two.
     """
@@ -4795,8 +4830,8 @@ def test_console_counter_plans_only_the_checkpoint_jobs_this_run_lists(monkeypat
         _console_record(event="progress", done=2, total=3),
     )
     done = [line for line in out.splitlines() if "- DONE " in line]
-    assert done[0].endswith("[job 1/2]"), done
-    assert done[1].endswith("[job 2/2]"), done
+    assert done[0].endswith("[1/2]"), done
+    assert done[1].endswith("[2/2]"), done
 
 
 def test_console_counter_and_plan_skip_checkpoint_rules_a_target_excludes(monkeypatch):
@@ -4816,4 +4851,4 @@ def test_console_counter_and_plan_skip_checkpoint_rules_a_target_excludes(monkey
         _console_record(event="progress", done=1, total=2),
     )
     done = [line for line in out.splitlines() if "- DONE " in line]
-    assert done[0].endswith("[job 1/1]"), done
+    assert done[0].endswith("[1/1]"), done

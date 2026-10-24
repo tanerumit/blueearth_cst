@@ -164,6 +164,7 @@ def warn_row(message, module="cst"):
 #: Parse-time WARNING rows held for the run header, oldest first. Popped by
 #: :func:`_drain_deferred_warnings` -- see :func:`defer_warning`.
 _DEFERRED_WARNINGS = []
+_HEADER_PRINTED = False
 
 
 def defer_warning(message, module="cst"):
@@ -203,6 +204,11 @@ def defer_warning(message, module="cst"):
     # to the flush would drop the rows of exactly the runs that went wrong.
     note_warning(module)
     _DEFERRED_WARNINGS.append((f"{datetime.now():%H:%M:%S}", str(module), str(message)))
+    if _HEADER_PRINTED:
+        sys.stderr.write(
+            "\n".join(_drain_deferred_warnings(_console_colour(sys.stderr))) + "\n"
+        )
+        sys.stderr.flush()
 
 
 def defer_rows(text):
@@ -220,6 +226,10 @@ def defer_rows(text):
             _DEFERRED_WARNINGS.append((fields[0], fields[1], fields[3]))
         elif line.strip():
             sys.stderr.write(line + "\n")
+    if _HEADER_PRINTED:
+        held = _drain_deferred_warnings(_console_colour(sys.stderr))
+        if held:
+            sys.stderr.write("\n".join(held) + "\n")
     sys.stderr.flush()
 
 
@@ -240,7 +250,12 @@ def _drain_deferred_warnings(colour):
     held = list(_DEFERRED_WARNINGS)
     del _DEFERRED_WARNINGS[:]
     return [
-        _paint_body(_log_row_text(hms, module, "WARNING", message), colour)
+        _paint_body(
+            message
+            if message.startswith("Reference period is short:")
+            else _log_row_text(hms, module, "WARNING", message),
+            colour,
+        )
         for hms, module, message in held
     ]
 
@@ -1133,7 +1148,9 @@ def opening_block(workflow, project_dir, config_path=None, details=None, plan=No
     go, so the title is kept there regardless: a caption with nothing to
     caption is still the only statement of the run's size.
     """
-    meta = meta_row_lines(run_meta_rows(project_dir, config_path, details))
+    meta = meta_row_lines(
+        run_meta_rows(project_dir, config_path, details), grouped=True
+    )
     head, rows = ("", []) if plan is None else (plan[0], list(plan[1]))
 
     out = [("", "body")]
@@ -1252,13 +1269,15 @@ def open_run_header(workflow, project_dir, config_path=None, **details):
     :meth:`_ConsoleHandler._opening`, which every styled console goes through;
     this branch, which does print, flushes on the spot.
     """
-    global _RUN_HEADER
+    global _RUN_HEADER, _HEADER_PRINTED
+    _HEADER_PRINTED = False
     if _CONSOLE_STYLE_ACTIVE:
         _RUN_HEADER = (workflow, project_dir, config_path, dict(details))
         return True
     sys.stderr.write(
         "\n" + run_header(workflow, project_dir, config_path, **details) + "\n\n"
     )
+    _HEADER_PRINTED = True
     held = _drain_deferred_warnings(_console_colour(sys.stderr))
     if held:
         sys.stderr.write("\n".join(held) + "\n\n")
@@ -1767,9 +1786,11 @@ class _ConsoleHandler(logging.StreamHandler):
         without the rules, and `run_info` renders the plan on its own after.
         Losing the header entirely is the one outcome worth guarding against.
         """
+        global _HEADER_PRINTED
         if _RUN_HEADER is None or self._opened:
             return []
         self._opened = True
+        _HEADER_PRINTED = True
         workflow, project_dir, config_path, details = _RUN_HEADER
         # ONE builder with `run_header`, so a run that loses its styling does
         # not also lose its layout. The tiers come back with the text; mapping
@@ -2029,6 +2050,9 @@ class _ConsoleHandler(logging.StreamHandler):
             # every later counter shifts down by one.
             self._targets_done += 1
             counter = None
+        if rule_name == "all" and os.environ.get("CST_SIMULATION_FINALIZE"):
+            # The owned launcher still has result exports to publish.
+            return ""
         if rule_name is None and fallback:
             # No start line was seen for this job, so there is nothing to render
             # in our grammar -- under `--quiet rules` the filter dropped it, and
@@ -2065,14 +2089,6 @@ class _ConsoleHandler(logging.StreamHandler):
             tail.append(format_elapsed(time.monotonic() - started))
         progress = self._progress_label(counter, total)
         if progress:
-            # `job`, because the counter and the plan block above it count
-            # DIFFERENT things and a reader was left to reconcile them: the plan
-            # head says `5 of 19 rules to run` and this counter reaches 6, since
-            # rule `all` is a job the plan deliberately does not list (see
-            # `_plan_head`). Naming the unit fixes the read without forcing
-            # either number to move -- listing `all` would put a non-work row in
-            # a plan of work, and counting jobs off Snakemake's table would
-            # leave the head line off by one from the table it introduces.
             tail.append(f"[{progress}]")
         line = f"{self._now()} - {_MARKER_DONE} " + "  ".join(parts)
         if tail:
@@ -2097,8 +2113,8 @@ class _ConsoleHandler(logging.StreamHandler):
             if self._planned_jobs:
                 total = max(total, self._planned_jobs)
         if self._dynamic_progress:
-            return f"job {counter}"
-        return f"job {counter}/{total}" if total else ""
+            return str(counter)
+        return f"{counter}/{total}" if total else ""
 
     def _now(self):
         return f"{datetime.now():%H:%M:%S}"
@@ -2164,6 +2180,8 @@ def install_console_style():
     would mean shipping and depending on a separate package to restyle our own
     console -- a new dependency for a cosmetic layer.
     """
+    global _HEADER_PRINTED
+    _HEADER_PRINTED = False
     try:
         from snakemake.logging import logger_manager
 
@@ -2204,17 +2222,9 @@ def run_header(workflow, project_dir, config_path=None, **details):
     header row and a body line that disagreed would be worse than no header at
     all. One declaration, two readers.
 
-    **Two GROUPS, blank-line separated, each under a label.** The rows are two
-    different kinds of thing and read as one wall of text without the split:
-    the first three answer "which run is this", while the ``<name>`` rows are a
-    LEGEND -- they define the tokens every path in every line below is printed
-    with. Nothing said so, which left a reader to infer from angle brackets
-    alone why ``<model>`` was written that way, and the block ran on into
-    Snakemake's own ``Job stats:`` with no air between them.
-
-    The labelled rows indent one step further than the label, which is what
-    makes the grouping visible without a rule or a box. :func:`run_summary`
-    closes the run in the same shape, under one group labelled ``wrote``.
+    ``Run settings`` groups the workflow's parameters. ``Paths`` groups the
+    project, configuration and path-token definitions. A blank separates the
+    groups, and their values share one aligned column.
 
     Every value is FORWARD-SLASHED, including ``config`` -- which was the one
     row that was not, so a block whose whole purpose is to state paths mixed
@@ -2239,13 +2249,8 @@ def run_header(workflow, project_dir, config_path=None, **details):
 def run_meta_rows(project_dir, config_path=None, details=None):
     """``[(key, value)]`` for the run's metadata block: what run this is.
 
-    The declared path tokens are appended to the run's own facts rather than
-    kept in a second labelled group. They were split until 2026-09-06, with the
-    tokens under ``path tokens -- these folders print as <name> in every line
-    below``; the label and the split are gone because the ANGLE BRACKETS
-    already say which rows are a legend, and under the current layout these
-    rows sit directly above the lines that use them rather than eleven lines
-    away. Four lines of the old block named rows instead of being rows.
+    Returns flat data for callers; :func:`meta_row_lines` groups parameters
+    and path definitions when rendering the opening block.
     """
     # Through `display_root`, like `target_banner`'s bracket: the two print the
     # same directory a few lines apart and disagreed about its spelling until
@@ -2285,19 +2290,29 @@ def run_meta_rows(project_dir, config_path=None, details=None):
     return rows
 
 
-def meta_row_lines(rows):
-    """Render ``[(key, value)]`` as one aligned, FLUSH-LEFT column.
-
-    Indented two spaces until 2026-09-17, which left these rows one column in
-    from the title above them and from the rules table between. Every line the
-    opening block writes starts at column 0; the block's structure is carried
-    by blank lines and by the shape of each part -- numbered rows, a caption,
-    a `key  value` column -- rather than by indent or by a rule.
-    """
+def meta_row_lines(rows, *, grouped=False):
+    """Group run settings and paths, keeping path-token definitions together."""
     if not rows:
         return []
     width = max(len(key) for key, _ in rows)
-    return [f"{key.ljust(width)}  {value}" for key, value in rows]
+    if not grouped:
+        return [f"{key.ljust(width)}  {value}" for key, value in rows]
+    paths = [
+        (key, value) for key, value in rows if key.startswith("<") or key == "config"
+    ]
+    settings = [
+        (key, value)
+        for key, value in rows
+        if not key.startswith("<") and key != "config"
+    ]
+    lines = []
+    for title, group in (("Run settings", settings), ("Paths", paths)):
+        if group:
+            if lines:
+                lines.append("")
+            lines.append(title)
+            lines.extend(f"{key.ljust(width)}  {value}" for key, value in group)
+    return lines
 
 
 def title_rule(text):

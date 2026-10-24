@@ -26,6 +26,9 @@ from blueearth_cst.projections.gridded_outputs import (
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
 from tests.conftest import write_config  # noqa: E402
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 REPO = Path(__file__).resolve().parents[1]
 
 

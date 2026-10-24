@@ -19,6 +19,9 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 SNAKEDIR = Path(__file__).resolve().parents[1]
 SNAKEFILE = SNAKEDIR / "build_model.smk"
 CFG = SNAKEDIR / "test_case" / "project_config_baseline.yml"
@@ -71,7 +74,7 @@ def test_staticmaps_edges_stay_ancient():
     reason="untracked test_case/test_local fixture tree not present",
 )
 @pytest.mark.workflow_contract
-def test_rerunning_build_wflow_model_reschedules_the_whole_toml_chain():
+def test_rerunning_build_wflow_model_reschedules_the_whole_toml_chain(tmp_path):
     """THE REGRESSION. If build_wflow_model re-fires, every rule that writes into
     wflow_sbm.toml must come with it. Before the fix the DAG scheduled
     build_wflow_model and stopped, leaving the toml stripped of [output] and
@@ -83,8 +86,14 @@ def test_rerunning_build_wflow_model_reschedules_the_whole_toml_chain():
     property under test is "when build_wflow_model runs, does the chain follow?",
     which --forcerun expresses directly and deterministically.
     """
+    from blueearth_cst.shared.config_composition import load_composed_config
+    from tests.conftest import write_config
+
+    config = load_composed_config(CFG)
+    config["project"]["project_dir"] = (SNAKEDIR / "test_case/test_local").as_posix()
+    config_path = write_config(tmp_path, config)
     res = subprocess.run(
-        f"snakemake all -c 1 -s {SNAKEFILE} --configfile {CFG} "
+        f'snakemake all -c 1 -s "{SNAKEFILE}" --configfile "{config_path}" '
         f"--dry-run --forcerun build_wflow_model",
         shell=True,
         capture_output=True,

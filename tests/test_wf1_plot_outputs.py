@@ -51,6 +51,9 @@ from tests.conftest import write_config  # noqa: E402
 _GAUGES_LAYER = "gauges_output-locations"
 _GEOMS = {"basins", "rivers", "outlets", _GAUGES_LAYER}
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
 CONFIG_FN = TESTDIR / "project_config_fixture.yml"

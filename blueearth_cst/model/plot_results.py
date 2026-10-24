@@ -109,8 +109,8 @@ def resolve_stations(qsim, location_registry, log=_log):
         )
         if station.wflow_id in seen:
             log(
-                f"Series {index} and {seen[station.wflow_id]} resolve to the same model "
-                f"cell (wflow_id {station.wflow_id}); rendering one figure set"
+                f"Series {index} and {seen[station.wflow_id]} resolve to the same "
+                "location; rendering one figure set"
             )
             continue
         seen[station.wflow_id] = index
@@ -479,7 +479,7 @@ def analyse_wflow_historical(
     df_perf_all.to_csv(os.path.join(Folder_eval, "performance_indicators.csv"))
     _log(
         (
-            f"Performance indicator table written for {plural(len(df_perf_all.columns), 'evaluated location')}"
+            "Performance indicator table written to"
             if len(df_perf_all.columns)
             else "No observation-based performance indicators computed"
         )

@@ -245,7 +245,7 @@ if not _simulation_complete:
         ADVANCED_SETTINGS["batching"], compute, psutil.virtual_memory().available)
     _threads = min([_plan.threads, *[int(value) for name, value in
         getattr(workflow.resource_settings, "overwrite_threads", {}).items() if name.startswith("run_wflow_simulations_batch_")]])
-    BATCH_PLAN_SUMMARY = f"Up to {plural(_plan.max_parallel, 'concurrent batch', 'concurrent batches')}; {plural(_plan.threads, 'Julia thread')} per batch; selection: {_plan.regime}"
+    BATCH_PLAN_SUMMARY = f"Up to {plural(_plan.max_parallel, 'simulation')} at once; {plural(_threads, 'Julia thread')} per simulation"
     if _plan.active_cells is not None:
         BATCH_PLAN_SUMMARY += f"; {_plan.active_cells} active model cells"
     sizing = resolve_batch_size(member_count=len(RUN_IDS), cores=_plan.max_parallel,

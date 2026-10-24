@@ -22,14 +22,16 @@ import yaml
 
 from tests._v2_experiment import RUN_IDS, build_v2_experiment, default_responses
 
-pytestmark = pytest.mark.workflow_contract
+pytestmark = [
+    pytest.mark.workflow_contract,
+    pytest.mark.usefixtures("isolated_snakemake"),
+]
 
 REPO = Path(__file__).resolve().parents[1]
 
 
 def _simulate(experiment, *extra, target="indicators"):
     environment = os.environ.copy()
-    environment.pop("SNAKEMAKE_PROFILE", None)
     environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
     result = subprocess.run(
         [
@@ -124,6 +126,11 @@ def test_a_published_set_is_reused_byte_for_byte_under_forceall(tmp_path):
 
     code, output = _simulate(experiment)
     assert code == 0, output
+    assert output.count("DONE all") == 1, output
+    assert output.index("results saved") < output.index(
+        "wf4 simulate_system completed"
+    ), output
+    assert output.rstrip().endswith("- DONE all"), output
     marker = next((root / "_engine/indicator_sets").glob("*/indicators.json"))
     assert (marker.parent / "data").is_dir()
     assert not (root / "results/indicator_sets" / marker.parent.name).exists()

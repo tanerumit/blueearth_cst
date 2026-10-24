@@ -105,7 +105,7 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
     if window.n_years < SHORT_WINDOW_YEARS:
         lines.append(
             f"Reference period is short: {window.n_years} years "
-            f"({window.effective_label}); recommended design length: "
+            f"({window.effective_label}); recommended minimum: "
             f"{SHORT_WINDOW_YEARS} years"
         )
 

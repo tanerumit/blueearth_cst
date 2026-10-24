@@ -24,6 +24,9 @@ from blueearth_cst.experiment.simulation_runner import check_required_variables
 from tests._v2_experiment import FIXTURE_ENVIRONMENT, build_v2_experiment
 from tests.test_crop_water_integration import _responses
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 REASON = "missing_parameter:thresholds"
 
 
@@ -202,7 +205,6 @@ def test_cli_partial_run_succeeds_with_warning_and_strict_refuses(experiment, ex
     source.write_text(_crop_water(source, thresholds).source.text, encoding="utf-8")
     workflow = built.config.parent / "simulate_system.yml"
     environment = os.environ.copy()
-    environment.pop("SNAKEMAKE_PROFILE", None)
     environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
 
     def run(evaluation, *extra):

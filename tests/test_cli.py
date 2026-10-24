@@ -18,6 +18,9 @@ import cross_workflow_inputs as cwi  # noqa: E402
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
 from tests.conftest import write_config  # noqa: E402
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 config_fn = join(TESTDIR, "project_config_fixture.yml")
 linux_config_fn = join(SNAKEDIR, "test_case", "project_config_baseline_linux.yml")
 
@@ -30,9 +33,10 @@ def _dry_run(snakefile, cfg=config_fn, env=None):
     match on the combined stream so a stream change does not silently break a
     ratchet assertion below.
     """
-    os.chdir(SNAKEDIR)
     cmd = f"snakemake all -c 1 -s {snakefile} --configfile {cfg} --dry-run"
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True, env=env)
+    return subprocess.run(
+        cmd, shell=True, capture_output=True, text=True, env=env, cwd=SNAKEDIR
+    )
 
 
 @pytest.fixture()
@@ -243,7 +247,7 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
     scratch.mkdir(exist_ok=True)
     try:
         cfg = load_composed_config(config_fn)
-        cfg["project"]["project_dir"] = "_o22_probe_project"
+        cfg["project"]["project_dir"] = scratch.as_posix()
         cfg_path = write_config(tmp_path, cfg, stem="project_config_in_repo")
 
         result = _dry_run("build_model.smk", cfg=str(cfg_path))
@@ -270,6 +274,7 @@ def test_baseline_seed_config_does_not_warn(tmp_path):
     """
     seed_cfg = join(SNAKEDIR, "test_case", "project_config_baseline.yml")
     cfg = load_composed_config(seed_cfg)
+    cfg["project"]["project_dir"] = Path(SNAKEDIR, "test_case/test_local").as_posix()
     # Keep the baseline project_dir and gauge request, but isolate the warning
     # contract from the P-drive data mirror unavailable on both CI platforms.
     cfg["project"]["catalog"] = load_composed_config(config_fn)["project"]["catalog"]

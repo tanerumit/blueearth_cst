@@ -503,7 +503,7 @@ if MAP_CANDIDATE_STORES:
 PRODUCE_MAP_REFERENCE = RULES.logged("1.03c", "produce_historical_map_reference", summary="prepare shared historical map display classes")
 PREPARE_SOURCE_MAPS = RULES.logged("1.03d", "prepare_historical_map_fields", summary="prepare shared native-grid map fields")
 PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps", summary="prepare shared terrain, land-cover, and soil layers")
-BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from the spatial foundation and global datasets")
+BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize from spatial foundation and global datasets")
 ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="apply configured reservoir, lake, and glacier setup")
 DECLARE_GAUGES_AND_OUTPUTS = RULES.logged("1.08", "declare_gauges_and_outputs", summary="configure discharge locations and output variables")
 ADD_CLIMATE_FORCING = RULES.logged("1.09", "add_climate_forcing", summary="prepare historical forcing")
@@ -512,7 +512,7 @@ PLOT_BASIN_MAP = RULES.logged("1.11", "plot_basin_map", summary="render basin an
 PLOT_MODEL_FORCING = RULES.logged("1.12", "plot_model_forcing", summary="render model-forcing maps and time series")
 RUN_HISTORICAL_SIMULATION = RULES.logged("1.13", "run_historical_simulation", summary="run Wflow-SBM with historical forcing")
 EXPORT_SIMULATION_TABLES = RULES.logged("1.14", "export_simulation_tables", summary="export simulation time-series tables")
-PLOT_MODEL_EVALUATION = RULES.logged("1.15", "plot_model_evaluation", summary="review simulation outputs and compare available discharge observations")
+PLOT_MODEL_EVALUATION = RULES.logged("1.15", "plot_model_evaluation", summary="compare simulation outputs with available discharge observations")
 WRITE_RUN_METADATA = RULES.banner_only("1.16", "write_run_metadata", summary="record configuration and input digests for these outputs")
 GATHER_BENCHMARKS = RULES.banner_only("1.17", "gather_benchmarks", summary="merge rule timing and resource-use records")
 GATHER_LOGS = RULES.banner_only("1.18", "gather_logs", summary="merge rule logs")
@@ -1453,7 +1453,7 @@ def _header():
             "wf1 build_model", project_dir, config_path,
             forcing=clim_source,
             simulation=f"{SIMULATION_BOUNDS[0].date()}–{SIMULATION_BOUNDS[1].date()}",
-            resolution=model_resolution,
+            resolution=f"{model_resolution:g}°",
         )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more

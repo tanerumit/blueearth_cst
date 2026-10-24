@@ -446,7 +446,9 @@ def _header():
         # first thing this toolbox puts on the console and it must not open
         # flush against Snakemake's preamble nor close flush against its
         # `Job stats:`. `open_run_header` owns that; the spacing is its business.
-        open_run_header("wf3 generate_scenarios", project_dir, config_path)
+        open_run_header("wf3 generate_scenarios", project_dir, config_path,
+                        forcing=clim_source, realizations=RLZ_NUM,
+                        perturbations=ST_NUM, scenarios=len(SCENARIO_ROWS))
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

@@ -33,6 +33,9 @@ import yaml
 
 from dev.scripts.local_e2e_bundle import RAW_NAMES, verify_bundle
 
+pytestmark = pytest.mark.usefixtures("isolated_snakemake")
+
+
 REPO = Path(__file__).resolve().parents[1]
 CONFIG = REPO / "test_case" / "project_config_rapid.yml"
 

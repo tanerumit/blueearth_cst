@@ -21,6 +21,7 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-24 | t2610241600 | Rebuild deleted WF1 outputs that targets do not request [dropped] | wf1  |
 | 2026-10-24 | t2610082103 | Share plot renderers across climate workflows | plotting |
 | 2026-10-23 | t2610232335 | Re-audit simulation reuse pin after release-tag display | experiment |
 | 2026-10-23 | t2610230016 | Investigate incomplete skill loading in delegated workers | tooling |

@@ -48,6 +48,10 @@ def test_simulation_startup_details_wait_for_header(
     captured = capsys.readouterr()
     assert captured.out == captured.err == ""
     details = console_style._RUN_HEADER[3]
+    assert console_style._RUN_HEADER[2] == scheduling["config_path"]
+    header = console_style.run_header(*console_style._RUN_HEADER[:3], **details)
+    paths = header.splitlines()[header.splitlines().index("Paths") + 1 :]
+    assert paths[0].split()[0] == "config"
     assert "compute" not in details and "operation" not in details
     assert details["water year"].startswith("Starts in")
     if operation == "simulations-only":

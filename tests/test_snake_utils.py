@@ -4067,8 +4067,8 @@ def test_run_header_shape_matches_run_summary():
         # only because this test passes a CWD-relative path. Snakemake hands a
         # Snakefile an ABSOLUTE `configfiles[0]`, so in a real run both rows
         # carry the marking -- which is the point of routing them the same way.
-        "<project>   <repo>/test_case/test_rapid2",
         "config      test_case/project_config_rapid.yml",
+        "<project>   <repo>/test_case/test_rapid2",
     ]
 
 

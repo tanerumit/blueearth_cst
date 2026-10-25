@@ -19,6 +19,7 @@ sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, listed, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, warning_count, window_year_pair
 from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo
+from blueearth_cst.shared.console_style import header_config_path
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -1445,7 +1446,7 @@ def _header():
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
         open_run_header(
-            "wf2 analyze_projections", project_dir, config_path,
+            "wf2 analyze_projections", project_dir, header_config_path(config_path, CAPTURE_RECORD),
             **{
                 "reference period": REFERENCE_WINDOW.effective_label,
                 "future periods": listed([f"{start}–{end}" for start, end in future_horizons.values()]),

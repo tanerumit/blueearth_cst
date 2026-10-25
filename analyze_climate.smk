@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
+from blueearth_cst.shared.console_style import header_config_path
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -645,7 +646,7 @@ def _header():
             settings["reference period"] = f"{reference['start']}–{reference['end']}"
         settings["water year"] = f"Starts in {WATER_YEAR_START}"
         open_run_header(
-            "wf0 analyze_climate", project_dir, config_path, **settings,
+            "wf0 analyze_climate", project_dir, header_config_path(config_path, CAPTURE_RECORD), **settings,
         )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more

@@ -9,6 +9,8 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Show the user-facing project config as the first Paths row in every workflow's console header.
+
 - Generate concise case instructions with copy-paste commands, incomplete-job reruns and unlock,
   and a configuration summary at the end.
 

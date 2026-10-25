@@ -2223,8 +2223,8 @@ def run_header(workflow, project_dir, config_path=None, **details):
     all. One declaration, two readers.
 
     ``Run settings`` groups the workflow's parameters. ``Paths`` groups the
-    project, configuration and path-token definitions. A blank separates the
-    groups, and their values share one aligned column.
+    user-facing configuration first, then project and path-token definitions.
+    A blank separates the groups, and their values share one aligned column.
 
     Every value is FORWARD-SLASHED, including ``config`` -- which was the one
     row that was not, so a block whose whole purpose is to state paths mixed
@@ -2246,6 +2246,19 @@ def run_header(workflow, project_dir, config_path=None, **details):
     )
 
 
+def header_config_path(
+    config_path: str | os.PathLike[str], capture_record: dict | None = None
+) -> str:
+    """Return the user's project config path, retaining snapshots for execution."""
+    if capture_record is None:
+        return os.fspath(config_path)
+    return next(
+        source["original_path"]
+        for source in capture_record["source_files"]
+        if source["id"] == capture_record["source_config"]
+    )
+
+
 def run_meta_rows(project_dir, config_path=None, details=None):
     """``[(key, value)]`` for the run's metadata block: what run this is.
 
@@ -2255,26 +2268,10 @@ def run_meta_rows(project_dir, config_path=None, details=None):
     # Through `display_root`, like `target_banner`'s bracket: the two print the
     # same directory a few lines apart and disagreed about its spelling until
     # 2026-09-16 (t2609162114).
-    rows = [("<project>", display_root(project_dir))]
+    rows = []
     if config_path:
-        # A generated config now lives under `config/_engine/
-        # execution-configs/<workflow>/<digest>/`, which is INSIDE the
-        # project -- so on a production run this row printed the same
-        # absolute prefix as `<project>` above it, repeated in full. Marked
-        # with `_tokenize_prefix`, the same mechanism `<data>`/`<climate>`
-        # rows use, rather than a bare `_strip_prefix`: a silent strip is what
-        # the old docstring here warned against, since it would render a
-        # project-relative config indistinguishable from an output path. The
-        # `<project>/` marker is what keeps the two distinguishable.
-        #
-        # FORWARD SLASHES, unconditionally. The rewrites above normalise a
-        # config that lives under the repo, and `display_root` normalises the
-        # `<project>` row beside it -- but a config OUTSIDE both (a real project
-        # tree, which is where production configs live) matched neither and
-        # kept its OS separators, so the block printed
-        # `project C:/a/b` above `config C:\a\b` and read as two trees. That is
-        # the defect this row's own docstring describes and the existing test
-        # could not see, because it passes a config inside the repo.
+        # Keep configs inside the project distinguishable from output paths.
+        # External configs also need forward slashes when no token matches.
         config_display = os.fspath(config_path)
         if project_dir:
             root = os.path.abspath(os.fspath(project_dir))
@@ -2282,6 +2279,7 @@ def run_meta_rows(project_dir, config_path=None, details=None):
         rows.append(
             ("config", _relativize_paths(config_display, "").replace("\\", "/"))
         )
+    rows.append(("<project>", display_root(project_dir)))
     rows.extend((key, str(value)) for key, value in (details or {}).items())
     rows.extend(_folder_rows(project_dir))
     rows.extend(

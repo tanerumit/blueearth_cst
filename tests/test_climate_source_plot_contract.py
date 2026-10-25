@@ -64,6 +64,27 @@ def test_workflow_defers_header_and_summarizes_requested_outputs(
     captured = capsys.readouterr()
     assert captured.out == captured.err == ""
     details = console_style._RUN_HEADER[3]
+    if snakefile != "generate_scenarios.smk":
+        # Source entries are sorted by ID, so the project need not be first.
+        source = str(CONFIG_FN.parent / "user-project.yml")
+        monkeypatch.setitem(
+            workflow.globals,
+            "CAPTURE_RECORD",
+            {
+                "source_config": "project",
+                "source_files": [
+                    {"id": "catalog", "original_path": "catalog.yml"},
+                    {"id": "project", "original_path": source},
+                ],
+            },
+        )
+        workflow.globals["_header"]()
+        assert console_style._RUN_HEADER[2] == source
+    else:
+        assert Path(console_style._RUN_HEADER[2]).resolve() == CONFIG_FN.resolve()
+    header = console_style.run_header(*console_style._RUN_HEADER[:3], **details)
+    paths = header.splitlines()[header.splitlines().index("Paths") + 1 :]
+    assert paths[0].split()[0] == "config"
     if snakefile == "analyze_climate.smk":
         window = workflow.globals["historical_window"]
         period = f"{window['start']}–{window['end']}"

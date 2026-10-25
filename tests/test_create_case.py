@@ -142,7 +142,10 @@ def test_create_preserves_template_and_leaves_inventory(
         ]
     assert "| Status |" not in instructions
     assert f'$projectDir = "{cases.as_posix()}/runs/new-basin"' in instructions
-    assert instructions.rsplit("\n## ", 1)[1].startswith("Output folder and results")
+    assert instructions.rsplit("\n## ", 1)[1].startswith("Configuration")
+    assert "--cores 3 -- --rerun-incomplete" in instructions
+    assert "--cores 3 -- --unlock" in instructions
+    assert "Set-Location" not in instructions
     notes = (application / "notes.md").read_text(encoding="utf-8")
     assert "Purpose: Test | basin" in notes
     assert "CST version at creation: " in notes

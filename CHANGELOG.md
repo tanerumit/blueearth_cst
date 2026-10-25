@@ -9,6 +9,9 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Generate concise case instructions with copy-paste commands, incomplete-job reruns and unlock,
+  and a configuration summary at the end.
+
 - Add portable project schema 3: file paths resolve beside their declaring YAML, and `toolbox:`
   locators select bundled resources. Case scaffolds and shipped seeds use the new contract.
   Schema 2 retains its existing path semantics; see [migration guidance](docs/guide/configuration.md).

@@ -77,8 +77,9 @@ Parameters also receive short definitions and `Input:` or `Options:` hints, draw
 the toolbox's maintained configuration templates. Existing explanations and settings
 are preserved. Custom parameters without template help receive a basic YAML type hint.
 
-Read the generated `INSTRUCTIONS.md` for preview and execution commands and
-a guide to the output folders. After
+The generated `INSTRUCTIONS.md` is a copy-paste quick reference for previewing, running,
+rerunning incomplete jobs, unlocking, and recalculating indicators. Output paths follow the commands;
+the configuration summary is last. After
 selecting forcing, disable historical climate analysis before enabling downstream
 workflows. The scaffold does not run workflows or commit files.
 

@@ -15,7 +15,13 @@ from blueearth_cst.shared.project_rebuild import (
     erase_outputs,
     plan_rebuild,
 )
-from blueearth_cst.shared.workflow_config_snapshot import archive_lock
+from blueearth_cst.shared.workflow_config_snapshot import (
+    archive_lock,
+    capture_sources,
+    publish_archive,
+    read_archive,
+    run_record_document,
+)
 from scripts import run_workflows as runner
 
 
@@ -71,12 +77,65 @@ def test_erasure_removes_readonly_generation_snapshot(project):
             snapshot.chmod(stat.S_IREAD | stat.S_IWRITE)
 
 
+@pytest.mark.parametrize(
+    "workflow,owner_kind,target",
+    [
+        (
+            "generate_scenarios",
+            "scenario_collection",
+            "scenarios/_engine/data/123456abcdef/config",
+        ),
+        ("simulate_system", "experiment", "experiments/experiment_01/config"),
+    ],
+)
+@pytest.mark.parametrize("missing_target", [False, True])
+def test_rebuild_allows_republishing_artifact_archive(
+    project, workflow, owner_kind, target, missing_target
+):
+    owner = "123456abcdef"
+    record, payloads = run_record_document(
+        workflow=workflow,
+        invocation_id="before-rebuild",
+        owner_kind=owner_kind,
+        owner_id=owner,
+        loaded_config={},
+        advanced_settings={},
+        projection=[],
+        toolbox={},
+        environment={},
+        invocation={
+            "entry_point": "test",
+            "command": [],
+            "targets": [],
+            "working_directory": str(project.config.parent),
+            "overrides": {},
+        },
+        sources=capture_sources([("project", "project_config", project.config)]),
+    )
+    with archive_lock(project.root, "project-execution"):
+        publish_archive(project.root, owner, target, record, payloads)
+        if missing_target:
+            # Reproduce an earlier rebuild that erased outputs but left journals.
+            journal = project.root / f"config/_engine/archive-transactions/{owner}.json"
+            transaction = journal.read_bytes()
+            erase_outputs(plan_rebuild(project.root, project.config), project.config)
+            journal.write_bytes(transaction)
+        erase_outputs(plan_rebuild(project.root, project.config), project.config)
+        publish_archive(project.root, owner, target, record, payloads)
+        assert read_archive(project.root, owner, target) == record
+
+
 def test_erasure_preserves_sources_unrelated_paths_and_the_held_lock(project):
     for relative in OUTPUT_ROOTS:
         _write(project.root / relative / "nested/product.bin")
     staged = project.root / f"config/.build_model.{'a' * 32}.previous"
     _write(staged / "run_record.yml")
     _write(project.root / "config/_engine/archive-transactions/build_model.json")
+    transactions = project.root / "config/_engine/archive-transactions"
+    completed = _write(
+        transactions / "completed/old-artifact.json",
+        json.dumps({"target": "scenarios/_engine/data/old/config"}),
+    )
     retained = [
         "data/output_locations.csv",
         "data/inputs/weather.nc",
@@ -89,6 +148,12 @@ def test_erasure_preserves_sources_unrelated_paths_and_the_held_lock(project):
     ]
     for relative in retained:
         _write(project.root / relative, relative)
+    for relative in ("other.json", "completed/other.json"):
+        journal = _write(
+            transactions / relative,
+            json.dumps({"target": "config/retained/config"}),
+        )
+        retained.append(journal.relative_to(project.root).as_posix())
     before = {name: (project.root / name).read_bytes() for name in retained}
     with archive_lock(project.root, "project-execution"):
         lock = (
@@ -99,6 +164,7 @@ def test_erasure_preserves_sources_unrelated_paths_and_the_held_lock(project):
         erase_outputs(plan, project.config)
         assert lock.stat().st_ino == identity
     assert all(not path.exists() for path in plan.targets)
+    assert not completed.exists()
     assert {name: (project.root / name).read_bytes() for name in retained} == before
     assert project.config.is_file()
 

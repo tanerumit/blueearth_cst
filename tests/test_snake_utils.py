@@ -3218,11 +3218,10 @@ def test_tee_mutes_the_hydromt_cli_update_chatter(tmp_path, capsys, row):
     assert row.split(" - ", 2)[2].rstrip() in log.read_text(encoding="utf-8")
 
 
-def test_paint_body_demotes_the_two_benign_hydromt_warnings():
+def test_paint_body_demotes_the_empty_forcing_warning():
     """Painted as body, text and level untouched; any other WARNING stays orange."""
     demoted = [
         "14:02:03 - forcing - WARNING - Write forcing skipped: dataset is empty (no variables or data)\n",
-        "14:02:03 - states - WARNING - CRS not found in states data, setting to model CRS\n",
     ]
     for row in demoted:
         painted = su._paint_body(row, True)
@@ -3233,11 +3232,13 @@ def test_paint_body_demotes_the_two_benign_hydromt_warnings():
             + row.split(" - ", 2)[2].rstrip("\n")
             + "\n"
         ), painted
-    kept = "14:02:03 - states - WARNING - state file not found, using cold start\n"
-    assert su._ANSI_ALERT in su._paint_body(kept, True)
+    kept = "14:02:03 - states - WARNING - CRS not found in states data, setting to model CRS\n"
+    assert su._paint_body(kept, True) == (
+        su._ansi(kept.replace("WARNING - ", "").rstrip("\n"), su._ANSI_ALERT) + "\n"
+    )
     # The match is module AND prefix: the same words under another module keep
     # their colour, so the list cannot widen by accident.
-    other = "14:02:03 - model - WARNING - CRS not found in states data, setting to model CRS\n"
+    other = "14:02:03 - model - WARNING - Write forcing skipped: dataset is empty (no variables or data)\n"
     assert su._ANSI_ALERT in su._paint_body(other, True)
 
 

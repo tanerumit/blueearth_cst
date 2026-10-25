@@ -2226,10 +2226,7 @@ _SEVERITY_PATTERNS = (
     ),
 )
 
-_DEMOTED_WARNINGS = (
-    ("forcing", "Write forcing skipped: dataset is empty"),
-    ("states", "CRS not found in states data"),
-)
+_DEMOTED_WARNINGS = (("forcing", "Write forcing skipped: dataset is empty"),)
 
 
 def _demoted_warning(line):

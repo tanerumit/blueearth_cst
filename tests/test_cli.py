@@ -169,7 +169,9 @@ def test_snakefile_cli_build_model_linux_config(tmp_path):
     # producer against a real tiny local DEM rather than requiring the P-drive
     # production mirror on both CI platforms.
     cfg = load_composed_config(linux_config_fn)
-    cfg["project"]["catalog"] = "tests/data/tests_data_catalog.yml"
+    cfg["project"]["catalog"] = (
+        Path(SNAKEDIR, "tests/data/tests_data_catalog.yml").resolve().as_posix()
+    )
     staged = write_config(tmp_path, cfg, stem="project_config_linux_parse")
     result = _dry_run("build_model.smk", cfg=str(staged))
     assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
@@ -277,7 +279,11 @@ def test_baseline_seed_config_does_not_warn(tmp_path):
     cfg["project"]["project_dir"] = Path(SNAKEDIR, "test_case/test_local").as_posix()
     # Keep the baseline project_dir and gauge request, but isolate the warning
     # contract from the P-drive data mirror unavailable on both CI platforms.
-    cfg["project"]["catalog"] = load_composed_config(config_fn)["project"]["catalog"]
+    cfg["project"]["catalog"] = (
+        Path(SNAKEDIR, load_composed_config(config_fn)["project"]["catalog"])
+        .resolve()
+        .as_posix()
+    )
     hermetic_cfg = write_config(tmp_path, cfg, stem="project_config_baseline")
     result = _dry_run("build_model.smk", cfg=str(hermetic_cfg))
     combined = (result.stdout or "") + (result.stderr or "")

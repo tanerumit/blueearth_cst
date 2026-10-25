@@ -8,6 +8,7 @@ import csv
 import io
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -259,8 +260,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     config_path = Path("project_config.yml")
     text = files[config_path].decode("utf-8")
     config = yaml.safe_load(text)
-    if not isinstance(config, dict) or config.get("schema_version") != 2:
-        raise ValueError("Template requires project config schema_version: 2")
+    if not isinstance(config, dict) or config.get("schema_version") not in (2, 3):
+        raise ValueError("Template requires project config schema_version: 2 or 3")
     workflows = config.get("workflows")
     if not isinstance(workflows, dict) or not workflows:
         raise ValueError("Template requires workflow stanzas")
@@ -277,11 +278,18 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             if target.is_absolute() or ".." in target.parts or target not in files:
                 raise ValueError(f"Workflow config must be inside template: {target}")
             config_owners.setdefault(target, []).append(name)
-    text = _replace(text, ("project", "project_dir"), outputs.as_posix())
+    portable = config.get("schema_version") == 3
+    output_locator = f"../../runs/{slug}" if portable else outputs.as_posix()
+    locations_locator = (
+        "data/output_locations.csv"
+        if portable
+        else (destination / "data/output_locations.csv").as_posix()
+    )
+    text = _replace(text, ("project", "project_dir"), output_locator)
     text = _replace(
         text,
         ("basin", "output_locations"),
-        (destination / "data/output_locations.csv").as_posix(),
+        locations_locator,
     )
     region = config["basin"]["region"]
     if isinstance(region, str):
@@ -300,10 +308,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             raise ValueError("Catalog must be nonempty")
         text = _replace(text, ("project", "catalog"), args.catalog)
     expected = yaml.safe_load(files[config_path])
-    expected["project"]["project_dir"] = outputs.as_posix()
-    expected["basin"]["output_locations"] = (
-        destination / "data/output_locations.csv"
-    ).as_posix()
+    expected["project"]["project_dir"] = output_locator
+    expected["basin"]["output_locations"] = locations_locator
     expected["basin"]["region"] = str(region)
     if args.catalog is not None:
         expected["project"]["catalog"] = args.catalog
@@ -329,7 +335,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             if not isinstance(raw, str):
                 raise ValueError(f"Observation path must be a string: {variable}")
             source = Path(raw)
-            source = source if source.is_absolute() else template / source
+            source_base = (template / relative).parent if portable else template
+            source = source if source.is_absolute() else source_base / source
             source = source.resolve()
             if not source.is_relative_to(template) or not source.is_file():
                 raise ValueError(
@@ -339,7 +346,13 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             yaml_text = _replace(
                 yaml_text,
                 ("observations", variable),
-                (destination / sidecar).as_posix(),
+                Path(
+                    os.path.relpath(
+                        destination / sidecar, (destination / relative).parent
+                    )
+                ).as_posix()
+                if portable
+                else (destination / sidecar).as_posix(),
             )
         comment_sources = (
             [templates / "example-basin/project_config.yml"]

@@ -41,9 +41,10 @@ Read the 2025 technical note in References before changing what a workflow compu
   Its schema is closed: update `_ADVANCED_SETTINGS_SCHEMA` with every new key.
 - Project config sets live beside their project, with seeds under `test_case/`; no `config/workflows/`.
   The project file has closed `{enabled, config_path}` workflow stanzas, composed with per-workflow
-  files by `blueearth_cst/shared/config_composition.py`. Only `config_path` resolves against the project
-  file; other paths resolve from the run directory. Cross-workflow keys belong in the project file's
-  owning `basin:`, `climate:`, `model:` section or top level, never in workflow files.
+  files by `blueearth_cst/shared/config_composition.py`. Schema 3 resolves file paths beside their declaring
+  YAML, with `toolbox:` for bundled resources; schema 2 preserves legacy bases. See `docs/guide/configuration.md`.
+  Cross-workflow keys belong in the project file's owning `basin:`, `climate:`, `model:` section or top level,
+  never in workflow files.
 - `config/defaults/` changes runs; `config/templates/` contains scaffolds only. Keep
   the single `config/templates/example-basin/` configuration starter current in the same
   change as parameter/schema/default changes; `scripts/create_case.py` scaffolds external cases from this checkout.
@@ -51,7 +52,7 @@ Read the 2025 technical note in References before changing what a workflow compu
   `project_config_` prefix on new seed configs or Git's glob silently excludes them.
   `config/catalogs/cmip6_data.yml` and `cmip6_store_index.json` are generated; never hand-edit them.
 - Real basin data and production `project_dir` outputs live outside this repository, referenced by
-  absolute project paths. Untracked `test_case/test_local` is the development-only exception.
+  config-relative or absolute paths. Untracked `test_case/test_local` is the development-only exception.
 - `dev/`: plans, retained findings, conventions and helpers; not shipped. Task folders and board belong to `main`:
   edit notes there and render with `python dev/scripts/todoboard.py render`; commit board-only changes
   separately. Never hand-edit generated `dev/TODO.md`. Save task documents in main's `dev/tasks/<id>/`;

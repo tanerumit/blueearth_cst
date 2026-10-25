@@ -130,6 +130,12 @@ def indicators_only_configuration(config_path, *, prepare_baseline=True):
 
     path = Path(config_path).resolve()
     project = yaml.safe_load(path.read_text(encoding="utf-8"))
+    from blueearth_cst.shared.config_paths import (
+        resolve_project_paths,
+        resolve_workflow_paths,
+    )
+
+    project = resolve_project_paths(project, path)
     descriptor = project["workflows"]["simulate_system"]
     if set(descriptor) != {"enabled", "config_path"} or not isinstance(
         descriptor["enabled"], bool
@@ -142,6 +148,12 @@ def indicators_only_configuration(config_path, *, prepare_baseline=True):
     )
     from blueearth_cst.shared.config_composition import normalize_indicator_settings
 
+    workflow = resolve_workflow_paths(
+        workflow,
+        path.parent / descriptor["config_path"],
+        "simulate_system",
+        project.get("schema_version", 2),
+    )
     workflow = normalize_indicator_settings(workflow)
     project_root = Path(project["project"]["project_dir"]).resolve()
     from blueearth_cst.experiment.reservation_context import resolve_experiment_name

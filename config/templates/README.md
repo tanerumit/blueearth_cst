@@ -196,7 +196,8 @@ both values.
 
 The two CSV scaffolds above are the optional observation inputs of workflow 1
 (`build_model.smk`). Copy them next to your basin data and point the
-config at the copies by **absolute path** — real basin data lives in the project
+config at the copies by a path relative to the declaring YAML (schema 3) or an absolute path.
+Real basin data lives in the project
 folder, never in this repository (see `AGENTS.md` § Repo Map, the two-tier
 `project_dir` rule).
 
@@ -288,7 +289,7 @@ Both files are snapshotted into `<project_dir>/config/basin_data/` by rule
 and build templates (`config/templates/`). The bin is named for what it holds —
 local, basin-scoped tabular inputs — not for observations alone: only one of the
 two files is an observation, the other declares where the model reports. They are
-referenced by **absolute path** from wherever you keep them, so without that
+referenced from wherever you keep them, so without that
 copy a finished project could not say what it was evaluated against — the
 indicators table would cite gauges and observations that exist only on the machine
 that ran it.

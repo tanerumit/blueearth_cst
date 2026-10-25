@@ -9,6 +9,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Add portable project schema 3: file paths resolve beside their declaring YAML, and `toolbox:`
+  locators select bundled resources. Case scaffolds and shipped seeds use the new contract.
+  Schema 2 retains its existing path semantics; see [migration guidance](docs/guide/configuration.md).
+
 - Support flat inline WF4 indicator-set configuration, inherited parameter defaults and per-indicator
   `enabled` flags. Existing selectors and set files remain supported. Historical Q90 rules can use
   `baseline_quantile: {}` with the project's WF1 model and automatically derived source provenance.

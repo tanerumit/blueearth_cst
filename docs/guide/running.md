@@ -52,14 +52,14 @@ from the toolbox-owned starter, so new cases use the template shipped with the
 toolbox version being run. Existing application configs are not updated automatically.
 
 Remove `--dry-run` after reviewing the preview. The command creates
-`applications/my-basin/`, sets absolute input and output paths, replaces the
+`applications/my-basin/`, sets portable input and output paths, replaces the
 outlet coordinates, and starts fresh `configured; not run` case notes. It
 preserves the template's scientific settings and starts with historical climate
 analysis alone. The template's `basin.region` upstream-area threshold (`uparea`,
 km²) is retained; review it for the outlet before running. Register the case in
 the application inventory after the workflows complete. Use `--catalog` to override the
 template's data catalog with a
-toolbox-relative or absolute path. Review catalog coverage and climate/scenario
+`toolbox:` locator, case-config-relative path, or absolute path. Review catalog coverage and climate/scenario
 settings before running. Existing applications are refused;
 outputs under `runs/my-basin/` are neither created nor modified.
 

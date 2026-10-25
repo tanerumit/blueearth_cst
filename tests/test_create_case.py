@@ -1,5 +1,6 @@
 """Case scaffolding checks using isolated, representative case repositories."""
 
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -364,3 +365,14 @@ def test_shipped_template_composes_for_every_workflow(
         assert composed["workflows"][workflow] == config["workflows"][workflow]
     assert config["project"]["project_dir"] == (cases / "runs/new-basin").as_posix()
     assert Path(config["basin"]["output_locations"]).is_file()
+    declared = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    assert declared["schema_version"] == 3
+    assert declared["project"]["project_dir"] == "../../runs/new-basin"
+    assert declared["basin"]["output_locations"] == "data/output_locations.csv"
+    moved = cases.parent / "relocated-cases"
+    shutil.copytree(cases, moved)
+    relocated = load_composed_config(
+        moved / "applications/new-basin/project_config.yml"
+    )
+    assert Path(relocated["project"]["project_dir"]) == moved / "runs/new-basin"
+    assert Path(relocated["basin"]["output_locations"]).is_file()

@@ -53,6 +53,6 @@ simulation_window:
 # Model construction settings. Input: mapping of configuration paths.
 #engine:
 # Configure initial model construction. Input: HydroMT YAML file path.
-#  build_config: config/defaults/wflow_build_model.yml
+#  build_config: toolbox:config/defaults/wflow_build_model.yml
 # Configure lake and reservoir updates. Input: HydroMT YAML file path.
-#  waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+#  waterbodies_config: toolbox:config/defaults/wflow_update_waterbodies.yml

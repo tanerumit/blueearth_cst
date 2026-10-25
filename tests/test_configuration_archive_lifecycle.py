@@ -9,6 +9,7 @@ import yaml
 
 from blueearth_cst.shared import windows_job
 from blueearth_cst.shared import workflow_archive_launch as launch
+from blueearth_cst.shared.config_paths import resolve_project_paths
 from blueearth_cst.shared.configuration_archive import (
     maintain_archives,
     maintenance_report,
@@ -30,7 +31,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture
 def case(tmp_path, monkeypatch):
-    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_bytes())
+    project = resolve_project_paths(
+        yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_bytes()),
+        ROOT / "test_case/project_config_rapid.yml",
+    )
     output = tmp_path / "output"
     project["project"]["project_dir"] = str(output)
     catalog = tmp_path / "catalog.yml"

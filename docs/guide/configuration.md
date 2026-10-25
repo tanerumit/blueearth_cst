@@ -20,15 +20,21 @@ end-to-end run.
 ::: {.callout-important}
 ## How paths are read
 
-**`config_path:` is relative to the project file's directory.** Keep the
-workflow files beside the project file and use their filenames here.
+With **`schema_version: 3`**, file paths resolve beside the YAML that declares them.
+For example, a case at `applications/my-basin/project_config.yml` can use
+`project_dir: ../../runs/my-basin` and `output_locations: data/output_locations.csv`.
+Moving the cases directory preserves these relationships. Keep assessment outputs outside the toolbox;
+the in-repository `test_case/` locations are for development examples.
 
-**Other relative paths resolve from the run directory** (normally the toolbox
-root). For example, `project_dir: test_case/test_rapid` names a directory under
-the toolbox root even if the project file is elsewhere.
+Use **`toolbox:config/...`** for bundled catalogs or engine settings. The prefix resolves against the
+toolbox checkout running the workflow, independently of the case location. Absolute paths remain
+supported for storage on another drive. Forward slashes work on Windows and Linux.
 
-For an assessment, set `project_dir` to an absolute path outside the toolbox
-checkout. The in-repository `test_case/` locations are for the supplied example.
+Workflow `config_path` remains relative to the project file. Observation paths, engine YAML,
+projection catalogs, generator YAML, explicit scenario manifests, and custom indicator definitions
+resolve beside their respective workflow file. A nested workflow file therefore has its own base.
+HydroMT predefined catalog names, remote URLs, and paths *inside* catalogs retain HydroMT semantics.
+No environment-variable interpolation or search for a matching filename is performed.
 Input datasets are not installed with the toolbox. Check that the named
 catalogs and their data locations are available to you before running.
 :::
@@ -38,18 +44,18 @@ catalogs and their data locations are available to you before running.
 ### The project file
 
 ```yaml
-schema_version: 2
+schema_version: 3
 
 project:
-  project_dir: test_case/test_rapid
+  project_dir: test_rapid
   catalog:
-    - config/catalogs/deltares_data.yml
-    - config/catalogs/deltares_era5_daily_zarr.yml
+    - toolbox:config/catalogs/deltares_data.yml
+    - toolbox:config/catalogs/deltares_era5_daily_zarr.yml
 
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833
-  output_locations: test_case/test_data/output_locations.csv
+  output_locations: test_data/output_locations.csv
 
 climate:
   selected: era5
@@ -77,10 +83,31 @@ workflows:
     config_path: project_config_rapid_simulate_system.yml
 ```
 
-**`schema_version: 2` is required.** Older project files need conversion before
-they can be used with the current toolbox. The v1-to-v2 converter and its guide
-are available in toolbox v0.3.0; current releases reject old schemas and name
-retired keys that remain in a version 2 file.
+**Schemas 2 and 3 are supported.** Schema 2 retains its original run-directory-relative paths;
+changing only its version number is not a migration. Version 1 needs the v1-to-v2 converter in
+toolbox v0.3.0 first. Unknown future versions are refused.
+
+### Migrate an existing case to schema 3
+
+1. Keep a copy of the source configuration set. Identify the run directory used by schema 2
+   (normally the toolbox root), and resolve each existing input and output path against that base.
+2. Rewrite case paths relative to the YAML declaring them. For example, the shipped seed changes
+   `test_case/test_rapid` to `test_rapid`, and `test_case/test_data/output_locations.csv` to
+   `test_data/output_locations.csv`. Use `toolbox:config/...` for bundled resources.
+   Absolute paths may remain absolute; cross-drive storage does not require a relative spelling.
+3. Keep workflow `config_path` and custom indicator-definition `config_path` values unchanged:
+   they were already relative to their declaring file. Do not rewrite dataset locations inside catalogs.
+4. Set `schema_version: 3` in the project file, then run the owned runner with `-- --dry-run`.
+   Check the reported output folder and inputs before execution. Migration edits source YAML only;
+   it does not move outputs or rewrite retained records.
+
+Archives retain exact source YAML and record resolved runtime paths separately. Existing schema-2
+archives remain readable. Changing the schema or locator spelling can change configuration provenance
+digests; it does not alter the scientific collection/simulation identity algorithms. A moved run tree
+still follows the explicit archived-rerun relocation contract: portable source configs alone do not
+promise that every retained output or external dataset can be relocated automatically.
+
+### Shared settings
 
 - **`project.catalog`** names one or more HydroMT data catalogs. They tell the
   toolbox where to find climate, terrain, and other input datasets. The rapid

@@ -25,6 +25,12 @@ def simulation_selection(config_path):
 
     path = Path(config_path).resolve()
     project = yaml.safe_load(path.read_text(encoding="utf-8"))
+    from blueearth_cst.shared.config_paths import (
+        resolve_project_paths,
+        resolve_workflow_paths,
+    )
+
+    project = resolve_project_paths(project, path)
     workflows = project.get("workflows", {})
     if "run_stress_test" in workflows:
         raise ValueError(
@@ -49,6 +55,9 @@ def simulation_selection(config_path):
     )
     from blueearth_cst.shared.config_composition import normalize_indicator_settings
 
+    settings = resolve_workflow_paths(
+        settings, workflow_path, "simulate_system", project.get("schema_version", 2)
+    )
     settings = normalize_indicator_settings(settings)
     from blueearth_cst.experiment.simulation_runs import include_unperturbed
 

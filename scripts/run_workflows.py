@@ -189,7 +189,9 @@ def _read_config(config_path: str) -> Mapping[str, Any]:
         config = yaml.safe_load(handle)
     if not isinstance(config, Mapping):
         raise ConfigError(f"{config_path}: config is not a mapping")
-    return config
+    from blueearth_cst.shared.config_paths import resolve_project_paths
+
+    return resolve_project_paths(config, path)
 
 
 def _enabled_flags(cfg: Mapping[str, Any], config_path: str) -> dict[str, bool]:

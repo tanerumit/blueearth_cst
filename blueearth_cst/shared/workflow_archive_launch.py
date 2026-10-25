@@ -31,6 +31,7 @@ from blueearth_cst.shared.config_composition import (
     compose_captured_config,
     compose_config,
 )
+from blueearth_cst.shared.config_paths import TOOLBOX_ROOT
 from blueearth_cst.shared.configuration_archive import (
     archive_payloads,
     finish_archive_transaction,
@@ -148,6 +149,7 @@ def _file_specifications(
     """Collect local config dependencies actually selected by this workflow."""
     project = composed["project"]
     settings = composed["workflows"][workflow]
+    defaults = TOOLBOX_ROOT if composed.get("schema_version") == 3 else Path(".")
     values: list[tuple[str, str, Any]] = []
     catalogs = project["catalog"]
     for index, catalog in enumerate(
@@ -178,14 +180,17 @@ def _file_specifications(
                 (
                     "build_config",
                     "build_config",
-                    engine.get("build_config", "config/defaults/wflow_build_model.yml"),
+                    engine.get(
+                        "build_config",
+                        str(defaults / "config/defaults/wflow_build_model.yml"),
+                    ),
                 ),
                 (
                     "waterbodies_config",
                     "waterbodies_config",
                     engine.get(
                         "waterbodies_config",
-                        "config/defaults/wflow_update_waterbodies.yml",
+                        str(defaults / "config/defaults/wflow_update_waterbodies.yml"),
                     ),
                 ),
             ]
@@ -379,6 +384,25 @@ def prepare_workflow(
     project_document = _replace_paths(yaml.safe_load(initial[0].data), replacements)
     if overrides:
         project_document.update(_replace_paths(dict(overrides), replacements))
+    if composed.get("schema_version") == 3:
+        # Resolve against the original declarations BEFORE relocating execution
+        # YAML. CapturedSource still holds the exact, portable source bytes.
+        project_document = _replace_paths(
+            {key: value for key, value in composed.items() if key != "workflows"},
+            replacements,
+        )
+        project_document["workflows"] = {
+            workflow: {"enabled": composed["workflows"][workflow]["enabled"]}
+        }
+        if workflow_source is not None:
+            workflow_document = _replace_paths(
+                {
+                    key: value
+                    for key, value in composed["workflows"][workflow].items()
+                    if key != "enabled"
+                },
+                replacements,
+            )
     # Scheduling choices and source locators remain in the exact archive. Only
     # this workflow's executable settings belong in its immutable config view.
     project_document["workflows"] = {
@@ -640,6 +664,7 @@ def _run_workflow_started(
 ) -> int:
     config_path = Path(project_config).resolve()
     project = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    runtime_dir = TOOLBOX_ROOT if project.get("schema_version") == 3 else Path.cwd()
     if project.get("workflows", {}).get(workflow, {}).get("enabled") is False:
         raise ValueError(
             f"Workflow {workflow} is disabled in {config_path}. "
@@ -672,7 +697,7 @@ def _run_workflow_started(
 
             result = run_project_child(
                 command,
-                cwd=Path.cwd(),
+                cwd=runtime_dir,
                 env={**os.environ, **execution_outputs.environment(path, record)},
                 writing=False,
             )
@@ -712,7 +737,7 @@ def _run_workflow_started(
 
             observation = product_record.observe(workflow, Path(project_root))
             try:
-                result = run_project_child(command, cwd=Path.cwd(), env=environment)
+                result = run_project_child(command, cwd=runtime_dir, env=environment)
             except BaseException as error:
                 invocation_history.finish(path, record, exit_code=None, error=error)
                 product_record.publish(observation, path, record)

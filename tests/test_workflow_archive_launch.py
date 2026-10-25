@@ -8,6 +8,10 @@ import pytest
 import yaml
 
 from blueearth_cst.shared import workflow_archive_launch as launch
+from blueearth_cst.shared.config_paths import (
+    resolve_project_paths,
+    resolve_workflow_paths,
+)
 from blueearth_cst.shared.workflow_archive_launch import (
     CONTEXT_ENV,
     prepare_workflow,
@@ -27,7 +31,10 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_execution_inputs_ignore_source_locations_and_other_enable_flags(
     tmp_path, workflow_name
 ):
-    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project = resolve_project_paths(
+        yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text()),
+        ROOT / "test_case/project_config_rapid.yml",
+    )
     project_root = tmp_path / "output"
     project["project"]["project_dir"] = str(project_root)
     catalog = tmp_path / "catalog.yml"
@@ -35,7 +42,19 @@ def test_execution_inputs_ignore_source_locations_and_other_enable_flags(
     project["project"]["catalog"] = [str(catalog)]
     stanza = project["workflows"][workflow_name]
     workflow_file = tmp_path / "workflow.yml"
-    workflow_file.write_bytes((ROOT / "test_case" / stanza["config_path"]).read_bytes())
+    workflow_file.write_text(
+        yaml.safe_dump(
+            resolve_workflow_paths(
+                yaml.safe_load(
+                    (ROOT / "test_case" / stanza["config_path"]).read_bytes()
+                ),
+                ROOT / "test_case" / stanza["config_path"],
+                workflow_name,
+                project["schema_version"],
+            )
+        ),
+        encoding="utf-8",
+    )
     stanza["config_path"] = str(workflow_file)
     project_file = tmp_path / "project.yml"
     project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
@@ -103,7 +122,10 @@ def test_execution_inputs_ignore_source_locations_and_other_enable_flags(
 
 
 def test_preparse_capture_survives_source_edit(tmp_path, capsys):
-    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project = resolve_project_paths(
+        yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text()),
+        ROOT / "test_case/project_config_rapid.yml",
+    )
     source_workflow = ROOT / "test_case/project_config_rapid_analyze_climate.yml"
     workflow = tmp_path / source_workflow.name
     workflow.write_bytes(source_workflow.read_bytes())
@@ -158,7 +180,10 @@ def test_shared_dependency_stages_once_across_workflows(tmp_path):
     and rebuild the whole foundation -- every time a different workflow last
     ran, even with nothing to redo.
     """
-    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project = resolve_project_paths(
+        yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text()),
+        ROOT / "test_case/project_config_rapid.yml",
+    )
     project_root = tmp_path / "output"
     project["project"]["project_dir"] = str(project_root)
     project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
@@ -214,7 +239,10 @@ def test_execution_config_schema_moves_immutable_bundle_directory(
     tmp_path, monkeypatch
 ):
     """A staging-format change gets a new bundle path for unchanged sources."""
-    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project = resolve_project_paths(
+        yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text()),
+        ROOT / "test_case/project_config_rapid.yml",
+    )
     project_root = tmp_path / "output"
     project["project"]["project_dir"] = str(project_root)
     project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
@@ -262,7 +290,10 @@ def test_projection_catalog_and_store_index_stage_as_siblings(tmp_path):
     calendar detection, which refuses outright when it has no pin to read a
     store from.
     """
-    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project = resolve_project_paths(
+        yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text()),
+        ROOT / "test_case/project_config_rapid.yml",
+    )
     project_root = tmp_path / "output"
     project["project"]["project_dir"] = str(project_root)
     project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
@@ -324,7 +355,10 @@ def test_config_overrides_are_captured_before_forwarding():
 
 
 def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
-    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project = resolve_project_paths(
+        yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text()),
+        ROOT / "test_case/project_config_rapid.yml",
+    )
     output = tmp_path / "output"
     project["project"]["project_dir"] = str(output)
     for name, stanza in project["workflows"].items():

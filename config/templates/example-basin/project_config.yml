@@ -1,12 +1,12 @@
 # Example basin project: copy the whole directory or use scripts/create_case.py.
-# Review basin, climate, catalog and absolute case paths before running.
+# Review basin, climate, catalog and case paths before running.
 # Keep this project file beside its five project_config_<workflow>.yml files.
-# config_path resolves beside this file; other relative paths use the toolbox root.
+# File paths resolve beside their declaring YAML; toolbox: names bundled resources.
 # Commented YAML entries are optional settings or examples.
 # See README.md here and config/templates/README.md for setup and rationale.
 
-# Identify the project configuration schema. Options: 2.
-schema_version: 2
+# Identify the project configuration schema. Options: 2 (legacy) | 3 (portable).
+schema_version: 3
 
 
 # -----------------------------------------------------------------------------
@@ -15,11 +15,11 @@ schema_version: 2
 
 # Define shared project storage and data access. Input: mapping.
 project:
-  # Store project inputs and generated outputs. Input: absolute directory path outside repository.
-  project_dir: "/path/to/cst-cases/runs/example-basin"
+  # Store project inputs and generated outputs. Input: directory path relative to this file or absolute; keep outputs outside the toolbox.
+  project_dir: "../../runs/example-basin"
   # This template's default catalog requires the Deltares P-drive.
   # Locate source datasets by catalog name. Input: HydroMT catalog YAML path.
-  catalog: config/catalogs/deltares_data_pdrive.yml
+  catalog: toolbox:config/catalogs/deltares_data_pdrive.yml
 
 
 # -----------------------------------------------------------------------------
@@ -39,7 +39,7 @@ basin:
   # Points where the model reports results. Each `control` point also closes
   # a subbasin. Columns: output_locations_template.csv. null = outlets only.
   # Define reporting and subbasin control locations. Input: output-locations CSV path or null.
-  output_locations: "/path/to/cst-cases/applications/example-basin/data/output_locations.csv"
+  output_locations: "data/output_locations.csv"
 
   # How the basin is split into subbasins.
   # Configure automatic subbasin delineation. Input: mapping.

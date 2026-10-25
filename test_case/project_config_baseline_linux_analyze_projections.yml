@@ -1,7 +1,7 @@
 # analyze_projections (wf2) -- baseline linux set. A twin of the non-linux
 # file; see the header of `project_config_baseline_linux.yml`.
 
-catalog: config/catalogs/cmip6_data.yml
+catalog: toolbox:config/catalogs/cmip6_data.yml
 ensemble: cmip6
 
 models:

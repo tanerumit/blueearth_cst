@@ -6,10 +6,9 @@
 # Use it for a milestone seal or any run whose numbers you will read; use
 # `project_config_rapid.yml` for everything else.
 #
-# Paths are relative to the repo root, where you run Snakemake, except
-# `config_path`, which is relative to this file.
+# Paths resolve beside their declaring YAML; toolbox: names bundled resources.
 
-schema_version: 2
+schema_version: 3
 
 
 # -----------------------------------------------------------------------------
@@ -17,8 +16,8 @@ schema_version: 2
 # -----------------------------------------------------------------------------
 
 project:
-  project_dir: test_case/test_local
-  catalog: config/catalogs/deltares_data_pdrive.yml
+  project_dir: test_local
+  catalog: toolbox:config/catalogs/deltares_data_pdrive.yml
 
 
 # -----------------------------------------------------------------------------
@@ -28,7 +27,7 @@ project:
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833
-  output_locations: test_case/test_data/output_locations.csv
+  output_locations: test_data/output_locations.csv
   sources:
     rivers: hydro_rivers_lin
     lulc: globcover

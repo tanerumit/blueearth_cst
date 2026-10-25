@@ -4,7 +4,7 @@ This folder is a worked starting point for a new BlueEarth CST case. It shows
 the current project-config layout and one example basin; its sparse stress-test
 grid and two weather realizations need review before an assessment. Catalog
 coverage and local data access also depend on your toolbox setup. The example
-is not a portable or universally runnable case.
+still requires access to the selected external datasets.
 
 ## Copy and configure
 
@@ -25,12 +25,12 @@ For manual setup, copy this folder to `applications/<basin-kebab>/` in your
 cases repository, then make
 these edits before running:
 
-1. In `project_config.yml`, replace `project.project_dir` with an absolute path
-   to your chosen output root, such as `runs/<basin>/` in your cst-cases checkout.
+1. In `project_config.yml`, set `project.project_dir` to `../../runs/<basin>/`
+   or an absolute output path outside the toolbox checkout.
    No `active/` suffix is required. Choose a separate path for another assessment;
    existing output folders are not moved or archived. Create parent folders if needed.
-2. Replace `basin.output_locations` with the absolute path to the copied case's
-   `data/output_locations.csv`.
+2. Keep `basin.output_locations: data/output_locations.csv` for the copied case,
+   or set a path to your own locations file.
 3. Set `basin.region` to the outlet longitude and latitude and an appropriate
    `uparea` threshold. `uparea` is a model delineation threshold in km²; it is
    not a substitute for measured basin area. Check the delineated basin against
@@ -65,12 +65,11 @@ these edits before running:
 9. Start a fresh case history in `notes.md`, and add the new case to the
    inventory after every workflow completes.
 
-The project file has two placeholder absolute paths to replace:
-`project.project_dir` and `basin.output_locations`. If you add observations,
-their configured path must also be absolute. Catalog and engine paths in the
-workflow files resolve from the toolbox root. Workflow `config_path` entries
-in the project file resolve beside `project_config.yml`; keep those files
-together. Run commands from the toolbox root.
+The starter uses schema 3. File paths resolve beside the YAML declaring them;
+`toolbox:` locators select bundled resources. Keep case inputs under `data/` and
+outputs under `../../runs/<basin>/`, or use absolute paths for external storage.
+See [path rules and schema-2 migration](../../../docs/guide/configuration.md#how-paths-are-read).
+Run Pixi commands from the toolbox root.
 
 ## Run in stages
 

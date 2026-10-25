@@ -637,13 +637,15 @@ def _header():
         # WF3's `_header`, which this mirrors.
         from blueearth_cst.shared.snake_utils import listed
         reference = DIAGNOSTIC_SETTINGS["reference_period"]
+        settings = {
+            "climate data": listed(CANDIDATE_SOURCES),
+            "analysis period": f"{historical_window['start']}–{historical_window['end']}",
+        }
+        if reference != historical_window:
+            settings["reference period"] = f"{reference['start']}–{reference['end']}"
+        settings["water year"] = f"Starts in {WATER_YEAR_START}"
         open_run_header(
-            "wf0 analyze_climate", project_dir, config_path,
-            sources=f"{len(CANDIDATE_SOURCES)} ({listed(CANDIDATE_SOURCES)})",
-            forcing=clim_source,
-            extraction=f"{historical_window['start']}–{historical_window['end']}",
-            reference=f"{reference['start']}–{reference['end']}",
-            **{"reporting year": f"Starts in {WATER_YEAR_START}"},
+            "wf0 analyze_climate", project_dir, config_path, **settings,
         )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more

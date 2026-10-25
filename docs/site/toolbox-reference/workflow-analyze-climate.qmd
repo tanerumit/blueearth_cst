@@ -23,8 +23,9 @@ other workflows.
 The `all` target collects the products. Extraction, computation and rendering fan out by source; comparison is
 conditional. The runner publishes a configuration archive before Snakemake parses the workflow.
 
-The console header lists candidate sources, selected forcing, extraction and reference periods, and
-the reporting-year start. The final target reports provided/requested counts, such as
+The console header lists the climate datasets, analysis period, and water-year start. A separate
+reference period appears only when the diagnostic baseline differs from the analysis period.
+The final target reports provided/requested counts, such as
 `Requested outputs: 15/15 provided`, instead of listing paths. A dry-run shows planned completion.
 
 ## Rule flow
@@ -154,7 +155,7 @@ existing run roots are not automatically deleted.
 ## Interpretation
 
 Daily basin series use equal weights over the toolbox's retained `basin_cells`.
-Missing dates remain gaps. Completeness tolerances govern valid months and reporting years;
+Missing dates remain gaps. Completeness tolerances govern valid months and water years;
 amounts may be infilled with the month's observed mean, while extremes use observed days.
 Monthly anomaly calendars subtract each calendar month's reference mean in mm. A continuous
 brown–white–teal scale shows dry-to-wet departures without temporal smoothing. Captions report the requested

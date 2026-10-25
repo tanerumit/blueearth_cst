@@ -61,11 +61,28 @@ def test_workflow_defers_header_and_summarizes_requested_outputs(
     assert captured.out == captured.err == ""
     details = console_style._RUN_HEADER[3]
     if snakefile == "analyze_climate.smk":
-        assert details["sources"]
-        assert details["forcing"]
-        assert details["extraction"]
-        assert details["reference"]
-        assert details["reporting year"].startswith("Starts in")
+        window = workflow.globals["historical_window"]
+        period = f"{window['start']}–{window['end']}"
+        assert details == {
+            "climate data": ", ".join(workflow.globals["CANDIDATE_SOURCES"]),
+            "analysis period": period,
+            "water year": f"Starts in {workflow.globals['WATER_YEAR_START']}",
+        }
+        # A distinct climatological baseline must remain visible when configured.
+        monkeypatch.setitem(
+            workflow.globals,
+            "DIAGNOSTIC_SETTINGS",
+            workflow.globals["DIAGNOSTIC_SETTINGS"]
+            | {"reference_period": {"start": 2001, "end": 2010}},
+        )
+        monkeypatch.setitem(workflow.globals, "WATER_YEAR_START", "Oct")
+        workflow.globals["_header"]()
+        assert console_style._RUN_HEADER[3] == {
+            "climate data": details["climate data"],
+            "analysis period": period,
+            "reference period": "2001–2010",
+            "water year": "Starts in Oct",
+        }
     elif snakefile == "build_model.smk":
         assert details["forcing"]
         assert details["simulation"]

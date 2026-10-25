@@ -281,8 +281,7 @@ if __name__ == "__main__":
                 # Dates only: the run window is whole days, so the `T00:00:00`
                 # both stamps carry is 18 chars of constant on a row that was
                 # 142 wide.
-                f"Model forcing written for {str(sm.params.starttime)[:10]}"
-                f"–{str(sm.params.endtime)[:10]} "
-                f"using {sm.params.clim_source} → {sm.output.forcing_path}",
+                f"{sm.params.clim_source} for {str(sm.params.starttime)[:10]}"
+                f"...{str(sm.params.endtime)[:10]} → {sm.output.forcing_path}",
                 module="forcing",
             )

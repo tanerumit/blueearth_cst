@@ -4,6 +4,10 @@ title: "WF1 — Build model"
 
 `build_model.smk` builds a Wflow-SBM basin model from catalog data, runs it on historical forcing, and evaluates available observed variables. It supplies the model used by WF4.
 
+The run settings identify the hydrological model, climate forcing, simulation years, grid spacing, and
+water-year start. The grid-cell count describes the existing model, when available; a fresh build
+determines its cell count during model construction.
+
 ## Rules
 
 | Rule | Operation |

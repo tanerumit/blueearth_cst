@@ -4,6 +4,11 @@ title: "WF4 — Simulate system"
 
 `simulate_system.smk` runs Wflow-SBM for explicit series in a ready WF3 collection and reduces retained native responses to named indicator sets. Invoke it through `scripts/simulate_system.py`, which validates the selected operations and indicator sets before Snakemake starts.
 
+The run settings identify the experiment, hydrological simulation or indicator analysis, selected
+scenario series and simulation years, indicator sets, and water-year start. They flag reuse of saved
+simulations and place parallel-execution details after the analysis settings. Indicators-only runs
+report saved simulations without implying that new simulations will run.
+
 ## Rules
 
 | Rule | Operation |

@@ -4,6 +4,10 @@ title: "WF3 — Generate scenarios"
 
 `generate_scenarios.smk` builds a reusable collection of stochastic weather realizations across a configured temperature–precipitation perturbation grid. Generation is independent of CMIP6 and of the Wflow model. Use the owned `scripts/run_workflows.py` wrapper to prepare and claim the collection.
 
+The run settings identify the historical climate data and period, requested scenario period, number of
+weather realizations, climate perturbations, scenario series, and water-year start. Scenario series are
+weather realizations under the configured climate perturbations, independent of emissions scenarios.
+
 ## Rules and wrapper steps
 
 | Rule or wrapper step | Operation |

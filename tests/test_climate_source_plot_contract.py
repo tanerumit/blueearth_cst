@@ -56,6 +56,10 @@ def test_workflow_defers_header_and_summarizes_requested_outputs(
     monkeypatch.setattr(console_style, "_CONSOLE_STYLE_ACTIVE", True)
     monkeypatch.setattr(console_style, "_RUN_HEADER", None)
     capsys.readouterr()
+    if snakefile == "build_model.smk":
+        from blueearth_cst.experiment import batch_sizing
+
+        monkeypatch.setattr(batch_sizing, "count_active_cells", lambda path: None)
     workflow.globals["_header"]()
     captured = capsys.readouterr()
     assert captured.out == captured.err == ""
@@ -84,9 +88,49 @@ def test_workflow_defers_header_and_summarizes_requested_outputs(
             "water year": "Starts in Oct",
         }
     elif snakefile == "build_model.smk":
-        assert details["forcing"]
-        assert details["simulation"]
-        assert details["resolution"]
+        assert details["hydrological model"] == "Wflow-SBM"
+        assert details["climate forcing"] == workflow.globals["clim_source"]
+        window = workflow.globals["simulation_window"]
+        assert details["simulation period"] == f"{window['start']}–{window['end']}"
+        assert details["grid spacing"] == f"{workflow.globals['model_resolution']:g}°"
+        assert details["model grid"] == "Cell count available after model build"
+        assert details["water year"].startswith("Starts in")
+        monkeypatch.setattr(batch_sizing, "count_active_cells", lambda path: 1234)
+        workflow.globals["_header"]()
+        assert (
+            console_style._RUN_HEADER[3]["model grid"]
+            == "1,234 active cells in existing model"
+        )
+
+        def unreadable_grid(path):
+            raise OSError("existing model is unreadable")
+
+        monkeypatch.setattr(batch_sizing, "count_active_cells", unreadable_grid)
+        workflow.globals["_header"]()
+        assert (
+            console_style._RUN_HEADER[3]["model grid"]
+            == "Cell count unavailable from existing model"
+        )
+    elif snakefile == "analyze_projections.smk":
+        assert (
+            details["reference period"]
+            == workflow.globals["REFERENCE_WINDOW"].effective_label
+        )
+        assert details["future periods"]
+        assert details["emissions scenarios"]
+        assert details["climate models"]
+        assert details["water year"].startswith("Starts in")
+    elif snakefile == "generate_scenarios.smk":
+        generation = workflow.globals["GENERATION"]
+        assert details["historical climate"] == generation["source"]
+        assert details["historical period"]
+        assert (
+            details["scenario period"] == f"{generation['start']}–{generation['end']}"
+        )
+        assert details["weather realizations"] == generation["n_realizations"]
+        assert details["climate perturbations"] == generation["n_design_points"]
+        assert details["scenario series"] == len(workflow.globals["SCENARIO_ROWS"])
+        assert details["water year"].startswith("Starts in")
 
     rule = workflow.get_rule("all")
     # Input functions resolve at DAG time; the console recounts those inputs.

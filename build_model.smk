@@ -1449,11 +1449,22 @@ def _header():
     try:
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
+        from blueearth_cst.experiment.batch_sizing import count_active_cells
+        try:
+            cells = count_active_cells(Path(basin_dir) / "staticmaps.nc")
+            grid = f"{cells:,} active cells in existing model" if cells is not None else "Cell count available after model build"
+        except (OSError, ValueError):
+            grid = "Cell count unavailable from existing model"
         open_run_header(
             "wf1 build_model", project_dir, config_path,
-            forcing=clim_source,
-            simulation=f"{SIMULATION_BOUNDS[0].date()}–{SIMULATION_BOUNDS[1].date()}",
-            resolution=f"{model_resolution:g}°",
+            **{
+                "hydrological model": "Wflow-SBM",
+                "climate forcing": clim_source,
+                "simulation period": f"{simulation_window['start']}–{simulation_window['end']}",
+                "grid spacing": f"{model_resolution:g}°",
+                "model grid": grid,
+                "water year": f"Starts in {WATER_YEAR_START}",
+            },
         )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more

@@ -1444,10 +1444,16 @@ def _header():
     try:
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
-        open_run_header("wf2 analyze_projections", project_dir, config_path,
-                        reference=REFERENCE_WINDOW.effective_label,
-                        future=listed([f"{start}–{end}" for start, end in future_horizons.values()]),
-                        scenarios=listed(scenarios), models=listed(models))
+        open_run_header(
+            "wf2 analyze_projections", project_dir, config_path,
+            **{
+                "reference period": REFERENCE_WINDOW.effective_label,
+                "future periods": listed([f"{start}–{end}" for start, end in future_horizons.values()]),
+                "emissions scenarios": listed(scenarios),
+                "climate models": listed(models),
+                "water year": f"Starts in {resolve_water_year_start(climate_cfg.get('water_year_start'))}",
+            },
+        )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

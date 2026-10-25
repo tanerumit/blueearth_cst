@@ -290,6 +290,7 @@ def erase_outputs(plan: RebuildPlan, config_path: Path) -> None:
 
     A changed plan is refused before the first deletion. A subsequent filesystem
     failure stops the reset; no backup or rollback is promised.
+    Windows read-only generated files are made writable before deletion.
     """
     if plan_rebuild(plan.root, config_path) != plan:
         raise ValueError(
@@ -310,4 +311,7 @@ def erase_outputs(plan: RebuildPlan, config_path: Path) -> None:
                 raise ValueError(
                     f"rebuild file changed during erasure: {expected.path}"
                 )
+            if os.name == "nt" and not current.mode & stat.S_IWRITE:
+                # Immutable generation snapshots carry Windows' read-only bit.
+                expected.path.chmod(current.mode | stat.S_IWRITE)
             expected.path.unlink()

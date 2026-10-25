@@ -2,6 +2,7 @@
 
 import json
 import os
+import stat
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -52,6 +53,22 @@ def _files(root):
         for path in root.rglob("*")
         if path.is_file()
     }
+
+
+def test_erasure_removes_readonly_generation_snapshot(project):
+    snapshot = _write(
+        project.root
+        / "scenarios/_engine/generation_inputs/67d89e1b0ea7/weathergen_config.yml"
+    )
+    snapshot.chmod(0o444)
+    try:
+        plan = plan_rebuild(project.root, project.config)
+        erase_outputs(plan, project.config)
+        assert not (project.root / "scenarios").exists()
+        assert project.config.is_file()
+    finally:
+        if snapshot.exists():
+            snapshot.chmod(stat.S_IREAD | stat.S_IWRITE)
 
 
 def test_erasure_preserves_sources_unrelated_paths_and_the_held_lock(project):

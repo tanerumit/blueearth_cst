@@ -214,7 +214,9 @@ def test_palette_edits_reach_renderers_without_changing_science(
     root = Path(__file__).resolve().parents[1]
     config = load_composed_config(root / "test_case/project_config_rapid.yml")
     config["project"]["project_dir"] = (tmp_path / "project").as_posix()
-    config["project"]["catalog"] = (root / "tests/data/tests_data_catalog.yml").as_posix()
+    config["project"]["catalog"] = (
+        root / "tests/data/tests_data_catalog.yml"
+    ).as_posix()
     config["climate"].update(sources=["era5", "chirps"], selected="era5")
     config_path = write_config(tmp_path, config)
     path = tmp_path / "colors.yml"

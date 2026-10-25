@@ -18,7 +18,8 @@ def scheduling(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "operation", ["simulate-and-indicators", "indicators-only", "reuse"]
+    "operation",
+    ["simulate-and-indicators", "indicators-only", "reuse", "simulations-only"],
 )
 def test_simulation_startup_details_wait_for_header(
     scheduling, operation, monkeypatch, capsys
@@ -37,17 +38,36 @@ def test_simulation_startup_details_wait_for_header(
     monkeypatch.setitem(scheduling, "_simulation_complete", operation == "reuse")
     monkeypatch.setitem(scheduling, "stored", {"simulation_id": "retained-id"})
     monkeypatch.setitem(scheduling["COLLECTION"], "collection_id", "collection-id")
+    if operation == "simulations-only":
+        monkeypatch.setitem(scheduling, "INDICATOR_SETS", ())
+    if operation == "indicators-only":
+        for name in ("RUN_IDS", "SIM_WINDOW_START", "SIM_WINDOW_END"):
+            monkeypatch.delitem(scheduling, name)
     capsys.readouterr()
     scheduling["_header"]()
     captured = capsys.readouterr()
     assert captured.out == captured.err == ""
     details = console_style._RUN_HEADER[3]
-    if operation == "indicators-only":
-        assert "Retained responses only" in details["responses"]
+    assert console_style._RUN_HEADER[2] == scheduling["config_path"]
+    header = console_style.run_header(*console_style._RUN_HEADER[:3], **details)
+    paths = header.splitlines()[header.splitlines().index("Paths") + 1 :]
+    assert paths[0].split()[0] == "config"
+    assert "compute" not in details and "operation" not in details
+    assert details["water year"].startswith("Starts in")
+    if operation == "simulations-only":
+        assert details["analysis"] == "Hydrological simulation"
+        assert "indicator sets" not in details
     else:
-        assert "explicit run IDs" in details["collection"]
+        assert details["indicator sets"]
+    if operation == "indicators-only":
+        assert details["simulation results"] == "Using saved simulations"
+        assert "simulation period" not in details
+        assert "parallel simulations" not in details
+    else:
+        assert details["scenario series"]
+        assert details["simulation period"] == "2046–2054"
         if operation == "reuse":
-            assert "retained-id" in details["responses"]
+            assert details["simulation results"] == "Reusing saved simulations"
 
 
 def test_requests_wait_for_checkpoint_and_resolve_only_once(scheduling, monkeypatch):

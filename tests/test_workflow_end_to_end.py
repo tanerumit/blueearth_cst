@@ -31,6 +31,10 @@ import pytest
 import xarray as xr
 import yaml
 
+from blueearth_cst.shared.config_paths import (
+    resolve_project_paths,
+    resolve_workflow_paths,
+)
 from dev.scripts.local_e2e_bundle import RAW_NAMES, verify_bundle
 
 pytestmark = pytest.mark.usefixtures("isolated_snakemake")
@@ -42,7 +46,9 @@ CONFIG = REPO / "test_case" / "project_config_rapid.yml"
 
 def _catalog_root():
     """First data root the rapid project's first catalog declares, or None."""
-    project = yaml.safe_load(CONFIG.read_text(encoding="utf-8"))
+    project = resolve_project_paths(
+        yaml.safe_load(CONFIG.read_text(encoding="utf-8")), CONFIG
+    )
     catalogs = project["project"]["catalog"]
     first = catalogs[0] if isinstance(catalogs, list) else catalogs
     meta = (yaml.safe_load((REPO / first).read_text(encoding="utf-8")) or {}).get(
@@ -92,14 +98,27 @@ def _fresh_config_set(
 ) -> Path:
     """Copy the rapid config set beside ``base`` with ``project_dir`` redirected.
 
-    Every ``config_path`` resolves against the project file's own directory, so
-    the workflow files travel with it; every other path key resolves from the
-    run directory, which stays the repository.
+    Resolve case inputs at their original YAML locations before copying the
+    configuration set into the isolated test directory.
     """
     for source in sorted(CONFIG.parent.glob(f"{CONFIG.stem}*.yml")):
         shutil.copyfile(source, base / source.name)
     target = base / CONFIG.name
-    document = yaml.safe_load(target.read_text(encoding="utf-8"))
+    document = resolve_project_paths(
+        yaml.safe_load(target.read_text(encoding="utf-8")), CONFIG
+    )
+    for name, stanza in document["workflows"].items():
+        if "config_path" in stanza:
+            original = CONFIG.parent / stanza["config_path"]
+            workflow = resolve_workflow_paths(
+                yaml.safe_load(original.read_text(encoding="utf-8")),
+                original,
+                name,
+                document["schema_version"],
+            )
+            (base / stanza["config_path"]).write_text(
+                yaml.safe_dump(workflow), encoding="utf-8"
+            )
     document["project"]["project_dir"] = project.as_posix()
     if local_hydromt is not None:
         catalogs = []

@@ -83,7 +83,7 @@ if V2_MODE:
     )
     PERTURB_CLIMATE_REALIZATIONS = RULES.logged(
         "3.08", "perturb_climate_realizations",
-        summary="produce one scenario series from its stochastic realization",
+        summary="produce one scenario per stochastic realization",
     )
 PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.09", "publish_scenario_collection", summary="validate the scenario artifacts and mark the collection ready")
 GATHER_BENCHMARKS = RULES.banner_only("3.10", "gather_benchmarks", summary="merge generation timing and resource-use records")
@@ -446,9 +446,18 @@ def _header():
         # first thing this toolbox puts on the console and it must not open
         # flush against Snakemake's preamble nor close flush against its
         # `Job stats:`. `open_run_header` owns that; the spacing is its business.
-        open_run_header("wf3 generate_scenarios", project_dir, config_path,
-                        forcing=clim_source, realizations=RLZ_NUM,
-                        perturbations=ST_NUM, scenarios=len(SCENARIO_ROWS))
+        open_run_header(
+            "wf3 generate_scenarios", project_dir, config_path,
+            **{
+                "historical climate": clim_source,
+                "historical period": f"{config['climate']['window']['start']}–{config['climate']['window']['end']}",
+                "scenario period": f"{GENERATION['start']}–{GENERATION['end']}",
+                "weather realizations": RLZ_NUM,
+                "climate perturbations": ST_NUM,
+                "scenario series": len(SCENARIO_ROWS),
+                "water year": f"Starts in {_generation_request['water_year_start'].title()}",
+            },
+        )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

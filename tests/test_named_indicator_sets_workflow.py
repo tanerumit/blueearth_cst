@@ -269,8 +269,12 @@ def test_named_sets_export_one_readable_folder_per_set(tmp_path):
         assert (root / "results/indicator_sets" / set_id / "indicators.csv").is_file()
     assert "depth_alias: results saved" in output, output
     assert "[default, same_numbers]" in output, output
-    assert "ready to calculate 1 indicator" in output, output
+    assert "1 indicator;" in output, output
     assert "expected result keys" not in output, output
+    assert "calculations complete" not in output, output
+    assert output.index("depth_alias: results saved") < output.index(
+        "wf4 simulate_system completed"
+    ), output
     assert "Updating checkpoint dependencies." not in output, output
     # A metadata-only edit refreshes the publication but not the numbers.
     alias = experiment.config.parent / "sets/depth_alias.yml"

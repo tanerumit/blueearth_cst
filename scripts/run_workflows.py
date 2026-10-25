@@ -12,6 +12,12 @@ one Snakemake invocation. Its execution-option allowlist also applies here.
 Forwarded --unlock unlocks each enabled workflow without generating scenarios,
 capturing execution sources, or publishing indicators.
 
+--rebuild permanently erases the project's generated namespaces before normal
+admission and execution. It requires default-no interactive confirmation or
+--yes. With -- --dry-run it only previews the reset, without writing records or
+invoking workflows. Sources, unrelated paths, logs and attempt history survive;
+all experiments and allocations are erased, including disabled workflows' outputs.
+
 Each invocation records resolved configuration provenance, checked commands,
 selected simulation operation/targets, stage timing and final status in a
 unique config/_engine/invocations JSON record. Console handoffs are flushed before
@@ -189,7 +195,9 @@ def _read_config(config_path: str) -> Mapping[str, Any]:
         config = yaml.safe_load(handle)
     if not isinstance(config, Mapping):
         raise ConfigError(f"{config_path}: config is not a mapping")
-    return config
+    from blueearth_cst.shared.config_paths import resolve_project_paths
+
+    return resolve_project_paths(config, path)
 
 
 def _enabled_flags(cfg: Mapping[str, Any], config_path: str) -> dict[str, bool]:
@@ -1113,6 +1121,187 @@ def _project_name(cfg: Mapping[str, Any], project_dir: Path) -> str:
     return str(name) if name else project_dir.name
 
 
+def _validate_rebuild(
+    config_path: str,
+    flags: Mapping[str, bool],
+    cores: int,
+    extra: list[str],
+    simulation_targets: tuple[str, ...],
+) -> None:
+    """Reject unusable or redirected rebuilds before confirmation or deletion."""
+    from blueearth_cst.shared.config_composition import load_composed_config
+
+    if cores < 1 or not any(flags.values()):
+        raise ValueError(
+            "--rebuild requires positive --cores and at least one enabled workflow"
+        )
+    # Rebuild always targets this project. Config/directory overrides, arbitrary
+    # targets and Snakemake bookkeeping modes must not redirect the post-reset run.
+    switches = {
+        "--dry-run",
+        "--dryrun",
+        "-n",
+        "--forceall",
+        "-F",
+        "--printshellcmds",
+        "-p",
+        "--keep-going",
+        "--rerun-incomplete",
+        "--notemp",
+    }
+    values = {
+        "--resources",
+        "--set-resources",
+        "--set-threads",
+        "--forcerun",
+        "--rerun-triggers",
+    }
+    index = 0
+    while index < len(extra):
+        option = extra[index]
+        index += 1
+        if option in switches:
+            continue
+        if option not in values:
+            raise ValueError(
+                f"--rebuild does not support forwarded option or target {option!r}"
+            )
+        start = index
+        while index < len(extra) and not extra[index].startswith("-"):
+            index += 1
+        if index == start:
+            raise ValueError(f"{option} requires a value")
+    for name, enabled in flags.items():
+        if enabled:
+            load_composed_config(config_path, entry=name)
+    if flags["simulate_system"]:
+        if not flags["build_model"] or not flags["generate_scenarios"]:
+            raise ValueError(
+                "--rebuild with WF4 requires enabled build_model and generate_scenarios; retained inputs will be erased"
+            )
+        from blueearth_cst.experiment.simulation_runner import (
+            simulation_command,
+            simulation_settings,
+        )
+
+        _, settings = simulation_settings(config_path)
+        if settings["operation"] == "indicators-only":
+            raise ValueError(
+                "--rebuild cannot use indicators-only; enable simulations as retained responses will be erased"
+            )
+        simulation_command(
+            config_path, list(simulation_targets), cores, extra, prepare_baseline=False
+        )
+
+
+def _run_rebuild(
+    config_path: str,
+    cores: int,
+    extra: list[str],
+    *,
+    simulation_targets: tuple[str, ...],
+    project_dir: Path | None,
+    yes: bool,
+    note: str | None,
+) -> int:
+    """Confirm, clear, and run under the existing project execution lock."""
+    from blueearth_cst.shared.project_rebuild import erase_outputs, plan_rebuild
+
+    cfg = _read_config(config_path)
+    flags = _enabled_flags(cfg, config_path)
+    root = _project_dir(cfg, config_path)
+    if project_dir is not None and root != project_dir.resolve():
+        raise ConfigError("--project-dir differs from composed project root")
+    if note is not None and not flags["simulate_system"]:
+        raise ValueError("--note requires enabled simulate_system")
+    _validate_rebuild(config_path, flags, cores, extra, simulation_targets)
+    plan = plan_rebuild(root, Path(config_path))
+    preview = any(flag in {"--dry-run", "--dryrun", "-n"} for flag in extra)
+    print(
+        "Rebuild preview"
+        if preview
+        else "Rebuild will permanently erase existing generated outputs in:"
+    )
+    print(f"  {root.as_posix()}")
+    for target in plan.targets:
+        print(f"  erase  {target.relative_to(root).as_posix()}")
+    if not plan.targets:
+        print("  No existing generated outputs to erase.")
+    print("All existing experiments and their numbering will be reset.")
+    print(
+        "Source configuration, source datasets, unrelated files, and logs/history will be preserved."
+    )
+    print("Only enabled workflows will run after the reset.", flush=True)
+    if preview:
+        print("Preview only: nothing erased; no workflows started.")
+        return 0
+    if not yes:
+        if not sys.stdin.isatty():
+            raise ValueError(
+                "--rebuild needs interactive confirmation; use --yes for a non-interactive run"
+            )
+        try:
+            answer = input("Continue? [y/N]: ")
+        except EOFError:
+            answer = ""
+        if answer.strip().lower() not in {"y", "yes"}:
+            print("Rebuild cancelled; nothing erased.")
+            return 0
+    history_pair = None
+    with archive_lock(root, "project-execution"):
+        if plan_rebuild(root, Path(config_path)) != plan:
+            raise ValueError(
+                "project outputs or source configuration changed; preview and confirm rebuild again"
+            )
+        history_pair = invocation_history.start(
+            root,
+            workflow=None,
+            entry_point="scripts/run_workflows.py",
+            command=[
+                "run_workflows",
+                "--config",
+                config_path,
+                "--cores",
+                str(cores),
+                "--rebuild",
+                *(["--yes"] if yes else []),
+                *extra,
+            ],
+            targets=["all"],
+            mode="execute",
+            contract_mode="new_schema",
+            requested_workflows=[name for name, enabled in flags.items() if enabled],
+        )
+        path, record = history_pair
+        record["rebuild"] = {
+            "status": "erasing",
+            "targets": [target.relative_to(root).as_posix() for target in plan.targets],
+        }
+        invocation_history.update(path, record)
+        try:
+            erase_outputs(plan, Path(config_path))
+            record["rebuild"]["status"] = "completed"
+            invocation_history.update(path, record)
+            return _run_owned(
+                config_path,
+                cores,
+                extra,
+                simulation_targets=simulation_targets,
+                cfg=cfg,
+                flags=flags,
+                project_dir=root,
+                history_pair=history_pair,
+                note=note,
+            )
+        except BaseException as error:
+            if record["rebuild"]["status"] != "completed":
+                record["rebuild"]["status"] = "failed"
+            if record["status"] == "running":
+                invocation_history.update(path, record)
+                invocation_history.finish(path, record, exit_code=None, error=error)
+            raise
+
+
 @execution_outputs.capture_launch
 def run(
     config_path: str,
@@ -1124,8 +1313,29 @@ def run(
     new_experiment: bool = False,
     note: str | None = None,
     recover_reservation: bool = False,
+    rebuild: bool = False,
+    yes: bool = False,
 ) -> int:
     """Hold project ownership and record explicit-root validation failures."""
+    if yes and not rebuild:
+        raise ValueError("--yes requires --rebuild")
+    if rebuild:
+        if new_experiment or recover_reservation:
+            raise ValueError(
+                "--rebuild cannot combine with --new-experiment or --recover-reservation"
+            )
+        try:
+            return _run_rebuild(
+                config_path,
+                cores,
+                extra,
+                simulation_targets=tuple(simulation_targets),
+                project_dir=project_dir,
+                yes=yes,
+                note=note,
+            )
+        except OSError as error:
+            raise ValueError(f"rebuild stopped: {error}") from error
     history_pair = None
     try:
         flags = None
@@ -1578,6 +1788,7 @@ def _run_owned(
                                     child_path, child_record
                                 ),
                                 "CST_SIMULATION_INVOCATION_ID": child_id,
+                                "CST_SIMULATION_FINALIZE": "1",
                                 console_style.ANNOUNCED_ENV: "1",
                                 invocation_history.PARENT_ENV: history["invocation_id"],
                                 invocation_history.INVOCATION_ENV: child_id,
@@ -1800,6 +2011,33 @@ def _run_owned(
                     }
                 )
                 invocation_history.update(history_path, history)
+            if name == "simulate_system" and not preview:
+                # Publication is part of WF4; only its owner can issue a verdict.
+                sys.stdout.flush()
+                parts = (
+                    project_dir
+                    / child_record.get("execution_directory", "logs")
+                    / "_parts"
+                    / f"wf4-{child_id}"
+                    / "logs"
+                )
+                sys.stderr.write(
+                    "\n"
+                    + console_style.run_summary(
+                        "wf4 simulate_system",
+                        project_dir,
+                        None,
+                        None,
+                        elapsed_seconds=time.monotonic() - workflow_started,
+                        failed=result.returncode != 0,
+                        log_parts_dir=str(parts),
+                        warnings=workflow["warning_count"],
+                    )
+                    + "\n"
+                )
+                if result.returncode == 0:
+                    sys.stderr.write(f"{datetime.now():%H:%M:%S} - DONE all\n")
+                sys.stderr.flush()
             workflow["exit_code"] = result.returncode
             if result.returncode != 0:
                 workflow["status"] = "failed"
@@ -2169,6 +2407,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--new-experiment", action="store_true")
     ap.add_argument("--note")
     ap.add_argument("--recover-reservation", action="store_true")
+    ap.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="permanently erase generated project outputs, then run enabled workflows; prompts unless --yes",
+    )
+    ap.add_argument(
+        "--yes",
+        action="store_true",
+        help="confirm --rebuild without an interactive prompt",
+    )
     args = ap.parse_args(argv)
 
     # argparse.REMAINDER captures the leading `--` sentinel; strip it.
@@ -2186,6 +2434,8 @@ def main(argv: list[str] | None = None) -> int:
             new_experiment=args.new_experiment,
             note=args.note,
             recover_reservation=args.recover_reservation,
+            rebuild=args.rebuild,
+            yes=args.yes,
         )
     except (ConfigError, PrerequisiteError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)

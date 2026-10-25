@@ -52,14 +52,14 @@ from the toolbox-owned starter, so new cases use the template shipped with the
 toolbox version being run. Existing application configs are not updated automatically.
 
 Remove `--dry-run` after reviewing the preview. The command creates
-`applications/my-basin/`, sets absolute input and output paths, replaces the
+`applications/my-basin/`, sets portable input and output paths, replaces the
 outlet coordinates, and starts fresh `configured; not run` case notes. It
 preserves the template's scientific settings and starts with historical climate
 analysis alone. The template's `basin.region` upstream-area threshold (`uparea`,
 km²) is retained; review it for the outlet before running. Register the case in
 the application inventory after the workflows complete. Use `--catalog` to override the
 template's data catalog with a
-toolbox-relative or absolute path. Review catalog coverage and climate/scenario
+`toolbox:` locator, case-config-relative path, or absolute path. Review catalog coverage and climate/scenario
 settings before running. Existing applications are refused;
 outputs under `runs/my-basin/` are neither created nor modified.
 
@@ -77,8 +77,9 @@ Parameters also receive short definitions and `Input:` or `Options:` hints, draw
 the toolbox's maintained configuration templates. Existing explanations and settings
 are preserved. Custom parameters without template help receive a basic YAML type hint.
 
-Read the generated `INSTRUCTIONS.md` for preview and execution commands and
-a guide to the output folders. After
+The generated `INSTRUCTIONS.md` is a copy-paste quick reference for previewing, running,
+rerunning incomplete jobs, unlocking, and recalculating indicators. Output paths follow the commands;
+the configuration summary is last. After
 selecting forcing, disable historical climate analysis before enabling downstream
 workflows. The scaffold does not run workflows or commit files.
 
@@ -332,6 +333,46 @@ Use the same toolbox checkout for repeat runs of a project. Running one project
 from two copies of the toolbox can give conflicting decisions about which
 results need to be refreshed.
 :::
+
+## Rebuild outputs for testing
+
+To recreate results in an existing project directory, use `--rebuild`:
+
+```powershell
+# Preview the erasure plan without changing files or starting workflows.
+pixi run python scripts/run_workflows.py --config <config> --rebuild -- --dry-run
+
+# Display the plan and ask Continue? [y/N]: before erasing anything.
+pixi run python scripts/run_workflows.py --config <config> --rebuild
+
+# Confirm explicitly for an automated test run.
+pixi run python scripts/run_workflows.py --config <config> --rebuild --yes
+```
+
+This is a **project-wide, permanent reset**, including outputs of disabled workflows.
+It erases `data/spatial/`, `data/climate/`, `models/hydrology/wflow/`, `scenarios/`,
+and `experiments/`. It also removes the active WF0–WF2 configuration captures,
+their pending replacement state, and generated execution configs. No backup is made.
+The source configuration and seeds are unchanged; only enabled workflows run afterward.
+All experiments and their allocation state are removed, so automatic numbering starts again.
+
+Source configuration, referenced source datasets, unrelated project paths, logs, invocation history,
+and historical configuration snapshots are preserved. Project-local extracted climate stores are
+generated outputs and are erased; external source datasets and acquisition caches are untouched.
+Keep custom files outside the generated namespaces: their contents are treated as output. A configured
+input overlapping one of these namespaces, a linked path, repository metadata, or a changed plan causes
+refusal before erasure.
+The project execution lock remains held throughout reset and workflow execution.
+
+Press Enter or answer anything other than `y` or `yes` to cancel. Non-interactive invocations require
+`--yes`; `--yes` alone is invalid. The rebuild dry-run only previews erasure, rather than building the
+Snakemake DAG against the old results. It writes no run records. A failure during erasure or subsequent
+execution stops the run without rollback; the invocation record identifies whether reset completed.
+
+For WF4, enable WF1 and WF3 as well, because their retained inputs will be erased. Include simulations
+in WF4's operations; indicators-only cannot rebuild deleted model responses. `--rebuild` cannot combine
+with `--new-experiment`, `--recover-reservation`, forwarded config/directory overrides, or bookkeeping
+modes such as `--unlock`. Use `--new-experiment` instead when previous experiments should remain available.
 
 ## Select, resume or create an experiment
 

@@ -16,10 +16,9 @@
 # is deferred (dev/records/milestones/roadmap.md), so this set's obligation is to parse cleanly and
 # to stay a twin. `tests/test_cli.py` dry-runs it against `build_model.smk`.
 #
-# Paths are relative to the repo root, where you run Snakemake, except
-# `config_path`, which is relative to this file.
+# Paths resolve beside their declaring YAML; toolbox: names bundled resources.
 
-schema_version: 2
+schema_version: 3
 
 
 # -----------------------------------------------------------------------------
@@ -27,8 +26,8 @@ schema_version: 2
 # -----------------------------------------------------------------------------
 
 project:
-  project_dir: test_case/gabon
-  catalog: config/catalogs/deltares_data_pdrive.yml
+  project_dir: gabon
+  catalog: toolbox:config/catalogs/deltares_data_pdrive.yml
 
 
 # -----------------------------------------------------------------------------
@@ -38,7 +37,7 @@ project:
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833
-  output_locations: test_case/test_data/output_locations.csv
+  output_locations: test_data/output_locations.csv
   sources:
     rivers: hydro_rivers_lin
     lulc: globcover

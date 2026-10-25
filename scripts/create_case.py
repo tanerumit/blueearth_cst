@@ -8,6 +8,7 @@ import csv
 import io
 import json
 import math
+import os
 import re
 import shutil
 import subprocess
@@ -259,8 +260,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     config_path = Path("project_config.yml")
     text = files[config_path].decode("utf-8")
     config = yaml.safe_load(text)
-    if not isinstance(config, dict) or config.get("schema_version") != 2:
-        raise ValueError("Template requires project config schema_version: 2")
+    if not isinstance(config, dict) or config.get("schema_version") not in (2, 3):
+        raise ValueError("Template requires project config schema_version: 2 or 3")
     workflows = config.get("workflows")
     if not isinstance(workflows, dict) or not workflows:
         raise ValueError("Template requires workflow stanzas")
@@ -277,11 +278,18 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             if target.is_absolute() or ".." in target.parts or target not in files:
                 raise ValueError(f"Workflow config must be inside template: {target}")
             config_owners.setdefault(target, []).append(name)
-    text = _replace(text, ("project", "project_dir"), outputs.as_posix())
+    portable = config.get("schema_version") == 3
+    output_locator = f"../../runs/{slug}" if portable else outputs.as_posix()
+    locations_locator = (
+        "data/output_locations.csv"
+        if portable
+        else (destination / "data/output_locations.csv").as_posix()
+    )
+    text = _replace(text, ("project", "project_dir"), output_locator)
     text = _replace(
         text,
         ("basin", "output_locations"),
-        (destination / "data/output_locations.csv").as_posix(),
+        locations_locator,
     )
     region = config["basin"]["region"]
     if isinstance(region, str):
@@ -300,10 +308,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             raise ValueError("Catalog must be nonempty")
         text = _replace(text, ("project", "catalog"), args.catalog)
     expected = yaml.safe_load(files[config_path])
-    expected["project"]["project_dir"] = outputs.as_posix()
-    expected["basin"]["output_locations"] = (
-        destination / "data/output_locations.csv"
-    ).as_posix()
+    expected["project"]["project_dir"] = output_locator
+    expected["basin"]["output_locations"] = locations_locator
     expected["basin"]["region"] = str(region)
     if args.catalog is not None:
         expected["project"]["catalog"] = args.catalog
@@ -329,7 +335,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             if not isinstance(raw, str):
                 raise ValueError(f"Observation path must be a string: {variable}")
             source = Path(raw)
-            source = source if source.is_absolute() else template / source
+            source_base = (template / relative).parent if portable else template
+            source = source if source.is_absolute() else source_base / source
             source = source.resolve()
             if not source.is_relative_to(template) or not source.is_file():
                 raise ValueError(
@@ -339,7 +346,13 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
             yaml_text = _replace(
                 yaml_text,
                 ("observations", variable),
-                (destination / sidecar).as_posix(),
+                Path(
+                    os.path.relpath(
+                        destination / sidecar, (destination / relative).parent
+                    )
+                ).as_posix()
+                if portable
+                else (destination / sidecar).as_posix(),
             )
         comment_sources = (
             [templates / "example-basin/project_config.yml"]
@@ -371,66 +384,120 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     writer.writerow(["outlet", args.longitude, args.latitude])
     files[outlet] = stream.getvalue().encode("utf-8")
     files.pop(Path("README.md"), None)
-    files[Path("INSTRUCTIONS.md")] = (
-        f"# {slug}: run instructions\n\n"
-        "Use this guide to review your settings, run the assessment, and find its results.\n\n"
-        "| Field | Value |\n|---|---|\n"
-        f"| Project | {slug} |\n| Created | {created} |\n"
-        f"| Coordinates (longitude, latitude) | {args.longitude}, {args.latitude} |\n"
-        "\n"
-        "## Setup\n\nOpen PowerShell in the toolbox root and set these paths:\n\n"
-        f'```powershell\n$config = "{destination.as_posix()}/project_config.yml"\n'
-        f'$projectDir = "{outputs.as_posix()}"\n```\n\n'
-        "Review `project_config.yml` and the workflow configuration files beside it. "
-        "Check that the data catalog covers your basin, choose the climate forcing, "
-        "and review the inherited upstream-area threshold (`basin.region`'s `uparea`, in km²).\n\n"
-        "## Run enabled workflows\n\n"
-        "Edit `workflows.*.enabled` in the project config. Run WF0 alone; disable it "
-        "before enabling downstream stages.\n\n"
-        "```powershell\npixi run python scripts/run_workflows.py --config $config --project-dir $projectDir --cores 3\n```\n\n"
-        "Append `-- --dry-run` to preview.\n\n"
-        "## Individual workflows\n\n"
-        "Enable the workflow in `project_config.yml` before running its command. "
-        "WF4 requires a built model and a generated scenario collection. "
-        "GCM projections provide context for the stress test; they do not drive scenario generation.\n\n"
-        "```powershell\n"
-        "# WF0: Analyze historical climate\n"
-        "pixi run python scripts/run_workflow.py analyze_climate --config $config --project-dir $projectDir --cores 3\n\n"
-        "# WF1: Build a hydrological model\n"
-        "pixi run python scripts/run_workflow.py build_model --config $config --project-dir $projectDir --cores 3\n\n"
-        "# WF2: Extract and analyze GCM projections\n"
-        "pixi run python scripts/run_workflow.py analyze_projections --config $config --project-dir $projectDir --cores 3 --keep-going\n\n"
-        "# WF3: Generate future climate scenarios\n"
-        "pixi run python scripts/run_workflow.py generate_scenarios --config $config --project-dir $projectDir --cores 3\n\n"
-        "# WF4: Stress test the system using climate scenarios\n"
-        "pixi run python scripts/run_workflow.py simulate_system --config $config --project-dir $projectDir --target all --cores 3\n```\n\n"
-        "## Snakemake DAG preview\n\n"
-        "```powershell\npixi run snakemake all -c 3 -s build_model.smk --configfile $config --dry-run\n```\n\n"
-        "Use `analyze_climate.smk` or `analyze_projections.smk` to preview WF0 or WF2. "
-        "Record your configuration choices, commands, and checks in [notes.md](notes.md).\n\n"
-        f"## Output folder and results\n\nResults are written to `{outputs.as_posix()}` "
-        "as you run the workflows. Choose another output root with "
-        "`project.project_dir` or `--project-dir` when retaining a separate assessment. "
-        "Existing output folders are not moved or archived. "
-        "Configuration files remain in this application folder.\n\n"
-        "| Folder within the output directory | What you will find |\n|---|---|\n"
-        "| `config/` | Configuration snapshots and workflow attempt records |\n"
-        "| `data/spatial/` | Basin geometry, output locations, and maps |\n"
-        "| `data/climate/historical/` | Historical climate series, analysis plots, and source comparisons (WF0) |\n"
-        "| `models/hydrology/wflow/` | Hydrological model, historical run, and evaluation (WF1) |\n"
-        "| `data/climate/projections/` | GCM change-factor tables under `summary/` and figures under `plots/` (WF2) |\n"
-        "| `scenarios/` | Full current collection: lookups, `series/`, `config/`, `weathergenr/`; immutable copies under `_engine/data/<collection_id>/` (WF3) |\n"
-        "| `experiments/<name>/hydrology/wflow/output/` | Retained model responses to the climate scenarios (WF4) |\n"
-        "| `experiments/<name>/results/indicator_sets/<set-id>/` | One folder per indicator set: run/group tables, group lookups and the `indicators.csv` dictionary; immutable copies under the experiment's `_engine/indicator_sets/<id>/data/` (WF4) |\n"
-        "| `logs/` | Workflow messages and failure details |\n"
-        "| `benchmarks/` | Step timings and resource use |\n\n"
-        "Collection inventories are in `scenarios/_engine/collections/<collection_id>/collection.json`. "
-        "The current scenario export is tracked by `scenarios/_engine/current.json`. "
-        "Indicator definitions and source records are in "
-        "`experiments/<name>/_engine/indicator_sets/<id>/indicators.json`. "
-        "Each set's current export is tracked by `_engine/indicator_sets/names/<set-id>/current.json` within the experiment. "
-        "Check these records before treating results from an interrupted run as complete.\n"
-    ).encode("utf-8")
+    files[Path("INSTRUCTIONS.md")] = f"""# {slug}: quick reference
+
+Run in PowerShell from the toolbox root. Use one running session per output directory.
+
+## Run
+
+```powershell
+$config = "{destination.as_posix()}/project_config.yml"
+$projectDir = "{outputs.as_posix()}"
+
+# Preview; downstream stages need upstream products.
+pixi run python scripts/run_workflows.py --config $config --cores 3 -- --dry-run
+
+# Run enabled workflows.
+pixi run python scripts/run_workflows.py --config $config --cores 3
+
+# Allocate a new experiment after changing model or scenario settings.
+pixi run python scripts/run_workflows.py --config $config --cores 3 --new-experiment
+```
+
+## Resume or unlock
+
+```powershell
+# Rerun jobs left incomplete by an interrupted run.
+pixi run python scripts/run_workflows.py --config $config --cores 3 -- --rerun-incomplete
+
+# Clear stale locks only after confirming no workflow is still running.
+pixi run python scripts/run_workflows.py --config $config --cores 3 -- --unlock
+```
+
+## Rebuild for testing
+
+This permanently erases generated outputs, including all experiments, without making a backup.
+Source inputs and logs are preserved. Enable WF1 and WF3 when rebuilding WF4; indicators-only cannot rebuild.
+
+```powershell
+# Preview what will be erased; no files change and no workflows start.
+pixi run python scripts/run_workflows.py --config $config --rebuild -- --dry-run
+
+# Confirm at Continue? [y/N]:, then rerun enabled workflows.
+pixi run python scripts/run_workflows.py --config $config --rebuild
+```
+
+For automation, add `--yes` before the `--` separator. See `docs/guide/running.md` in the toolbox
+for the exact reset scope and input protection rules.
+
+## Individual workflows
+
+Enable the selected workflow in `project_config.yml`. WF4 needs WF1 and WF3 products.
+
+```powershell
+# WF0: preview historical climate analysis.
+pixi run python scripts/run_workflow.py analyze_climate --config $config --project-dir $projectDir --cores 3 --dry-run
+
+# WF1: build and run the historical model.
+pixi run python scripts/run_workflow.py build_model --config $config --project-dir $projectDir --cores 3
+
+# WF2: projection plausibility overlay.
+pixi run python scripts/run_workflow.py analyze_projections --config $config --project-dir $projectDir --cores 3
+
+# WF3: generate scenarios (enable only WF3 for a confined run).
+pixi run python scripts/run_workflows.py --config $config --cores 3
+
+# WF4: simulations and indicators.
+pixi run python scripts/simulate_system.py --config $config --cores 3
+```
+
+## Recalculate indicators
+
+In `project_config_simulate_system.yml`, set:
+
+```yaml
+operations: [indicators]
+```
+
+Then run against compatible retained responses:
+
+```powershell
+pixi run python scripts/simulate_system.py --config $config --cores 3
+```
+
+Restore `operations: [simulations, indicators]` for full runs.
+
+## Results
+
+Paths within the configured output root:
+
+| Output | Path |
+|---|---|
+| Historical climate | `data/climate/historical/` |
+| Historical model | `models/hydrology/wflow/` |
+| Projections | `data/climate/projections/` |
+| Scenarios | `scenarios/` |
+| Responses | `experiments/<name>/hydrology/wflow/output/` |
+| Indicators | `experiments/<name>/results/indicator_sets/<set-id>/` |
+| Logs | `logs/` |
+
+## Configuration
+
+Edit `project_config.yml` for shared settings and workflow enablement;
+edit sibling `project_config_<workflow>.yml` files for workflow settings.
+Review the catalog, climate forcing, and upstream-area threshold before running.
+
+| Setting | Value |
+|---|---|
+| Project | {slug} |
+| Created | {created} |
+| Schema | {config["schema_version"]} |
+| Coordinates (longitude, latitude) | {args.longitude}, {args.latitude} |
+| Output root | `{output_locator}` |
+
+Schema 3 resolves case paths beside their YAML; `toolbox:` selects bundled resources.
+Schema 2 uses the run directory for relative paths. Retained run records: [notes.md](notes.md).
+""".encode("utf-8")
     files[Path("notes.md")] = (
         f"# {slug} — run notes\n\nStatus: configured; not run.\n\n"
         f"Purpose: {args.purpose.strip()}\n\n"

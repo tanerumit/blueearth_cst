@@ -7,6 +7,10 @@ title: "WF2 — Analyze projections"
 Console summaries report resolved/requested ensemble coverage and available/skipped results. Skipped
 windows retain their source, dates, reason, and report location so coverage gaps can be investigated.
 
+The run settings list the reference period, future periods, emissions scenarios, climate models, and
+water-year start. These are the requested projection-analysis settings; the coverage summaries report
+which combinations were available.
+
 ## Rules
 
 | Rule | Operation |

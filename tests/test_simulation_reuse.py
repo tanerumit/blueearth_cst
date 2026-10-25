@@ -206,6 +206,16 @@ def test_archive_bridge_refuses_any_unaudited_or_scientific_change(retained, cha
         check_simulation_reuse(previous, _rebuild(current))
 
 
+def test_previous_archive_bridge_remains_valid(retained):
+    from blueearth_cst.experiment.simulation_reuse import _ARCHIVE_PRODUCT
+
+    previous, current = _archive_upgrade(retained)
+    for item in current["documents"]["simulator_adapter_code"]:
+        if item["path"] in _ARCHIVE_PRODUCT:
+            item["sha256"] = _ARCHIVE_PRODUCT[item["path"]]
+    check_simulation_reuse(previous, _rebuild(current))
+
+
 def test_archive_bridge_matches_the_audited_checkout():
     import hashlib
 

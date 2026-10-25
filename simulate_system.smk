@@ -13,7 +13,7 @@ from blueearth_cst.shared.console_style import install_console_style, open_run_h
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
-_, _settings = simulation_settings(config_path)
+_console_project, _settings = simulation_settings(config_path)
 OPERATION = _settings["operation"]
 # strict or partial; read from the runner snapshot, never part of a request.
 INDICATOR_EVALUATION = simulation_selection(config_path)[2].evaluation
@@ -244,17 +244,26 @@ def _header():
         # `Job stats:`. `open_run_header` owns that spacing.
         batching = globals().get("BATCH_PLAN_SUMMARY")
         from blueearth_cst.shared.run_log_core import plural
+        from blueearth_cst.shared.snake_utils import listed, resolve_water_year_start
         details = {}
         if OPERATION == "indicators-only":
-            details["responses"] = "Retained responses only; no generation, forcing preparation, or simulation"
+            details["simulation results"] = "Using saved simulations"
         else:
-            details["scenarios"] = f"{plural(len(RUN_IDS), 'selected scenario')}"
+            details["scenario series"] = plural(len(RUN_IDS), "selected series", "selected series")
+            details["simulation period"] = f"{SIM_WINDOW_START}–{SIM_WINDOW_END}"
             if globals().get("_simulation_complete"):
-                details["responses"] = "Reusing saved simulations; checking responses for requested indicators"
-        open_run_header("wf4 simulate_system", project_dir, config_path,
-                        experiment=experiment,
-                        operation="Simulate and calculate indicators" if OPERATION == "simulate-and-indicators" else "Calculate indicators from saved simulations",
-                        **({"compute": batching} if batching else {}), **details)
+                details["simulation results"] = "Reusing saved simulations"
+        if INDICATOR_SETS:
+            details["indicator sets"] = listed([item.set_id for item in INDICATOR_SETS])
+        details["water year"] = f"Starts in {resolve_water_year_start((_console_project.get('climate') or {}).get('water_year_start'))}"
+        analysis = "Indicators from saved simulations"
+        if OPERATION != "indicators-only":
+            analysis = "Hydrological simulation and indicators" if INDICATOR_SETS else "Hydrological simulation"
+        open_run_header(
+            "wf4 simulate_system", project_dir, config_path,
+            experiment=experiment, analysis=analysis, **details,
+            **({"parallel simulations": batching} if batching and OPERATION != "indicators-only" else {}),
+        )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

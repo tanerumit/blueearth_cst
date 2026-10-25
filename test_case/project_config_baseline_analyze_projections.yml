@@ -1,6 +1,6 @@
 # analyze_projections (wf2) -- baseline set
 
-catalog: config/catalogs/cmip6_data.yml
+catalog: toolbox:config/catalogs/cmip6_data.yml
 ensemble: cmip6
 
 models:

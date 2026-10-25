@@ -9,7 +9,7 @@ and execution records. This module owns the exact schema and composition.
 Section references and ``D-`` tags below identify historical rationale in
 ``dev/records/milestones/r13/config-tiers-design.md``, not additional requirements.
 
-**The composition invariant (D-8.1) is the whole point.** ``compose_config``
+**Schema 2 preserves the composition invariant (D-8.1).** ``compose_config``
 returns a mapping whose shape is identical to the pre-split ``config`` dict:
 ``config["workflows"]["generate_scenarios"]`` and ``config["basin"]``
 resolve exactly as they did, to exactly the same values.
@@ -17,7 +17,9 @@ Because that holds, ``effective_config_digest``, ``guarded_sections_digest``, th
 experiment freeze, ``resolve_simulation_window`` and every ``get_config`` call
 site are unchanged *by construction* — same inputs, same bytes hashed. Two
 deviations are declared and only two: the narrowing (§8.1, §10.7) and the
-rebinding requirement (D-8.6).
+rebinding requirement (D-8.6). Schema 3 additionally resolves declared file
+paths beside their owning YAML, using config_paths.py. Exact source bytes
+remain in archives; runtime mappings carry resolved locators.
 
 **The shared seam (§9).** A key read by more than one workflow lives in T1, never
 in a T2 file. Convention cannot enforce that, and a full key registry would be a
@@ -70,6 +72,10 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 import yaml
 
+from blueearth_cst.shared.config_paths import (
+    resolve_project_paths,
+    resolve_workflow_paths,
+)
 from blueearth_cst.shared.plot_config import resolve_annotation
 
 if TYPE_CHECKING:
@@ -91,11 +97,11 @@ MIGRATION_DOC = "docs/site/guide/migrating-project-config.qmd"
 CONFIG_DOC = "docs/guide/configuration.md"
 
 #: The project config shape this loader accepts (R14 D-11.1). A document with no
-#: `schema_version`, or a lower one, is a v1 set and is refused rather than
+#: `schema_version`, or one below 2, is a v1 set and is refused rather than
 #: guessed at: the v1 and v2 spellings overlap enough that a tolerant loader
 #: would compose a half-migrated document into something that runs and produces
 #: different numbers.
-SCHEMA_VERSION: int = 2
+SCHEMA_VERSION: int = 3  # Schema 2 keeps its original path bases.
 
 #: The migration TOOL every refusal points a user at, as it exists in
 #: `MIGRATION_RELEASE`. Named once so the refusals cannot disagree on it.
@@ -518,8 +524,12 @@ def _check_schema_version(t1: Mapping[str, Any], t1_path: str | os.PathLike) -> 
     the same statement and get the same message (`C-05`).
     """
     raw = t1.get("schema_version")
-    if isinstance(raw, int) and not isinstance(raw, bool) and raw >= SCHEMA_VERSION:
+    if type(raw) is int and raw in (2, SCHEMA_VERSION):
         return
+    if type(raw) is int and raw > SCHEMA_VERSION:
+        raise ValueError(
+            f"{t1_path}: unsupported schema_version: {raw}; supported: 2, 3"
+        )
     if raw is None:
         found = "no `schema_version` key at all, which means it was written before R14"
     else:
@@ -1116,7 +1126,9 @@ def compose_config(
             )
 
     composed: dict[str, Any] = {
-        key: value for key, value in t1.items() if key != "workflows"
+        key: value
+        for key, value in resolve_project_paths(t1, t1_path).items()
+        if key != "workflows"
     }
     merged: dict[str, Any] = {}
     workflow_config_paths: dict[str, str] = {}
@@ -1125,6 +1137,10 @@ def compose_config(
         if name in loaded_names:
             probe = by_name.get(name)
             body = dict(probe.body) if probe is not None else {}
+            if probe is not None:
+                body = resolve_workflow_paths(
+                    body, probe.resolved, name, t1["schema_version"]
+                )
             section.update(body)
             if probe is not None:
                 workflow_config_paths[name] = _declared_form(probe.resolved)

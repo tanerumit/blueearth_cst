@@ -10,6 +10,10 @@ import pytest
 import yaml
 
 from blueearth_cst.shared import workflow_archive_launch as launch
+from blueearth_cst.shared.config_paths import (
+    resolve_project_paths,
+    resolve_workflow_paths,
+)
 from tests.test_snapshot_config_rules import _rule_block
 
 REPO = Path(__file__).resolve().parents[1]
@@ -19,7 +23,10 @@ REPO = Path(__file__).resolve().parents[1]
 def test_metadata_repeat_ignores_git_state_but_tracks_configuration_inputs(
     tmp_path, monkeypatch
 ):
-    project = yaml.safe_load((REPO / "test_case/project_config_rapid.yml").read_text())
+    project = resolve_project_paths(
+        yaml.safe_load((REPO / "test_case/project_config_rapid.yml").read_text()),
+        REPO / "test_case/project_config_rapid.yml",
+    )
     root = tmp_path / "project"
     project["project"]["project_dir"] = str(root)
     catalog = tmp_path / "catalog.yml"
@@ -27,7 +34,19 @@ def test_metadata_repeat_ignores_git_state_but_tracks_configuration_inputs(
     project["project"]["catalog"] = [str(catalog)]
     settings = tmp_path / "workflow.yml"
     stanza = project["workflows"]["build_model"]
-    settings.write_bytes((REPO / "test_case" / stanza["config_path"]).read_bytes())
+    settings.write_text(
+        yaml.safe_dump(
+            resolve_workflow_paths(
+                yaml.safe_load(
+                    (REPO / "test_case" / stanza["config_path"]).read_bytes()
+                ),
+                REPO / "test_case" / stanza["config_path"],
+                "build_model",
+                project["schema_version"],
+            )
+        ),
+        encoding="utf-8",
+    )
     stanza["config_path"] = str(settings)
     source = tmp_path / "project.yml"
     source.write_text(yaml.safe_dump(project), encoding="utf-8")

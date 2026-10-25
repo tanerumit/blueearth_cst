@@ -16,7 +16,7 @@ def test_rapid_config_composes_pdrive_base_then_era5_override():
     )
     catalogs = project["project"]["catalog"]
 
-    assert catalogs == [BASE_CATALOG, ERA5_OVERRIDE]
+    assert catalogs == ["toolbox:" + BASE_CATALOG, "toolbox:" + ERA5_OVERRIDE]
     assert project["basin"]["sources"] == {
         "rivers": "hydro_rivers_lin",
         "lulc": "globcover",
@@ -48,7 +48,7 @@ def test_baseline_config_uses_pdrive_catalog_and_its_source_names():
         (ROOT / "test_case/project_config_baseline.yml").read_text(encoding="utf-8")
     )
 
-    assert project["project"]["catalog"] == BASE_CATALOG
+    assert project["project"]["catalog"] == "toolbox:" + BASE_CATALOG
     assert project["basin"]["sources"] == {
         "rivers": "hydro_rivers_lin",
         "lulc": "globcover",

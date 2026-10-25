@@ -33,8 +33,9 @@ and current adapter requirements.
 ## Configuration and execution records
 
 Project settings own shared `basin`, `climate` and `model` sections. Each workflow has a closed
-`{enabled, config_path}` stanza pointing to its settings file. Only `config_path` resolves against the
-project file; ordinary run paths resolve from the run directory. The parser and schemas in
+`{enabled, config_path}` stanza pointing to its settings file. Schema 3 resolves file paths beside their
+declaring YAML, with `toolbox:` for bundled resources.
+Schema 2 preserves run-directory-relative paths except for `config_path`. The parser and schemas in
 `blueearth_cst/shared/config_composition.py` own exact fields and composition behavior.
 
 `config/advanced_settings.yml` is always loaded through its closed schema. `config/defaults/` affects

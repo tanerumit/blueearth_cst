@@ -165,7 +165,7 @@ def write_split(
     bodies: dict[str, dict] | None = None,
     enabled: dict[str, bool] | None = None,
     omit_path: tuple[str, ...] = (),
-    schema_version: object = cc.SCHEMA_VERSION,
+    schema_version: object = 2,
 ) -> Path:
     """Write a T1 file plus one T2 file per workflow body; return the T1 path.
 
@@ -479,7 +479,7 @@ def test_absolute_config_path_is_used_as_given(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {"project_dir": "p"},
                 **MINIMAL_T1_SECTIONS,
                 "workflows": {"build_model": {"enabled": True, "config_path": str(t2)}},
@@ -504,7 +504,7 @@ def test_tilde_in_config_path_is_expanded(tmp_path, monkeypatch):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {"project_dir": "p"},
                 **MINIMAL_T1_SECTIONS,
                 "workflows": {
@@ -607,7 +607,7 @@ def test_non_string_config_path_is_refused(tmp_path, value):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {},
                 "workflows": {"build_model": {"enabled": True, "config_path": value}},
             }
@@ -626,7 +626,7 @@ def test_empty_config_path_says_to_omit_the_key(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {},
                 "workflows": {"build_model": {"enabled": True, "config_path": "  "}},
             }
@@ -666,7 +666,7 @@ def test_two_stanzas_sharing_one_file_are_refused(tmp_path, second):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {},
                 "workflows": {
                     "build_model": {"enabled": True, "config_path": "wf.yml"},
@@ -693,7 +693,7 @@ def test_a_third_stanza_key_is_refused_and_names_the_key(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {},
                 "workflows": {
                     "build_model": {"enabled": True, "model_build_config": "x.yml"}
@@ -723,7 +723,7 @@ def test_stanza_closure_is_checked_outside_this_entry_points_scope(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {},
                 "workflows": {
                     "build_model": {"enabled": True},
@@ -752,7 +752,7 @@ def test_a_stray_t1_top_level_key_is_refused(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": 2,
                 "project": {},
                 "workflows": {"build_model": {"enabled": True}},
                 "reporting": {"title": "left behind"},
@@ -1383,7 +1383,7 @@ def test_a_retired_t1_key_is_refused_and_names_its_new_home(
     directory = tmp_path / path.replace(".", "_")
     directory.mkdir(parents=True)
     document = {
-        "schema_version": cc.SCHEMA_VERSION,
+        "schema_version": 2,
         "project": {"project_dir": "p"},
         **copy.deepcopy(MINIMAL_T1_SECTIONS),
         "workflows": {"build_model": {"enabled": True}},
@@ -1617,7 +1617,7 @@ def test_every_retired_key_row_is_reachable(tmp_path, path):
     directory.mkdir(parents=True)
 
     document = {
-        "schema_version": cc.SCHEMA_VERSION,
+        "schema_version": 2,
         "project": {"project_dir": "p"},
         **copy.deepcopy(MINIMAL_T1_SECTIONS),
         "workflows": {},

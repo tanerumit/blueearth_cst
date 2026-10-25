@@ -9,6 +9,22 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Add `run_workflows.py --rebuild` to permanently reset generated outputs before rerunning enabled
+  workflows. It asks for confirmation, supports `--yes` for automation, and offers a read-only erasure
+  preview with `--rebuild -- --dry-run`. Source inputs, unrelated paths, logs and history are preserved.
+
+- Clarify WF3/WF4 console summaries, show the weather template notice once per generation invocation,
+  and use stable scenario export paths in console output while keeping engine paths in detailed logs.
+
+- Show the user-facing project config as the first Paths row in every workflow's console header.
+
+- Generate concise case instructions with copy-paste commands, incomplete-job reruns and unlock,
+  and a configuration summary at the end.
+
+- Add portable project schema 3: file paths resolve beside their declaring YAML, and `toolbox:`
+  locators select bundled resources. Case scaffolds and shipped seeds use the new contract.
+  Schema 2 retains its existing path semantics; see [migration guidance](docs/guide/configuration.md).
+
 - Support flat inline WF4 indicator-set configuration, inherited parameter defaults and per-indicator
   `enabled` flags. Existing selectors and set files remain supported. Historical Q90 rules can use
   `baseline_quantile: {}` with the project's WF1 model and automatically derived source provenance.

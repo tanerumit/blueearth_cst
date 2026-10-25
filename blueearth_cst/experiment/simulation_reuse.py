@@ -57,11 +57,20 @@ _ARCHIVE_PREVIOUS = {
 # Re-audited after t2610221058: the launcher only gained WF2 product observation
 # and production-record publication around the child; staging and execution
 # settings are unchanged. Current simulation inventories exclude this launcher.
-_ARCHIVE_AFTER = {
+_ARCHIVE_PRODUCT = {
     _ARCHIVE_LAUNCH: "1efda5e4ad723b44214b23ba601356e992e40f38abbcd8a7839436b35cec3938",
     "blueearth_cst/shared/configuration_archive.py": (
         "ddee2d3ad42c37f875824915d78474dc94d996939d3df14def93397019724257"
     ),
+}
+# Schema-3 portability audit: declarations resolve before staging; source bytes
+# remain exact and dependency bytes/settings remain independently fingerprinted.
+# Schema-2 staging is unchanged. No scientific source inventory changed.
+# Covered by test_config_paths (relocation/staging), archive lifecycle, and reuse
+# rejection tests. Keep the preceding product-observation bridge valid as well.
+_ARCHIVE_AFTER = {
+    **_ARCHIVE_PRODUCT,
+    _ARCHIVE_LAUNCH: "28592d85d8c7c9cb3614b53b7ddf3c018a139de671fa781c3adeee1546498508",
 }
 
 
@@ -75,7 +84,11 @@ def _archive_upgrade_paths(
     if {path: old[path] for path in _ARCHIVE_AFTER if path in old} in (
         {_ARCHIVE_LAUNCH: _ARCHIVE_BEFORE},
         _ARCHIVE_PREVIOUS,
-    ) and all(new.get(path) == checksum for path, checksum in _ARCHIVE_AFTER.items()):
+        _ARCHIVE_PRODUCT,
+    ) and any(
+        all(new.get(path) == checksum for path, checksum in target.items())
+        for target in (_ARCHIVE_PRODUCT, _ARCHIVE_AFTER)
+    ):
         return set(_ARCHIVE_AFTER)
     return set()
 

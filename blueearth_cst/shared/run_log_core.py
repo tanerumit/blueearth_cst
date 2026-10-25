@@ -81,7 +81,7 @@ def _presentation_message(module: str, message: str) -> str:
         )
         if reference:
             path, digest, count = reference.groups()
-            return f"Model identity recorded: {path}; {plural(int(count), 'input')}; digest {digest}…"
+            return f"Using hydrological model: {path}; {plural(int(count), 'input file')}; checksum {digest}…"
         match = re.fullmatch(r"Wrote (.+) \((\d+) rows, (\d+) members?\)", message)
         if match:
             path, rows, points = match.groups()
@@ -500,11 +500,19 @@ def _shorten_console_paths(text, project_root, tokens):
 
     Match the spelling already used by the tee, such as ``<model>/config``.
     Saved log rows retain their original catalog identities and config paths.
+    Scenario data paths name the export tree available after successful completion.
     """
     aliases = _declared_tokens(variable=_CONSOLE_PATH_TOKENS_ENV)
     for token, path in sorted(aliases, key=lambda pair: len(pair[1]), reverse=True):
         shown = _relativize_paths(path, project_root, tokens)
         text = _tokenize_prefix(text, shown, token)
+    # The complete collection data tree is copied to scenarios/ on success.
+    # Metadata elsewhere under _engine has no equivalent and keeps its path.
+    text = re.sub(
+        r"(<scenarios>|<project>/scenarios)/_engine/data/[0-9a-f]{12}(?=/|\s|$)",
+        r"\1",
+        text,
+    )
     return text
 
 
@@ -1359,6 +1367,10 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
     lines are buffered, and any real content flushes them verbatim, so the
     filter only ever fires on a genuinely empty-bodied shutdown cascade.
 
+    The weather template's routine dimensions row appears once per WF3
+    invocation. Parallel jobs claim a marker beside the warning tally; each
+    job's detailed log retains every row, including suppressed repetitions.
+
     Parameters
     ----------
     command : list[str]
@@ -1377,6 +1389,14 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
     if parent:
         os.makedirs(parent, exist_ok=True)
     project_root, log_id = _log_path_parts(log_path)
+    template_seen = False
+    tally = os.environ.get(_WARNING_TALLY_ENV)
+    invocation = os.environ.get("CST_GENERATION_INVOCATION_ID", "")
+    template_marker = (
+        Path(tally).with_name(f".{invocation}.template-loaded")
+        if tally and re.fullmatch(r"[0-9a-f]{32}", invocation)
+        else None
+    )
     label = os.path.splitext(log_id)[0]
     if label.startswith("_parts/"):
         label = label[len("_parts/") :]
@@ -1425,6 +1445,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
             bar_line["columns"] = len(body)
 
         def emit(text, redraw=False, had_cr=False):
+            nonlocal template_seen
             # Collapse a carriage-return-redrawn line to the frame that was
             # actually left on screen, then compact hydromt's redundant log
             # format (see _compact_log_line) and show project files relative to
@@ -1438,7 +1459,24 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
             # the same hydromt code and used to disagree about which of its rows
             # reached the console, purely because they reach it through
             # different tees -- `_Tee` consulted this and `run_and_tee` did not.
-            if not _muted_on_console(text):
+            muted = _muted_on_console(text)
+            if re.fullmatch(
+                r"\d{2}:\d{2}:\d{2} - io - Template loaded: nx=[\d,]+, ny=[\d,]+, nt=[\d,]+\n?",
+                text,
+            ):
+                muted = template_seen
+                template_seen = True
+                if not muted and template_marker is not None:
+                    try:
+                        # Exclusive creation coordinates parallel job processes.
+                        with template_marker.open("x", encoding="utf-8"):
+                            pass
+                    except FileExistsError:
+                        muted = True
+                    except OSError:
+                        # An unavailable marker still allows one notice per job.
+                        muted = False
+            if not muted:
                 # Body tier on the console only: a shell rule's output is
                 # detail, and `log` below must stay free of escape codes.
                 #

@@ -636,7 +636,8 @@ def test_rerun_retains_predecessor_after_original_is_removed(tmp_path, legacy):
     )
 
 
-def test_a_to_b_to_relocated_c_composes_without_a(tmp_path):
+@pytest.mark.parametrize("schema_version", [2, 3])
+def test_a_to_b_to_relocated_c_composes_without_a(tmp_path, schema_version):
     root_a = tmp_path / "A"
     source_dir = root_a / "inputs"
     source_dir.mkdir(parents=True)
@@ -645,9 +646,9 @@ def test_a_to_b_to_relocated_c_composes_without_a(tmp_path):
     project_path.write_text(
         yaml.safe_dump(
             {
-                "schema_version": cc.SCHEMA_VERSION,
+                "schema_version": schema_version,
                 "project": {"project_dir": str(root_a)},
-                "basin": {"region": "x"},
+                "basin": {"region": "{'subbasin': [1, 2]}"},
                 "climate": {"sources": ["era5"], "selected": "era5"},
                 "workflows": {
                     "build_model": {"enabled": True, "config_path": workflow_path.name}
@@ -713,10 +714,9 @@ def test_a_to_b_to_relocated_c_composes_without_a(tmp_path):
     root_c = tmp_path / "C"
     root_b.rename(root_c)
     resolved = resolve_rerun_execution(root_c, "build_model", "config/build_model")
-    assert (
-        resolved.composed_config["workflows"]["build_model"]["engine"]["build_config"]
-        == "old.yml"
-    )
+    assert resolved.composed_config["workflows"]["build_model"]["engine"][
+        "build_config"
+    ] == ("old.yml" if schema_version == 2 else (source_dir / "old.yml").as_posix())
     assert resolved.composed_config["project"]["project_dir"] == str(root_c)
     assert (
         Path(resolved.workflow_config_paths["build_model"]).read_bytes()

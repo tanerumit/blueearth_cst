@@ -12,6 +12,7 @@ sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, historical_window_bounds, julia_prefix, listed, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count
 from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo
+from blueearth_cst.shared.console_style import header_config_path
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -1449,11 +1450,22 @@ def _header():
     try:
         # One write, carrying a blank line on both sides -- see the note on
         # WF3's `_header`, which this mirrors.
+        from blueearth_cst.experiment.batch_sizing import count_active_cells
+        try:
+            cells = count_active_cells(Path(basin_dir) / "staticmaps.nc")
+            grid = f"{cells:,} active cells in existing model" if cells is not None else "Cell count available after model build"
+        except (OSError, ValueError):
+            grid = "Cell count unavailable from existing model"
         open_run_header(
-            "wf1 build_model", project_dir, config_path,
-            forcing=clim_source,
-            simulation=f"{SIMULATION_BOUNDS[0].date()}–{SIMULATION_BOUNDS[1].date()}",
-            resolution=f"{model_resolution:g}°",
+            "wf1 build_model", project_dir, header_config_path(config_path, CAPTURE_RECORD),
+            **{
+                "hydrological model": "Wflow-SBM",
+                "climate forcing": clim_source,
+                "simulation period": f"{simulation_window['start']}–{simulation_window['end']}",
+                "grid spacing": f"{model_resolution:g}°",
+                "model grid": grid,
+                "water year": f"Starts in {WATER_YEAR_START}",
+            },
         )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more

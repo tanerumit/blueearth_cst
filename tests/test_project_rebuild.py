@@ -1,6 +1,7 @@
 """Rebuild deletes only checked generated namespaces on disposable projects."""
 
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -418,6 +419,9 @@ def test_legacy_inputs_are_also_checked_against_the_child_runtime_directory(
 
 @pytest.mark.workflow_contract
 @pytest.mark.usefixtures("isolated_snakemake")
+@pytest.mark.skipif(
+    os.name != "nt", reason="run_project_child refuses project writers off Windows"
+)
 def test_rebuild_executes_a_real_producer_at_the_existing_output_path(
     project, monkeypatch
 ):

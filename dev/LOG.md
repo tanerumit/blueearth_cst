@@ -21,6 +21,7 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-25 | t2610241523 | Fix clipped colorbar titles on spatial soil-clay and LAI maps [dropped] | plotting |
 | 2026-10-24 | t2610241609 | Rebuild deleted WF1 plot folders with a cheap existence check | wf1  |
 | 2026-10-24 | t2610241600 | Rebuild deleted WF1 outputs that targets do not request [dropped] | wf1  |
 | 2026-10-24 | t2610082103 | Share plot renderers across climate workflows | plotting |

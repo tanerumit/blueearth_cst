@@ -5,31 +5,30 @@ cssclasses: [todo-board]
 
 # TODO
 
-| #      | ID                       | Item                                                          | Area       | Status     |
-| ------ | ------------------------ | ------------------------------------------------------------- | ---------- | ---------- |
-| 1      | [t2609281102][]          | Finish Wflow model revisions design                           | wf1        | blocked    |
-| 2      | [t2608202352][]          | Publish docs site to GitHub Pages                             | docs       | blocked    |
-| 3      | [t2608091730][]          | Make waterbody layers for the basin map                       | plotting   | blocked    |
-| 4      | [t2608071207][]          | Prove wflow log check fails without path_log                  | wf3        | blocked    |
-| 5      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4           | wf4        | backlog    |
-| 6      | [t2610091622][]          | Triage unresolved geographic robustness findings              | validation | backlog    |
-| 7      | [t2610022259][]          | Scope conceptual workflow improvements                        | methods    | backlog    |
-| 8      | [t2609251520][]          | Decide naming of generation_inputs snapshots                  | wf3        | backlog    |
-| 9      | [t2609251025][]          | Wflow sysimage to cut Julia startup                           | runtime    | backlog    |
-| 10     | [t2609181302][]          | Snakemake preamble cannot be suppressed                       | console    | backlog    |
-| 11     | [t2608222252][]          | Make climate extraction variables configurable                | climate    | backlog    |
-| 12     | [t2608202351a][]         | Publish pipeline notebooks on the docs site                   | docs       | backlog    |
-| 13     | [t2608191733][]          | Ship a sample dataset bundle                                  | data       | backlog    |
-| 14     | [t2608121606][]          | Missing catalog source can hide a reservoir                   | wf1        | backlog    |
-| 15     | [t2608071221][]          | Docker and Linux end-to-end runs untested                     | platform   | backlog    |
-| 16     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                      | wf1        | backlog    |
-|        | [t2610241658][]          | Runner dry-run plans a full WF1 rebuild after a complete run  | wf1        | backlog    |
-|        | [t2610241523c][]         | Adopt the shared plotting style in R/WF3 figures              | plotting   | backlog    |
-|        | [t2610241523b][]         | Extract the plotting core as a package                        | plotting   | backlog    |
-|        | [t2610241523a][]         | Isolate Snakemake state between parallel test workers         | tests      | backlog    |
-|        | [t2610241523][]          | Fix clipped colorbar titles on spatial soil-clay and LAI maps | plotting   | backlog    |
-|        | [t2610211349][]          | Improving repo-wide documentation and instructions            | docs       | backlog    |
-|        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run        | runtime    | backlog    |
+| #      | ID                       | Item                                                         | Area       | Status     |
+| ------ | ------------------------ | ------------------------------------------------------------ | ---------- | ---------- |
+| 1      | [t2609281102][]          | Finish Wflow model revisions design                          | wf1        | blocked    |
+| 2      | [t2608202352][]          | Publish docs site to GitHub Pages                            | docs       | blocked    |
+| 3      | [t2608091730][]          | Make waterbody layers for the basin map                      | plotting   | blocked    |
+| 4      | [t2608071207][]          | Prove wflow log check fails without path_log                 | wf3        | blocked    |
+| 5      | [t2610091737][]          | Consider bounded-window forcing preparation for WF4          | wf4        | backlog    |
+| 6      | [t2610091622][]          | Triage unresolved geographic robustness findings             | validation | backlog    |
+| 7      | [t2610022259][]          | Scope conceptual workflow improvements                       | methods    | backlog    |
+| 8      | [t2609251520][]          | Decide naming of generation_inputs snapshots                 | wf3        | backlog    |
+| 9      | [t2609251025][]          | Wflow sysimage to cut Julia startup                          | runtime    | backlog    |
+| 10     | [t2609181302][]          | Snakemake preamble cannot be suppressed                      | console    | backlog    |
+| 11     | [t2608222252][]          | Make climate extraction variables configurable               | climate    | backlog    |
+| 12     | [t2608202351a][]         | Publish pipeline notebooks on the docs site                  | docs       | backlog    |
+| 13     | [t2608191733][]          | Ship a sample dataset bundle                                 | data       | backlog    |
+| 14     | [t2608121606][]          | Missing catalog source can hide a reservoir                  | wf1        | backlog    |
+| 15     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog    |
+| 16     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog    |
+|        | [t2610241658][]          | Runner dry-run plans a full WF1 rebuild after a complete run | wf1        | backlog    |
+|        | [t2610241523c][]         | Adopt the shared plotting style in R/WF3 figures             | plotting   | backlog    |
+|        | [t2610241523b][]         | Extract the plotting core as a package                       | plotting   | backlog    |
+|        | [t2610241523a][]         | Isolate Snakemake state between parallel test workers        | tests      | backlog    |
+|        | [t2610211349][]          | Improving repo-wide documentation and instructions           | docs       | backlog    |
+|        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run       | runtime    | backlog    |
 
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
@@ -51,6 +50,5 @@ cssclasses: [todo-board]
 [t2610241523c]: tasks/t2610241523c-adopt-the-shared-plotting-style-in-r-wf3-figures.md
 [t2610241523b]: tasks/t2610241523b-extract-the-plotting-core-as-a-package.md
 [t2610241523a]: tasks/t2610241523a-isolate-snakemake-state-between-parallel-test-workers.md
-[t2610241523]: tasks/t2610241523-fix-clipped-colorbar-titles-on-spatial-soil-clay-and-lai-maps.md
 [t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md
 [t2610191323]: tasks/t2610191323-ntoum-workflow-performance.md

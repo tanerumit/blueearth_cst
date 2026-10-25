@@ -4,6 +4,7 @@ The six §7(g) assertions plus the ext1-03 enabled:false skip test. Every test
 monkeypatches subprocess.run to capture the argv list -- no real snakemake runs.
 """
 
+import io
 import json
 import os
 import re
@@ -1650,8 +1651,9 @@ def test_the_runner_tells_its_children_the_workflow_is_already_named(
     assert rw.console_style.ANNOUNCED_ENV not in os.environ  # never leaked
 
 
+@pytest.mark.parametrize("published", [True, False])
 def test_the_announcement_rides_on_the_simulation_runners_own_environment(
-    tmp_path, capsys, monkeypatch
+    tmp_path, capsys, monkeypatch, published
 ):
     """The other spawn path builds its own env, so the flag is added to it.
 
@@ -1661,12 +1663,27 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
     take those with it.
     """
     monkeypatch.delenv(rw.console_style.ANNOUNCED_ENV, raising=False)
+    from blueearth_cst.experiment import indicator_export
+    from blueearth_cst.shared.run_log_core import log_row
+
+    def publication(*args):
+        log_row(
+            "Results saved" if published else "Publication failed",
+            module="indicators",
+            level="WARNING" if published else "ERROR",
+        )
+        return published
+
+    monkeypatch.setattr(indicator_export, "report_publication", publication)
     envs = []
 
     def fake_run(cmd, cwd=None, **kwargs):
         if cmd[0] == "git":
             return FakeResult(0, stdout="abc123\n" if "rev-parse" in cmd else "")
         envs.append(kwargs.get("env"))
+        log_row("Calculation warning", module="indicators", level="WARNING")
+        if not kwargs["env"].get("CST_SIMULATION_FINALIZE"):
+            print("wf4 simulate_system completed prematurely")
         return FakeResult(0)
 
     monkeypatch.setattr(
@@ -1693,11 +1710,24 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
     flags = {n: "false" for n in rw.WORKFLOW_ORDER}
     flags["simulate_system"] = "true"
     _write_cfg(cfg, flags, project_dir=str(project_dir))
-    rw.run(str(cfg), cores=3, extra=[])
-    capsys.readouterr()
+    stream = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", stream)
+    monkeypatch.setattr(sys, "stderr", stream)
+    assert rw.run(str(cfg), cores=3, extra=[]) == (0 if published else 1)
+    output = stream.getvalue()
+    verdict = "completed" if published else "FAILED"
+    assert "completed prematurely" not in output
+    publication_row = "Results saved" if published else "Publication failed"
+    assert output.index(publication_row) < output.index(
+        f"wf4 simulate_system {verdict}"
+    )
+    assert "2 warnings" in output
+    assert output.count(f"wf4 simulate_system {verdict}") == 1
+    assert ("- DONE all" in output) == published
 
     assert len(envs) == 1
     assert envs[0][rw.console_style.ANNOUNCED_ENV] == "1"
+    assert envs[0]["CST_SIMULATION_FINALIZE"] == "1"
     # The runner's own keys survived the merge.
     assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-indicators"
     parent = _read_only_manifest(project_dir)

@@ -1580,6 +1580,7 @@ def _run_owned(
                                     child_path, child_record
                                 ),
                                 "CST_SIMULATION_INVOCATION_ID": child_id,
+                                "CST_SIMULATION_FINALIZE": "1",
                                 console_style.ANNOUNCED_ENV: "1",
                                 invocation_history.PARENT_ENV: history["invocation_id"],
                                 invocation_history.INVOCATION_ENV: child_id,
@@ -1802,6 +1803,33 @@ def _run_owned(
                     }
                 )
                 invocation_history.update(history_path, history)
+            if name == "simulate_system" and not preview:
+                # Publication is part of WF4; only its owner can issue a verdict.
+                sys.stdout.flush()
+                parts = (
+                    project_dir
+                    / child_record.get("execution_directory", "logs")
+                    / "_parts"
+                    / f"wf4-{child_id}"
+                    / "logs"
+                )
+                sys.stderr.write(
+                    "\n"
+                    + console_style.run_summary(
+                        "wf4 simulate_system",
+                        project_dir,
+                        None,
+                        None,
+                        elapsed_seconds=time.monotonic() - workflow_started,
+                        failed=result.returncode != 0,
+                        log_parts_dir=str(parts),
+                        warnings=workflow["warning_count"],
+                    )
+                    + "\n"
+                )
+                if result.returncode == 0:
+                    sys.stderr.write(f"{datetime.now():%H:%M:%S} - DONE all\n")
+                sys.stderr.flush()
             workflow["exit_code"] = result.returncode
             if result.returncode != 0:
                 workflow["status"] = "failed"

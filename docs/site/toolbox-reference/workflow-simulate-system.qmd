@@ -29,6 +29,10 @@ report saved simulations without implying that new simulations will run.
 
 The runner infers its target from `operations`: both operations run `all`, simulations alone stop at `simulations_only`, and indicators alone read completed responses without rerunning Wflow. Sets with identical numerical requests share one plan and one immutable indicator set. After Snakemake, the runner publishes each set separately; a failed set keeps its previous publication, and the command exits nonzero unless every set is current. With several sets, Snakemake runs with `--keep-going`, which also lets independent Wflow batches continue after one fails.
 
+Indicator planning reports set names and indicator counts. Rule completion markers carry calculation
+progress; the runner publishes the result folders before issuing the final WF4 verdict, including
+publication warnings or failures.
+
 ## Rule flow
 
 ```{mermaid}
@@ -88,6 +92,11 @@ Pulse thresholds are the individual record's 90th/10th percentiles, with strict 
 sequences include discharge at or below zero. Rolling windows and daily differences cross year
 boundaries, while pulse runs split there. Timing uses the first occurrence and linear day-of-water-year
 statistics. Group results average member indicators with equal weights, propagating undefined values.
+Zero-flow timing is undefined when no zero-flow event occurs in the retained years. Its median and
+interquartile range then have no numerical value; a group mean also remains undefined if any member
+is undefined. The console explains these expected absent-event results as an informational note.
+Other undefined results remain warnings naming the affected indicators; unavailable inputs are
+reported separately. These statuses do not imply that a calculation failed.
 See the [set conventions](https://github.com/tanerumit/blueearth_cst/blob/main/blueearth_cst/indicators/sets/eflow_erfa/README.md)
 for all fixed defaults and interpretation limits.
 

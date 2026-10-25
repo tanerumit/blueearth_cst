@@ -5,9 +5,13 @@ import logging
 import math
 import re
 import sys
-from contextlib import redirect_stdout
+from collections import Counter
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
+from threading import RLock, local
 
 from blueearth_cst.shared.run_log_core import _write_console, log_row, plural
 
@@ -73,27 +77,83 @@ def unavailable_summary(document) -> list[str]:
     return phrases
 
 
+_PLAN_ROOT: ContextVar[str | Path | None] = ContextVar(
+    "indicator_plan_log_root", default=None
+)
+
+
 class _PlanStream:
     """Route the producer's technical planning row to the full Snakemake log."""
 
     def __init__(self, stream, root=None):
         self.stream = stream
         self.root = root
+        self.pending = local()
+        self.users = 0
 
     def __getattr__(self, name):
         return getattr(self.stream, name)
 
     def write(self, text):
-        # On a terminal `log_row` paints the row; match and record it plain.
-        plain = re.sub(r"\x1b\[[0-9;]*m", "", text)
-        if re.fullmatch(
-            r"\d{2}:\d{2}:\d{2} - indicators - Indicator set \w+ planned: "
-            r"\d+ indicator declarations?; \d+ expected result keys?\n",
-            plain,
-        ):
-            record_indicator_detail(self.root, plain.rstrip())
-            return len(text)
-        return self.stream.write(text)
+        if self.root is None and _PLAN_ROOT.get() is None:
+            return self.stream.write(text)
+        pending = getattr(self.pending, "text", "") + text
+        while "\n" in pending:
+            line, pending = pending.split("\n", 1)
+            plain = re.sub(r"\x1b\[[0-9;]*m", "", line).rstrip("\r")
+            if re.fullmatch(
+                r"\d{2}:\d{2}:\d{2} - indicators - (?:"
+                r"Indicator set \w+ planned: \d+ indicator declarations?; "
+                r"\d+ expected result keys?|\w+: \d+ declarations? over \d+ result keys?)",
+                plain,
+            ):
+                record_indicator_detail(self.root or _PLAN_ROOT.get(), plain)
+            else:
+                self.stream.write(line + "\n")
+        self.pending.text = pending
+        return len(text)
+
+    def flush(self):
+        pending = getattr(self.pending, "text", "")
+        if pending:
+            self.stream.write(pending)
+            self.pending.text = ""
+        self.stream.flush()
+
+
+_PLAN_STREAM_LOCK = RLock()
+_ACTIVE_PLAN_STREAM: _PlanStream | None = None
+
+
+@contextmanager
+def _planning_output(root: str | Path) -> Iterator[None]:
+    """Keep overlapping plans on one proxy until the last plan finishes.
+
+    Per-call redirect_stdout is process-global: an earlier plan can restore
+    stdout while a later plan still runs. Roots and partial rows stay local
+    to each planning thread; warnings and unrelated output pass through.
+    """
+    global _ACTIVE_PLAN_STREAM
+    with _PLAN_STREAM_LOCK:
+        if _ACTIVE_PLAN_STREAM is None:
+            _ACTIVE_PLAN_STREAM = _PlanStream(sys.stdout)
+            sys.stdout = _ACTIVE_PLAN_STREAM
+        stream = _ACTIVE_PLAN_STREAM
+        stream.users += 1
+    token = _PLAN_ROOT.set(root)
+    try:
+        yield
+    finally:
+        try:
+            stream.flush()
+        finally:
+            _PLAN_ROOT.reset(token)
+            with _PLAN_STREAM_LOCK:
+                stream.users -= 1
+                if stream.users == 0:
+                    if sys.stdout is stream:
+                        sys.stdout = stream.stream
+                    _ACTIVE_PLAN_STREAM = None
 
 
 def prepare_indicator_plan(root, request, sets, evaluation="strict"):
@@ -112,14 +172,51 @@ def prepare_indicator_plan(root, request, sets, evaluation="strict"):
             f"{listed(unavailable)}. Exclude them with indicator_selection, supply "
             "the missing parameter, or set indicator_evaluation: partial"
         )
-    with redirect_stdout(_PlanStream(sys.stdout, root)):
+    with _planning_output(root):
         plan = write_indicator_plan(root, request)
     for item in matching_sets(sets, request):
         log_row(
-            f"{item.set_id}: ready to calculate {plural(len(item.indicators), 'indicator')}",
+            f"{item.set_id}: ready to calculate {plural(len(item.indicators), 'indicator')}; "
+            f"{plural(len(plan['expected_result_keys']), 'indicator result')} across simulations and locations",
             module="indicators",
         )
     return plan
+
+
+def undefined_result_summary(root: Path, manifest: dict) -> tuple[int, list[str]]:
+    """Separate expected absent-event timing from other undefined estimates.
+
+    ERFA zero-flow timing has no numerical value when no event occurs. Group
+    means propagate an undefined member, so the cause can be one contributing
+    simulation. Other undefined values retain their indicator names for review.
+    """
+    zero_timing = {
+        item["indicator"]
+        for item in manifest.get("calculations", [])
+        if item["method"] == "erfa_annual_statistic/1"
+        and item["parameters"].get("metric") == "time_main_zero_seq"
+    }
+    expected = 0
+    other = Counter()
+    for table in manifest["tables"]:
+        with (root / table["file"]["path"]).open(
+            encoding="utf-8", newline=""
+        ) as handle:
+            for row in csv.DictReader(handle):
+                status = row.get("status")
+                undefined = status == "undefined" or (
+                    not status
+                    and (not row["value"] or not math.isfinite(float(row["value"])))
+                )
+                if not undefined:
+                    continue
+                if row["indicator"] in zero_timing:
+                    expected += 1
+                else:
+                    other[row["indicator"]] += 1
+    return expected, [
+        f"{name} ({plural(count, 'result')})" for name, count in sorted(other.items())
+    ]
 
 
 def result_counts(root: Path, manifest: dict) -> tuple[int, int, int]:
@@ -144,7 +241,7 @@ def result_counts(root: Path, manifest: dict) -> tuple[int, int, int]:
 
 
 def report_indicator_set(root: Path, manifest: dict, sets=(), *, reused=False) -> None:
-    """Report completed calculation work using selected indicator-set names."""
+    """Retain calculation details; rule markers already report completion."""
     record_indicator_detail(
         root,
         f"Indicator set {manifest['indicator_set_id']}; "
@@ -155,7 +252,7 @@ def report_indicator_set(root: Path, manifest: dict, sets=(), *, reused=False) -
     unavailable = unavailable_summary(manifest)
     for item in matching_sets(sets, manifest):
         action = "reusing calculated results" if reused else "calculations complete"
-        log_row(f"{item.set_id}: {action}", module="indicators")
+        record_indicator_detail(root, f"{item.set_id}: {action}")
         if unavailable:
             # The warning row belongs to publication; keep the detail here.
             record_indicator_detail(

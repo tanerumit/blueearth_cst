@@ -12,6 +12,7 @@ from blueearth_cst.experiment.console_reporting import (
     record_indicator_detail,
     result_counts,
     unavailable_summary,
+    undefined_result_summary,
 )
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.indicator_plan import (
@@ -88,6 +89,9 @@ def publish_selected_sets(
             )
             manifest = read_canonical_json(Path(plan["targets"]["manifest"]))
             counts = result_counts(root, manifest)
+            expected_undefined, undefined_indicators = undefined_result_summary(
+                root, manifest
+            )
             unavailable = unavailable_summary(manifest)
             if unavailable and not selection.partial:
                 raise ValueError(
@@ -105,6 +109,8 @@ def publish_selected_sets(
                     "reused": previous == record["publication_id"],
                     "available_results": counts[0],
                     "missing_results": counts[1],
+                    "expected_undefined_results": expected_undefined,
+                    "undefined_indicators": undefined_indicators,
                     "unavailable_results": counts[2],
                     "unavailable": unavailable,
                 }
@@ -148,10 +154,22 @@ def report_publication(root: Path, outcomes) -> bool:
                 f"{outcome['set_id']}: {action} → {destination}",
                 module="indicators",
             )
-            if outcome.get("missing_results"):
+            expected = outcome.get("expected_undefined_results", 0)
+            if expected:
                 log_row(
-                    f"{outcome['set_id']}: {plural(outcome['missing_results'], 'result')} missing or invalid; "
-                    f"{plural(outcome['available_results'], 'result')} available; check result tables and coverage evidence",
+                    f"{outcome['set_id']}: {plural(expected, 'zero-flow timing result')} undefined; "
+                    "no zero-flow event in one or more contributing simulations; "
+                    f"{plural(outcome['available_results'], 'result')} available",
+                    module="indicators",
+                )
+            unexpected = outcome.get("missing_results", 0) - expected
+            if unexpected:
+                affected = listed(outcome.get("undefined_indicators", []))
+                log_row(
+                    f"{outcome['set_id']}: {plural(unexpected, 'result')} undefined; "
+                    f"{plural(outcome['available_results'], 'result')} available; "
+                    f"affected indicators: {affected or 'see result tables'}; "
+                    "check indicator definitions and coverage evidence",
                     module="indicators",
                     level="WARNING",
                 )

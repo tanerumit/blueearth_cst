@@ -113,14 +113,24 @@ def test_shared_calculations_keep_both_set_names_and_report_reuse(tmp_path, caps
     assert "opaque" not in output
 
 
-def test_planning_stream_keeps_warnings_and_detailed_log(caplog, tmp_path):
+@pytest.mark.parametrize("producer", [False, True])
+def test_planning_stream_keeps_warnings_and_detailed_log(
+    caplog, tmp_path, monkeypatch, producer
+):
+    monkeypatch.setattr(
+        logging.getLogger("snakemake.logging"), "handlers", [caplog.handler]
+    )
     stream = io.StringIO()
     proxy = _PlanStream(stream, tmp_path)
     detail = "12:00:00 - indicators - Indicator set abc planned: 12 indicator declarations; 896 expected result keys\n"
     with caplog.at_level("INFO", logger="snakemake.logging"):
-        proxy.write(detail)
+        if producer:
+            monkeypatch.setattr(sys, "stdout", proxy)
+            log_row("abc: 12 declarations over 896 result keys", module="indicators")
+        else:
+            proxy.write(detail)
         proxy.write("12:00:00 - indicators - WARNING - input coverage incomplete\n")
-    assert "expected result keys" in caplog.text
+    assert "896 expected result keys" in caplog.text
     assert "896 expected result keys" in (
         tmp_path / "logs/wf4_indicators.log"
     ).read_text(encoding="utf-8")
@@ -130,7 +140,17 @@ def test_planning_stream_keeps_warnings_and_detailed_log(caplog, tmp_path):
     )
 
 
-def test_publication_reports_saved_reused_missing_and_failed_results(tmp_path, capsys):
+def test_publication_reports_saved_reused_missing_and_failed_results(
+    tmp_path, capsys, monkeypatch, caplog
+):
+    console = io.StringIO()
+    monkeypatch.setattr(
+        logging.getLogger(), "handlers", [logging.StreamHandler(console)]
+    )
+    logger = logging.getLogger("snakemake.logging")
+    monkeypatch.setattr(logger, "handlers", [])
+    monkeypatch.setattr(logger, "propagate", True)
+    caplog.set_level(logging.INFO, logger="snakemake.logging")
     outcomes = [
         {
             "set_id": "default",
@@ -169,6 +189,10 @@ def test_publication_reports_saved_reused_missing_and_failed_results(tmp_path, c
     assert "no saved results available" in output
     assert "daily discharge unavailable" in output
     assert "hidden" not in output
+    assert console.getvalue() == ""
+    assert "hidden1" in (tmp_path / "logs/wf4_indicators.log").read_text(
+        encoding="utf-8"
+    )
 
 
 @pytest.mark.parametrize(

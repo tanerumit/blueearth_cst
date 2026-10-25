@@ -17,7 +17,11 @@ def record_indicator_detail(root, message):
     # Snakemake's asynchronous file handler can inherit a legacy Windows
     # encoding. Keep that copy ASCII-safe; the dedicated log retains UTF-8.
     native_message = message.encode("ascii", "backslashreplace").decode("ascii")
-    logging.getLogger("snakemake.logging").info("Indicator details: " + native_message)
+    logger = logging.getLogger("snakemake.logging")
+    # Publication also runs in the launcher, where Snakemake has no handlers.
+    # An unconfigured logger would leak these details to root console handlers.
+    if logger.handlers:
+        logger.info("Indicator details: " + native_message)
     if root is not None:
         from blueearth_cst.shared.execution_outputs import current_directory
 

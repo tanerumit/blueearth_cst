@@ -352,7 +352,9 @@ pixi run python scripts/run_workflows.py --config <config> --rebuild --yes
 This is a **project-wide, permanent reset**, including outputs of disabled workflows.
 It erases `data/spatial/`, `data/climate/`, `models/hydrology/wflow/`, `scenarios/`,
 and `experiments/`. It also removes the active WF0–WF2 configuration captures,
-their pending replacement state, and generated execution configs. No backup is made.
+their pending replacement state, and generated execution configs. Archive transaction journals for
+erased scenario collections and experiments are also removed, including stale journals whose archives
+are already missing. No backup is made.
 The source configuration and seeds are unchanged; only enabled workflows run afterward.
 All experiments and their allocation state are removed, so automatic numbering starts again.
 

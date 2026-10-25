@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import json
 import os
 import re
 import stat
@@ -264,6 +265,24 @@ def plan_rebuild(project_root: Path, config_path: Path) -> RebuildPlan:
     candidates.extend(
         root / f"config/_engine/archive-transactions/{name}.json" for name in WORKFLOWS
     )
+    # Artifact owners use hashed keys rather than workflow names. Their journals
+    # must be reset along with the artifacts, even after an earlier partial reset
+    # has already removed the target. Keep locks and unrelated archive journals.
+    transactions = root / "config/_engine/archive-transactions"
+    for directory in (transactions, transactions / "completed"):
+        _confined(root, directory)
+        for journal in sorted(directory.glob("*.json")):
+            if journal in candidates:
+                continue
+            _entry(root, journal)
+            transaction = json.loads(journal.read_text(encoding="utf-8"))
+            target = root / transaction["target"]
+            _confined(root, target)
+            if any(
+                target.resolve().is_relative_to(root / name)
+                for name in ("scenarios", "experiments")
+            ):
+                candidates.append(journal)
     targets = tuple(
         path
         for path in candidates

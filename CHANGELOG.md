@@ -9,6 +9,9 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Fix project rebuilds leaving stale WF3/WF4 archive journals that prevented scenario generation
+  or experiment publication with `archive terminal state is corrupt: committed`.
+
 - Add `run_workflows.py --rebuild` to permanently reset generated outputs before rerunning enabled
   workflows. It asks for confirmation, supports `--yes` for automation, and offers a read-only erasure
   preview with `--rebuild -- --dry-run`. Source inputs, unrelated paths, logs and history are preserved.

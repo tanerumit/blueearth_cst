@@ -83,7 +83,7 @@ if V2_MODE:
     )
     PERTURB_CLIMATE_REALIZATIONS = RULES.logged(
         "3.08", "perturb_climate_realizations",
-        summary="produce one scenario series from its stochastic realization",
+        summary="produce one scenario per stochastic realization",
     )
 PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.09", "publish_scenario_collection", summary="validate the scenario artifacts and mark the collection ready")
 GATHER_BENCHMARKS = RULES.banner_only("3.10", "gather_benchmarks", summary="merge generation timing and resource-use records")

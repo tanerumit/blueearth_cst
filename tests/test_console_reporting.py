@@ -210,6 +210,11 @@ def test_publication_reports_saved_reused_missing_and_failed_results(
             "Live model matches the recorded experiment identity",
         ),
         (
+            "experiment",
+            "Model reference: models/hydrology/wflow digest 1594b6dd303d... over 6 inputs",
+            "Using hydrological model: models/hydrology/wflow; 6 input files; checksum 1594b6dd303d…",
+        ),
+        (
             "indicators",
             "abcdef123456: 1 declaration over 2 result keys",
             "Indicator set abcdef123456 planned: 1 indicator declaration; 2 expected result keys",
@@ -251,8 +256,11 @@ def test_plan_reports_names_and_indicator_results(tmp_path, monkeypatch, capsys)
     monkeypatch.setattr(indicator_plan, "build_indicator_plan", lambda *args: plan)
     assert prepare_indicator_plan(tmp_path, request, [default, alias]) == plan
     output = capsys.readouterr().out
-    assert "default: ready to calculate 1 indicator; 2 indicator results" in output
-    assert "same_numbers: ready to calculate 1 indicator; 2 indicator results" in output
+    assert "default: 1 indicator; 2 results across simulations and locations" in output
+    assert (
+        "same_numbers: 1 indicator; 2 results across simulations and locations"
+        in output
+    )
     assert "expected result keys" not in output
     assert "bbbbbbbbbbbb" not in output
 

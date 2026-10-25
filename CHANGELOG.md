@@ -9,6 +9,9 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Clarify WF3/WF4 console summaries, show the weather template notice once per generation invocation,
+  and use stable scenario export paths in console output while keeping engine paths in detailed logs.
+
 - Show the user-facing project config as the first Paths row in every workflow's console header.
 
 - Generate concise case instructions with copy-paste commands, incomplete-job reruns and unlock,

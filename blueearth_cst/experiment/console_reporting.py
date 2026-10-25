@@ -176,8 +176,8 @@ def prepare_indicator_plan(root, request, sets, evaluation="strict"):
         plan = write_indicator_plan(root, request)
     for item in matching_sets(sets, request):
         log_row(
-            f"{item.set_id}: ready to calculate {plural(len(item.indicators), 'indicator')}; "
-            f"{plural(len(plan['expected_result_keys']), 'indicator result')} across simulations and locations",
+            f"{item.set_id}: {plural(len(item.indicators), 'indicator')}; "
+            f"{plural(len(plan['expected_result_keys']), 'result')} across simulations and locations",
             module="indicators",
         )
     return plan

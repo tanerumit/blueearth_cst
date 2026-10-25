@@ -9,6 +9,7 @@ import gc
 import io
 import os
 import re
+import subprocess
 import sys
 import time
 import zlib
@@ -766,6 +767,80 @@ def test_console_aliases_preserve_saved_commands(
     # A subsequent workflow must not inherit these run-specific aliases.
     declare_folders(climate=tmp_path / "climate")
     assert "<model-config>" not in dict(cs.run_meta_rows(project))
+
+
+@pytest.mark.parametrize("backend", ["tee", "child"])
+def test_scenario_console_paths_use_exported_tree(
+    tmp_path, monkeypatch, capsys, declare_folders, backend
+):
+    declare_folders(scenarios=tmp_path / "scenarios")
+    monkeypatch.setenv(su._PROJECT_ROOT_ENV, str(tmp_path))
+    path = tmp_path / "scenarios/_engine/data/da6324c8b66b/weathergenr/output"
+    message = f"12:39:49 - eval - Completed in 18.5 seconds | Saved to: {path}\n"
+    if backend == "tee":
+        live, saved = io.StringIO(), io.StringIO()
+        tee = su._Tee(live, saved, project_root=str(tmp_path))
+        tee.write(message)
+        tee.close()
+        shown, logged = live.getvalue(), saved.getvalue()
+    else:
+        log = tmp_path / "rule.log"
+        assert (
+            su.run_and_tee([sys.executable, "-c", f"print({message!r}, end='')"], log)
+            == 0
+        )
+        shown = capsys.readouterr().out
+        logged = log.read_text(encoding="utf-8")
+    assert "Saved to: <scenarios>/weathergenr/output" in shown
+    assert "<scenarios>/_engine/data/da6324c8b66b/weathergenr/output" in logged
+
+
+def test_template_notice_is_once_across_generation_jobs(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CST_WARNING_TALLY", str(tmp_path / "warnings"))
+    monkeypatch.setenv("CST_GENERATION_INVOCATION_ID", "a" * 32)
+    message = "12:39:49 - io - Template loaded: nx=3, ny=2, nt=15,330"
+    warning = message.replace(" - Template", " - WARNING - Template")
+    command = [
+        sys.executable,
+        "-c",
+        f"print({message!r}); print({message!r}); print({warning!r})",
+    ]
+    children = []
+    try:
+        for job in ("roots", "perturbations"):
+            log = tmp_path / f"{job}.log"
+            code = (
+                "from blueearth_cst.shared.run_log_core import run_and_tee; "
+                f"raise SystemExit(run_and_tee({command!r}, {str(log)!r}))"
+            )
+            children.append(
+                subprocess.Popen(
+                    [sys.executable, "-c", code],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
+        output = ""
+        for child in children:
+            stdout, stderr = child.communicate(timeout=30)
+            assert child.returncode == 0, stderr
+            output += stdout
+        for job in ("roots", "perturbations"):
+            assert (tmp_path / f"{job}.log").read_text(encoding="utf-8").count(
+                message
+            ) == 2
+    finally:
+        for child in children:
+            if child.poll() is None:
+                child.kill()
+                child.wait(timeout=10)
+    assert output.count(message) == 1
+    assert output.count(warning) == 2
+    monkeypatch.setenv("CST_GENERATION_INVOCATION_ID", "b" * 32)
+    assert su.run_and_tee(command, tmp_path / "retry.log") == 0
+    assert capsys.readouterr().out.count(message) == 1
 
 
 def test_declared_folders_become_tokens_in_one_line(declare_folders):

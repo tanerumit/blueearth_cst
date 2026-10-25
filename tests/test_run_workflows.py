@@ -652,6 +652,35 @@ def test_cli_strips_double_dash_sentinel(tmp_path, capture_runs):
         assert "--dry-run" in cmd
 
 
+def test_rebuild_clears_outputs_before_workflow_launch_and_retains_history(
+    tmp_path, capture_runs
+):
+    calls, _ = capture_runs
+    config = tmp_path / "project.yml"
+    root = tmp_path / "project"
+    flags = {name: "false" for name in rw.WORKFLOW_ORDER}
+    flags["analyze_climate"] = "true"
+    _write_cfg(config, flags, project_dir=str(root))
+    config.write_text("schema_version: 3\n" + config.read_text(), encoding="utf-8")
+    product = root / "experiments/old/results.csv"
+    product.parent.mkdir(parents=True)
+    product.write_text("old results", encoding="utf-8")
+    log = root / "logs/previous/console.log"
+    log.parent.mkdir(parents=True)
+    log.write_text("old log", encoding="utf-8")
+    assert rw.main(["--config", str(config), "--rebuild", "--yes"]) == 0
+    assert not product.exists()
+    assert log.read_text() == "old log"
+    assert _snakefiles_invoked(calls) == ["analyze_climate.smk"]
+    record = next(
+        json.loads(path.read_text())
+        for path in (root / "config/_engine/invocations").glob("*.json")
+        if json.loads(path.read_text()).get("rebuild")
+    )
+    assert record["rebuild"] == {"status": "completed", "targets": ["experiments"]}
+    assert record["status"] == "succeeded"
+
+
 # --- ext1-03: enabled:false skip test, FRESH tmp_path, boundary assertion ----
 
 

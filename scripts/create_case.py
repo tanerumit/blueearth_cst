@@ -414,6 +414,22 @@ pixi run python scripts/run_workflows.py --config $config --cores 3 -- --rerun-i
 pixi run python scripts/run_workflows.py --config $config --cores 3 -- --unlock
 ```
 
+## Rebuild for testing
+
+This permanently erases generated outputs, including all experiments, without making a backup.
+Source inputs and logs are preserved. Enable WF1 and WF3 when rebuilding WF4; indicators-only cannot rebuild.
+
+```powershell
+# Preview what will be erased; no files change and no workflows start.
+pixi run python scripts/run_workflows.py --config $config --rebuild -- --dry-run
+
+# Confirm at Continue? [y/N]:, then rerun enabled workflows.
+pixi run python scripts/run_workflows.py --config $config --rebuild
+```
+
+For automation, add `--yes` before the `--` separator. See `docs/guide/running.md` in the toolbox
+for the exact reset scope and input protection rules.
+
 ## Individual workflows
 
 Enable the selected workflow in `project_config.yml`. WF4 needs WF1 and WF3 products.

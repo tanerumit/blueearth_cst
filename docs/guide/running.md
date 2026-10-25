@@ -334,6 +334,46 @@ from two copies of the toolbox can give conflicting decisions about which
 results need to be refreshed.
 :::
 
+## Rebuild outputs for testing
+
+To recreate results in an existing project directory, use `--rebuild`:
+
+```powershell
+# Preview the erasure plan without changing files or starting workflows.
+pixi run python scripts/run_workflows.py --config <config> --rebuild -- --dry-run
+
+# Display the plan and ask Continue? [y/N]: before erasing anything.
+pixi run python scripts/run_workflows.py --config <config> --rebuild
+
+# Confirm explicitly for an automated test run.
+pixi run python scripts/run_workflows.py --config <config> --rebuild --yes
+```
+
+This is a **project-wide, permanent reset**, including outputs of disabled workflows.
+It erases `data/spatial/`, `data/climate/`, `models/hydrology/wflow/`, `scenarios/`,
+and `experiments/`. It also removes the active WF0–WF2 configuration captures,
+their pending replacement state, and generated execution configs. No backup is made.
+The source configuration and seeds are unchanged; only enabled workflows run afterward.
+All experiments and their allocation state are removed, so automatic numbering starts again.
+
+Source configuration, referenced source datasets, unrelated project paths, logs, invocation history,
+and historical configuration snapshots are preserved. Project-local extracted climate stores are
+generated outputs and are erased; external source datasets and acquisition caches are untouched.
+Keep custom files outside the generated namespaces: their contents are treated as output. A configured
+input overlapping one of these namespaces, a linked path, repository metadata, or a changed plan causes
+refusal before erasure.
+The project execution lock remains held throughout reset and workflow execution.
+
+Press Enter or answer anything other than `y` or `yes` to cancel. Non-interactive invocations require
+`--yes`; `--yes` alone is invalid. The rebuild dry-run only previews erasure, rather than building the
+Snakemake DAG against the old results. It writes no run records. A failure during erasure or subsequent
+execution stops the run without rollback; the invocation record identifies whether reset completed.
+
+For WF4, enable WF1 and WF3 as well, because their retained inputs will be erased. Include simulations
+in WF4's operations; indicators-only cannot rebuild deleted model responses. `--rebuild` cannot combine
+with `--new-experiment`, `--recover-reservation`, forwarded config/directory overrides, or bookkeeping
+modes such as `--unlock`. Use `--new-experiment` instead when previous experiments should remain available.
+
 ## Select, resume or create an experiment
 
 With no `experiment_name`, the first run reserves `stress_test_01`. A plain rerun

@@ -9,6 +9,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Add `run_workflows.py --rebuild` to permanently reset generated outputs before rerunning enabled
+  workflows. It asks for confirmation, supports `--yes` for automation, and offers a read-only erasure
+  preview with `--rebuild -- --dry-run`. Source inputs, unrelated paths, logs and history are preserved.
+
 - Clarify WF3/WF4 console summaries, show the weather template notice once per generation invocation,
   and use stable scenario export paths in console output while keeping engine paths in detailed logs.
 

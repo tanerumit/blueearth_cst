@@ -1,151 +1,26 @@
 ---
 title: "WF1 — Build model"
+format: html
 ---
 
-`build_model.smk` builds a Wflow-SBM basin model from catalog data, runs it on historical forcing, and evaluates available observed variables. It supplies the model used by WF4.
+Read the [technical manual](../../technical-manual/workflow-build-model.md) for this reference.
 
-The run settings identify the hydrological model, climate forcing, simulation years, grid spacing, and
-water-year start. The grid-cell count describes the existing model, when available; a fresh build
-determines its cell count during model construction.
+## Rules {#rules}
 
-## Rules
+See the [current reference](../../technical-manual/workflow-build-model.md#rules).
 
-| Rule | Operation |
-|---|---|
-| `all` (target) | Collect model, simulation, figures, and records. |
-| 1.01 `delineate_region` | Define the shared basin region. |
-| 1.02 `delineate_subbasins_and_rivers` | Build shared vectors and location registry. |
-| 1.03 `extract_climate_datasets` | Extract the selected historical climate source. |
-| 1.05 `prepare_land_and_soil_maps` | Prepare thematic rasters for model building. |
-| 1.06 `build_wflow_model` | Build the Wflow-SBM model. |
-| 1.07 `add_reservoirs_lakes_glaciers` | Add waterbodies and glaciers. |
-| 1.08 `declare_gauges_and_outputs` | Configure gauges and Wflow output variables. |
-| 1.09 `add_climate_forcing` | Add model forcing and complete the model. |
-| 1.10 `write_gauge_index` | Map Wflow IDs to named stations. |
-| 1.11 `plot_basin_map` | Plot basin and thematic maps. |
-| 1.12 `plot_model_forcing` | Plot the model forcing grid. |
-| 1.13 `run_historical_simulation` | Run Wflow on the historical window. |
-| 1.14 `export_simulation_tables` | Export per-variable response tables. |
-| 1.15 `plot_model_evaluation` | Plot and score against available observations. |
-| 1.16 `write_run_metadata` | Record run identity and staleness metadata. |
-| 1.17 `gather_benchmarks` | Merge benchmark parts. |
-| 1.18 `gather_logs` | Merge log parts. |
+## Rule flow {#rule-flow}
 
-The `all` target collects the products. Source diagnostics belong exclusively to WF0;
-model forcing is assembled from the configured data catalog in rule 1.09.
+See the [current reference](../../technical-manual/workflow-build-model.md#rule-flow).
 
-## Rule flow
+## Configuration {#configuration}
 
-```{mermaid}
-flowchart LR
-  A["1.01–1.02 Region and vectors"] --> B["1.05–1.08 Build model and outputs"]
-  A --> C["1.03 Historical climate"]
-  B --> D["1.09 Add forcing"]
-  C --> D
-  D --> E["1.13 Historical simulation"]
-  D --> F["1.10–1.12 Index and figures"]
-  E --> G["1.14–1.16 Tables, evaluation, metadata"]
-  F --> H["1.17–1.18 Records"]
-  G --> H
-```
+See the [current reference](../../technical-manual/workflow-build-model.md#configuration).
 
-The figure branches are terminal products; the historical simulation uses the completed model and forcing.
+## Inputs {#inputs}
 
-Rule 1.12 writes nine forcing QA figures under `models/hydrology/wflow/forcing/plots/`: annual
-climatology maps, annual basin-average series and monthly climatologies for precipitation, temperature
-and PET. They use WF0's canonical style and methods: reporting years labeled by their starting year,
-completeness-aware aggregates, Sen trends and monthly means with 10–90th percentile bands.
-Precipitation and PET are totals; temperature is a mean. Temporal figures average model-basin cells
-with equal weights. The completeness tolerances are WF0's defaults: three missing days per month and
-fifteen per reporting year. WF1 can produce these figures without running WF0.
+See the [current reference](../../technical-manual/workflow-build-model.md#inputs).
 
-The existing `forcing_<variable>_<kind>.png` filenames remain. Captions are recorded in
-`plots/figure_captions.md` and `plots/_engine/figure_captions.json` beneath the forcing directory.
-The figures describe the post-processed model forcing; regenerating them does not rebuild the model
-or change its forcing. Source and model-grid maps share a historical frame and color classes from
-`data/climate/historical/_engine/map_reference.json`. WF1 independently prepares historical candidate
-summaries for this record, so it may extract additional configured sources without running WF0.
-This additional work does not build extra models or change the selected forcing.
+## Outputs {#outputs}
 
-Forcing maps zoom to the basin bounds with the same padding as spatial maps, matching WF0's historical
-maps. Without basin geometry, they use the selected historical extraction's cell-edge frame. The forcing
-values and basin mask retain their model-grid resolution; zooming does not interpolate the forcing data.
-
-The reference pools native historical cells intersecting the selected extraction's frame and uses the
-project-owned `climate.map_reference` completeness policy. Forcing summaries retain 3/15. Captions distinguish
-periods, support, completeness and source/model PET methods; shared colors alone do not establish equivalence.
-Available scales have rectangular under/over extensions and captions report exceedance counts. If a
-historical variable has no finite scale, finite forcing cells are hatched as unscaled and no numerical
-colorbar is shown. Current-byte reference validation rejects stale identities before figure publication.
-
-Rule 1.15 writes station hydrographs under `models/hydrology/wflow/evaluation/plots/stations/`.
-Each sheet shows daily discharge, annual means, the seasonal cycle and linear/log flow-duration
-curves in the common scientific style. Captions in `figure_captions.md` and
-`_engine/figure_captions.json` record station identity, dates and data support.
-Simulation-only sheets describe model output; they do not establish model skill.
-
-Annual and monthly summaries exclude partial boundary periods and apply the default completeness
-tolerances of three missing days per month and fifteen per year. Discharge means use valid days
-without infilling; seasonal cycles average eligible monthly means across years. When observations
-are supplied, summary panels use paired valid dates. Flow-duration curves rank valid, nonnegative
-values; the log panel preserves exceedance positions, displays the full positive range and reports
-zero-flow frequency. These plotting choices do not change the simulation or performance indicators.
-
-When observations are available, the performance sheet compares daily discharge pairs, cumulative
-paired-day volumes and the exported daily/monthly indicators. All use the same finite, nonnegative
-concurrent dates. Omitted dates and invalid values exclude both members of the pair; cumulative curves
-break at those gaps and integrate only retained days, without estimating missing flow. Monthly indicators
-use means over paired days, independently of the hydrograph completeness thresholds. Undefined indicators
-are shown as unavailable. Sample counts and squared Pearson correlation are retained in JSON metadata.
-The scatter and cumulative-volume panels are labelled a) and b), with the observed/simulated legend
-inside the upper-left of panel a). Publication captions describe both panels and the indicators table,
-and are stored beside the station figures; the figures have no displayed titles.
-
-Each configured hydrological zonal output has two standard figures: a basin-average annual series
-and seasonal cycle. The basin combines daily native zonal means using fixed model-cell counts.
-Set `evaluation.subbasin_plots: true` in the build-model workflow YAML to also generate both types
-individually under `evaluation/plots/subbasins/`. Captions are stored beside each figure family in
-`figure_captions.md` and `_engine/figure_captions.json`.
-
-All hydrological summaries exclude the same first simulation year when the run exceeds one year.
-Full calendar months permit at most three missing days; years require all months eligible and at most
-fifteen missing days. Flux amounts use totals, filling eligible missing days with their month's mean;
-flow rates and stored quantities use means without infilling. Negative recharge remains valid.
-Seasonal cycles give equal weight to eligible monthly aggregates across years and show 10–90th
-percentile bands for interannual variability. Annual trends use Sen slopes per decade. Snow represents
-snowpack liquid-water depth in mm. Precipitation figures remain in the forcing figure family.
-
-Optional `temperature` output retains subcatchment mean air temperature in degrees Celsius with
-Wflow standard name `atmosphere_air__temperature` and CSV code `temp`. Its monthly and annual figures
-use means rather than accumulated depths. Add it to the project's existing `model.outvars` list to
-retain it alongside the other selected outputs.
-
-## Configuration
-
-The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, the `basin` definition and `output_locations`, `climate.selected` and `climate.window`, and `model.outvars`. Its `workflows.build_model` stanza enables this workflow and points to its YAML file through `config_path`.
-
-The workflow file, `test_case/project_config_rapid_build_model.yml`, sets `engine.build_config` and
-`engine.waterbodies_config` to the hydromt recipes in `config/defaults/`, `simulation_window.start`
-and `.end` to the historical run years, and optional `observations` paths keyed by modeled variable.
-The template at `config/templates/example-basin/project_config_build_model.yml` shows these keys.
-`engine` may be omitted to use the defaults; `simulation_window` is required and must fit inside
-`climate.window`. Declare this Wflow run period separately from the climate analysis record.
-
-Wflow treats the run's start as the initial model state time. With daily forcing, the first update and output occur one day later: a run starting on January 1 requires forcing from January 2 through its end date. A store beginning on January 2 therefore covers that run; WF1 preserves the requested state time when HydroMT writes the forcing configuration. A later first stamp or an earlier final stamp still fails the coverage check.
-
-```yaml
-engine:
-  build_config: config/defaults/wflow_build_model.yml
-  waterbodies_config: config/defaults/wflow_update_waterbodies.yml
-observations:
-  river discharge: test_case/test_data/observations_timeseries.csv
-simulation_window: {start: 2010, end: 2016}
-```
-
-## Inputs
-
-Inputs include cataloged terrain, land, soil, hydrography, waterbody, and climate data; output locations; the two Wflow build recipes; and observations when evaluation is requested. The simulation window lies inside the historical climate window.
-
-## Outputs
-
-WF1 writes the basin vectors and thematic maps, the Wflow-SBM model and forcing, a gauge crosswalk, the native historical simulation response, exported per-variable tables, evaluation figures and indicators where observations are available, and run metadata. Logs and benchmarks are gathered at the project level. WF4 consumes the completed model, not the historical evaluation figures.
+See the [current reference](../../technical-manual/workflow-build-model.md#outputs).

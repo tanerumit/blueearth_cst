@@ -3,6 +3,9 @@
 The toolbox's registry and calculation scripts define the default indicators and formulas.
 See the [advanced authoring contract](../../README.md#add-a-calculation) for implementation details.
 
+Use the [WF4 request reference](../../../../docs/technical-manual/indicator-requests.md) for selection.
+This file is the canonical set-convention source and is declared for offline-manual inclusion.
+
 Use these conventions when reading results from the default set:
 
 - **Summary statistics:** annual means, maxima, minima, p95, basin totals, rolling-seven-day extrema,

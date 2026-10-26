@@ -1,25 +1,6 @@
 ---
 title: "Workflows"
-subtitle: "Five workflow contracts from source data to retained indicators"
+format: html
 ---
 
-The workflows share a project configuration but have distinct products. The usual execution order is WF0 → WF1 → WF2 → WF3 → WF4. [WF0](workflow-analyze-climate.qmd) is optional; run it alone when comparing candidate historical climate sources. [WF1](workflow-build-model.qmd) and [WF3](workflow-generate-scenarios.qmd) independently provide the model and scenario collection required by [WF4](workflow-simulate-system.qmd). [WF2](workflow-analyze-projections.qmd) supplies a projection plausibility overlay; its CMIP6 data never drives scenario generation.
-
-| Workflow | Purpose | Principal product |
-|---|---|---|
-| [WF0 — Analyze climate](workflow-analyze-climate.qmd) | Characterize and compare historical climate sources | Climate figures and source comparison |
-| [WF1 — Build model](workflow-build-model.qmd) | Build Wflow-SBM and run its historical reference | Model, historical responses, evaluation |
-| [WF2 — Analyze projections](workflow-analyze-projections.qmd) | Summarize CMIP6 change relative to a reference period | Monthly basin change factors and figures |
-| [WF3 — Generate scenarios](workflow-generate-scenarios.qmd) | Generate and perturb stochastic weather | Ready, reusable scenario collection |
-| [WF4 — Simulate system](workflow-simulate-system.qmd) | Simulate selected series and derive indicators | Retained responses and indicator sets |
-
-Each page describes the rule sequence, configuration, inputs, and outputs. See [Configuration](../guide/configuration.md) for path resolution and the [Running guide](../guide/running.md) for commands. All products are written below the configured `project_dir`.
-
-Each workflow header groups run settings and paths. Path tokens such as `<project>` and `<model>`
-name the folders used by subsequent log rows. Startup configuration warnings follow the header;
-warnings found during checkpoint planning appear as soon as planning returns.
-Progress counters use `[N/M]`; final targets report
-provided/requested counts instead of output-path lists. WF4 counts checkpoint-dependent inputs once
-they resolve; its dry-run uses a generic confirmation message until those counts are known.
-WF4 reports completion after publishing the requested indicator results, with `DONE all` as its final
-workflow row. Publication failures produce a failed verdict.
+Read the [technical manual](../../technical-manual/workflows.md) for this reference.

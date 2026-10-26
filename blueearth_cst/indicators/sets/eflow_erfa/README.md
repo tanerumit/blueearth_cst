@@ -1,5 +1,9 @@
 # eflow-erfa
 
+Select this installed set with `eflow-erfa` in the
+[WF4 request](../../../../docs/technical-manual/indicator-requests.md).
+This README remains canonical and is declared for offline-manual inclusion.
+
 This independent indicator set ports the fixed defaults of `eflowrisk`'s `calculate_flow_metrics()`
 and `summarize_flow_metrics()` from `eflow-risk-tool`. Its 35 annual metrics yield 70 indicators:
 `q_<R metric key>_med` and `q_<R metric key>_iqr`. The callable is
@@ -8,6 +12,7 @@ and `summarize_flow_metrics()` from `eflow-risk-tool`. Its 35 annual metrics yie
 Source revision: `16ad6f424bfa5425ce0c0403471482b5e7a5cdb4`.
 The [R oracle provenance](../../../../tests/data/eflow-erfa-r-oracle.md) records the independent
 reference calculations and reproducible numerical checks.
+That provenance and its test fixtures are repository evidence, external to the offline manual appendix.
 
 The five groups are high flow (8 metrics), monthly flow (12), low flow (8), rate/frequency of change
 (4), and intermittency (3). Registrations contain descriptions, group labels and units. This is the

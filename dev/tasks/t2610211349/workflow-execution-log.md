@@ -714,3 +714,12 @@ these are still required review artifacts, not completed disposable scratch. P3 
 retained artifacts. Release condition: owner review complete and required links/evidence relocated before
 scoped cleanup. No deletion during lane parking. Scientific writing and broader unscoped instruction work
 remain deferred; do not close the overall task or claim the scientific volume complete.
+
+Guarded local landing completed at `0fda56af`. Synchronization commit `078e66a4` preserves the original
+accepted commits; executable verifier proved equivalence to `86085ea2` outside `dev/tasks/`. Post-merge
+full-tree equivalence to the synchronized candidate and ancestry pass. Deleted branches
+`docs/t2610211349-publication-assembly` and `feat/t2610211349-publication-engine`; both persistent
+sessions detached/parked at the landing SHA. Required review artifacts retained as stated above.
+S3 remains on its unrelated task. Primary unrelated board/task changes preserved. No push/deployment.
+Origin/main was 51 ahead, 0 behind immediately after landing; final task-record commits add to that count.
+Current commissioned tranche is complete; overall task remains open for owner review and deferred scope.

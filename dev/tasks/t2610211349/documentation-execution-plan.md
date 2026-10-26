@@ -1,6 +1,6 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: P5/P6 accepted; verified local integration in progress.
+Date: 2026-10-26. Task: t2610211349. Status: P5/P6 accepted and landed locally at `0fda56af`.
 
 ## Current continuation authority
 

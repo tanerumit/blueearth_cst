@@ -14,59 +14,30 @@ and [Wflow](https://github.com/Deltares/Wflow.jl) for hydrological simulation. T
 
 ## Get started
 
-Install [Pixi](https://pixi.sh/) and Julia 1.11.7 through juliaup, clone this repository, then run
-`pixi install` and `pixi run install`. Follow the [Windows installation guide](docs/site/setup/install.md)
-for the supported setup sequence and verification. Julia must be on `PATH`; Pixi manages the Python
-and R environment. The toolbox has no supported Docker image.
+1. Follow [Windows installation](docs/guide/install.md) for Pixi and juliaup-managed Julia.
+2. Check your project's data catalogs. Installation does not supply the external datasets;
+   the example expects Deltares P-drive access and CMIP6 network access.
+3. Use the [quick start](docs/guide/quick-start.md) to preview/run the rapid example and find its results.
+   It is an execution example, not a numerical assessment baseline or a promise of a short runtime.
 
-Workflow inputs are **not** included in the installation. The supplied test configs use HydroMT
-catalogs that expect access to Deltares data, including `P:/wflow_global/hydromt`. Check catalog
-coverage and data access before running the example. The [quick start](docs/guide/quick-start.md)
-walks through that example and its results.
+## Run your own assessment
 
-From the repository root, after installation and data-access checks, run the enabled rapid-case
-workflows with:
+[Create an external case](docs/guide/new-case.md) from the single maintained starter.
+Then [choose settings](docs/guide/configuration.md), [run/resume](docs/guide/running.md),
+[select indicators](docs/guide/indicators.md) and [read the output tables](docs/guide/outputs.md).
+Keep production cases and outputs outside this checkout.
 
-```powershell
-pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
-```
-
-The rapid case exercises the pipeline and is not a numerical assessment baseline. A successful
-run writes its summary under `test_case/test_rapid/logs/<timestamp>__all-workflows/`; the closing
-console output links the exact `summary.md`. See [Reading the outputs](docs/guide/outputs.md) for
-the model, climate series, responses, and indicator tables.
-
-## Workflow map
-
-| Stage | Entry point | Result |
-|---|---|---|
-| WF0, optional | `analyze_climate.smk` | Historical climate diagnostics for forcing selection |
-| WF1 | `build_model.smk` | Wflow-SBM model and historical run |
-| WF2 | `analyze_projections.smk` | CMIP6 change factors for a plausibility overlay |
-| WF3 | `generate_scenarios.smk` | Retained, scenario-neutral climate series |
-| WF4 | `scripts/simulate_system.py` | Model responses and retained indicator sets |
-
-The all-workflow runner uses WF0 → WF1 → WF2 → WF3 → WF4 for enabled stages. WF1 and WF3 are
-independent prerequisites of WF4. WF0 can run alone when selecting historical forcing; WF2 is
-optional and never drives WF3. Use the [running guide](docs/guide/running.md) for single-workflow
-commands, dry runs, experiment selection, logs, and recovery. WF3 and WF4 use their owned runners.
-
-## Configure your own basin
-
-The maintained starter is [`config/templates/example-basin/`](config/templates/example-basin/README.md).
-Its project file and five workflow files are scaffolded by `scripts/create_case.py`; the
-[configuration guide](docs/guide/configuration.md) explains path resolution and basin, climate,
-model, and experiment settings. Keep production case configurations and output roots outside this
-checkout. The [running guide](docs/guide/running.md#create-an-external-case) shows the scaffolder
-and the order for enabling workflows.
+WF0 compares historical forcing without a model. WF1 builds the model and WF3 generates independent
+climate series; both supply WF4 simulation. WF2 provides projection plausibility context and never
+selects or weights the scenario-neutral grid.
 
 ## Documentation and development
 
-- [Documentation map](docs/README.md) — guide, site, notebooks, and offline references.
-- [Scientific approach](docs/site/scientific-approach/overview.qmd) — method and interpretation.
-- [Toolbox reference](docs/site/toolbox-reference/overview.qmd) — workflow and retained-output contracts.
-- [Development reference](dev/reference/README.md) — current maintainer practices and architecture.
-- [Changelog](CHANGELOG.md) — release history.
+- [Documentation map](docs/README.md): user guide, technical manual and optional notebooks.
+- [Scientific approach](docs/site/scientific-approach/overview.qmd): existing methods and interpretation.
+- [Technical manual](docs/technical-manual/overview.md): workflow/retained-output contracts and extension.
+- [Development reference](dev/reference/README.md): current maintainer practices and architecture.
+- [Changelog](CHANGELOG.md): release history.
 
 ## License
 

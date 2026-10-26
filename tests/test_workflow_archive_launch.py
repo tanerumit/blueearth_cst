@@ -408,6 +408,8 @@ def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
     [
         (["snakemake", "all", "--dry-run"], True),
         (["snakemake", "all", "-n"], True),
+        (["snakemake", "all", "--unlock"], True),
+        (["snakemake", "all", "--unlock", "--dry-run"], True),
         (["snakemake", "all", "--touch"], True),
         (["snakemake", "all", "--delete-all-output"], True),
         (["snakemake", "--list-rules"], True),
@@ -415,14 +417,17 @@ def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
         (["snakemake", "all", "--forceall"], False),
     ],
 )
-def test_non_producing_invocations_need_no_capture(argv, expected, monkeypatch):
+@pytest.mark.parametrize("workflow_name", launch.WORKFLOWS)
+def test_non_producing_invocations_need_no_capture(
+    argv, expected, workflow_name, monkeypatch
+):
     from blueearth_cst.shared.workflow_archive_launch import non_producing_invocation
 
     assert non_producing_invocation(argv) is expected
     monkeypatch.delenv(CONTEXT_ENV, raising=False)
     monkeypatch.setattr("sys.argv", argv)
     if expected:
-        assert require_capture("build_model", "project.yml") is None
+        assert require_capture(workflow_name, "project.yml") is None
     else:
         with pytest.raises(ValueError, match="requires scripts/run_workflow.py"):
-            require_capture("build_model", "project.yml")
+            require_capture(workflow_name, "project.yml")

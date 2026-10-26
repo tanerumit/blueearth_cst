@@ -518,12 +518,13 @@ def prepare_workflow(
 
 
 #: Snakemake options under which no rule body runs and nothing scientific is
-#: written: planning (`--dry-run`), bookkeeping (`--touch`, output deletion) and
+#: written: planning (`--dry-run`), bookkeeping (`--unlock`, `--touch`, output deletion) and
 #: reporting (listings, summaries, graphs, lint).
 _NON_PRODUCING_OPTIONS = frozenset(
     {
         "--dry-run",
         "--dryrun",
+        "--unlock",
         "-n",
         "--touch",
         "-t",

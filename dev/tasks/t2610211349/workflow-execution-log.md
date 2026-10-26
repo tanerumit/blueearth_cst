@@ -612,3 +612,33 @@ to that commit with its disjoint uncommitted documentation edits preserved. Prim
 by this source transfer; landing waits for P6. Writer notified to reuse matching input/build evidence,
 perform full website/routes/download checks and PDF/browser visual acceptance, and report defects.
 Engineer remains available in s2 for bounded repairs until final P5 acceptance permits fresh P6 context.
+
+Writer reused matching 63-input volume evidence, rendered all 52 site pages, and checked 3329 local
+link/resource occurrences across 55 HTML files plus 37 retained reference anchors with zero failures.
+All 63 PDF pages reviewed via contact sheets and detailed dense pages; coordinator independently viewed
+UG page 6 and TM page 40. Browser review then found duplicate PDF/Typst format choices, a real V9 regression.
+Assigned only builder format-links metadata, affected test and HTML proof to the same resumed engineer;
+unaffected PDF/layout evidence remains reusable. Main source landing stays held.
+
+The engineer had completed before reviewer preparation; its exit reported whole-thread usage 232366 total,
+181063 input, 51303 output (15244 reasoning), 12164224 cached input. Not stage-active-compute measurements.
+A fresh P6 startup without an effort override showed low, so no assignment was dispatched. It was closed
+unused when the P5 defect arrived. Resumed the original engineer with explicit medium; final P6 must be
+fresh and explicitly medium. No permission defaults changed, no work discarded and no s3 use.
+
+### P5 bounded format-menu repair transfer
+
+Owner returned the completed two-file correction with source writes stopped. Coordinator reviewed the
+builder metadata and affected test, checked the exact index and committed `ccd79230` in s2. The repair
+restores literal `html` plus the explicit Typst/PDF/file-pdf metadata from V9. Both full HTML renders
+show exactly one PDF choice with the correct volume href; pre-fix retained HTML reproduced PDF/Typst.
+The 23 affected tests pass in 1.46s; scoped Ruff, format, compile and whitespace checks pass. HTML-only
+render/proof took 10.69s; bodies, PDFs and all 63 input hashes are unchanged. Reuse unaffected evidence.
+
+Rediscovered live ownership: continuing writer in s1, completed engineer in s2, unrelated s3 untouched.
+Fast-forwarded s1 to `ccd79230` with its disjoint documentation edits preserved; engineer worktree clean.
+Writer received exact repaired HTML/proof paths and bounded final browser acceptance instructions.
+Retained engineer return now includes the repair addendum. Same role/medium allocation and skill reads
+apply; no new implementation dispatch or dependency change. No source landing to main or push.
+Writer additionally reports duplicate website appendix titles as a minor presentation finding; full
+volume HTML/PDF are unaffected. Preserve this finding for P6 disposition without expanding this repair.

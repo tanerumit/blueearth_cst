@@ -143,3 +143,32 @@ completed it. No permissions relaxed or automatic-review rejection. Historical f
 
 Next: coordinator reviews/commits these five paths and transfers to s1; writer performs combined website/full
 visual acceptance, then P6. No landing to main before P6. Worker source writes stopped.
+
+## Bounded rendered-format repair — 2026-10-26
+
+Base is now accepted engine commit `872b8075`. Exact new delivery: `dev/scripts/build_publications.py`
+and `tests/test_publications.py` only. Source writes stopped again for coordinator commit/transfer.
+
+Restored the proven V9 `format-links` structure: literal `html`, followed by
+`{format: typst, text: PDF, icon: file-pdf}`. The previous HTML object caused an automatic Typst option
+alongside the explicit PDF option. The existing consumer test now checks this metadata for both volumes.
+
+Fresh proof: `p5-engine/repair-format-links.py` renders **HTML only** for both complete volumes through
+the compatible main runtime in the existing watch pane. `format-links-proof.json` and
+`format-links-render.log` show pre-fix choices `[PDF, Typst]`, then exactly one `PDF` choice with
+`user-guide.pdf` / `technical-manual.pdf` href respectively. No stray Typst choice remains in either
+rendered Other Formats element. Render/proof wall time: **10.69 s**.
+Both assembled bodies match the previous candidate exactly. All 63 consumed source hashes are unchanged
+after rendering; reused/copied PDFs retain their original byte hashes. No PDF rerender or source edit.
+
+Fresh `python -m pytest tests/test_publications.py tests/test_docs_pilot.py -q --tb=short`:
+**23 passed in 1.46 s**. Scoped Ruff, format check and compilation of the two changed Python files,
+plus `git -c core.safecrlf=false diff --check`, all pass. Evidence: `format-links-tests.log` and
+`format-links-checks.json`. Reuse prior unaffected PDF/layout, 517-link and 29-destination evidence;
+no repeated full audit, website build or browser inspection. Writer retains final rendered acceptance.
+
+Same manually applied canonical role and completed skill/reference reads reused; no new incomplete read.
+Requested effort medium; launch/UI report remains GPT-6.1-Sol medium, backend/usage/cost unobservable.
+First repair checkpoint: 22:04:46 UTC. No installs, model/notebook execution, commits, landing, push,
+new agents, cross-lane writes or shared-record edits. Coordinator transfers this bounded correction;
+P6 remains pending until combined acceptance.

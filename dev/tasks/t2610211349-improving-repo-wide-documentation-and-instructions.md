@@ -1,7 +1,8 @@
 ---
 title: Improving repo-wide documentation and instructions
 type: todo-item
-status: blocked
+status: active
+branch: feat/t2610211349-publishing-pilot
 effort: 2
 area: docs
 queue:
@@ -17,9 +18,9 @@ updated: 2026-10-26
 
 ## Progress
 
-*Blocked — Awaiting owner decisions on reviewed structure, generated case instructions, source compatibility and publication endpoint; revisit on owner response before P3 or migration.*
+*P3 authorized — Preparing the user-guide/technical-manual publishing pilot in s2 at medium effort.*
 
-Next: Owner reviews the reconciled map and decides scope, compatibility and the first publication endpoint.
+Next: Build and return the P3 HTML/PDF pilot for owner review; migration and scientific writing stay held.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
@@ -92,7 +93,25 @@ Owner follow-up restricts this task to cst-main, s1 and s2; session-3 stays avai
 The artifact-first dispatch improvement is separately authorized infrastructure maintenance, not approval
 of the pending publication or migration choices.
 
+## P3 work location
+
+- Owner: session-2; branch: `feat/t2610211349-publishing-pilot`; implementation uncommitted.
+- Implementation: session-2 :: publication pilot mechanics, manifest and isolated compatibility fixture.
+- Coordination: main :: `dev/tasks/t2610211349/`.
+- Scratch and outputs: session-2 :: `.tmp/tasks/t2610211349/p3/`.
+- Next action: complete and inspect HTML/PDF pilot; return for owner review before migration.
+- Specification: [frozen content](t2610211349/publishing-pilot-content-specification.md).
+- Assignment: [P3 engineer packet](t2610211349/publishing-pilot-assignment.md).
+
 ## Refs
+
+Owner structure decision (2026-10-26): approved the user-guide, technical-manual and scientific-approach
+structure; focus the next writing tranche on the user guide and technical manual. Scientific-approach
+writing (P4C) is deferred, with its outline and existing material retained. The owner selected 1A, 2A, 3A:
+include bounded generated-case instruction reconciliation, retain initial tracked compatibility pages,
+and limit the first publication to indicator-table interpretation, selection and extension. Supported
+surface construction is deferred. The owner subsequently authorized P3 at medium effort in s2,
+returning the pilot for review before migration. P4–P6 remain held.
 
 - [Proposed boundary map and outlines](t2610211349/documentation-boundary-map.md).
 - [Independent boundary critique](t2610211349/documentation-boundary-critique.md).

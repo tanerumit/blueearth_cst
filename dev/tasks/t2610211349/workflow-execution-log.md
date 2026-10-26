@@ -277,3 +277,38 @@ Fresh-session behavioral adoption remains unverified. No push was requested or p
 The owner also reserved CST session-3 for unrelated work. Remaining proposed packets use only cst-main,
 s1 and s2; P3/P4B/P4C/P6 share s2 sequentially, with fresh contexts at role changes. No s3 pane or worktree
 was claimed, stopped, cleared or modified by this task. P3/migration decisions remain pending.
+
+## Owner structure and scope decisions — 2026-10-26
+
+The owner approved the three central document structures, prioritizing the user guide and technical
+manual and deferring scientific-approach writing (P4C). Then selected 1A, 2A, 3A: include bounded
+generated-case instruction reconciliation; retain small tracked compatibility pages at moved source
+paths initially; promise table-level indicator interpretation, selection and extension, with supported
+surface construction deferred. Updated the map, plan and task progress to reflect these decisions.
+P3 authorization remains pending; no pilot, writing worker or migration was started. Only main, s1
+and s2 remain allocated to this task. Future decisions should use numbered choices in the console,
+because the interactive-question tool did not produce selectable controls for the owner.
+
+## P3 dispatch — 2026-10-26
+
+Owner chose A: start the pilot in s2 at medium effort, return for review before migration.
+Reused s1 technical-writer context for the frozen content specification only; completed return read
+through the thread API after terminal capture exposed only its first portion. Source check interval
+14:18:27–14:20:15 UTC; full return retained in `publishing-pilot-content-specification.md`.
+This continuation added task-brief and its triggered reference; other skills remain as reported there.
+
+Live discovery found s2 clean/detached with this task's completed P2 critic in w9:p1. The critic was
+idle with a completed substantive return; exited its UI and verified shell before replacement.
+Claimed s2 from local main `470fc761` with the advisory task-start helper, no reseed (docs-only scope).
+Branch: `feat/t2610211349-publishing-pilot`. No s3 control or writes.
+
+Fresh engineer: `python-engineer-p3`, Herdr w9:p1, thread `01a17894-57b3-7131-ad6c-78e54fed6043`.
+Freshness/cwd preflight completed; shared-server discovery confirms the new thread and s2 cwd.
+Initial preflight ran at default low effort (52.167 seconds); before implementation the model picker
+was set to GPT-6.1-Sol medium for this session only and the UI confirmed it. Backend settings unknown.
+Role: python-engineer implement mode, manually instructed full-contract generic runtime; loading is
+not yet verified. Full packet: `publishing-pilot-assignment.md`; initial substantive activity observed.
+Coordinator owns commits, integration, shared records and acceptance. Worker returns lane-local evidence.
+P3 acceptance covers HTML/PDF visual quality, shared-source integrity/refresh, clear missing-input
+failure, source/rendered compatibility and complete static fallback. No P4 writing or migration.
+Worker usage, total turnaround and final verification remain pending until completion.

@@ -125,8 +125,11 @@ consult the reference before making baseline claims.
 ## Session lifecycle
 
 Use `git-workflow` and `dev/reference/dev-task-and-session-workflow.md` for session allocation,
-synchronization, and cleanup. Stay in the occupied session across follow-ups. The user controls
-switching and landing; completion does not authorize landing or pushing.
+synchronization, and cleanup. Stay in the occupied session across follow-ups until completion or an
+explicit switch. Requests to implement work in a session branched from `main` authorize committing,
+merging, and landing the completed, verified work back to `main` without further approval, unless the
+user explicitly holds it. See the workflow reference for landing conditions.
+Pushing requires explicit authorization.
 
 ## Hard Constraints
 

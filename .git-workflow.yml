@@ -16,9 +16,9 @@ trunk: main
 # Explicit settings below override the selected mode.
 
 # A clean detached session may claim itself with task-start --no-launch;
-# the user controls switching and landing.
-# Keep follow-ups on one branch, commit separately, and gate the batch at landing.
-isolation_landing: approval
+# the user controls switching. Implementation requests authorize verified local landing.
+# Keep follow-ups on one branch until completion; explicit holds defer landing.
+isolation_landing: auto
 
 # Push only when requested. Set to true to enable the periodic backup trigger.
 auto_push: false
@@ -43,7 +43,7 @@ slot_registry: advisory
 #   worktree_policy: always
 #
 # The primary checkout is reserved for integration. Session branches are
-# landed on explicit batch approval after they are clean, rebased, and verified.
+# landed automatically after they are clean, synchronized, and verified, unless explicitly held.
 #
 # `integration_mode` is omitted because it is inactive with an advisory
 # registry.

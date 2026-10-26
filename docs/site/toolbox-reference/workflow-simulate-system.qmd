@@ -63,19 +63,24 @@ indicator_set_definitions:
     config_path: indicator_sets/example_subset.yml   # relative to this file
 ```
 
+Edit `project_config_simulate_system.yml`, or the file named by `workflows.simulate_system.config_path`
+in `project_config.yml`:
+
 1. In `operations`, select `simulations`, `indicators`, or both.
    List each choice once. Their order does not matter.
 
 2. In `indicator_sets`, choose the sets to calculate.
    You can list set ids or provide their settings inline. If you leave this setting out, the toolbox
-   uses `[default]`. Set ids must match `[a-z][a-z0-9_-]*` and contain no more than 64 characters.
+   uses `[default]`. Start each set ID with a lowercase letter. After that, use only lowercase letters,
+   digits, underscores or hyphens. Keep the whole ID to 64 characters or fewer.
 
    The `default` set is defined in `config/indicator_sets/default.yml`.
    It selects indicators for `model.outvars`. If that setting is absent, it uses the toolbox defaults.
    When calculating indicators without simulations, it uses the variables retained in the experiment.
 
 3. To choose your own set of indicators, copy `config/templates/indicator_set.template.yml` and set
-   its `config_path`. Use an absolute path or a path relative to the WF4 file that declares it.
+   its `config_path`. Use an absolute path or a path relative to the simulation file
+   (`project_config_simulate_system.yml`) that declares it.
    The toolbox reads each selected set file once per invocation.
 
    A custom set chooses existing calculations and can give them your own indicator names.

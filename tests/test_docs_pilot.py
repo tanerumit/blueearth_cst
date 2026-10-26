@@ -45,6 +45,8 @@ def test_staging_preserves_sources_and_refreshes(source_copy: Path) -> None:
     assembled = (output / "index.qmd").read_text(encoding="utf-8")
     assert "completed `_engine/simulation.json` record" in assembled
     assert "python scripts/simulate_system.py --config <config> --cores 3" in assembled
+    assert "```yaml\n# project_config_simulate_system.yml\n" in assembled
+    assert "workflows.simulate_system.config_path" in assembled
     assert "max(ceil(T),10)" in assembled
     assert "Return levels pool blocks instead." in assembled
     assert "native pandas missingness and partial-block weighting" in assembled
@@ -77,7 +79,7 @@ def test_staging_preserves_sources_and_refreshes(source_copy: Path) -> None:
         in assembled
     )
     assert yaml.safe_load(assembled.split("---")[1])["subtitle"] == (
-        "P3 plain-language working tree (base bbf5fec6)"
+        "P3 named-files working tree (base 865803b2)"
     )
     canonical = (output / "technical-manual/indicator-requests.qmd").read_text(
         encoding="utf-8"

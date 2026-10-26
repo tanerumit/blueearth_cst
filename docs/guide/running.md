@@ -404,7 +404,7 @@ stop while writing a native CSV or restoring a batch may leave partial outputs
 that need diagnosis; reservation recovery does not repair those files.
 
 To skip unperturbed realizations in WF4, set `include_unperturbed: false` in its
-`simulate_system` configuration file. The default is `true`. WF4 then prepares
+`project_config_simulate_system.yml` simulation file. The default is `true`. WF4 then prepares
 forcing and simulates only perturbed members; WF3 keeps the complete collection.
 Existing run IDs stay unchanged. Changing this switch requires `--new-experiment`.
 Indicators are calculated only for simulated members and their design-point groups.
@@ -417,11 +417,22 @@ Indicators-only runs always use the retained simulation's members.
 You can calculate different indicators from completed simulations without rerunning the model.
 The selected experiment must have a completed `_engine/simulation.json` record, even for a dry run.
 
-In the simulation settings file:
+Open your case's simulation settings file: `project_config_simulate_system.yml` in the starter.
+If your case uses another filename, find it under `workflows.simulate_system.config_path` in
+`project_config.yml`. The rapid example uses `project_config_rapid_simulate_system.yml`.
 
 1. Keep the existing `experiment_name`.
 2. Set `operations: [indicators]`.
 3. In `indicator_sets`, list the sets you want to calculate.
+
+For example, if your completed experiment is `stress_test_01`, the relevant settings are:
+
+```yaml
+# project_config_simulate_system.yml
+experiment_name: stress_test_01
+operations: [indicators]
+indicator_sets: [default]
+```
 
 Then run:
 

@@ -10,6 +10,11 @@ format:
     code-copy: true
     code-overflow: wrap
   typst:
+    toc-indent: 0em
+    include-before-body:
+      - text: |
+          #set par(justify: false)
+          #set align(left)
     papersize: a4
     fontsize: 11pt
     margin:

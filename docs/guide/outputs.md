@@ -231,7 +231,21 @@ source environment.
 ## Reading an indicator set
 
 For post-processing, open the CSVs in `experiments/<name>/results/indicator_sets/<set-id>/`.
-There is one folder per selected indicator set: `default` unless the WF4 file names others.
+There is one folder per selected indicator set: `default` unless `project_config_simulate_system.yml`
+selects others.
+
+For example, a `default` set containing river discharge indicators looks like this:
+
+```bash
+experiments/stress_test_01/results/indicator_sets/default/
+├── indicators.csv          # Indicator definitions, units and coverage
+├── group_members.csv       # Runs included in each group
+├── group_metadata.csv      # Climate perturbation and reference status of each group
+├── q_run_indicators.csv    # Indicator values for each run and location
+└── q_group_indicators.csv  # Indicator values for each group and location
+```
+
+Here, `q` means river discharge. Other selected variables have their own run and group tables.
 
 Start with `indicators.csv`.
 It has one row per indicator, describing:
@@ -342,7 +356,7 @@ Simulation checks that its requested scenario collection still matches the
 current inputs. If the request is missing or out of date, the error names the
 generation command to run. Simulation does not automatically choose a
 collection. You can also name an existing collection explicitly in the
-simulation settings file.
+simulation settings file, `project_config_simulate_system.yml`.
 
 The `_engine/simulation.json` record ties an experiment to its collection,
 model, and simulation settings. Use a new experiment name when those inputs

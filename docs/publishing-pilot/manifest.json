@@ -1,6 +1,6 @@
 {
   "title": "Indicator selection — publishing pilot",
-  "source_revision": "P3 plain-language working tree (base bbf5fec6)",
+  "source_revision": "P3 named-files working tree (base 865803b2)",
   "repository_url": "https://github.com/tanerumit/blueearth_cst/blob/470fc7613b8fd2cf6b840b724b5b4a0d3f64505e/",
   "sections": [
     {
@@ -11,7 +11,7 @@
     },
     {
       "source": "docs/site/toolbox-reference/workflow-simulate-system.qmd",
-      "start": "1. In `operations`, select `simulations`, `indicators`, or both.",
+      "start": "Edit `project_config_simulate_system.yml`,",
       "stop": "calendars, missingness or grain.",
       "include_stop": true,
       "heading": "## Configuration",

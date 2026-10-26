@@ -27,7 +27,7 @@ cssclasses: [todo-board]
 |        | [t2610241523c][]         | Adopt the shared plotting style in R/WF3 figures             | plotting   | backlog      |
 |        | [t2610241523b][]         | Extract the plotting core as a package                       | plotting   | backlog      |
 |        | [t2610241523a][]         | Isolate Snakemake state between parallel test workers        | tests      | backlog      |
-|        | [t2610211349][]          | Improving repo-wide documentation and instructions           | docs       | active (4/7) |
+|        | [t2610211349][]          | Improving repo-wide documentation and instructions           | docs       | active (6/7) |
 |        | [t2610191323][]          | Investigate WF4 and WF2 performance from the Ntoum run       | runtime    | backlog      |
 
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md

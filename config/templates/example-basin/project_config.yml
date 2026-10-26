@@ -82,16 +82,16 @@ climate:
   # Choose forcing for model and scenario generation. Input: name from sources; null for WF0-only assessment.
   selected: era5
 
-  # Years of record to extract, inclusive. At least 16. This is not the model
+  # Calendar years to extract, January 1 through December 31 inclusive. At least 16. This is not the model
   # run period; see `simulation_window` in the build_model file.
-  # Select inclusive historical water years. Input: year mapping spanning at least 16 years.
+  # Select inclusive historical calendar years. Input: year mapping spanning at least 16 years.
   window:
-    # First historical water year. Input: integer year, <= end.
+    # First historical calendar year. Input: integer year, <= end.
     start: 2000
-    # Last historical water year. Input: integer year, >= start.
+    # Last historical calendar year. Input: integer year, >= start.
     end: 2016
 
-  # First month of the water year. Changes every annual statistic.
+  # First month of the water year for reporting aggregation; it does not change extraction bounds.
   # Set the first water-year month. Input: three-letter month abbreviation, Jan–Dec.
   #water_year_start: Jan
 

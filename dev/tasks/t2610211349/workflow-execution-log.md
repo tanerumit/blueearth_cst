@@ -312,3 +312,35 @@ Coordinator owns commits, integration, shared records and acceptance. Worker ret
 P3 acceptance covers HTML/PDF visual quality, shared-source integrity/refresh, clear missing-input
 failure, source/rendered compatibility and complete static fallback. No P4 writing or migration.
 Worker usage, total turnaround and final verification remain pending until completion.
+
+## P3 coordinator acceptance — 2026-10-26
+
+Engineer completed substantive turn `01a17897-3b0c-74b0-9042-6c26c3792175` without an error and is idle.
+The full return is retained in `publishing-pilot-return.md`; transfer SHA256 matched the lane original
+(`06d70bf1ed35cd2b57e0121fed5de3927497c4e97e0c484e5c2c9e522fe914ce`). Delivery HTML/PDF hashes matched
+the return. Inspected implementation, tests, both HTML screenshots and all three PDF pages. Reused
+attributable 14-test/Ruff/compile/build/refresh/link/source-integrity evidence; staged whitespace passes.
+All P3 acceptance claims pass, with full-manual, citation/equation and portability limits as recorded.
+
+Coordinator committed seven new pilot files in s2 as `bed0ae1e`; no preexisting source was changed.
+The branch is clean and retained for owner pilot review. No landing, push, deployment, migration or P4.
+Production publication configuration is unchanged. Preview stopped; artifacts/evidence stay in s2.
+Board check retains eight unrelated baseline errors; this task has a length warning only. Worktree
+mapping identifies the pilot correctly; detached s1 and two older missing branches are unrelated.
+
+P3 used one continuing technical writer for its frozen specification and one fresh engineer. Engineer
+substantive turn ran 14:22:19 to 14:46:25 UTC, approximately 24m 06s, including renders and review fixes.
+UI settings remained GPT-6.1-Sol medium. Full manual role/skill application is confirmed by the worker
+return; no native-role activation is claimed. Coordinator additionally applied python-discipline,
+testing-policy and PDF visual-review guidance to acceptance.
+
+Local rollout counters, excluding the preflight: 9,128,234 input / 8,928,384 cached input / 35,926 output
+tokens. Cached input is included in input; output includes reasoning. Source is this engineer's final
+token-count event minus its completed preflight event. Root and s1 follow-up usage are unseparated here;
+active compute, process-wait totals and cash cost are unknown. No comparative efficiency claim.
+
+Rework included one real broken alternate-format link, Windows Sass process permissions, local preview
+state placement, annex pagination, cache confinement, portable recipe and the user-facing PDF label.
+The last label-only HTML rerender reused unchanged PDF checks; no broad suite was added.
+Owner review is the next gate. The worker proposed a separate Quarto skill check for alternate-format
+links; current skill verification does not name that case. No shared skill edit is authorized or applied.

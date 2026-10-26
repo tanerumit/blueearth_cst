@@ -1,7 +1,7 @@
 ---
 title: Improving repo-wide documentation and instructions
 type: todo-item
-status: active
+status: blocked
 branch: feat/t2610211349-publishing-pilot
 effort: 2
 area: docs
@@ -18,9 +18,9 @@ updated: 2026-10-26
 
 ## Progress
 
-*P3 authorized — Preparing the user-guide/technical-manual publishing pilot in s2 at medium effort.*
+*Blocked — Awaiting owner review of the completed P3 HTML/PDF pilot; resume on owner acceptance before migration.*
 
-Next: Build and return the P3 HTML/PDF pilot for owner review; migration and scientific writing stay held.
+Next: Owner reviews the P3 HTML/PDF samples before authorizing migration; scientific writing stays deferred.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
@@ -95,13 +95,16 @@ of the pending publication or migration choices.
 
 ## P3 work location
 
-- Owner: session-2; branch: `feat/t2610211349-publishing-pilot`; implementation uncommitted.
+- Owner: session-2; branch: `feat/t2610211349-publishing-pilot`; implementation commit `bed0ae1e`.
 - Implementation: session-2 :: publication pilot mechanics, manifest and isolated compatibility fixture.
 - Coordination: main :: `dev/tasks/t2610211349/`.
 - Scratch and outputs: session-2 :: `.tmp/tasks/t2610211349/p3/`.
-- Next action: complete and inspect HTML/PDF pilot; return for owner review before migration.
+- Verification: 14 affected tests, scoped Ruff, source integrity, refresh, link and visual checks pass.
+- Retention: keep pilot outputs/evidence in s2 until owner review and a retention decision; no cleanup.
+- Next action: owner reviews the completed pilot; branch retained without landing or migration.
 - Specification: [frozen content](t2610211349/publishing-pilot-content-specification.md).
 - Assignment: [P3 engineer packet](t2610211349/publishing-pilot-assignment.md).
+- Return: [P3 evidence and limits](t2610211349/publishing-pilot-return.md).
 
 ## Refs
 

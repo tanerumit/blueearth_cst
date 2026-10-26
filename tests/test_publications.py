@@ -121,6 +121,11 @@ def test_complete_sources_rebased_offline_and_refresh(
     metadata = yaml.safe_load(technical.split("---")[1])
     assert set(metadata["format"]) == {"html", "typst"}
     assert metadata["execute"] == {"enabled": False}
+    for document in (user, technical):
+        assert yaml.safe_load(document.split("---")[1])["format-links"] == [
+            "html",
+            {"format": "typst", "text": "PDF", "icon": "file-pdf"},
+        ]
     appendix = yaml.safe_load(
         (
             publication_source / "docs/technical-manual/local-source-appendix.yml"

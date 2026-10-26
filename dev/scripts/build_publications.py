@@ -365,8 +365,8 @@ def prepare_publications(source_root: Path) -> tuple[dict[str, bytes], dict[str,
         metadata = config | {
             "title": publication["title"],
             "format-links": [
-                {"format": "html", "text": "HTML"},
-                {"format": "typst", "text": "PDF"},
+                "html",
+                {"format": "typst", "text": "PDF", "icon": "file-pdf"},
             ],
             "filters": ["../publication-links.lua"],
             "publication-siblings": list(volumes),

@@ -17,7 +17,7 @@ updated: 2026-10-26
 
 ## Progress
 
-Next: Agree the execution scope, then commission P1: the 55-file boundary matrix and chapter outlines.
+Next: Resume coordination in cst-main; on execution instruction, commission P1 in s1 at medium effort.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
@@ -66,6 +66,9 @@ sources for derived publications. Recommendations remain proposals; no restructu
 Saved the proposed stages, role/model allocations, ownership, handoffs and acceptance checks.
 Added prospective efficiency/effectiveness tracking, including actual role and skill use, waits, usage,
 checks and rework. No workers have been dispatched; implementation remains unstarted.
+Owner-selected topology: cst-main coordinates; s1, s2 and s3 execute bounded packets at medium effort.
+Parallel lane execution is authorized where independent. cst-main alone commits and merges/lands;
+user-facing and human decisions return to the owner. The plan records the coordinator handoff.
 
 ## Refs
 

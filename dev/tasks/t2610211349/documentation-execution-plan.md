@@ -36,8 +36,9 @@ New Markdown destinations and exact ownership are resolved in P1, not assumed to
 
 Recommended execution agreement: first commission P1–P2, then review the concrete layout and scope before
 commissioning P3–P6. This is a proposed decision point, not an extra skill-mandated approval gate.
-The owner may instead authorize the whole plan with these decisions delegated; routine stages would then
-continue without repeated confirmation. Multiple distinct agents require explicit multi-agent authority.
+The owner may authorize the full execution scope; routine stages then continue under settled decisions.
+User-facing and human decisions remain with the owner. Parallel lanes and coordinator commit/landing
+authority are selected; worker dispatch awaits the execution instruction.
 
 ## Roles and allocations
 
@@ -176,23 +177,72 @@ commit/landing policy. Pushing, publishing and task closure follow existing auth
 
 ## Scheduling and ownership
 
-Default sequence: P1 → P2 → P3 → P4A → P4B → P4C → P5 → P6.
-Reuse the editorial lead across related authoring/integration stages; use fresh contexts for P2 and P6.
-The Python engineer can return for bounded build repairs without creating a new worker unnecessarily.
+Owner-selected topology: coordinate from `cst-main` (the primary checkout on `main`) and execute work
+through `session-1`, `session-2` and `session-3`, referred to as s1, s2 and s3. This selects the execution
+layout; it does not start workers or implement the proposed documentation changes.
 
-Optional after explicit parallel authorization: P4A/B/C can overlap only with disjoint exact paths.
-Recommend at most two concurrent workers plus the coordinator; do not fill all available slots by default.
+| Location | Responsibility | Proposed stage assignments |
+|---|---|---|
+| cst-main / main | Coordinator, task evidence, acceptance, metrics and integration | All stage handoffs |
+| s1 / session-1 | Editorial lead and documentation assembly | P1, P4A, P5 |
+| s2 / session-2 | Independent critique, interface reference and fresh final review | P2, P4B, P6 |
+| s3 / session-3 | Publication engineering, then scientific writing | P3, P4C |
+
+These are reusable execution slots, not permanent role identities. Reuse a worker only for related work;
+role changes require a fresh agent context. In s2, P2 and P6 are independent fresh reviewers, separate from
+the P4B author. In s3, finish engineering and release the slot before starting the scientific writer.
+Retain the medium-effort default and exceptional-high policy for every location.
+
+Dependencies: P1 → P2 → P3 → {P4A, P4B, P4C} → P5 → P6.
+Early stages are sequential because they settle boundaries and publication behavior. After P3 acceptance,
+parallel work across the lanes is owner-authorized when exact write ownership is disjoint and the shared
+base is current. P4A/B/C are the main parallel opportunity; apply the same rule to other independent packets.
+Use at most three workers plus the coordinator; leave lanes idle when there is no independent ready packet.
 Shared navigation, bibliography and style assets have one assigned owner; other workers submit suggestions.
+Keep the task evidence and execution observations coordinator-owned in main throughout.
 
-The current environment reports HERDR_ENV=1. At execution time follow agent-routing and the Herdr skill:
-discover live workspace/pane ownership, use the designated agents pane, preserve focus, and verify effective
-role/model/effort. Do not infer pane availability from idle state or silently fall back to native subagents.
+The Git snapshot on 2026-10-26 showed all three execution slots detached. A detached slot is not proof that
+its pane is available or that its tree is clean. Recheck Git state, pane occupancy and task ownership before
+claiming it. At execution, resolve `cst-main` and each lane to the actual checkout/workspace, then discover
+live workspace and pane IDs. Never infer or persist an ID from a name or an earlier task.
+
+The environment reports HERDR_ENV=1. Follow agent-routing and the Herdr skill at dispatch: use the designated
+agents pane for each owning workspace, preserve user focus, and verify effective role/model/effort.
+Do not infer pane availability from idle state or silently fall back to native subagents.
 Claim implementation sessions through task-start before source edits; do not create branches by hand.
-Task evidence and board edits remain coordinator-owned in main under the maintenance exception.
+Allocate from current main so workers receive the latest plan and accepted predecessor work.
+
+Each worker owns source changes in its assigned lane, its local STATUS.md and qualified return evidence.
+Workers return uncommitted changes, changed paths, checks, limitations and measurement data to cst-main.
+Workers do not commit, merge, land, push or mutate another lane. The coordinator reviews each lane's diff,
+isolates task-owned changes, and performs the verified commit in that lane before merging/landing from main.
+For read-only stages, return findings to the coordinator, who saves them in the canonical task folder.
+Only cst-main accepts results, updates shared records, commits and integrates branches.
+Serialize integrations.
+Follow repository landing/parking rules; never move or replace another task's active agent or branch.
+Publishing and pushing still require their existing authorization.
+
+Consult the user for user-facing or human decisions: document structure and navigation, changed reader
+promises or scientific interpretation, meaningful publication/compatibility tradeoffs, and unresolved scope.
+Present concrete options and a recommendation before dependent edits. Proceed independently with routine
+implementation and editorial mechanics inside settled decisions. Preserve independent work while awaiting
+an answer; record the question, blocked dependency and waiting time in the execution observations.
+An approved layout or approach remains settled across follow-ups; do not repeatedly seek the same decision.
+
+### Coordinator handoff
+
+The planning conversation is attached to session-1; this plan does not relocate that live conversation.
+Begin execution in cst-main with the existing task note, this plan, the inventory, assessment and observations
+log. Reconcile the latest main commit and live lane/pane state before dispatch. Once the owner starts the
+agreed execution scope, assign P1 to s1 at medium effort and start prospective timing/usage collection.
+Present the P1–P2 user-facing layout decisions to the owner before dependent migration work.
+Do not create an additional coordinator or worker in an occupied pane merely to reproduce this topology.
+
 
 ## Common worker packet
 
 Every dispatch receives: objective; predecessor artifact/commit; exact owned paths; read-only/write authority;
+coordinator-only commit/merge authority; user-decision boundaries;
 relevant decisions and exclusions; output contract; checks; return destination; and no nested delegation.
 Workers are not alone in the codebase: preserve others' edits and report ownership conflicts before writing.
 Use fresh context with a compact packet for explicit model/effort overrides; verify runtime behavior.

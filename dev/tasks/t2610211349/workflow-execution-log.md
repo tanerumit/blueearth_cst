@@ -40,12 +40,13 @@ Copy this section for a real attempt; do not prefill planned attempts as execute
 - Requested role / model / effort (medium default):
 - Exceptional high effort: specific reason, bounded scope, outcome and return to medium, or not used:
 - Observed role / model / effort; evidence or unknown:
+- Coordinator: cst-main; assigned execution lane s1/s2/s3:
 - Context mode and isolation/worktree; runtime identity verified:
 - Skills requested:
 - Skills actually used; evidence level and actions:
 - Incomplete governing reads, capability gaps or degraded execution:
 - Dispatch / return / acceptance UTC:
-- Explicit waiting intervals and reason:
+- Explicit waiting intervals and reason; user-facing decision and dependent packet:
 - Turnaround / acceptance lead time / active elapsed estimate or unknown:
 - Usage source; input / output / cached tokens; cost or unknown:
 - Deliverable and coverage denominator:
@@ -54,6 +55,7 @@ Copy this section for a real attempt; do not prefill planned attempts as execute
 - Reviewer findings by severity; materiality defined below:
 - Repair effort / retries / continuation count; attributable cause:
 - Handoff gaps, repeated investigation or scope changes:
+- Coordinator commit/landing evidence; worker changes accepted or returned:
 - Accepted outcome, remaining limitations and next handoff:
 - Allocation/skill lesson; evidence and proposed adjustment:
 

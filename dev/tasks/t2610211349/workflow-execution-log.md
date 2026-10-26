@@ -561,3 +561,18 @@ detached; s3 remains on its unrelated branch. Saved commission at `856bc47c`, th
 the full bounded handoff, skill/reference completeness requirement, artifact/check ownership and no
 nested agents/commits/landing. Requested GPT-6.1-Sol medium, same established allocation; live verification
 and substantive activity are checked after dispatch. P6 is not yet dispatched because it depends on P5.
+
+Substantive s1 activity and UI GPT-6.1-Sol medium verified. Writer promptly identified a real dependency:
+only five guides are staged and the pilot cannot build complete volumes/appendices. Scoped P5 engineering
+packet added to the existing plan; writer owns `docs/`, engineer owns publisher Python/tests, with a shared
+manifest contract coordinated directly. This activates the planned conditional specialist, not P6 early.
+P4B author was terminal and disconnected from w9:p1; shell prompt verified before fresh launch.
+Allocated s2 `feat/t2610211349-publication-engine` from `31aaafab`; fresh python-engineer-p5 launched
+with explicit GPT-6.1-Sol/medium flags, UI verified. Preflight confirms fresh context, correct branch/cwd
+and clean tree. Thread `01a17a20-bd73-7112-a3ff-55ec06843910`; full manual role loading instructed.
+No permission defaults changed. P4B exit displayed cumulative usage: 389940 total, 326119 input,
+63821 output (15614 reasoning), 24212608 cached input. These are whole-thread totals, not P4B-stage
+measurements or additive uncached totals; earlier stage-specific usage remains unknown.
+Writer manifest fixes ten guide/16 manual chapters, six-source appendix declaration and V9 formatting.
+Engineering dispatch includes source hashes, no-execute, link rebasing, static alternative and targeted
+consumer checks. No other roles or s3 use; P6 fresh review follows the completed assembled candidate.

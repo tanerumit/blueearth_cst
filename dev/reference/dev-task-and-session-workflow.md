@@ -1,6 +1,6 @@
 # Development workflow
 
-Last updated: 2026-10-23
+Last updated: 2026-10-26
 
 Shared procedures for developers and agents coordinating repository work. This reference owns task
 admission, board location, worktree coordination, handoffs, and Herdr worker coordination. Placement and
@@ -71,8 +71,11 @@ A modifying request permits a clean detached session to claim itself from the pr
 At new-session entry, synchronize a clean local unpushed lane with `main` by rebase; published lanes
 use merge unless rewriting is authorized. Resolve dirty state/conflicts without automatic stash/reset.
 Do not repeat synchronization per follow-up. Stay in the occupied session until the user asks to
-switch or land. Commit completed tasks with the checks selected by the validation reference;
-completion does not authorize landing or pushing. After a verified merge, prove ancestry,
+switch, or until the requested work is complete. Requests to implement work in a session branched from
+`main` authorize committing and landing the completed, verified work back to `main` without further
+approval. Honor explicit holds. Follow `.git-workflow.yml` and `git-workflow` for landing eligibility;
+preserve work and report conflicts, failed checks, or ownership ambiguity instead of forcing a merge.
+Pushing requires explicit authorization. After a verified merge, prove ancestry,
 detach/free the lane, then delete its branch; on failure preserve the lane and branch for recovery.
 
 Keep the note's `branch:` current. When tracked work needs a locator, maintain the following section in
@@ -228,8 +231,9 @@ global defaults, permissions or the server to make a launch work.
   agent name and pane, and conversation ID.
 - `idle` and `done` are navigation aids. Read the return, inspect the branch and run or confirm the checks
   chosen under the [validation ladder](dev-validation.md) before accepting.
-- Landing and pushing keep their explicit-approval policy; a finished worker does not free the session.
-  After approval, land under `git-workflow`, prove ancestry, then park the session.
+- Apply the repository's automatic-landing policy after accepting the worker's verified result;
+  a finished worker alone does not free the session. Land under `git-workflow`, prove ancestry,
+  then park the session. Honor explicit holds; pushing requires explicit authorization.
 
 ### Failure and timeout
 

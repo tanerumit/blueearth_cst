@@ -63,16 +63,28 @@ indicator_set_definitions:
     config_path: indicator_sets/example_subset.yml   # relative to this file
 ```
 
-`operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter.
-`indicator_sets` accepts set ids or inline mappings; omitted means `[default]`.
-Set ids match `[a-z][a-z0-9_-]*`, at most 64 characters.
-`default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for
-`model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators
-run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file
-that declares it. Selected set files are read once per invocation. Copy
-`config/templates/indicator_set.template.yml` for a custom set: it selects registered definitions,
-or names one registered calculation under an authored id. A set never defines arithmetic, units,
-calendars, missingness or grain.
+Edit `project_config_simulate_system.yml`, or the file named by `workflows.simulate_system.config_path`
+in `project_config.yml`:
+
+1. In `operations`, select `simulations`, `indicators`, or both.
+   List each choice once. Their order does not matter.
+
+2. In `indicator_sets`, choose the sets to calculate.
+   You can list set ids or provide their settings inline. If you leave this setting out, the toolbox
+   uses `[default]`. Start each set ID with a lowercase letter. After that, use only lowercase letters,
+   digits, underscores or hyphens. Keep the whole ID to 64 characters or fewer.
+
+   The `default` set is defined in `config/indicator_sets/default.yml`.
+   It selects indicators for `model.outvars`. If that setting is absent, it uses the toolbox defaults.
+   When calculating indicators without simulations, it uses the variables retained in the experiment.
+
+3. To choose your own set of indicators, copy `config/templates/indicator_set.template.yml` and set
+   its `config_path`. Use an absolute path or a path relative to the simulation file
+   (`project_config_simulate_system.yml`) that declares it.
+   The toolbox reads each selected set file once per invocation.
+
+   A custom set chooses existing calculations and can give them your own indicator names.
+   It does not change arithmetic, units, calendars, missingness or grain.
 
 To retain air temperature, add `temperature` to `model.outvars`. Its CSV code and response token are
 `temp`, units are degrees Celsius, and the default set emits `temp_annual_mean` using water-year
@@ -159,11 +171,12 @@ season or window length, cannot be changed to contradict the name.
 
 Existing string selectors, `indicator_set_definitions` files and nested `selection.registry` files
 remain supported. Standalone files can also use the flat structure with `schema_version: 1`.
-An inline set cannot also have a file definition. Legacy `model_root` and `source_id` rule fields remain
-supported; new project configurations can omit both. Inline sources are captured in the invocation's
+An inline set cannot also have a file definition. In a baseline-quantile rule, `model_root` selects
+the model directory and `source_id` labels historical-discharge provenance. Omit them to use the project's
+model and the label `wf1-historical-model-discharge`. Inline sources are captured in the invocation's
 selection snapshot just like separate files.
 
-For compatibility, `indicator_selection` can further narrow an inline set, but cannot re-enable an
+`indicator_selection` can further narrow an inline set, but cannot re-enable an
 indicator disabled there. To calculate part of a set, give it one `include` or `exclude` list per selected
 set; omitted means every indicator. Keys are the published indicator names, kept in set order.
 
@@ -201,8 +214,6 @@ under the same set id, with no Wflow run; earlier publications remain unchanged.
 simulation never requested cannot be recovered this way: add it to `model.outvars` and simulate a new
 experiment (`--new-experiment`). Results of different simulations are never combined in one set.
 
-The scalar `operation: simulate-and-indicators | indicators-only` and `indicators:` token list remain accepted for one feature release as the legacy interface, with their explicit `--target` rules. They cannot be mixed with `operations`/`indicator_sets`; see `dev/records/milestones/post-r12/migration_named-indicator-sets.md`.
-
 ## Inputs
 
 WF4 can run with WF3 disabled when its selected collection is already ready. For a project-generation
@@ -215,8 +226,7 @@ WF4 requires the completed WF1 model and an explicitly selected ready WF3 collec
 
 An experiment retains native Wflow response CSVs and a response inventory. New immutable indicator sets use
 `indicator-set/6`, under `_engine/indicator_sets/<id>/`; their tables add `status` (`available`, `undefined`
-for a calculated NaN, `unavailable`) and `reason` columns, and sets `/3` to `/5` remain readable. They
-retain `indicators.json`, indicator tables, group
+for a calculated NaN, `unavailable`) and `reason` columns. They retain `indicators.json`, indicator tables, group
 membership, declarations, return-level evidence, per-series block coverage and the execution context.
 Each selected set has a readable view at `results/indicator_sets/<set-id>/`: run and group tables, group
 lookups and an `indicators.csv` dictionary. See [Reading the outputs](../guide/outputs.md).
@@ -256,7 +266,7 @@ selection:
 
 `selection: {registry: flow_regime}` selects all registrations of that trusted module. An authored
 entry's optional `calculation.set` selects a trusted local callable. YAML cannot import a file path or
-execute Python. Legacy definitions and authored aliases retain their existing spelling and behavior.
+execute Python.
 New local calculations have explicit set/indicator identities and need no `equivalent_definition`.
 
 ## Integrity and numerical rechecking
@@ -281,6 +291,5 @@ or changed input blocks numerical rechecking while preserving artifact inspectio
 exits nonzero if unavailable or unsuccessful. Both scripts support `--traceback` for diagnosis.
 
 The strict production reader retains its input and cache validity checks. Integrity inspection never
-makes a stale result reusable. Existing `/3` and `/4` publications remain readable without rewriting;
-their missing execution context conservatively prevents fresh numerical eligibility. See the
-[migration note](../../../dev/records/milestones/post-r12/migration-structured-metrics.md).
+makes a stale result reusable. A publication without the required execution context cannot be
+numerically rechecked.

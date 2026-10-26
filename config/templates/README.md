@@ -3,9 +3,7 @@
 **Scaffolds you copy. Nothing here is read by a running workflow.** Copy, fill
 in, point a config at your copy.
 
-The configs a rule actually *reads* live in **`config/defaults/`**. Until
-2026-08-11 both kinds shared this directory, so its name described only half of
-what it held; see `config/defaults/README.md`.
+The configs a rule actually *reads* live in **`config/defaults/`**.
 
 | File | Purpose |
 | --- | --- |
@@ -28,11 +26,6 @@ Each parameter has a short definition immediately above it, followed by `Input:`
 for the expected format or `Options:` for fixed choices. Commented settings are
 optional examples: uncomment their YAML lines to enable them, retaining the
 explanatory comments. Longer notes explain scientific choices and dependencies.
-
-The former top-level `project_config*.template.yml` files are consolidated into
-`example-basin/project_config.yml` and `example-basin/project_config_<workflow>.yml`.
-Update copy scripts and links to use these paths; workflow configuration remains
-split into one file per workflow.
 
 The project template uses `config/catalogs/deltares_data_pdrive.yml`, backed
 by `P:/wflow_global/hydromt`. Mount the Deltares P-drive before running.
@@ -155,8 +148,7 @@ pixi run python scripts/suggest_experiment_name.py <your config> --name dry_scen
 ```
 
 The helper is always advisory. Changed scientific inputs require `--new-experiment`;
-compatible interrupted simulations continue the selected identity. Existing owned
-dated or unnumbered experiments remain readable by their explicit name.
+interrupted simulations continue the selected identity if their scientific inputs still match.
 
 ### `compute.julia_threads` / `compute.max_parallel_batches`
 

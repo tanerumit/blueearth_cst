@@ -6,16 +6,7 @@ commands via `pixi run <cmd>`. Julia is *not* in the pixi env — it is
 juliaup-managed and must be on `PATH`; its packages are pinned by the Julia
 `Manifest.toml` and installed via `pixi run install-julia`.
 
-This file records local fixes for upstream packaging issues (not project bugs).
-They fall in two groups:
-
-- **Live workarounds**, now wired into pixi activation so they apply on every
-  `pixi shell` / `pixi run` with no manual steps.
-- **Superseded conda-era notes**, kept only as historical diagnosis. The old
-  `cst` conda env pulled packages from the anaconda `defaults` channel and was
-  repaired by hand-edited `environment.yml` pins. pixi resolves a modern,
-  conda-forge-only, locked stack, so those pins no longer apply — do **not**
-  carry them forward.
+This file describes automated workarounds for upstream packaging issues and local data staging.
 
 ## Inspecting running Python processes
 
@@ -85,23 +76,6 @@ Verify: `pixi run pwsh -NoProfile -Command '$env:HDF5_USE_FILE_LOCKING'` → `FA
 
 The local data-staging path below (mirroring a bbox subset onto local SSD)
 avoids the SMB read entirely and is the more robust option for repeated runs.
-
-## Superseded conda-era notes (historical)
-
-These were repairs to the old `cst` conda env (recorded 2026-05-05). They are
-retained for context only; pixi resolves the versions shown below from
-conda-forge with a lockfile, so the symptoms and their hand-pin fixes no longer
-apply.
-
-| Symptom (conda era) | Old fix | Status under pixi |
-|---------------------|---------|-------------------|
-| `np.unicode_` AttributeError in hydromt — env had `numpy 2.x` beside an ancient `xarray 0.20.1` from anaconda `defaults`. | Pin `numpy<2`, `xarray<=2024.3.0`; add `nodefaults` + strict priority. | Gone. conda-forge-only lock resolves `numpy 2.4.6` + `xarray 2026.4.0` (compatible). Do **not** re-pin `numpy<2`. |
-| `to_zarr` codec/chunk errors — `xarray 2024.3.0` predates `zarr 3.0` but env had `zarr 3.1`. | Pin `zarr<3`. | Gone. Modern `xarray 2026.4.0` + `zarr 3.2.1` interoperate. Do **not** re-pin `zarr<3`. |
-| Wflow.jl `Invalid value kinematic-wave in the TOML` — `hydromt_wflow 0.5.0` emitted pre-1.0 TOML, local Wflow.jl was 1.0.x. | Pin Wflow.jl to `0.8.1` to match `hydromt_wflow 0.5.0`. | **Obsolete and now wrong.** pixi ships `hydromt_wflow 1.0.2`, which emits Wflow.jl **1.x** TOML. The Julia env (`Manifest.toml`) must track a matching Wflow.jl 1.x — not 0.8.1. |
-
-If the Wflow TOML/version mismatch resurfaces under the 1.x stack, that is a new
-issue to diagnose against `hydromt_wflow 1.0.2` / Wflow.jl 1.x — the 0.8.1 note
-above will not help.
 
 ## Local data staging (P-drive bypass)
 

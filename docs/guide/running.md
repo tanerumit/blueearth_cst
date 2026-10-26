@@ -158,10 +158,6 @@ Replace `<source>` with its configured ID, for example `plot_climate_diagnostics
 | WF1 evaluation | `build_model` | `plot_model_evaluation` |
 | WF2 projections | `analyze_projections` | `plot_climate_projections` |
 
-Rule 0.05 was renamed from `compare_climate_diagnostics` to `plot_climate_comparison`.
-Update saved `--target` commands; log and benchmark parts use the new name. Output data and figure
-paths are unchanged. Historical log parts are retained under their original names.
-
 Retain the diagnostic tables/map fields, projection-analysis tables, forcing and spatial inputs.
 WF1 retains `<model>/run_default/output.csv` by default, so evaluation and table exports can reuse
 the full-precision native responses. Older projects where this file was deleted require one historical
@@ -274,9 +270,7 @@ their checks, avoiding Julia startup for layout reconstruction. Indicator sets s
 environment observations within each planning or publication phase; execution still checks independently.
 
 WF4 retains an experiment's original simulation identity and provenance when only execution-diagnostic
-code changes. Existing experiments also accept the audited configuration-archive lifecycle upgrade;
-compatibility is restricted to the exact reviewed code versions and does not exempt future launcher edits.
-Scientific input or simulation-code changes still require a new experiment. A refusal
+code changes. Scientific input or simulation-code changes require a new experiment. A refusal
 before workflow execution skips indicator publication; partial job failures still allow completed
 indicator sets to publish independently.
 
@@ -379,8 +373,8 @@ modes such as `--unlock`. Use `--new-experiment` instead when previous experimen
 ## Select, resume or create an experiment
 
 With no `experiment_name`, the first run reserves `stress_test_01`. A plain rerun
-selects the highest allocated number, whether complete or interrupted. Compatible
-unfinished simulations continue there; intact completed outputs are reused.
+selects the highest allocated number, whether complete or interrupted. Unfinished simulations
+continue there if their scientific inputs still match; intact completed outputs are reused.
 
 For another experiment, pass the flag to either execution runner:
 
@@ -391,8 +385,7 @@ python scripts/simulate_system.py --config <config> --new-experiment --target al
 
 Set `experiment_name: drought` to use the `drought_01`, `drought_02` family.
 An exact name such as `drought_02` pins that identity and cannot combine with
-`--new-experiment`. Existing owned dated or unnumbered names remain explicit
-legacy selections. The flag creates an experiment; it does not force regeneration
+`--new-experiment`. The flag creates an experiment; it does not force regeneration
 of an unchanged ready scenario collection.
 
 If scientific inputs changed and the flag was omitted, the runner refuses before
@@ -411,7 +404,7 @@ stop while writing a native CSV or restoring a batch may leave partial outputs
 that need diagnosis; reservation recovery does not repair those files.
 
 To skip unperturbed realizations in WF4, set `include_unperturbed: false` in its
-`simulate_system` configuration file. The default is `true`. WF4 then prepares
+`project_config_simulate_system.yml` simulation file. The default is `true`. WF4 then prepares
 forcing and simulates only perturbed members; WF3 keeps the complete collection.
 Existing run IDs stay unchanged. Changing this switch requires `--new-experiment`.
 Indicators are calculated only for simulated members and their design-point groups.
@@ -421,29 +414,43 @@ Indicators-only runs always use the retained simulation's members.
 
 ## Calculate different indicators from existing simulations
 
-An experiment is tied to its scenario collection, model, and simulation
-settings. Use `--new-experiment` for changed simulation inputs.
+You can calculate different indicators from completed simulations without rerunning the model.
+The selected experiment must have a completed `_engine/simulation.json` record, even for a dry run.
 
-To calculate different indicators from completed simulations, set
-`operations: [indicators]` in the simulation settings file, keep the existing
-`experiment_name`, and list the sets to publish in `indicator_sets`:
+Open your case's simulation settings file: `project_config_simulate_system.yml` in the starter.
+If your case uses another filename, find it under `workflows.simulate_system.config_path` in
+`project_config.yml`. The rapid example uses `project_config_rapid_simulate_system.yml`.
+
+1. Keep the existing `experiment_name`.
+2. Set `operations: [indicators]`.
+3. In `indicator_sets`, list the sets you want to calculate.
+
+For example, if your completed experiment is `stress_test_01`, the relevant settings are:
+
+```yaml
+# project_config_simulate_system.yml
+experiment_name: stress_test_01
+operations: [indicators]
+indicator_sets: [default]
+```
+
+Then run:
 
 ```bash
 python scripts/simulate_system.py --config <config> --cores 3
 ```
 
-The selected experiment must have a completed `_engine/simulation.json` record.
-This prerequisite also applies to dry runs. For a fresh experiment, use
-`operations: [simulations, indicators]` to run the model before calculating indicators;
-enabling the other workflows does not override an indicators-only selection.
+The runner reads the retained model responses and writes each selected set to its own
+`results/indicator_sets/<set-id>/` folder.
+You do not need `--target`; the runner infers it.
+You can also use the all-workflow runner with the other four workflows disabled.
+See [Reading the outputs](outputs.md) for the result files.
 
-This reads the retained model responses and publishes each selected set to its
-own `results/indicator_sets/<set-id>/` folder without rerunning the model. The
-all-workflow runner does the same when the other four workflows are disabled.
-No `--target` is needed; the runner infers it. The legacy `operation:
-indicators-only` setting still works for one release with `--target
-simulations_and_indicators`. See [Reading the outputs](outputs.md) for the
-result files.
+An experiment is tied to its scenario collection, model, and simulation settings.
+Use `--new-experiment` when those simulation inputs change.
+For a fresh experiment, use `operations: [simulations, indicators]` to run the model before
+calculating indicators.
+Enabling other workflows does not change `operations: [indicators]` into a simulation request.
 
 ## Next
 

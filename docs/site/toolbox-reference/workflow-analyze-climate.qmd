@@ -120,8 +120,6 @@ the diagnostic agreement summary; readiness does not establish scientific suitab
 ```
 
 WF0 exclusively owns these source diagnostics. WF1 does not produce source figures.
-The former `figures/` and nested `diagnostics/` layouts are no longer targeted. Existing files are
-left in place; regenerate WF0 to populate the canonical layout before retiring old outputs.
 
 Source tables also retain `daily_basin.csv` and `annual_climatology.nc`. Comparison
 tables add `agreement.csv` and `agreement.md`. Maps use native grid cells with basin,
@@ -147,10 +145,6 @@ For the ERA5–CHIRPS configuration, the standard inventory is 55 PNGs: 21 ERA5,
 17 CHIRPS and 17 comparison figures. Captioned copies double that count when enabled.
 Precipitation-only sources do not acquire borrowed temperature identities; paired
 precipitation–temperature figures identify their temperature carrier explicitly.
-
-These figures replace WF0's former monthly box plots, plain annual time series and
-comparison lines. WF1 retains its existing plot producer and paths. Old products in
-existing run roots are not automatically deleted.
 
 ## Interpretation
 

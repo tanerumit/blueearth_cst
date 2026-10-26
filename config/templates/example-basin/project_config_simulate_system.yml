@@ -81,10 +81,6 @@ indicator_sets:
 # Choose how missing indicator inputs are handled. Options: strict | partial.
 #indicator_evaluation: strict
 
-# The scalar `operation:` and `indicators:` keys are the legacy interface,
-# accepted for one feature release; they cannot be mixed with the keys above.
-
-
 # -----------------------------------------------------------------------------
 #  COMPUTE
 # -----------------------------------------------------------------------------

@@ -480,3 +480,66 @@ after allocation are coordinator-only and do not invalidate the common implement
 Board locator is P4A; P4B is the named parallel contributor in the same task note, so its CLI untracked
 branch row is explained rather than creating a duplicate task. Two older missing task branches are
 unrelated baseline rows. S3 remains owned by t2610261447 and was not controlled or edited.
+
+## P4 coordinator review and bounded repair — 2026-10-26
+
+Both workers returned uncommitted packets from `a4d79ea6`: P4A has 31 paths, ten guide chapters and
+34 inventory dispositions; P4B has 34 paths, 16 manual chapters and 17 inventory dispositions.
+The four scientific sources remain deferred. P4A reports 44 scaffolder/notebook tests passing and
+scoped Ruff checks; P4B reports 101 contract tests passing, with 13 documentation tests passing and
+one change-induced pilot extraction failure. The failure is not waived as a baseline issue.
+
+Coordinator reviewed scope, source transfers, generated-case prose/test changes, reader journeys,
+configuration/retained-table contracts and appendix declarations. Two bounded corrections were assigned
+to the existing medium-effort workers: remove editorial instructions from reader prose and distinguish
+omitted whole calculations from unavailable location rows in partial mode. P4B received an explicit
+scope extension for `docs/publishing-pilot/manifest.json` (and its test only if needed), preserving the
+approved V9 configuration excerpt at its canonical guide home. Combined source-link/anchor checks and
+affected pilot checks are required before acceptance. This repair does not commission P5 assembly.
+
+Live ownership was rediscovered before dispatch: technical-writer-p1 at w8:p1 and api-documenter-p4b
+at w9:p1, both on their assigned branches. No role change, permission change or s3 action occurred.
+Origin was fetched: main is 29 ahead, zero behind before P4 integration. Unrelated primary changes
+remain the t2610261447 board row, task note and task directory.
+
+### Acceptance and landing
+
+P4A's original interval was 21m11s; its correction checkpoints span 2m00s (actual correction turn
+154.358s). P4B's original recorded interval was 23m58s (actual turn 1481.729s); repair checkpoints span
+5m21s (actual turn 433.893s). These are wall-clock observations, not active-compute measurements.
+Tokens/cost and aggregate tool/user wait remain unavailable. Both retained returns record full manual
+roles, requested/UI-observed GPT-6.1-Sol medium, applied skills and references. P4B additionally loaded
+Python discipline for the one-line test-fixture input repair. No native-role activation is claimed.
+
+Accepted corrections preserve V9 Configuration verbatim at `docs/guide/indicators.md`; pilot extraction
+now uses that canonical source. P4B's existing fixture also copies the real technical request chapter.
+Combined verification covers 77 documentation sources and 405 relative links/fragments with zero issues;
+all twelve TM and two P4A pending destinations resolve. Four scientific sources and notebook nonprose
+remain unchanged. The six-source offline appendix is declared, not yet assembled.
+
+P4A committed `fb06979e`, landed `fdf36b7b`. P4B committed `f28a0d21`, combined candidate `b3a52dfd`,
+landed `1e0cbd71`. Coordinator removed two trailing empty lines from the new execution chapter when
+staged whitespace checking detected them; this changes no link, excerpt or executable contract.
+Reused 44 scaffolder/notebook and 101 contract passes, scoped Ruff and source/anchor evidence. The
+isolated combined pilot check passed 14 tests; guarded P4B landing checked the actual integrated root
+with `session_runtime.py --runtime <main> -- python -m pytest tests/test_docs_pilot.py
+tests/test_site_guides.py -q`: 14 passed in 9.38s. This checks the real fixture consumer after integration,
+not another whole-publication gate. Original change-induced failure is resolved.
+
+Guarded landing parked s1/s2 and deleted `docs/t2610211349-user-guide` and
+`docs/t2610211349-technical-manual`; ancestry and committed-tree equivalence checked. Primary unrelated
+t2610261447 changes remain untouched. S3 was not dispatched, modified or landed. No push occurred.
+Retained handbacks: `p4a-user-guide-return.md`, `p4b-technical-manual-return.md`.
+Retain each lane's `.tmp/tasks/t2610211349/` evidence through P5/P6 acceptance: P3 review links still use
+s2 artifacts, and P4 source snapshots/check logs support upcoming assembly. Reassess cleanup after
+publication acceptance; do not delete linked review evidence merely because the lanes are parked.
+
+P4 source migration is accepted. Full HTML/PDF assembly, offline inclusion, browser/render verification
+and fresh reader review remain uncommissioned P5/P6. Scientific writing remains deferred P4C.
+No new user-facing scientific decision was inferred or implemented. No skill amendment was needed.
+
+Retained return SHA-256: P4A `e592e91fb800f7ccd4593bd66b9ff38a54826bae626b42e55885c76ba2fe130f`;
+P4B `4bc94e7219128ff0b1193c72f98a310ade2d74abfbb98eaa7d5a0c6db03f2070`.
+Board render succeeded with normal lock permissions and produced no task-owned table delta.
+Repository-wide board check still reports eight pre-existing structural errors outside this task and
+20 warnings, including this task's long-note warning. No unrelated board repairs were attempted.

@@ -2,7 +2,7 @@
 title: Improving repo-wide documentation and instructions
 type: todo-item
 status: active
-branch: docs/t2610211349-user-guide
+branch:
 effort: 2
 area: docs
 queue:
@@ -18,10 +18,15 @@ updated: 2026-10-26
 
 ## Progress
 
-Next: Execute P4A in s1 and P4B in s2 under the commissioned content assignments; cst-main reviews returns.
+Next: Obtain commission for P5 HTML/PDF assembly and P6 fresh reader review of the user guide and manual.
 
-V9 accepted and landed at `8963f661`; P4A/P4B commissioned in
-[content assignments](t2610211349/p4-content-assignments.md). Scientific-approach writing remains deferred.
+V9 landed at `8963f661`; P4A/P4B reviewed and landed at `1e0cbd71`. Ten guide chapters and 16 manual
+chapters are integrated. The 405 source-link/fragment checks, 44 scaffold/notebook tests, 101 contract
+tests and 14 integrated pilot/documentation tests pass. Publication assembly remains outstanding.
+See the [P4A return](t2610211349/p4a-user-guide-return.md),
+[P4B return](t2610211349/p4b-technical-manual-return.md) and execution log for scope and measurements.
+Both source branches were deleted after guarded landing; s1/s2 are parked. S3 remains unrelated.
+Scientific-approach writing remains deferred; P5/P6 have not been commissioned.
 
 Latest plain-language revision: `865803b2` in s2. Simplifies choices and removes development-only
 compatibility/migration guidance from maintained documents. See the

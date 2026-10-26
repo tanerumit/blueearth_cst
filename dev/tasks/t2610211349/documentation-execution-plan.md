@@ -1,10 +1,13 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: V9 accepted and landed; P4A/P4B commissioned.
+Date: 2026-10-26. Task: t2610211349. Status: V9 and P4A/P4B accepted and landed.
 
 Current authority: owner approved V9 and instructed cst-main to integrate s2 and commission P4A/P4B.
 P3 landed at `8963f661`. [P4 assignments](p4-content-assignments.md) fix disjoint s1/s2 ownership and
 supersede earlier holds on those packets. P4C remains deferred; P5/P6 are subsequent, uncommissioned stages.
+P4A/P4B landed at `1e0cbd71`; returns are retained in `p4a-user-guide-return.md` and
+`p4b-technical-manual-return.md`. Source links and affected consumers pass. Full publication assembly,
+offline inclusion and rendered-route verification remain P5; fresh reader review remains P6.
 V9's direct wording, concrete filenames/examples and PDF alignment are the accepted editorial baseline.
 Do not restore obsolete-interface or development-migration narratives from the historical map below.
 

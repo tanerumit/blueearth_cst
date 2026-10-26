@@ -190,26 +190,26 @@ commit/landing policy. Pushing, publishing and task closure follow existing auth
 ## Scheduling and ownership
 
 Owner-selected topology: coordinate from `cst-main` (the primary checkout on `main`) and execute work
-through `session-1`, `session-2` and `session-3`, referred to as s1, s2 and s3. This selects the execution
-layout; it does not start workers or implement the proposed documentation changes.
+through `session-1` and `session-2`, referred to as s1 and s2. The owner's 2026-10-26 follow-up reserves
+session-3 for unrelated work: this task must not claim its worktree or pane. This selects the execution
+layout; it does not authorize stages beyond P1–P2.
 
 | Location | Responsibility | Proposed stage assignments |
 |---|---|---|
 | cst-main / main | Coordinator, task evidence, acceptance, metrics and integration | All stage handoffs |
 | s1 / session-1 | Editorial lead and documentation assembly | P1, P4A, P5 |
-| s2 / session-2 | Independent critique, interface reference and fresh final review | P2, P4B, P6 |
-| s3 / session-3 | Publication engineering, then scientific writing | P3, P4C |
+| s2 / session-2 | Critique, publishing, interface/scientific packets and fresh final review | P2, P3, P4B, P4C, P6 |
 
 These are reusable execution slots, not permanent role identities. Reuse a worker only for related work;
 role changes require a fresh agent context. In s2, P2 and P6 are independent fresh reviewers, separate from
-the P4B author. In s3, finish engineering and release the slot before starting the scientific writer.
+the P4B author. In s2, finish each packet and release its worker ownership before changing roles.
 Retain the medium-effort default and exceptional-high policy for every location.
 
 Dependencies: P1 → P2 → P3 → {P4A, P4B, P4C} → P5 → P6.
 Early stages are sequential because they settle boundaries and publication behavior. After P3 acceptance,
 parallel work across the lanes is owner-authorized when exact write ownership is disjoint and the shared
-base is current. P4A/B/C are the main parallel opportunity; apply the same rule to other independent packets.
-Use at most three workers plus the coordinator; leave lanes idle when there is no independent ready packet.
+base is current. P4A in s1 may overlap P4B or P4C in s2; P4B and P4C run sequentially.
+Use at most two workers plus the coordinator; leave lanes idle when there is no independent ready packet.
 Shared navigation, bibliography and style assets have one assigned owner; other workers submit suggestions.
 Keep the task evidence and execution observations coordinator-owned in main throughout.
 

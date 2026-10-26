@@ -68,7 +68,8 @@ sources for derived publications. Recommendations remain proposals; no restructu
 Saved the proposed stages, role/model allocations, ownership, handoffs and acceptance checks.
 Added prospective efficiency/effectiveness tracking, including actual role and skill use, waits, usage,
 checks and rework. No workers have been dispatched; implementation remains unstarted.
-Owner-selected topology: cst-main coordinates; s1, s2 and s3 execute bounded packets at medium effort.
+Original topology: cst-main coordinates; s1, s2 and s3 were proposed for medium-effort packets.
+The later owner follow-up below supersedes this allocation and excludes s3.
 Parallel lane execution is authorized where independent. cst-main alone commits and merges/lands;
 user-facing and human decisions return to the owner. The plan records the coordinator handoff.
 
@@ -87,6 +88,9 @@ current runtime permissions; read-only instructions apply without a claim of enf
 P2 completed with three major findings and one minor clarification. The editorial lead accepted all four
 and appended their dispositions to the same map. Source-link compatibility, generated case instructions
 and the offline response-surface endpoint remain explicit owner choices. P3 and migration are not started.
+Owner follow-up restricts this task to cst-main, s1 and s2; session-3 stays available for unrelated work.
+The artifact-first dispatch improvement is separately authorized infrastructure maintenance, not approval
+of the pending publication or migration choices.
 
 ## Refs
 

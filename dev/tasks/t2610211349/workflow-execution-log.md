@@ -40,7 +40,7 @@ Copy this section for a real attempt; do not prefill planned attempts as execute
 - Requested role / model / effort (medium default):
 - Exceptional high effort: specific reason, bounded scope, outcome and return to medium, or not used:
 - Observed role / model / effort; evidence or unknown:
-- Coordinator: cst-main; assigned execution lane s1/s2/s3:
+- Coordinator: cst-main; assigned execution lane s1/s2 (s3 excluded by owner):
 - Context mode and isolation/worktree; runtime identity verified:
 - Skills requested:
 - Skills actually used; evidence level and actions:
@@ -263,3 +263,12 @@ Use observations to improve later allocations, not to construct unsupported rank
   with exact owned output path and coordinator retention. Evidence: the 55-row return required a second
   capture request and 9m 15s to save. This could reduce repeat generation in large maps/reviews; no shared
   skill change or fresh-session adoption is claimed here.
+
+## Owner follow-up — 2026-10-26
+
+The owner approved applying the artifact-first improvement separately. Herdr resolves to a vendored
+upstream body; the intended implementation is a narrow override in owned agent-routing guidance.
+Infrastructure ownership and integration are coordinated separately; no vendored body is to be edited.
+The owner also reserved CST session-3 for unrelated work. Remaining proposed packets use only cst-main,
+s1 and s2; P3/P4B/P4C/P6 share s2 sequentially, with fresh contexts at role changes. No s3 pane or worktree
+was claimed, stopped, cleared or modified by this task. P3/migration decisions remain pending.

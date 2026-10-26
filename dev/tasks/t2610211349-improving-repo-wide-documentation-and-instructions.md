@@ -17,7 +17,7 @@ updated: 2026-10-26
 
 ## Progress
 
-Next: Prepare the 55-file purpose-and-boundary matrix and proposed central-document chapter outlines.
+Next: Agree the execution scope, then commission P1: the 55-file boundary matrix and chapter outlines.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
@@ -61,8 +61,16 @@ This pass does not assess content accuracy or decide consolidation.
 Retained the high-level assessment: central reader journeys, local instructions, and shared Markdown
 sources for derived publications. Recommendations remain proposals; no restructuring was implemented.
 
+## Execution planning (2026-10-26)
+
+Saved the proposed stages, role/model allocations, ownership, handoffs and acceptance checks.
+Added prospective efficiency/effectiveness tracking, including actual role and skill use, waits, usage,
+checks and rework. No workers have been dispatched; implementation remains unstarted.
+
 ## Refs
 
+- [Execution plan](t2610211349/documentation-execution-plan.md).
+- [Workflow execution observations](t2610211349/workflow-execution-log.md).
 - [Documentation landscape assessment](t2610211349/documentation-landscape-assessment-2026-10-26.md).
 - [Documentation inventory by audience](t2610211349/documentation-inventory-2026-10-26.md).
 - [Documentation landscape review](t2610211349/documentation-review-2026-10-21.md).

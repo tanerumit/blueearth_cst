@@ -1,7 +1,7 @@
 # Repository documentation inventory by audience
 
 Date: 2026-10-26. Task: t2610211349. Revised scope: main checkout before this update.
-Source commit: `ec1409c9d30bd6f4e0091ccce9eceb74f9048d43`.
+Source commit: `fb4366c3bfd709d56da9d77a2a0b7b1675b3a8e3`.
 
 ## Scope and method
 
@@ -10,14 +10,15 @@ Audience assignments are provisional classifications from location, titles and c
 they do not certify the accuracy, currency, intended authority or uniqueness of every document.
 No documentation consolidation, deletion or scientific correctness review has been performed.
 
-The register contains **122 tracked files**, each listed exactly once under a primary audience group.
+The register contains **64 tracked files**, each listed exactly once under a primary audience group.
 It includes Markdown, Quarto, notebooks, HTML documents/templates, and LICENSE.
 The selector also checked R Markdown, reStructuredText, PDF, Word, bibliography, AsciiDoc, TeX and Typst.
 No additional files in those latter formats were found. Binary figures and data are not document entries.
-Excluded from review: `dev/tasks/`, `dev/reference/`, `dev/references/` and `dev/records/`.
+Excluded from review: `dev/tasks/`, `dev/reference/`, `dev/references/`, `dev/records/`,
+`docs/references/` and `dev/LOG.md` (the repository LOG.md).
 `dev/reference/` is the existing directory corresponding to the requested `dev/references/`.
 This inventory remains saved under the task directory, which is excluded from its own review scope.
-Other dev documents, including dev/README.md, dev/scripts, dev/templates and board indexes, remain in scope.
+Other dev documents, including dev/README.md, dev/scripts, dev/templates and dev/TODO.md, remain in scope.
 
 Enumeration used `git ls-files` in the canonical main checkout, including hidden tracked directories.
 File headings/frontmatter were sampled for labels; collection indexes and site configuration were read.
@@ -36,9 +37,8 @@ All register links are relative to this task directory and resolve to files in t
 | Configuration users and maintainers | 9 |
 | Developer and maintainer guidance | 9 |
 | Agent instructions | 2 |
-| Scientific and upstream reference library | 57 |
 | Validation evidence | 2 |
-| Task coordination and handoffs | 3 |
+| Task coordination and handoffs | 2 |
 | Legal and reuse | 1 |
 
 ## Collection roles and review boundaries
@@ -48,10 +48,8 @@ All register links are relative to this task directory and resolve to files in t
 - Copyable examples: config/templates; runtime settings: config/defaults. Their READMEs are distinct entries.
 - Developer entry points and tools: dev/README.md and dev/scripts; reusable forms: dev/templates.
 - Agent authority: AGENTS.md; CLAUDE.md imports it. Shared role/skill libraries have external owners.
-- Upstream library: docs/references includes original pages, numbered compilations and merged copies.
-  These are retained representations, not yet findings of unintended duplication.
 - In-scope evidence: baseline provenance and test-oracle notes. Retained dev/records are excluded.
-- Work coordination: board/ledger documents and DEVLOG remain listed; individual task records are excluded.
+- Work coordination: dev/TODO.md and DEVLOG.md remain listed; task records and dev/LOG.md are excluded.
 - Legal text: LICENSE is included for completeness, outside the editorial consolidation review.
 
 ## Documentation surfaces beyond standalone documents
@@ -92,7 +90,7 @@ For each current document, record its primary reader, reader question, authorita
 outputs, overlaps and required links. Compare overlapping claims before deciding whether to consolidate,
 shorten or cross-link. Preserve purposeful differences between tutorials, procedures, explanations,
 references and executable contracts. Apply this review only to the in-scope files and surfaces above.
-Start with the user/developer/agent collections; upstream references remain in scope.
+Start with the user/developer/agent collections; docs/references is excluded from this review.
 
 ## Complete file register
 
@@ -244,125 +242,6 @@ Primary: coding agents. Secondary: maintainers of repository instructions.
 - [CLAUDE.md](../../../CLAUDE.md)
   Label: CLAUDE.md
 
-### Scientific and upstream reference library (57)
-
-Primary: scientific and technical developers. Secondary: coding agents and expert users.
-
-- [docs/references/cst-toolbox-technical-note-2025.md](../../../docs/references/cst-toolbox-technical-note-2025.md)
-  Label: Preface
-- [docs/references/hydromt-architecture.md](../../../docs/references/hydromt-architecture.md)
-  Label: HydroMT — Architecture and conventions
-- [docs/references/hydromt-user-guide/_merged/data-catalog.md](../../../docs/references/hydromt-user-guide/_merged/data-catalog.md)
-  Label: HydroMT user guide — Data Catalog
-- [docs/references/hydromt-user-guide/_merged/migration-guide.md](../../../docs/references/hydromt-user-guide/_merged/migration-guide.md)
-  Label: HydroMT user guide — Migration guide
-- [docs/references/hydromt-user-guide/_merged/models.md](../../../docs/references/hydromt-user-guide/_merged/models.md)
-  Label: HydroMT user guide — Working with models
-- [docs/references/hydromt-user-guide/_merged/overview.md](../../../docs/references/hydromt-user-guide/_merged/overview.md)
-  Label: HydroMT user guide — Overview
-- [docs/references/hydromt-user-guide/_merged/reference.md](../../../docs/references/hydromt-user-guide/_merged/reference.md)
-  Label: HydroMT user guide — Terminology and FAQ
-- [docs/references/hydromt-user-guide/_merged/supporting-functions.md](../../../docs/references/hydromt-user-guide/_merged/supporting-functions.md)
-  Label: HydroMT user guide — Supporting functionalities
-- [docs/references/hydromt-user-guide/00-index.md](../../../docs/references/hydromt-user-guide/00-index.md)
-  Label: HydroMT user guide
-- [docs/references/hydromt-user-guide/01-intro.md](../../../docs/references/hydromt-user-guide/01-intro.md)
-  Label: HydroMT user guide — Introduction
-- [docs/references/hydromt-user-guide/02-overview.md](../../../docs/references/hydromt-user-guide/02-overview.md)
-  Label: HydroMT user guide — Overview
-- [docs/references/hydromt-user-guide/03-models.md](../../../docs/references/hydromt-user-guide/03-models.md)
-  Label: HydroMT user guide — Working with models
-- [docs/references/hydromt-user-guide/04-data-catalog.md](../../../docs/references/hydromt-user-guide/04-data-catalog.md)
-  Label: HydroMT user guide — Data Catalog
-- [docs/references/hydromt-user-guide/05-supporting-functions.md](../../../docs/references/hydromt-user-guide/05-supporting-functions.md)
-  Label: HydroMT user guide — Supporting functionalities
-- [docs/references/hydromt-user-guide/06-migration-guide.md](../../../docs/references/hydromt-user-guide/06-migration-guide.md)
-  Label: HydroMT user guide — Migration guide
-- [docs/references/hydromt-user-guide/07-terminology.md](../../../docs/references/hydromt-user-guide/07-terminology.md)
-  Label: HydroMT user guide — Terminology
-- [docs/references/hydromt-user-guide/08-faq.md](../../../docs/references/hydromt-user-guide/08-faq.md)
-  Label: HydroMT user guide — Frequently asked questions
-- [docs/references/hydromt-user-guide/data_catalog/data_cloud_storage.md](../../../docs/references/hydromt-user-guide/data_catalog/data_cloud_storage.md)
-  Label: data_cloud_storage
-- [docs/references/hydromt-user-guide/data_catalog/data_conventions.md](../../../docs/references/hydromt-user-guide/data_catalog/data_conventions.md)
-  Label: data_conventions
-- [docs/references/hydromt-user-guide/data_catalog/data_existing_cat.md](../../../docs/references/hydromt-user-guide/data_catalog/data_existing_cat.md)
-  Label: data_existing_cat
-- [docs/references/hydromt-user-guide/data_catalog/data_overview.md](../../../docs/references/hydromt-user-guide/data_catalog/data_overview.md)
-  Label: data_overview
-- [docs/references/hydromt-user-guide/data_catalog/data_prepare_cat.md](../../../docs/references/hydromt-user-guide/data_catalog/data_prepare_cat.md)
-  Label: data_prepare_cat
-- [docs/references/hydromt-user-guide/data_catalog/data_types.md](../../../docs/references/hydromt-user-guide/data_catalog/data_types.md)
-  Label: data_types
-- [docs/references/hydromt-user-guide/faq.md](../../../docs/references/hydromt-user-guide/faq.md)
-  Label: faq
-- [docs/references/hydromt-user-guide/intro.md](../../../docs/references/hydromt-user-guide/intro.md)
-  Label: intro
-- [docs/references/hydromt-user-guide/migration_guide/data_catalog.md](../../../docs/references/hydromt-user-guide/migration_guide/data_catalog.md)
-  Label: data_catalog
-- [docs/references/hydromt-user-guide/migration_guide/index.md](../../../docs/references/hydromt-user-guide/migration_guide/index.md)
-  Label: index
-- [docs/references/hydromt-user-guide/migration_guide/model_workflow.md](../../../docs/references/hydromt-user-guide/migration_guide/model_workflow.md)
-  Label: model_workflow
-- [docs/references/hydromt-user-guide/migration_guide/python_updates.md](../../../docs/references/hydromt-user-guide/migration_guide/python_updates.md)
-  Label: python_updates
-- [docs/references/hydromt-user-guide/models/model_build.md](../../../docs/references/hydromt-user-guide/models/model_build.md)
-  Label: model_build
-- [docs/references/hydromt-user-guide/models/model_components.md](../../../docs/references/hydromt-user-guide/models/model_components.md)
-  Label: model_components
-- [docs/references/hydromt-user-guide/models/model_overview.md](../../../docs/references/hydromt-user-guide/models/model_overview.md)
-  Label: model_overview
-- [docs/references/hydromt-user-guide/models/model_processes.md](../../../docs/references/hydromt-user-guide/models/model_processes.md)
-  Label: model_processes
-- [docs/references/hydromt-user-guide/models/model_region.md](../../../docs/references/hydromt-user-guide/models/model_region.md)
-  Label: model_region
-- [docs/references/hydromt-user-guide/models/model_update.md](../../../docs/references/hydromt-user-guide/models/model_update.md)
-  Label: model_update
-- [docs/references/hydromt-user-guide/models/model_workflow.md](../../../docs/references/hydromt-user-guide/models/model_workflow.md)
-  Label: model_workflow
-- [docs/references/hydromt-user-guide/overview/hydromt_cli.md](../../../docs/references/hydromt-user-guide/overview/hydromt_cli.md)
-  Label: hydromt_cli
-- [docs/references/hydromt-user-guide/overview/hydromt_intro.md](../../../docs/references/hydromt-user-guide/overview/hydromt_intro.md)
-  Label: hydromt_intro
-- [docs/references/hydromt-user-guide/overview/hydromt_python.md](../../../docs/references/hydromt-user-guide/overview/hydromt_python.md)
-  Label: hydromt_python
-- [docs/references/hydromt-user-guide/overview/index.md](../../../docs/references/hydromt-user-guide/overview/index.md)
-  Label: index
-- [docs/references/hydromt-user-guide/supporting_functions/methods_main.md](../../../docs/references/hydromt-user-guide/supporting_functions/methods_main.md)
-  Label: methods_main
-- [docs/references/hydromt-user-guide/terminology.md](../../../docs/references/hydromt-user-guide/terminology.md)
-  Label: terminology
-- [docs/references/hydromt-wflow/api.md](../../../docs/references/hydromt-wflow/api.md)
-  Label: HydroMT-Wflow API reference
-- [docs/references/hydromt-wflow/getting-started.md](../../../docs/references/hydromt-wflow/getting-started.md)
-  Label: HydroMT-Wflow getting started
-- [docs/references/hydromt-wflow/user-guide.md](../../../docs/references/hydromt-wflow/user-guide.md)
-  Label: HydroMT-Wflow user guide
-- [docs/references/README.md](../../../docs/references/README.md)
-  Label: Offline reference documents
-- [docs/references/wflow-user-guide/00-index.md](../../../docs/references/wflow-user-guide/00-index.md)
-  Label: Wflow User Guide
-- [docs/references/wflow-user-guide/01-overview.md](../../../docs/references/wflow-user-guide/01-overview.md)
-  Label: Wflow documentation — overview
-- [docs/references/wflow-user-guide/02-required-files.md](../../../docs/references/wflow-user-guide/02-required-files.md)
-  Label: This is a TOML configuration file for Wflow.
-- [docs/references/wflow-user-guide/03-toml-file.md](../../../docs/references/wflow-user-guide/03-toml-file.md)
-  Label: Use \"forcing-year-*.nc\" if forcing files are split in time
-- [docs/references/wflow-user-guide/04-warm-states.md](../../../docs/references/wflow-user-guide/04-warm-states.md)
-  Label: Wflow documentation — warm states
-- [docs/references/wflow-user-guide/05-model-config.md](../../../docs/references/wflow-user-guide/05-model-config.md)
-  Label: specific for rating curve type 2 and 3 (weir flow)
-- [docs/references/wflow-user-guide/06-multi-threading.md](../../../docs/references/wflow-user-guide/06-multi-threading.md)
-  Label: Wflow documentation — multi threading
-- [docs/references/wflow-user-guide/07-bmi.md](../../../docs/references/wflow-user-guide/07-bmi.md)
-  Label: Wflow documentation — bmi
-- [docs/references/wflow-user-guide/08-fews.md](../../../docs/references/wflow-user-guide/08-fews.md)
-  Label: Wflow documentation — fews
-- [docs/references/wflow-user-guide/09-zmq-server.md](../../../docs/references/wflow-user-guide/09-zmq-server.md)
-  Label: Wflow documentation — zmq server
-- [docs/references/wflow-user-guide/10-faq.md](../../../docs/references/wflow-user-guide/10-faq.md)
-  Label: Wflow documentation — faq
-
 ### Validation evidence (2)
 
 Primary: validators and maintainers. Secondary: scientific reviewers.
@@ -372,12 +251,10 @@ Primary: validators and maintainers. Secondary: scientific reviewers.
 - [tests/data/eflow-erfa-r-oracle.md](../../../tests/data/eflow-erfa-r-oracle.md)
   Label: ERFA numerical reference
 
-### Task coordination and handoffs (3)
+### Task coordination and handoffs (2)
 
 Primary: task owners, contributors and agents. Secondary: project maintainers.
 
-- [dev/LOG.md](../../../dev/LOG.md)
-  Label: LOG
 - [dev/TODO.md](../../../dev/TODO.md)
   Label: TODO
 - [DEVLOG.md](../../../DEVLOG.md)
@@ -392,9 +269,9 @@ Primary: users and redistributors. Secondary: contributors.
 
 ## Verification and limitations
 
-- Enumerated 122 unique source paths and verified that every path exists.
+- Enumerated 64 unique source paths and verified that every path exists.
 - Register coverage was checked against the selector; every selected file occurs once.
 - Relative links were checked against the main checkout; no site build or workflow execution was needed.
 - Grouping is an inventory aid, not a completed purpose or authority audit.
-- Contents of every notebook cell and upstream page were not read in full.
+- Contents of every notebook cell were not read in full.
 - This supersedes the earlier structural inventory for coverage, while preserving that dated record.

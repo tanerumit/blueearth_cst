@@ -1,7 +1,7 @@
 ---
 title: Improving repo-wide documentation and instructions
 type: todo-item
-status: active
+status: blocked
 effort: 2
 area: docs
 queue:
@@ -17,12 +17,14 @@ updated: 2026-10-26
 
 ## Progress
 
-Next: Review P2's independent critique from s2 and have the editorial lead reconcile the structure.
+*Blocked — Awaiting owner decisions on reviewed structure, generated case instructions, source compatibility and publication endpoint; revisit on owner response before P3 or migration.*
+
+Next: Owner reviews the reconciled map and decides scope, compatibility and the first publication endpoint.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
 - [x] Inventory in-scope documentation by audience — 55 files; coverage and relative links checked.
-- [ ] Review document purposes and boundaries; identify unintended repetition and redundancy.
+- [x] Review purposes and boundaries — 55-source map, independent critique and reconciled outlines retained.
 - [ ] Audit selected guidance against current implementation and authoritative sources.
 - [ ] Revise documentation and instructions, resolving stale references and duplication.
 - [ ] Verify affected links, examples, and rendered pages as appropriate.
@@ -82,10 +84,14 @@ Execution measurements and permission-boundary status belong in the linked obser
 P1's complete 55-file map and four collection outlines are retained and accepted for independent critique.
 P2 was dispatched to `critical-thinker-p2` in s2 at medium effort. Owner expressly allowed review under
 current runtime permissions; read-only instructions apply without a claim of enforced isolation.
+P2 completed with three major findings and one minor clarification. The editorial lead accepted all four
+and appended their dispositions to the same map. Source-link compatibility, generated case instructions
+and the offline response-surface endpoint remain explicit owner choices. P3 and migration are not started.
 
 ## Refs
 
 - [Proposed boundary map and outlines](t2610211349/documentation-boundary-map.md).
+- [Independent boundary critique](t2610211349/documentation-boundary-critique.md).
 - [Execution plan](t2610211349/documentation-execution-plan.md).
 - [Workflow execution observations](t2610211349/workflow-execution-log.md).
 - [Documentation landscape assessment](t2610211349/documentation-landscape-assessment-2026-10-26.md).

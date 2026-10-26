@@ -3,6 +3,10 @@
 Task: t2610211349. Coordinator: cst-main. Worker: s1, technical-writer, degraded generic runtime.
 Status: proposed structural handoff for P2; owner decisions remain open. No migration has begun.
 
+Coordinator status: P1–P2 completed on 2026-10-26. The final P2 reconciliation addendum below governs
+where it refines the original proposal. All 55 original source dispositions remain; external consumers
+are listed separately. The original reviewed revision is retained in commit `6570242c`.
+
 ## Input and authority
 
 All review sources were read from `C:/Users/taner/workspace/blueearth_cst`, main at
@@ -130,7 +134,8 @@ navigation continuity is demonstrated. No row authorizes deletion of historical 
 
 Coverage: 55 unique source rows: 28 + 4 + 6 + 9 + 8. No excluded source was added as a review target.
 No whole source is proposed for unconditional deletion. The two incorporated overview pages, rows 16 and 18,
-lose independent detailed prose only after replacement navigation exists; their public addresses remain supported.
+lose independent detailed prose only after replacement navigation exists; their public addresses remain
+supported.
 
 ## Proposed chapter outlines
 
@@ -140,7 +145,8 @@ The new chapter destinations below account for split material without adding a s
 ### Quick start: one source at UG `quick-start.md`
 
 Audience: a hydrology/climate-risk practitioner with the installed toolbox and access to the example's
-external catalogs. Outcome: run the configured rapid example, locate its records and read one output correctly.
+external catalogs. Outcome: run the configured rapid example, locate its records and read one output
+correctly.
 
 1. **What you will produce**: preview the five-workflow products and one indicator-reading outcome;
    explicitly distinguish an execution example from an assessment-quality result.
@@ -157,8 +163,10 @@ external catalogs. Outcome: run the configured rapid example, locate its records
    retain reference rows and interpret units/status. Link the detailed output walkthrough.
 8. **Recover or continue**: data/Julia/weather-generator/lock routes; own-basin and deeper reference links.
 
-Do not duplicate full installation, configuration schemas, output trees, migration chronology or formula lists.
-Keep runtime estimates qualified by input/machine evidence. “Rapid” does not mean seconds or universally cheap.
+Do not duplicate full installation, configuration schemas, output trees, migration chronology or formula
+lists.
+Keep runtime estimates qualified by input/machine evidence. “Rapid” does not mean seconds or universally
+cheap.
 
 ### User guide: perform and interpret an assessment
 
@@ -176,7 +184,8 @@ Keep runtime estimates qualified by input/machine evidence. “Rapid” does not
 | `notebooks.md` | Select optional interactive learning; know prerequisites, source-only status, side effects and current verification limits. | The `.ipynb` files remain the only editable teaching source under the recommended initial policy. |
 
 The order supports first example, own basin, repeated operations and interpretation. Troubleshooting is linked
-at each likely failure, not required as linear reading. Do not fragment chapters further merely to reduce size.
+at each likely failure, not required as linear reading. Do not fragment chapters further merely to reduce
+size.
 
 ### Technical manual: implemented behavior and extension surfaces
 
@@ -231,7 +240,8 @@ This structural pass did not certify literature claims or numerical adequacy.
 | Axis/contract and excluded-owner boundary | Mark the detailed axis account unresolved; have P2 identify whether a narrow reconciliation/scope decision is needed before P4B writes it. | Current notebook and axis-module docstrings claim HM-7 defines detailed rules, but the current HM-7 section does not contain them. Treating the notebook, code or older prose as settled authority would exceed this structural assignment. |
 
 All choices above are proposals, not settled owner approvals or P3 instructions. P2 should prioritize
-offline completeness, excessive fragmentation, local-copy portability and unresolved ownership over prose polish.
+offline completeness, excessive fragmentation, local-copy portability and unresolved ownership over prose
+polish.
 
 ## Three reader journeys: structural walkthrough results
 
@@ -286,7 +296,8 @@ Deferred accuracy questions identified incidentally, not audited further:
   Model building 43 cells, Climate projections 33, Climate Stress Test 37. All three had zero output-bearing
   cells and zero non-null execution counts. No notebook was executed.
 - Read all three inventoried HTML sources, including full CSS/markup/script content, through consecutive
-  bounded reads. This is source inspection only: no browser, interaction, accessibility-conformance or print QA.
+  bounded reads. This is source inspection only: no browser, interaction, accessibility-conformance or print
+  QA.
 - Reconciled inventory links to files using PowerShell regex extraction, URI decoding, `Test-Path` and
   `git -C <main> ls-files`: 55 paths, 55 unique, zero missing/untracked.
 - Ran a bounded relative Markdown file-link scan across non-HTML inventory sources, including notebook
@@ -340,7 +351,8 @@ is a handoff condition, not claimed skill activation here. No agents were dispat
 
 - P1 first recorded UTC: **2026-10-26 13:00:18 UTC**, after the initial role/input read.
 - Structural inspection/checks complete by **2026-10-26 13:11:23 UTC**; observed interval **11m 05s**.
-  This is wall-clock turnaround to the ready structural evidence, not model compute time or accepted lead time.
+  This is wall-clock turnaround to the ready structural evidence, not model compute time or accepted lead
+  time.
 - Return-capture follow-up: scratch preflight recorded **2026-10-26 13:15:19 UTC**. File write/verification
   completion is recorded in the closing capture addendum below. Coordinator acceptance time is unknown.
 - Requested/owner-verified model and effort: **GPT-6.1-Sol medium**. An attempted `/model gpt-6-sol` command
@@ -349,7 +361,8 @@ is a handoff condition, not claimed skill activation here. No agents were dispat
 - Role: requested technical-writer; full canonical role applied manually under degraded generic runtime.
 - Input/output/cached token totals and cost: **unknown**; no attributable usage counters were exposed.
 - Explicit wait: one shell read returned a session ID after about 10 seconds and completed at the next poll;
-  no separate agent/user-decision wait was initiated. Active compute duration and measurement overhead unknown.
+  no separate agent/user-decision wait was initiated. Active compute duration and measurement overhead
+  unknown.
 - First-return acceptance, P2 findings, rework/repair burden and accepted-deliverable lead time: unknown.
   This file captures the complete first structural return for coordinator retention, not an accepted design.
 - Boundaries and user-facing layout choices remain proposals. Content accuracy, citation support, external
@@ -372,3 +385,123 @@ Saved-file verification: 55 disposition rows, 55 unique IDs, 55 unique source pa
 the current inventory produced no differences. The authorized path remains ignored by `.gitignore:200`.
 Git status remained clean and detached; no tracked change, claim, commit, merge or landing occurred.
 This addendum records successful capture, not coordinator acceptance or a build/test pass.
+
+## P1 addendum: reconciliation of P2 findings
+
+All four findings are accepted. The four collection roles and **55 source dispositions remain unchanged**. The
+amendments below refine ownership, compatibility and publication promises; they do not authorize P3, migration
+or implementation.
+
+### 1. Generated case instructions — accepted, major; owner scope decision required
+
+**Affected rows:** 06, 10, 44, 46 and 47.
+**Affected outlines:** UG `new-case.md`, `configuration.md` and `running.md`; own-basin journey; local-source
+inclusion and setup choices.
+
+Amend the own-basin route to distinguish two products:
+
+- **Scaffolded case:** receives generated `INSTRUCTIONS.md`; the scaffolder removes the starter README.
+- **Manually copied case:** retains the starter README and its replacement checklist.
+
+The proposed central procedure must explain both routes. Row 46’s shortening cannot, by itself, reconcile the
+instructions scaffolded users receive. Row 44 must retain data provenance and header-only observation warnings
+beside the copied data.
+
+**Recommendation:** extend a subsequent bounded packet to reconcile generated instructions with the accepted
+central procedures. Generated instructions should provide the minimum local commands, prerequisites, output
+locations and recovery guidance needed to operate the case, then identify the matching toolbox/documentation
+revision. Their procedural detail must not evolve independently.
+
+**Owner choice:** authorize the producer/generated-instruction consumer work, or explicitly defer it. If
+deferred, label the first migration as central/source documentation work with scaffolded-instruction
+reconciliation outstanding. Do not claim the own-basin journey is fully reconciled.
+
+A version-identifiable locator is also required. An unversioned GitHub `main` link is insufficient for
+compatibility, and a textual repository locator alone does not establish offline access. The owner should
+decide whether copied cases point to a separately obtained matching documentation bundle, a versioned online
+route, or both. No bundle or deployed URL is assumed to exist.
+
+### 2. Repository source links — accepted, major; compatibility choice required
+
+**Affected rows:** 03–04, 11–26 and 29–32 where sources move, split or acquire new destinations.
+**Affected outlines:** all relocated TM/SA chapters, setup chapters, and the migration/publication contract.
+
+Add **old repository source path** as a separate migration field from **published URL and anchor**. Preserving
+an HTML address does not preserve an excluded maintainer reference linking directly to the old `.qmd` source.
+
+**Recommendation:** retain small tracked compatibility pages at existing moved `.qmd`/setup source paths
+during the first migration. They should route repository readers to the canonical source without reproducing
+detailed prose. Publication engineering must determine how those wrappers preserve the corresponding rendered
+routes without creating duplicate substantive chapters.
+
+**Owner choice:** accept this compatibility footprint, or authorize explicit updates to affected
+consumers—including currently excluded consumers. Generated staging copies alone are insufficient because
+fresh-checkout source navigation must work before a build.
+
+Amend the **future P3 acceptance specification** to exercise one old source link in an unbuilt checkout and
+its rendered route, alongside local-source inclusion and PDF handling. This is a proposed acceptance
+amendment; P3 remains held.
+
+### 3. Offline response-surface endpoint — accepted, conditional major; owner promise decision required
+
+**Affected rows:** 04, 08, 25, 30 and 33.
+**Affected outlines:** TM response-surface coordinates, UG `outputs.md`/`notebooks.md`, SA conventions,
+interpretation/extension journey, and PDF composition choice.
+
+The axis-authority gap cannot be covered by including indicator-set READMEs. The deferred notebook repair
+likewise cannot support a promised current offline walkthrough.
+
+**Recommendation for the first publication:** promise **table-level indicator interpretation, selection and
+extension**. Explain response surfaces conceptually, but visibly defer supported construction instructions
+pending authority reconciliation and a checked worked route. Keep that boundary consistent in the homepage,
+outlines, PDF description and journey acceptance criteria.
+
+**Owner alternative:** retain a complete response-surface walkthrough as the promised endpoint. That requires
+a narrow assignment to reconcile axis authority and provide an offline worked route before publishing the
+promise. It does not imply changing the algorithm.
+
+This condition blocks the broader surface-construction promise, not unrelated documentation work. Neither the
+notebook nor implementation comments should silently become the normative replacement for missing contract
+text.
+
+### 4. Crop-water preparation ownership — accepted, minor; editorial clarification
+
+**Affected rows:** 25 and 34; supporting links in rows 04 and 33.
+**Affected outlines:** TM `indicator-requests.md`, WF4 chapter, indicator-set appendix and UG `indicators.md`.
+
+Clarify row 34: the local crop-water README owns the **complete set-specific preparation contract**, including
+Qcrit syntax, historical prerequisites, preparation timing, dry-run behavior, provenance, compatibility and
+interpretation.
+
+Central chapters own generic request mechanics and a task-level entry link. They may show a minimal selection
+example, but must direct threshold diagnosis to this single complete account. Offline inclusion brings that
+account into the manual without creating another editable owner.
+
+This clarification needs no separate user-facing layout decision.
+
+### External consumer dispositions — separate from the 55 rows
+
+| Consumer | Proposed disposition |
+|---|---|
+| Scaffolded `INSTRUCTIONS.md` and its producer | Reconcile only through an explicitly authorized follow-up scope; otherwise record the outstanding consumer gap. |
+| Existing copied case documentation | Preserve local usability; define version-identifiable documentation access without assuming network or supplied bundles. |
+| Excluded references linking old source paths | Preserve through tracked compatibility pages, or obtain authority for consumer updates. |
+| External surface consumers and axis implementation | Preserve existing behavior; defer normative reconciliation to a narrowly assigned owner. |
+| Publication/staging consumers | Exercise source-path and rendered-route continuity in an authorized P3 packet; no changes now. |
+
+### Handoff and execution record
+
+P2 supports the first-example route and the collection structure. The own-basin and interpretation journeys
+now have explicit completion limits. Accuracy questions unrelated to these promises remain deferred.
+
+Reused the fully loaded canonical technical-writer role and skills: `scientific-software-documentation`,
+`project-reference-docs`, `project-system`, `testing-policy` and `tutorial-authoring`. Applied existing
+boundary, migration, source-authority and journey guidance; no new conditional reference was triggered.
+
+Read only the supplied P2 critique; performed no additional investigation, edits, scratch rewrite, Git
+changes, builds, runs or delegation. Model/effort remains owner-verified **GPT-6.1-Sol medium**; no effective
+fallback is claimed.
+
+**UTC:** start 2026-10-26 13:32:21; final recorded check 13:32:37. Drafting followed that check; exact return
+time and token/cost totals are unknown. Coordinator retains the addendum and obtains the identified owner
+decisions. **P3 and migration remain held.**

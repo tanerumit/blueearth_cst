@@ -180,7 +180,7 @@ Use observations to improve later allocations, not to construct unsupported rank
 - P2 prerequisite: accepted P1 artifact. Separately, owner input requested on the s2 permission boundary:
   switch to Read Only or explicitly allow review under current permissions. Owner explicitly authorized
   current permissions before P2; retain read-only instructions and before/after Git checks, but do not
-  claim enforced read-only isolation. No permission setting changed. No P2 assignment sent yet.
+  claim enforced read-only isolation. No permission setting changed. P2 subsequently started below.
 
 ## P2 / attempt 1 — independent boundary critique
 
@@ -188,10 +188,78 @@ Use observations to improve later allocations, not to construct unsupported rank
 - Worker: `critical-thinker-p2`, s2/w9:p1; fresh review context after preflight only.
 - Requested/observed UI allocation: GPT-6-Astra/medium; high not used. Full canonical critical-thinker
   role instructed through generic runtime; actual role/skill application pending return.
-- Dispatch UTC: 2026-10-26 13:25:46 (coordinator observation); runtime timestamp to reconcile on return.
+- Runtime dispatch UTC: 2026-10-26 13:25:53; final return 13:30:40; coordinator accepted critique
+  for editorial reconciliation at 13:31:50. Turnaround 4m 47s; acceptance lead time 5m 57s.
 - Authority: read-only task under current permissions, explicitly authorized by owner. No permission
   change or enforced-read-only claim. Before-review s2 tree clean/detached; source checks repeated on return.
 - Deliverable: ranked critique of ownership, fragmentation, offline completeness, migration and the
-  three reader journeys; no competing full design or accuracy audit. Return/acceptance/usage pending.
+  three reader journeys; no competing full design or accuracy audit.
 - P2 readiness wait: preflight finished before P1; no critique started until the accepted artifact existed.
   The owner permission decision resolved while P1 was running and did not delay the dependent dispatch.
+- First return accepted without reviewer repair: three major findings (one conditional blocker for a
+  broader response-surface promise) and one minor clarification. No unconditional structural blocker.
+  Full critique retained in `documentation-boundary-critique.md` from the completed response.
+- Findings: generated `INSTRUCTIONS.md` consumer missing; old source-path compatibility unresolved;
+  offline response-surface endpoint ambiguous; set-specific crop-water preparation needs one owner.
+- Worker-reported loaded/applied: full canonical critical-thinker role, design-exploration,
+  scientific-software-documentation (four triggered references), testing-policy. No incomplete reads.
+  Exact role/skill identities and actions retained in the critique. Runtime independently confirms
+  GPT-6-Astra/medium. No model fallback, retry, replacement, or permission change.
+- Local rollout final per-turn usage: 833,543 input / 768,640 cached input / 5,037 output tokens.
+  Separate preflight: 334,907 input / 307,072 cached / 743 output. Cached input is included in input;
+  cost unknown. Root usage and P1 usage are not counted here.
+- Reviewer verified input hash before/after and targeted three journeys. Coordinator checked terminal
+  task-complete event and clean detached s2 status. No source edits, build, execution or numerical claims.
+- Retained P1 commit: `6570242c` on main. The reviewer read the same frozen artifact while cst-main
+  committed its evidence; the source-content base remained `58efe411` and the map hash did not change.
+
+## P2 editorial reconciliation — P1 worker continuation
+
+- Dispatched 2026-10-26 13:32:15 UTC to the continuing technical writer in s1, medium effort.
+  Same role and context; no new agent. Input: retained P2 critique and fixed P1 map.
+- Requested a compact addendum resolving all four findings in the same map, with owner decisions
+  exposed and external consumer dispositions separate from the 55-source register. No new audit.
+- Used the existing thread's background continuation to preserve text visibly drafted in the worker
+  pane. Worker remains visible in Herdr; no replacement/native subagent or new workspace was created.
+- Final runtime return: 13:33:34 UTC; coordinator acceptance: 13:34:22 UTC. Turnaround 1m 19s;
+  acceptance lead time 2m 07s. All four findings accepted and dispositioned in the same map addendum.
+- Runtime independently confirms GPT-6.1-Sol/medium. Final per-turn usage: 758,368 input /
+  755,456 cached input / 1,720 output tokens. Cost and active compute time unknown.
+- Reused the P1 role and five reported skills; no additional investigation or incomplete reads reported.
+  Clean detached s1/s2 trees reconfirmed. The coordinator appended the returned text; no source edits.
+- P3 and migration remain held. Three user-facing choices remain explicit; the minor crop-water
+  ownership clarification is resolved editorially. No second critic is required by this bounded plan.
+
+## P2 checkpoint summary — 2026-10-26
+
+- Completed stages: P1 and P2; two unique workers, one editorial reconciliation continuation.
+  Both complete substantive first returns were accepted; P1 needed a capacity recovery and capture
+  follow-up before its artifact was complete. This is 2/2 complete returns, not uninterrupted success.
+- Coverage: 55/55 source dispositions, four collection outlines, three source-based reader journeys.
+  Findings: three major (one conditional blocker for a broader promise), one minor; all dispositioned.
+  The owner choices are deferred before dependent work, not silently approved.
+- End-to-end: first P1 runtime start 13:00:09 to final reconciliation return 13:33:34 = 33m 25s;
+  to coordinator acceptance 13:34:22 = 34m 13s. Summed packet turnaround is 30m 51s
+  (24m 45s + 4m 47s + 1m 19s); it is not added to end-to-end wall time or called compute time.
+- Attributable substantive worker totals, excluding both preflights and root coordination:
+  8,753,327 input / 8,479,872 cached input / 38,045 output tokens. Cached input is included in input.
+  Source: final per-turn usage records from the two named local Codex rollouts. No transcript retained.
+  No cash-cost estimate, comparative savings or model ranking is warranted.
+- Measured capture overhead was 9m 15s. The broad role/skill/source context and repeated output capture
+  consumed substantial input; this is an observation, not proof that any particular skill was wasteful.
+  Root usage and measurement-only overhead remain unseparated/unknown.
+- Commit authority remained cst-main: plan `58efe411`, accepted P1 evidence `6570242c`, final reviewed
+  structure committed separately after checks. No worker commit, merge, landing, push or publishing.
+- Verification limits: no scientific accuracy audit, rendered/offline usability test, execution or PDF
+  build. Board-wide baseline errors remain unrelated; affected links, inventory and whitespace checked.
+- Final coordinator checks: exact inventory comparison 55/55 unique with no omissions/additions;
+  18 local file links resolved; `git diff --check` passed after removing four Markdown hard-break
+  trailing-space pairs in the returned addendum. Reflowed returned prose without changing dispositions.
+  Board check still reports the same eight unrelated errors; this task has only its existing length
+  warning. Board CLI marked the task blocked for owner decisions and regenerated the view; its other
+  row changes are column-width formatting, not task-state changes.
+- Reusable proposal for owner consideration: Herdr currently forbids requesting file output in the
+  initial prompt. Permit an explicit exception for an already-authorized durable structured artifact,
+  with exact owned output path and coordinator retention. Evidence: the 55-row return required a second
+  capture request and 9m 15s to save. This could reduce repeat generation in large maps/reviews; no shared
+  skill change or fresh-session adoption is claimed here.

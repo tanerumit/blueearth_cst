@@ -7,6 +7,11 @@ import pytest
 from dev.scripts.stage_site_guides import GUIDES, stage_guides
 
 
+def test_default_staging_covers_the_canonical_guide_inventory():
+    source_dir = Path(__file__).resolve().parents[1] / "docs/guide"
+    assert set(GUIDES) == {source.stem for source in source_dir.glob("*.md")}
+
+
 def test_staging_refreshes_links_and_assets_without_changing_sources(tmp_path: Path):
     source_dir = tmp_path / "guide"
     (source_dir / "assets").mkdir(parents=True)

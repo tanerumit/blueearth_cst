@@ -695,3 +695,22 @@ Observed repair-check interval 22:27:29–22:29:42 UTC is 2m13s, excluding final
 and medium allocation retained. Coordinator committed `86085ea2`; clean s1 is the fixed recheck input.
 Retained writer return includes exact diff/proof and measurements. Same independent s2 reviewer assigned
 only P6-01 recheck; no full build/browser/model rerun or broadened repair. P6-02 remains deferred minor.
+
+### P6 acceptance and integration gate
+
+Same fresh reviewer independently accepted clean s1 `86085ea2`: exactly five comment pairs, parsed YAML
+and every noncomment line unchanged, actual s1 scaffolder preserves corrected comments in 11 in-memory
+payloads without case writes. Retained `p6-review.md` includes the acceptance superseding its initial hold.
+Recheck interval 22:31:08–22:32:08 UTC is 1m00s. No unresolved blocking/material finding remains;
+P6-02 is explicitly deferred minor. Coordinator accepts P5/P6 for the commissioned UG/TM tranche.
+
+Reuse prior affected tests/build/link/browser/PDF evidence and fresh comment-copy proof. The integration
+verifier must prove candidate equivalence to `86085ea2` outside coordinator-owned `dev/tasks/`; only
+retained task evidence differs after synchronization. No broader rerun is justified by record-only changes.
+Origin fetched before landing: main 44 ahead, 0 behind at this checkpoint. No push authorized.
+
+Retain lane-local `.tmp/tasks/t2610211349/` evidence and s1 generated website/manuals for owner review;
+these are still required review artifacts, not completed disposable scratch. P3 review index also links
+retained artifacts. Release condition: owner review complete and required links/evidence relocated before
+scoped cleanup. No deletion during lane parking. Scientific writing and broader unscoped instruction work
+remain deferred; do not close the overall task or claim the scientific volume complete.

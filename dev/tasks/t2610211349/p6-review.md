@@ -190,3 +190,54 @@ Final verification UTC: **2026-10-26 22:26:19**; observed start-to-verification 
 Both source candidate and runtime tracked trees remained clean. Report ignore check again matched
 `.gitignore:200:.tmp/`. Watch output explicitly confirmed `Preview stopped` and `P6_PREVIEW_STOPPED`;
 the watch pane returned to its PowerShell prompt. Only the authorized report/evidence remains for retention.
+
+## P6-01 independent correction recheck — accepted
+
+**Decision: P6-01 resolved; P6 acceptance recommended for fixed candidate
+`86085ea2dcd1eff2037dd5d40bf8e8d76f7972c2`.** This supersedes the initial hold above.
+No unresolved blocker or material misstatement remains identified in the promised journeys.
+P6-02 remains the explicitly deferred minor duplicate website appendix title.
+
+Independently confirmed session-1 HEAD and clean status. The complete Git delta from the reviewed
+`e18d7316fb8b47fd40fcddc086963f08ab63bf4e` touches only
+`config/templates/example-basin/project_config.yml`, replacing exactly five comment lines. The comments
+now state January 1 through December 31 calendar-year extraction, label both endpoints calendar years,
+and distinguish `water_year_start` reporting aggregation from extraction bounds. This agrees with the
+previously inspected parser and unchanged guide/manual. No guide, code, value or artifact change occurred.
+
+Fresh independent verification, rather than reliance on writer Boolean results:
+
+- Parsed old Git content and current YAML with `yaml.safe_load`: equal.
+- Compared every noncomment line, preserving blank lines and normalizing text line endings: equal.
+- Derived added/removed lines from the actual text delta: exactly five comment pairs, all comments.
+- Inspected the actual `scripts/create_case.py::_prepare` path: reads the maintained starter bytes,
+  applies existing case replacements, obtains help from that same starter and annotates the payload.
+- Called that exact session-1 `_prepare` implementation with an authorized local scratch cases root.
+  It prepared 11 payloads in memory. All five corrected comment lines survived in the prepared project
+  YAML; parsed climate values matched the starter. No destination case or case files were written.
+- `git diff --check e18d7316 86085ea2`: pass. Both session-1 and session-2 tracked trees remained clean.
+
+Command: existing main environment's `python.exe -B .tmp/tasks/t2610211349/p6/recheck.py`, from session-2,
+completed successfully (exit 0). Evidence: local `p6/recheck.py` and `p6/recheck-proof.json`; the JSON records
+effective cwd, interpreter, exact candidate and loaded source path. No environment installation or model
+execution. The writer's `p6-01-proof.json` and P5 return addendum were read as supporting evidence. Their
+`candidate: e18d7316` identifies the pre-commit base, not the fixed committed HEAD; the independent proof
+binds this acceptance to 86085ea2. Windows newline normalization explains the writer's initial raw-copy
+failure; fresh normalized comparison passed without changing source or copying behavior.
+
+Reused all unaffected P5/P6 publication evidence. The complete delta establishes that guides, assembled
+HTML/PDF, build configuration and code are unchanged; no browser, build, full audit or model rerun needed.
+Procedural source-read-only remains in force. Writes were confined to this append and local `p6/` evidence;
+all paths remain ignored by `.gitignore:200:.tmp/`. No STATUS/shared-record write, commit, branch change,
+nested agent, landing or push. Coordinator retains the report and owns final acceptance/integration.
+
+Same manually applied full technical-writer role and medium allocation retained. Existing completed
+documentation, tutorial, testing, lifecycle and Herdr guidance reused. Before the fresh Python evidence
+check, completely loaded canonical `python-discipline/SKILL.md` and its style-and-docs, hazards and
+python-validation references, plus testing-policy `execution-checks.md` for the borrowed interpreter.
+No applicable governing read remains incomplete. No shared skill change is warranted by this correction.
+
+UTC start **2026-10-26 22:31:08**; final verification **22:32:08**: **1m 00s** observed wall interval.
+Report capture and notification follow that checkpoint. Requested/previously observed setting remains
+GPT-6.1-Sol medium; no setting change. Fresh backend introspection, token usage, cost, active compute and
+coordinator acceptance time remain unknown. Stop after notification; no further work commissioned.

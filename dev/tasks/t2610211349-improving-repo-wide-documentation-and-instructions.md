@@ -2,7 +2,7 @@
 title: Improving repo-wide documentation and instructions
 type: todo-item
 status: active
-branch:
+branch: docs/t2610211349-publication-assembly
 effort: 2
 area: docs
 queue:
@@ -18,7 +18,7 @@ updated: 2026-10-26
 
 ## Progress
 
-Next: Obtain commission for P5 HTML/PDF assembly and P6 fresh reader review of the user guide and manual.
+Next: Execute P5 assembly in s1, then fresh P6 reader review in s2; coordinator owns integration.
 
 V9 landed at `8963f661`; P4A/P4B reviewed and landed at `1e0cbd71`. Ten guide chapters and 16 manual
 chapters are integrated. The 405 source-link/fragment checks, 44 scaffold/notebook tests, 101 contract
@@ -26,7 +26,8 @@ tests and 14 integrated pilot/documentation tests pass. Publication assembly rem
 See the [P4A return](t2610211349/p4a-user-guide-return.md),
 [P4B return](t2610211349/p4b-technical-manual-return.md) and execution log for scope and measurements.
 Both source branches were deleted after guarded landing; s1/s2 are parked. S3 remains unrelated.
-Scientific-approach writing remains deferred; P5/P6 have not been commissioned.
+Scientific-approach writing remains deferred. The owner's subsequent "continue" commissions P5/P6.
+P5 owns publication assembly in s1; s2 waits for a fixed candidate and fresh reviewer context.
 
 Latest plain-language revision: `865803b2` in s2. Simplifies choices and removes development-only
 compatibility/migration guidance from maintained documents. See the

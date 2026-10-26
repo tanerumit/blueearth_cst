@@ -543,3 +543,21 @@ P4B `4bc94e7219128ff0b1193c72f98a310ade2d74abfbb98eaa7d5a0c6db03f2070`.
 Board render succeeded with normal lock permissions and produced no task-owned table delta.
 Repository-wide board check still reports eight pre-existing structural errors outside this task and
 20 warnings, including this task's long-note warning. No unrelated board repairs were attempted.
+
+## P5/P6 continuation — 2026-10-26
+
+Owner said "continue" after the completed P4 return identified P5/P6 as next. Commissioned sequential
+assembly and fresh reader review; scientific writing, push/deployment and s3 use remain excluded.
+Revalidated the existing frontier plan at medium, with technical-writer editorial ownership and a bounded
+engineering packet only if substantial publisher code is needed. No duplicate planning agent.
+Read agent-routing/frontier/runtime handoff and workflow-driver/runtime/Codex contracts; reused Herdr
+and Git lifecycle guidance. Technical-writer full canonical role confirms documentation-site integration
+ownership and the boundary requiring engineering for substantial implementation.
+
+Live inventory: s1 technical-writer-p1 at w8:p1 is the completed related author; s2 api-documenter-p4b
+at w9:p1 is complete, awaiting eventual replacement for independent P6. Both Git slots were clean and
+detached; s3 remains on its unrelated branch. Saved commission at `856bc47c`, then allocated s1
+`docs/t2610211349-publication-assembly` through task-start, no reseed/launch. Sent the continuing writer
+the full bounded handoff, skill/reference completeness requirement, artifact/check ownership and no
+nested agents/commits/landing. Requested GPT-6.1-Sol medium, same established allocation; live verification
+and substantive activity are checked after dispatch. P6 is not yet dispatched because it depends on P5.

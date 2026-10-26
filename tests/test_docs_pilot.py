@@ -22,6 +22,7 @@ def source_copy(tmp_path: Path) -> Path:
         "docs/publishing-pilot/manifest.json",
         "docs/publishing-pilot/format.yml",
         "blueearth_cst/indicators/README.md",
+        "docs/technical-manual/indicator-requests.md",
         manifest["asset"],
         *(section["source"] for section in manifest["sections"]),
         *(

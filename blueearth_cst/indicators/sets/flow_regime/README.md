@@ -1,5 +1,9 @@
 # Flow regime
 
+Select this installed set with `flow_regime` in the
+[WF4 request](../../../../docs/technical-manual/indicator-requests.md).
+This README remains canonical and is declared for offline-manual inclusion.
+
 The optional production flow-regime additions are mean annual 30-day maximum, 30-day minimum and 90-day
 minimum discharge, plus mean annual rise/fall magnitudes. They use configured water-year blocks and native
 NaN behavior. Trailing windows cross water-year boundaries, never members; differences belong to the later

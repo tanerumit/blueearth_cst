@@ -10,7 +10,7 @@
       "anchor": "calculate-different-indicators-from-existing-simulations"
     },
     {
-      "source": "docs/site/toolbox-reference/workflow-simulate-system.qmd",
+      "source": "docs/guide/indicators.md",
       "start": "Edit `project_config_simulate_system.yml`,",
       "stop": "calendars, missingness or grain.",
       "include_stop": true,

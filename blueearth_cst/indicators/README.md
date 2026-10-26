@@ -5,6 +5,10 @@ pandas; qualified return levels additionally need the production-pinned lmoments
 It does not load a model, remove warm-up, select simulation runs, read project configuration or publish files.
 WF4 owns those operations. Input metadata states units, interval labels, missingness and location order.
 
+WF4 callers start with the [request contract](../../docs/technical-manual/indicator-requests.md).
+This README remains the maintained extension source; the offline assembly declaration names it in the
+[local-source declaration](../../docs/technical-manual/local-source-appendix.yml).
+
 | File | Reader / responsibility |
 |---|---|
 | `contract.py` | Authors and callers: inputs, declarations, context, results, scalar diagnostic tables |
@@ -42,6 +46,15 @@ NaN propagation. Bundle indicators pool member-local blocks and always require e
 through `validation=...`. The WF4 adapter supplies its verified declaration; this module never discovers
 workflow files. `reference_month_mean/1` requires an explicit resolved reference from
 `temporal.resolve_month_reference`; callers supply the configured reference membership/location.
+
+`ResponseSeries` requires a unique `(run_id, variable, location_id)` key and contiguous zero-based
+`location_ordinal` values per run/variable. `time` is a unique, increasing `DatetimeIndex` whose intervals
+match `timestep`; `values` and Boolean `missing` have the same length. The missing mask equals native NaN
+positions exactly. Infinity, omitted daily dates and incompatible paired inputs fail validation.
+The supported Gregorian calendar labels are `standard`, `gregorian` and `proleptic_gregorian`.
+Calculations require their declared units, daily interval labels and timestep; conversion is an adapter duty.
+`contract.py` and `series.py` own the exact types and validation, with `tests/test_indicators_module.py`
+and `tests/test_response_series.py` as executable examples.
 
 ## Add a calculation
 

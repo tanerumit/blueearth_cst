@@ -1,5 +1,9 @@
 # Flood discharge hazards (opt-in)
 
+The [WF4 request reference](../../../../docs/technical-manual/indicator-requests.md#standalone-definitions)
+shows a confined ten-year selection. This README remains the canonical qualification-limit source and
+is declared for offline-manual inclusion. Selecting every declaration below is not a successful example.
+
 The five example return periods are 2, 5, 10, 15 and 20 years. These are annual maximum discharge hazard
 levels, not exposure, damages or a fully qualified flood-risk assessment. They are never enabled by default.
 The production estimator and its source qualification are unchanged. Member-local finite annual maxima are

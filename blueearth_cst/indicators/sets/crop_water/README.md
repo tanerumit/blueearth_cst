@@ -1,5 +1,9 @@
 # Crop-water screening set
 
+This is the complete set-specific preparation and interpretation contract, declared for offline-manual
+inclusion. The [WF4 request reference](../../../../docs/technical-manual/indicator-requests.md) owns generic
+selection and strict/partial evaluation mechanics.
+
 `crop-water` selects ten indicators from six methods. Daily input labels denote interval ends. Winter is
 1 November through 31 May, labelled by ending year; summer is 1 May through 31 October. The two
 seasons overlap in May and are never summed. Annual net recharge uses 1 October through 30 September,

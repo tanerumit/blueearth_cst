@@ -40,5 +40,6 @@ Python calls. Configurations describe a project; external data and generated pro
 - [Indicator extension](indicator-extension.md): the canonical module contract and all five set appendices.
 
 Installation and operating procedures start in the [user guide](../guide/quick-start.md).
-The [local-source manifest](local-source-appendix.yml) declares the canonical module/set material to include
-in the offline manual. Those sources remain editable beside their implementations.
+The complete technical manual includes the module contract and all five indicator-set references.
+Those sources remain maintained beside their implementations; see
+[Indicator extension](indicator-extension.md#canonical-sources) for their locations and evidence limits.

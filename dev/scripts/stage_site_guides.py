@@ -7,11 +7,44 @@ links resolve from docs/guide; staged links resolve from docs/site/guide.
 from pathlib import Path
 from shutil import copyfile
 
-GUIDES = ("quick-start", "configuration", "running", "benchmarking", "outputs")
+GUIDES = (
+    "install",
+    "quick-start",
+    "new-case",
+    "configuration",
+    "running",
+    "indicators",
+    "outputs",
+    "benchmarking",
+    "troubleshooting",
+    "notebooks",
+)
 
 
 def stage_guides(docs_dir: Path) -> None:
     """Refresh the site copies and their self-contained diagram asset."""
+    if (docs_dir / "publication/manifest.json").is_file():
+        try:
+            from dev.scripts.build_publications import (
+                check_stale_outputs,
+                prepare_publications,
+            )
+        except ModuleNotFoundError:
+            from build_publications import check_stale_outputs, prepare_publications
+
+        generated, _ = prepare_publications(docs_dir.parent)
+        check_stale_outputs(docs_dir / "site", generated)
+        # Authored setup/science/compatibility pages are rebased by the render
+        # filter. Only canonical chapters and publisher metadata are staged here.
+        for relative, data in generated.items():
+            if not relative.startswith(("guide/", "technical-manual/")):
+                continue
+            target = docs_dir / "site" / relative
+            if not target.resolve().is_relative_to((docs_dir / "site").resolve()):
+                raise ValueError(f"Unconfined generated site target: {relative}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+        return
     source_dir = docs_dir / "guide"
     target_dir = docs_dir / "site" / "guide"
     # Read every required source before writing, so missing inputs fail the build.

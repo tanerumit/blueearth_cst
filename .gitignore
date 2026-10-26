@@ -5,6 +5,8 @@
 
 # Generated from canonical docs/guide/ by the Quarto pre-render hook.
 /docs/site/guide/
+/docs/site/technical-manual/
+/docs/site/manuals/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

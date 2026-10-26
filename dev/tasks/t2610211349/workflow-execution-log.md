@@ -267,8 +267,13 @@ Use observations to improve later allocations, not to construct unsupported rank
 ## Owner follow-up — 2026-10-26
 
 The owner approved applying the artifact-first improvement separately. Herdr resolves to a vendored
-upstream body; the intended implementation is a narrow override in owned agent-routing guidance.
-Infrastructure ownership and integration are coordinated separately; no vendored body is to be edited.
+upstream body; implemented a narrow override in owned agent-routing guidance. Infrastructure commit
+`ad78554` was integrated by its primary owner as `7166fd6`; the worker lane is detached again.
+The exception requires an authorized durable deliverable, exact output path, write authority,
+artifact ownership and retention destination. Acceptance requires a completed return and inspection.
+Vendored Herdr was unchanged. Whitespace and agent-routing conformance checks passed; four static
+routing cases were added. Infrastructure health still reports unrelated dashboard/assessment issues.
+Fresh-session behavioral adoption remains unverified. No push was requested or performed by this task.
 The owner also reserved CST session-3 for unrelated work. Remaining proposed packets use only cst-main,
 s1 and s2; P3/P4B/P4C/P6 share s2 sequentially, with fresh contexts at role changes. No s3 pane or worktree
 was claimed, stopped, cleared or modified by this task. P3/migration decisions remain pending.

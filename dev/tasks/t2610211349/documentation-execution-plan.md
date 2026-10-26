@@ -1,6 +1,6 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: P5 commissioned; P6 follows accepted assembly.
+Date: 2026-10-26. Task: t2610211349. Status: P5/P6 accepted; verified local integration in progress.
 
 ## Current continuation authority
 
@@ -33,6 +33,22 @@ procedural read-only if enforced isolation is unavailable, without changing perm
 Return severity, reader/action, reproducible evidence and proposed fixes. Coordinator assigns bounded
 repairs to the author and rechecks affected areas. At most two workers; no extra agent for measurement.
 Final acceptance and integration follow the existing plan and repository gates.
+
+### P5 engineering dependency packet
+
+Writer identified that `stage_site_guides.py` stages five chapters only and the fragment-based pilot
+cannot assemble full manuals or six offline appendices. Assign fresh python-engineer in s2 at medium;
+author branch `feat/t2610211349-publication-engine`. Own `dev/scripts/stage_site_guides.py`, a narrowly
+scoped full-publication builder/helper under `dev/scripts/`, `tests/test_site_guides.py` and affected/new
+publication tests. Reuse pilot utilities where safe; any pilot-helper change must preserve its consumer.
+Writer owns all `docs/` manifests, navigation, styles and prose; coordinate the manifest/API directly.
+Engineer implements canonical-source staging, source-relative link/anchor rebasing, complete appendix
+inclusion, deterministic refresh/fail-missing behavior, source hashes, no-execute HTML/Typst PDF builds,
+and the existing interactive asset's static counterpart. Do not install dependencies or alter runtime
+models/configuration. No overlapping writes, nested agents, commits or shared task records.
+Return `.tmp/tasks/t2610211349/p5-engine-return.md` with commands/interfaces, targeted tests, scope,
+limitations and measurements. Writer integrates the delivered code through coordinator-controlled
+handoff before full rendered checks; P6 remains blocked on complete P5 rather than reviewing partial work.
 
 Current authority: owner approved V9 and instructed cst-main to integrate s2 and commission P4A/P4B.
 P3 landed at `8963f661`. [P4 assignments](p4-content-assignments.md) fix disjoint s1/s2 ownership and

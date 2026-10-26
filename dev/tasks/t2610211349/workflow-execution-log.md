@@ -561,3 +561,156 @@ detached; s3 remains on its unrelated branch. Saved commission at `856bc47c`, th
 the full bounded handoff, skill/reference completeness requirement, artifact/check ownership and no
 nested agents/commits/landing. Requested GPT-6.1-Sol medium, same established allocation; live verification
 and substantive activity are checked after dispatch. P6 is not yet dispatched because it depends on P5.
+
+Substantive s1 activity and UI GPT-6.1-Sol medium verified. Writer promptly identified a real dependency:
+only five guides are staged and the pilot cannot build complete volumes/appendices. Scoped P5 engineering
+packet added to the existing plan; writer owns `docs/`, engineer owns publisher Python/tests, with a shared
+manifest contract coordinated directly. This activates the planned conditional specialist, not P6 early.
+P4B author was terminal and disconnected from w9:p1; shell prompt verified before fresh launch.
+Allocated s2 `feat/t2610211349-publication-engine` from `31aaafab`; fresh python-engineer-p5 launched
+with explicit GPT-6.1-Sol/medium flags, UI verified. Preflight confirms fresh context, correct branch/cwd
+and clean tree. Thread `01a17a20-bd73-7112-a3ff-55ec06843910`; full manual role loading instructed.
+No permission defaults changed. P4B exit displayed cumulative usage: 389940 total, 326119 input,
+63821 output (15614 reasoning), 24212608 cached input. These are whole-thread totals, not P4B-stage
+measurements or additive uncached totals; earlier stage-specific usage remains unknown.
+Writer manifest fixes ten guide/16 manual chapters, six-source appendix declaration and V9 formatting.
+Engineering dispatch includes source hashes, no-execute, link rebasing, static alternative and targeted
+consumer checks. No other roles or s3 use; P6 fresh review follows the completed assembled candidate.
+
+Writer/engineer froze schema-version-1 `docs/publication/manifest.json` and V9 `format.yml`;
+`stage_publications(source_root, output)` and `build_publications.py --source-root --output [--stage-only]`
+are the agreed interface, with generated QMD chapter routes and sibling downloadable HTML/PDF volumes.
+Root `.gitignore` edits for the new generated paths are assigned solely to the writer.
+The explicit-medium engineer runtime is visible/active in Herdr but shared-server resume/send reports
+active-writer/notLoaded errors. Two writer messages failed there; coordination moved to Herdr without
+restarting the active worker. Restricted-token socket denial was resolved through normal-permission
+tool calls, not server or policy changes. Record this as coordination overhead, not worker failure.
+
+PDF navigation probe found exported named destinations but Typst emits URI actions, not native GoToR.
+The user relayed this evidence and requested the bounded choice. Coordinator selected sibling
+`.pdf#nameddest=<namespace>` links with every target checked against its destination PDF. Reader guidance
+must say that cross-PDF links may open the volume without jumping to the section, depending on the reader;
+use the contents as fallback. Two PDFs suffice for offline reading. No cross-reader interaction proof,
+native GoToR claim, new dependency or PDF postprocessing workaround is authorized or implied.
+
+### P5 engineering acceptance and transfer
+
+Stable engineering return retained as `p5-engine-return.md`, SHA-256
+`a36ddc146c0d13eb2895e7eb83737c209aabcc99e170da13fa9e9310b95673bb`.
+Five delivery files reviewed: publisher builder, Lua helper, expanded site stager and two test files.
+Coordinator findings on code-labelled links and stale generated products were fixed with targeted checks;
+stale products fail explicitly without deletion. Final 26 consumer tests pass in 1.69s; scoped Ruff,
+format, compile and whitespace pass. Both volume builds pass in 16.86s; 63 input hashes unchanged,
+517 HTML links and 29 sibling-PDF named targets verified. Actual wrapper Lua smoke passes.
+Complete visual/site acceptance is not inferred from these engineering checks.
+
+Recorded engineering checkpoints span 19m28s; true start/active compute and stage usage unknown.
+The return records full manual python-engineer role, medium allocation, all actual skills/references,
+rework and the PDF limitation. No model escalation, dependency installation or scientific execution.
+Owner explicitly requested review/commit/transfer. Committed `872b8075` in s2, then fast-forwarded s1
+to that commit with its disjoint uncommitted documentation edits preserved. Primary main is unchanged
+by this source transfer; landing waits for P6. Writer notified to reuse matching input/build evidence,
+perform full website/routes/download checks and PDF/browser visual acceptance, and report defects.
+Engineer remains available in s2 for bounded repairs until final P5 acceptance permits fresh P6 context.
+
+Writer reused matching 63-input volume evidence, rendered all 52 site pages, and checked 3329 local
+link/resource occurrences across 55 HTML files plus 37 retained reference anchors with zero failures.
+All 63 PDF pages reviewed via contact sheets and detailed dense pages; coordinator independently viewed
+UG page 6 and TM page 40. Browser review then found duplicate PDF/Typst format choices, a real V9 regression.
+Assigned only builder format-links metadata, affected test and HTML proof to the same resumed engineer;
+unaffected PDF/layout evidence remains reusable. Main source landing stays held.
+
+The engineer had completed before reviewer preparation; its exit reported whole-thread usage 232366 total,
+181063 input, 51303 output (15244 reasoning), 12164224 cached input. Not stage-active-compute measurements.
+A fresh P6 startup without an effort override showed low, so no assignment was dispatched. It was closed
+unused when the P5 defect arrived. Resumed the original engineer with explicit medium; final P6 must be
+fresh and explicitly medium. No permission defaults changed, no work discarded and no s3 use.
+
+### P5 bounded format-menu repair transfer
+
+Owner returned the completed two-file correction with source writes stopped. Coordinator reviewed the
+builder metadata and affected test, checked the exact index and committed `ccd79230` in s2. The repair
+restores literal `html` plus the explicit Typst/PDF/file-pdf metadata from V9. Both full HTML renders
+show exactly one PDF choice with the correct volume href; pre-fix retained HTML reproduced PDF/Typst.
+The 23 affected tests pass in 1.46s; scoped Ruff, format, compile and whitespace checks pass. HTML-only
+render/proof took 10.69s; bodies, PDFs and all 63 input hashes are unchanged. Reuse unaffected evidence.
+
+Rediscovered live ownership: continuing writer in s1, completed engineer in s2, unrelated s3 untouched.
+Fast-forwarded s1 to `ccd79230` with its disjoint documentation edits preserved; engineer worktree clean.
+Writer received exact repaired HTML/proof paths and bounded final browser acceptance instructions.
+Retained engineer return now includes the repair addendum. Same role/medium allocation and skill reads
+apply; no new implementation dispatch or dependency change. No source landing to main or push.
+Writer additionally reports duplicate website appendix titles as a minor presentation finding; full
+volume HTML/PDF are unaffected. Preserve this finding for P6 disposition without expanding this repair.
+
+### P5 writer acceptance and P6 fresh dispatch
+
+Writer explicitly completed, stopped source writes and closed both previews. Retained `p5-return.md`
+SHA-256 `8edbe1c19e71089a8168667a9c2b7696144555f4533d63d92785be0609b50188` records all 55 source
+dispositions, 52 rendered site targets, 3329 local link/resource occurrences, 37 old reference and five
+setup anchors, all 63 PDF pages, and actual Chrome navigation/search/diagram/menu checks. Source-equivalent
+build evidence is reused; two HTML menus received a fresh bounded browser check after the repair.
+Writer wall interval 21:29:55–22:14:29 UTC is 44m34s including waits; stage tokens/active compute unknown.
+Coordinator reviewed and committed the exact 11 writer paths as `e18d7316`; s1 working tree clean.
+
+P6 allocation revalidated against the existing frontier plan: one fresh technical-writer, medium effort,
+three promised reader journeys, source-read-only review of fixed s1 source and rendered artifacts.
+Completed engineer exited in s2; cumulative thread usage now 242645 total, 186833 input, 55812 output
+(16315 reasoning), 13697792 cached input. These are whole-thread observations, not P5 stage measurements.
+Fresh `technical-writer-p6` launched in the discovered s2 agent pane `w9:p1` with explicit
+`gpt-6.1-sol` and `model_reasoning_effort=medium`; UI shows medium and 0% context before dispatch.
+Full canonical role loading instructed via the generic surface; actual loading awaits reviewer return.
+Owner's permission exception retained: procedural source-read-only under current permissions, no claimed
+enforced isolation. Lane-local review report/evidence writes explicitly allowed; all source writes,
+scientific execution, commits and nested delegation prohibited. No s3 use or policy changes.
+Fixed input is s1 `e18d7316`, not s2's older documentation. Build/all-page proof may be reused; review
+must independently walk the three journeys. Main source landing remains held until P6 acceptance.
+
+### P6 return and bounded own-basin correction
+
+Fresh reviewer completed all three rendered journeys at fixed s1 `e18d7316`. Retained `p6-review.md`
+SHA-256 `3cb1f0621044ec550a32397bb431f0a0a3fcc52f73a2bdc98d5faa1ceb1c57f4` reports one medium
+finding: starter `climate.window` comments incorrectly call calendar-year bounds water years (P6-01).
+The guide/manual and `historical_window_bounds` agree on January–December extraction; copying the
+starter preserves contradictory point-of-edit advice. P6-02 duplicate website appendix title remains
+explicitly deferred minor, with readable content and unaffected full volumes.
+
+Four artifact hashes and all 63 consumed hashes independently match P5. Reviewer reused build/audit
+evidence, inspected rendered journeys and selected PDF pages, closed its tab and stopped the preview.
+Observed interval 22:17:23–22:26:19 UTC is 8m56s; active compute/tokens/cost unknown. Full manually
+applied role and actual skills are recorded, including one corrected loading-order deviation; no
+governing read remains incomplete. Source/runtime tracked trees stayed clean. No source edits.
+
+Owner requests retention and bounded correction/recheck. Reconfirmed writer `w8:p1` and reviewer
+`w9:p1` ownership. Assigned only starter YAML comments to continuing s1 technical-writer at medium:
+calendar-year endpoints and reporting-anchor distinction, no values/code/guide edits. Require parsed
+YAML equality, copying-path inspection and whitespace; no publication rerender. Fresh s2 reviewer will
+recheck after the fixed correction, with the same source-read-only boundary. Main landing stays held.
+
+Writer completed P6-01 in s1 with five comment replacements only. Parsed YAML and all noncomment lines
+match the base; annotation identity passes. Actual scaffolder `_prepare` preserves the full corrected
+climate section after Windows newline normalization, preparing 11 payloads in memory without case writes.
+Whitespace/comment width pass. Initial raw equality failed only on carriage returns; no runtime repair.
+Observed repair-check interval 22:27:29–22:29:42 UTC is 2m13s, excluding final handoff. Same role/skills
+and medium allocation retained. Coordinator committed `86085ea2`; clean s1 is the fixed recheck input.
+Retained writer return includes exact diff/proof and measurements. Same independent s2 reviewer assigned
+only P6-01 recheck; no full build/browser/model rerun or broadened repair. P6-02 remains deferred minor.
+
+### P6 acceptance and integration gate
+
+Same fresh reviewer independently accepted clean s1 `86085ea2`: exactly five comment pairs, parsed YAML
+and every noncomment line unchanged, actual s1 scaffolder preserves corrected comments in 11 in-memory
+payloads without case writes. Retained `p6-review.md` includes the acceptance superseding its initial hold.
+Recheck interval 22:31:08–22:32:08 UTC is 1m00s. No unresolved blocking/material finding remains;
+P6-02 is explicitly deferred minor. Coordinator accepts P5/P6 for the commissioned UG/TM tranche.
+
+Reuse prior affected tests/build/link/browser/PDF evidence and fresh comment-copy proof. The integration
+verifier must prove candidate equivalence to `86085ea2` outside coordinator-owned `dev/tasks/`; only
+retained task evidence differs after synchronization. No broader rerun is justified by record-only changes.
+Origin fetched before landing: main 44 ahead, 0 behind at this checkpoint. No push authorized.
+
+Retain lane-local `.tmp/tasks/t2610211349/` evidence and s1 generated website/manuals for owner review;
+these are still required review artifacts, not completed disposable scratch. P3 review index also links
+retained artifacts. Release condition: owner review complete and required links/evidence relocated before
+scoped cleanup. No deletion during lane parking. Scientific writing and broader unscoped instruction work
+remain deferred; do not close the overall task or claim the scientific volume complete.

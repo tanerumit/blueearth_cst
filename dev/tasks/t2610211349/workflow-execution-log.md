@@ -686,3 +686,12 @@ Owner requests retention and bounded correction/recheck. Reconfirmed writer `w8:
 calendar-year endpoints and reporting-anchor distinction, no values/code/guide edits. Require parsed
 YAML equality, copying-path inspection and whitespace; no publication rerender. Fresh s2 reviewer will
 recheck after the fixed correction, with the same source-read-only boundary. Main landing stays held.
+
+Writer completed P6-01 in s1 with five comment replacements only. Parsed YAML and all noncomment lines
+match the base; annotation identity passes. Actual scaffolder `_prepare` preserves the full corrected
+climate section after Windows newline normalization, preparing 11 payloads in memory without case writes.
+Whitespace/comment width pass. Initial raw equality failed only on carriage returns; no runtime repair.
+Observed repair-check interval 22:27:29–22:29:42 UTC is 2m13s, excluding final handoff. Same role/skills
+and medium allocation retained. Coordinator committed `86085ea2`; clean s1 is the fixed recheck input.
+Retained writer return includes exact diff/proof and measurements. Same independent s2 reviewer assigned
+only P6-01 recheck; no full build/browser/model rerun or broadened repair. P6-02 remains deferred minor.

@@ -316,3 +316,73 @@ Add a proportionate check that each alternate-format menu has exactly the intend
 href targets that document's emitted format. This generalizes to books and partial-format publication.
 Coordinator/owner: retain the existing proposal for a separately authorized skill update, or apply it there?
 No shared guidance change or runtime adoption is claimed in P5.
+
+## P6-01 bounded starter-comment repair
+
+Coordinator commissioned this correction after independent P6 review. Candidate/unchanged HEAD:
+`e18d7316fb8b47fd40fcddc086963f08ab63bf4e`, branch `docs/t2610211349-publication-assembly`, clean at entry.
+Read retained main `p6-review.md` finding P6-01 and its recheck requirements. Existing P6-02 remains minor
+and deferred; no additional scope was taken.
+
+**Only tracked change:** five comment lines in
+`config/templates/example-basin/project_config.yml`. No YAML value, runtime code, guide, generated
+publication, PDF, shared record, dependency or test source changed. This append-only return evidence and
+ignored copying-proof scratch are the only additional writes. No commit/landing or nested agent.
+
+Exact comment diff:
+
+```diff
+-  # Years of record to extract, inclusive. At least 16. This is not the model
++  # Calendar years to extract, January 1 through December 31 inclusive. At least 16. This is not the model
+-  # Select inclusive historical water years. Input: year mapping spanning at least 16 years.
++  # Select inclusive historical calendar years. Input: year mapping spanning at least 16 years.
+-    # First historical water year. Input: integer year, <= end.
++    # First historical calendar year. Input: integer year, <= end.
+-    # Last historical water year. Input: integer year, >= start.
++    # Last historical calendar year. Input: integer year, >= start.
+-  # First month of the water year. Changes every annual statistic.
++  # First month of the water year for reporting aggregation; it does not change extraction bounds.
+```
+
+The neighboring model-run-period warning, `start: 2000`, `end: 2016` and commented optional
+`water_year_start: Jan` remain unchanged. Wording distinguishes calendar extraction from reporting
+aggregation without asserting that the setting changes every statistic.
+
+Evidence owners inspected, without edits: `shared/wf3_science.py::historical_window_bounds` returns
+January 1 / December 31; current TM configuration already describes calendar-year bounds and the
+reporting-year month; `scripts/create_case.py::_prepare` reads the maintained starter and preserves its
+comments while making the existing case-identity/header changes.
+
+Checks through compatible main runtime via `session_runtime.py`:
+
+- `yaml.safe_load(git show HEAD:<source>) == yaml.safe_load(current source)`: **pass**.
+- Every noncomment line, including blank lines, compared before/after: **identical**.
+- Existing `_annotate_config(current, _template_comments(source)) == current`: **pass**; no extra
+  annotation or source help change is introduced.
+- Called actual `_prepare` against an ignored empty scratch cases root: **11 file payloads prepared
+  in memory**, no case files written. The entire corrected climate-window/water-year comment and value
+  section is preserved after normalizing Windows carriage returns. Existing case headers/identity fields
+  still change as designed; this is not a claim that the whole generated project file is byte-identical
+  to the starter. Proof: `.tmp/tasks/t2610211349/p6-01-proof.json`.
+- `git diff --check -- config/templates/example-basin/project_config.yml`: **pass**.
+  Edited comments are within the 110-character line convention. Final Git status contains only the
+  authorized YAML path.
+
+The first raw section-copy assertion failed on existing Windows newline conversion; parsed YAML,
+noncomment equality and annotation identity already passed. A bounded diagnostic isolated carriage
+returns; the newline-normalized section comparison passed. No copying code, newline policy or runtime
+behavior was changed to satisfy this check.
+
+No model/notebook execution, installation, publication/artifact regeneration, full render, broad audit
+or new permanent test was needed. Existing publication/PDF evidence is retained; the unchanged guides
+already carry the corrected period advice. The same independent reviewer owns the P6 recheck.
+
+Role/skills: continuing full manually applied canonical technical-writer, GPT-6.1-Sol / medium allocation
+retained. Reused completed scientific-software-documentation (configuration help/source authority),
+writing-feedback-revision (fidelity), testing-policy and execution-checks (bounded borrowed-runtime proof),
+project-system (ignored evidence/handoff), and existing Python verification guidance. No newly triggered
+skill body/reference was required; no governing read remains incomplete. Backend/tokens/cost unavailable.
+
+Start UTC **2026-10-26 22:27:29**; final repair-check checkpoint **2026-10-26 22:29:42**;
+observed interval **2 min 13 s**, excluding subsequent packet append/handoff. Source writes stopped.
+Next: cst-main reviews/commits the single YAML-comment diff; the same independent s2 reviewer rechecks.

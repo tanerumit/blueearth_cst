@@ -1,0 +1,51 @@
+{
+  "title": "Indicator selection — publishing pilot",
+  "repository_url": "https://github.com/tanerumit/blueearth_cst/blob/470fc7613b8fd2cf6b840b724b5b4a0d3f64505e/",
+  "sections": [
+    {
+      "source": "docs/guide/running.md",
+      "start": "## Calculate different indicators from existing simulations\n",
+      "stop": "## Next\n",
+      "anchor": "calculate-different-indicators-from-existing-simulations"
+    },
+    {
+      "source": "docs/site/toolbox-reference/workflow-simulate-system.qmd",
+      "start": "`operations` is a nonempty list",
+      "stop": "calendars, missingness or grain.",
+      "include_stop": true,
+      "heading": "## Configuration",
+      "anchor": "configuration"
+    },
+    {
+      "source": "docs/guide/outputs.md",
+      "start": "For post-processing, read CSVs",
+      "stop": "definition's, under its own indicator key.",
+      "include_stop": true,
+      "heading": "## Reading an indicator set",
+      "anchor": "reading-an-indicator-set"
+    },
+    {
+      "source": "docs/guide/outputs.md",
+      "start": "### Opening an indicator table in Excel\n",
+      "stop": "### Migrating existing outputs\n",
+      "anchor": "opening-an-indicator-table-in-excel"
+    },
+    {
+      "source": "blueearth_cst/indicators/sets/default/README.md",
+      "anchor": "default-indicators"
+    },
+    {
+      "source": "docs/guide/quick-start.md",
+      "start": "## The shape of a run\n",
+      "stop": "## Pick a configuration\n",
+      "anchor": "the-shape-of-a-run"
+    }
+  ],
+  "asset": "docs/guide/assets/shape-of-a-run.html",
+  "compatibility": {
+    "fixture": "tests/fixtures/docs-pilot",
+    "old": "docs/site/toolbox-reference/workflow-simulate-system.qmd",
+    "canonical": "docs/technical-manual/indicator-requests.md",
+    "anchor": "configuration"
+  }
+}

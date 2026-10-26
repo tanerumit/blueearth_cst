@@ -1,0 +1,18 @@
+execute:
+  enabled: false
+engine: markdown
+toc: true
+number-sections: false
+format:
+  html:
+    theme: cosmo
+    embed-resources: true
+    code-copy: true
+    code-overflow: wrap
+  typst:
+    papersize: a4
+    fontsize: 11pt
+    margin:
+      x: 20mm
+      y: 18mm
+    keep-typ: true

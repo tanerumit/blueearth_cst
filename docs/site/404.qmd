@@ -1,32 +1,21 @@
 ---
 title: "Page not found"
-subtitle: "That address does not exist on this site"
+subtitle: "Find the current documentation route"
 toc: false
 number-sections: false
 page-layout: article
 ---
 
-The page you asked for is not here. The likeliest reasons, in order:
+The address may be an older route or a repository-only resource.
+Use site search or choose a current entry:
 
-- **The site is still being built out.** The technical background is written but
-  not yet published — its figures are missing from the repository. Until it
-  lands, that material is in `docs/references/cst-toolbox-technical-note-2025.md` in the
-  repository.
-- **A page moved.** The user guide was reorganised when this site was created;
-  a link from an older document may point at a path that no longer exists.
-- **The address is for the repository, not the site.** Anything under `dev/`,
-  the vendored HydroMT and Wflow guides, and the notebooks are deliberately not
-  published here.
+- [Installation](setup/install.md).
+- [First example](guide/quick-start.md).
+- [Configuration](guide/configuration.md).
+- [Running and recovery](guide/running.md).
+- [Output interpretation](guide/outputs.md).
+- [Technical reference](toolbox-reference/overview.qmd).
 
-## Where you probably meant to go
-
-| Looking for | Go to |
-|---|---|
-| Installing the toolbox | [Setup guide](setup/install.md) |
-| Running the pipeline the first time | [Quick start](guide/quick-start.md) |
-| Pointing it at your own basin | [Configuring a project](guide/configuration.md) |
-| The workflows and their flags | [Running the workflows](guide/running.md) |
-| What a run wrote | [Reading the outputs](guide/outputs.md) |
-| Anything else | [the repository](https://github.com/tanerumit/blueearth_cst) |
-
-Or use the search box in the navigation bar.
+Notebooks, developer guidance and offline upstream references are intentionally separate from the site.
+Use the [repository documentation map](https://github.com/tanerumit/blueearth_cst/blob/main/docs/README.md)
+for those sources. The current render list determines which chapters are available on this site.

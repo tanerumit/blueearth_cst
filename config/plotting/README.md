@@ -11,11 +11,8 @@ Edit the YAML and restart any interactive plotting process. Workflow renderers r
 process and track both files by content digest. The historical display-reference producer also tracks
 `colors.yml`, because that record retains map colours. Neither file enters scenario or simulation identity.
 
-Use `shared.plot_colors` and `shared.plot_setup` as the loaders. `shared.plot_preset` builds the CST
-chart preset (`CST_PRESET`, `STYLE` and the token names) from these files, and `shared.plot_style` keeps
-the cartographic/evaluation adapter. The portable core in `blueearth_cst/plotting/` never reads this
-directory: CST renderers pass the preset in with `use_preset(CST_PRESET)`. Do not add direct YAML
-readers to individual renderers or duplicate these defaults there.
+For loaders and adapter boundaries, use the
+[technical configuration reference](../../docs/technical-manual/configuration.md).
 
 Quote hex colours. Named dataset/evaluation entries reference `default_cycle` names; SSP entries remain
 independent. Neutral and map-feature inks also accept quoted grayscale fractions from 0 to 1.
@@ -24,4 +21,5 @@ Style lengths are millimetres and font/line sizes are points; alpha is a fractio
 Classification, normalization, completeness, statistical methods and quantity-specific thresholds remain
 in Python. Geometry and artist placement specific to one figure also remain with that renderer.
 R/weathergenr plots retain their own setup. The agreed appearance and exceptions live in
-`dev/reference/toolbox-plot-style.md`; user guidance is in `docs/guide/configuration.md`.
+[plot style](../../dev/reference/toolbox-plot-style.md); user choices are in
+[configuration](../../docs/guide/configuration.md#plot-annotations).

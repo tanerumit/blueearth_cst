@@ -384,11 +384,27 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     writer.writerow(["outlet", args.longitude, args.latitude])
     files[outlet] = stream.getvalue().encode("utf-8")
     files.pop(Path("README.md"), None)
+    toolbox_version = _toolbox_version()
+    documentation = (TOOLBOX_ROOT / "docs/guide").as_posix()
     files[Path("INSTRUCTIONS.md")] = f"""# {slug}: quick reference
 
 Run in PowerShell from the toolbox root. Use one running session per output directory.
 
+Toolbox version at creation: `{toolbox_version}`.
+Use the documentation from that checkout, available locally without a hosted manual:
+[create a case](<{documentation}/new-case.md>),
+[configure it](<{documentation}/configuration.md>),
+[run or resume](<{documentation}/running.md>),
+[choose indicators](<{documentation}/indicators.md>), and
+[read results](<{documentation}/outputs.md>).
+If the checkout moves, update these local links and use the recorded version to identify matching guidance.
+Input datasets are external; software installation does not supply them.
+
 ## Run
+
+The starter enables WF0 alone. Review its historical climate comparison and choose forcing before
+disabling WF0 and enabling downstream stages. WF1 and WF3 independently supply WF4; WF2 is optional
+projection context and never drives scenario generation. Review all copied settings for this basin.
 
 ```powershell
 $config = "{destination.as_posix()}/project_config.yml"
@@ -459,6 +475,8 @@ In `project_config_simulate_system.yml`, set:
 operations: [indicators]
 ```
 
+Keep the existing `experiment_name` and choose `indicator_sets` in that file.
+The selected experiment must have a completed `_engine/simulation.json` record, even for a dry run.
 Then run against compatible retained responses:
 
 ```powershell
@@ -501,7 +519,7 @@ Schema 2 uses the run directory for relative paths. Retained run records: [notes
     files[Path("notes.md")] = (
         f"# {slug} — run notes\n\nStatus: configured; not run.\n\n"
         f"Purpose: {args.purpose.strip()}\n\n"
-        f"CST version at creation: {_toolbox_version()}\n\n"
+        f"CST version at creation: {toolbox_version}\n\n"
         "No run history or validation is inherited from the template.\n\n"
         "## Retained run record\n\n"
         "- Date:\n- Cases revision and dirty state:\n"

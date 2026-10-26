@@ -1,25 +1,19 @@
 # Case data
 
-Keep basin-specific sidecar files in this directory. The supplied
-`output_locations.csv` identifies model output locations with columns
-`station_name`, `x`, and `y`; `x` is longitude and `y` is latitude in decimal
-degrees. Replace the example row with the intended outlet and use coordinates
-consistent with `basin.region` in the project config.
+Keep basin-specific sidecars here and record their provenance beside them.
 
-Optional observations are configured under `observations` in
-`project_config_build_model.yml`. Before adding a series, consult the toolbox's
-current data-format documentation in `blueearth_cst:config/templates/README.md`
-for supported variables, units, date/time format, and station matching. Follow the documented matching
-requirements and record the units and matching choices here or alongside the
-file; do not infer or convert units silently.
+1. Replace the example row in `output_locations.csv` with your intended location.
+   Columns `station_name`, `x` and `y` use longitude/latitude in decimal degrees.
+   Keep coordinates consistent with `basin.region` and inspect resolved locations.
+2. If supplying observations, use the matching toolbox checkout's
+   `docs/technical-manual/input-formats.md` for units, date/time format and resolved station IDs.
+   Configure the series in `project_config_build_model.yml`; do not infer/convert units silently.
+3. Replace the illustrative `time;1010;1020` header in `observed_daily_discharge_template.csv` with the
+   resolved `wflow_id` columns and add real daily data before selecting it.
+   The starter leaves observations disabled (`river discharge: null`); the header-only file is not data.
+4. For each sidecar, record source, preparation/retrieval date, transformations and whether values are
+   measured, derived or synthetic. Label synthetic examples and replace them before scientific interpretation.
 
-`observed_daily_discharge_template.csv` contains only the semicolon-separated
-header `time;1010;1020`. Replace the illustrative station IDs with the resolved
-`wflow_id` values and add your observed daily series before configuring its
-absolute path under `observations`. The starter leaves observations disabled
-(`river discharge: null`); the header-only file is not a usable observed record.
-
-For every sidecar, record its source and provenance, retrieval or preparation
-date, any transformations, and whether values are measured, derived, or
-synthetic. Label synthetic examples explicitly and replace them before
-scientific interpretation.
+The scaffolded case's `INSTRUCTIONS.md` links the version-identifiable local toolbox documentation.
+For a manual copy, record the toolbox revision and use that checkout's guide, not repository-relative
+links inherited from the original starter location.

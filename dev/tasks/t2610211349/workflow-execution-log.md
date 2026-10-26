@@ -576,3 +576,39 @@ measurements or additive uncached totals; earlier stage-specific usage remains u
 Writer manifest fixes ten guide/16 manual chapters, six-source appendix declaration and V9 formatting.
 Engineering dispatch includes source hashes, no-execute, link rebasing, static alternative and targeted
 consumer checks. No other roles or s3 use; P6 fresh review follows the completed assembled candidate.
+
+Writer/engineer froze schema-version-1 `docs/publication/manifest.json` and V9 `format.yml`;
+`stage_publications(source_root, output)` and `build_publications.py --source-root --output [--stage-only]`
+are the agreed interface, with generated QMD chapter routes and sibling downloadable HTML/PDF volumes.
+Root `.gitignore` edits for the new generated paths are assigned solely to the writer.
+The explicit-medium engineer runtime is visible/active in Herdr but shared-server resume/send reports
+active-writer/notLoaded errors. Two writer messages failed there; coordination moved to Herdr without
+restarting the active worker. Restricted-token socket denial was resolved through normal-permission
+tool calls, not server or policy changes. Record this as coordination overhead, not worker failure.
+
+PDF navigation probe found exported named destinations but Typst emits URI actions, not native GoToR.
+The user relayed this evidence and requested the bounded choice. Coordinator selected sibling
+`.pdf#nameddest=<namespace>` links with every target checked against its destination PDF. Reader guidance
+must say that cross-PDF links may open the volume without jumping to the section, depending on the reader;
+use the contents as fallback. Two PDFs suffice for offline reading. No cross-reader interaction proof,
+native GoToR claim, new dependency or PDF postprocessing workaround is authorized or implied.
+
+### P5 engineering acceptance and transfer
+
+Stable engineering return retained as `p5-engine-return.md`, SHA-256
+`a36ddc146c0d13eb2895e7eb83737c209aabcc99e170da13fa9e9310b95673bb`.
+Five delivery files reviewed: publisher builder, Lua helper, expanded site stager and two test files.
+Coordinator findings on code-labelled links and stale generated products were fixed with targeted checks;
+stale products fail explicitly without deletion. Final 26 consumer tests pass in 1.69s; scoped Ruff,
+format, compile and whitespace pass. Both volume builds pass in 16.86s; 63 input hashes unchanged,
+517 HTML links and 29 sibling-PDF named targets verified. Actual wrapper Lua smoke passes.
+Complete visual/site acceptance is not inferred from these engineering checks.
+
+Recorded engineering checkpoints span 19m28s; true start/active compute and stage usage unknown.
+The return records full manual python-engineer role, medium allocation, all actual skills/references,
+rework and the PDF limitation. No model escalation, dependency installation or scientific execution.
+Owner explicitly requested review/commit/transfer. Committed `872b8075` in s2, then fast-forwarded s1
+to that commit with its disjoint uncommitted documentation edits preserved. Primary main is unchanged
+by this source transfer; landing waits for P6. Writer notified to reuse matching input/build evidence,
+perform full website/routes/download checks and PDF/browser visual acceptance, and report defects.
+Engineer remains available in s2 for bounded repairs until final P5 acceptance permits fresh P6 context.

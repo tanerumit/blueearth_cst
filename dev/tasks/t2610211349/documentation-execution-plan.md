@@ -1,6 +1,6 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: P5 commissioned; P6 follows accepted assembly.
+Date: 2026-10-26. Task: t2610211349. Status: P5 accepted; P6 fresh reader review in progress.
 
 ## Current continuation authority
 

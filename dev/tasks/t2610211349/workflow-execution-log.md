@@ -642,3 +642,26 @@ Retained engineer return now includes the repair addendum. Same role/medium allo
 apply; no new implementation dispatch or dependency change. No source landing to main or push.
 Writer additionally reports duplicate website appendix titles as a minor presentation finding; full
 volume HTML/PDF are unaffected. Preserve this finding for P6 disposition without expanding this repair.
+
+### P5 writer acceptance and P6 fresh dispatch
+
+Writer explicitly completed, stopped source writes and closed both previews. Retained `p5-return.md`
+SHA-256 `8edbe1c19e71089a8168667a9c2b7696144555f4533d63d92785be0609b50188` records all 55 source
+dispositions, 52 rendered site targets, 3329 local link/resource occurrences, 37 old reference and five
+setup anchors, all 63 PDF pages, and actual Chrome navigation/search/diagram/menu checks. Source-equivalent
+build evidence is reused; two HTML menus received a fresh bounded browser check after the repair.
+Writer wall interval 21:29:55–22:14:29 UTC is 44m34s including waits; stage tokens/active compute unknown.
+Coordinator reviewed and committed the exact 11 writer paths as `e18d7316`; s1 working tree clean.
+
+P6 allocation revalidated against the existing frontier plan: one fresh technical-writer, medium effort,
+three promised reader journeys, source-read-only review of fixed s1 source and rendered artifacts.
+Completed engineer exited in s2; cumulative thread usage now 242645 total, 186833 input, 55812 output
+(16315 reasoning), 13697792 cached input. These are whole-thread observations, not P5 stage measurements.
+Fresh `technical-writer-p6` launched in the discovered s2 agent pane `w9:p1` with explicit
+`gpt-6.1-sol` and `model_reasoning_effort=medium`; UI shows medium and 0% context before dispatch.
+Full canonical role loading instructed via the generic surface; actual loading awaits reviewer return.
+Owner's permission exception retained: procedural source-read-only under current permissions, no claimed
+enforced isolation. Lane-local review report/evidence writes explicitly allowed; all source writes,
+scientific execution, commits and nested delegation prohibited. No s3 use or policy changes.
+Fixed input is s1 `e18d7316`, not s2's older documentation. Build/all-page proof may be reused; review
+must independently walk the three journeys. Main source landing remains held until P6 acceptance.

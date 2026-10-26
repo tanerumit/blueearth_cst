@@ -1,71 +1,31 @@
 ---
 title: "BlueEarth Climate Stress Test"
-subtitle: "A workflow toolbox for rapid, bottom-up climate risk assessment of water systems"
+subtitle: "First-order climate vulnerability assessment of river basins"
 toc: false
 number-sections: false
 ---
 
-The **BlueEarth Climate Stress Test (CST)** toolbox helps water resources
-specialists examine how river flow responds to changes in climate. It supports
-rapid, first-order assessments of water availability, low flows and high flows
-in a river basin. The central question is: **under which climate conditions
-does a hydrological outcome of concern emerge?**
-
-CST uses a bottom-up, scenario-neutral approach. It starts with the basin's
-historical climate, generates alternative weather sequences to represent
-natural variability, and applies a systematic range of temperature and
-precipitation changes. A distributed Wflow-SBM model simulates the resulting
-hydrological response. Indicators calculated from those simulations can be
-mapped across the tested climate range as a **response surface**. You can
-compare that surface with a decision-relevant threshold to identify conditions
-under which performance becomes unacceptable.
-
-CMIP6 projections serve a different purpose. The toolbox summarizes projected
-temperature and precipitation changes so you can place the tested range and
-any identified vulnerabilities in a plausible future context. Those
-projections do not select or drive the stress-test scenarios. This separation
-lets an assessment examine climate conditions beyond a chosen model ensemble
-and then ask which of those conditions merit closer attention.
-
-This site documents the **workflow toolbox** that performs the analysis. It is
-the computational part of the wider CST platform; the API and user interface
-are maintained separately. The toolbox uses global datasets and an automated
-model setup to make basin-scale screening practical. Results still depend on
-the quality of the climate inputs and hydrological model. They are a starting
-point for investigating risks and adaptation options, not a substitute for a
-locally calibrated model or detailed engineering design.
+The toolbox builds a Wflow-SBM model from global data, generates weather across a scenario-neutral
+temperature × precipitation grid and calculates indicators from retained responses.
+CMIP6 changes provide plausibility context; they do not select or weight the tested grid.
+Outputs support screening, not an automatically calibrated basin model or a decision by the software.
 
 ## Start here
 
-| If you want to… | Go to |
-|---|---|
-| Install the toolbox on your machine | [Setup guide](setup/install.md) |
-| Run a basin assessment end to end | [Quick start](guide/quick-start.md) |
-| Point the toolbox at your own basin | [Configuring a project](guide/configuration.md) |
-| Run selected analyses or revisit an experiment | [Running the workflows](guide/running.md) |
-| Find and interpret the results | [Reading the outputs](guide/outputs.md) |
+1. [Install](setup/install.md) and check external-data access.
+2. [Run the example](guide/quick-start.md) and find its output tables.
+3. Use the repository's [own-case guide](../guide/new-case.md) and
+   [indicator guide](../guide/indicators.md) for your assessment choices.
+4. [Run/resume](guide/running.md), [read outputs](guide/outputs.md) and check qualifications.
+
+The [technical reference](toolbox-reference/overview.qmd) describes implemented interfaces.
+The existing [scientific approach](scientific-approach/overview.qmd) explains assessment rationale and limits.
+This writing tranche covers table interpretation, selection and extension; supported surface construction
+and further scientific-approach writing remain deferred.
 
 ## The five workflows
 
-The workflows share a project configuration set. The runner executes those you
-enable in this order:
-
-1. **Analyze historical climate** (optional) — compare gridded climate sources
-   for the basin before choosing the forcing dataset. This analysis does not
-   require a hydrological model.
-2. **Build the model** — use HydroMT and global datasets to prepare Wflow-SBM,
-   then run it with historical forcing and evaluate the simulated discharge
-   where observations are available.
-3. **Analyze projections** — calculate CMIP6 temperature and precipitation
-   change factors by model, scenario and future period for later comparison
-   with the stress-test range.
-4. **Generate scenarios** — create stochastic weather realizations and apply
-   the specified temperature and precipitation perturbations. The resulting
-   climate series form a reusable scenario collection.
-5. **Simulate the system** — run Wflow-SBM for the generated climate series and
-   calculate hydrological indicators from the retained model responses.
-
-Model building and scenario generation are both needed before simulation.
-Projection analysis is independent of scenario generation and provides context
-for interpreting the response surface. See the [quick start](guide/quick-start.md)
-for an example run.
+WF0 compares historical climate and can run alone for forcing selection.
+WF1 builds the historical model; WF3 independently generates climate series. Both supply WF4 simulation
+and indicator calculation. WF2 is optional projection context and never drives WF3.
+The runner executes enabled workflows in WF0 → WF1 → WF2 → WF3 → WF4 order.

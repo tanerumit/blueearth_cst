@@ -21,3 +21,5 @@ Use [repository layout](reference/dev-repository-layout.md) for file placement a
 [record lifecycle](reference/dev-record-lifecycle.md) for retention, and
 [validation ladder](reference/dev-validation.md) for checks.
 User-facing documentation belongs in `docs/`.
+
+Environment-specific recipes live in [scripts/environment-notes.md](scripts/environment-notes.md).

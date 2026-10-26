@@ -1,185 +1,56 @@
 # Workflow notebooks
 
-Three notebooks cover model building, projection analysis and the two-stage stress test. Each names the
-Snakefile it drives, walks the settings file that controls it, renders the job
-graph, runs it, and then *reads* the results rather than only displaying them.
+Optional interactive sources for advanced readers:
 
-| # | Notebook | Workflow | What it covers |
-|---|---|---|---|
-| 1 | [Model building](<Model building.ipynb>) | `build_model.smk` | Delineates the basin, extracts a historical climate store, builds and forces a Wflow-SBM model with hydromt, runs it once, and evaluates it against observed discharge. |
-| 2 | [Climate projections](<Climate projections.ipynb>) | `analyze_projections.smk` | Fetches CMIP6 slices for the basin and derives monthly and annual change factors per model, scenario and horizon — the plausibility overlay, not a driver of the stress test. |
-| 3 | [Climate stress test](<Climate Stress Test.ipynb>) | `scripts/run_workflows.py` + `scripts/simulate_system.py` | Generates stochastic weather realizations, perturbs them across a temperature × precipitation grid, runs Wflow for every combination, and reduces the result to a response surface. |
+- [Model building](<Model building.ipynb>): historical model preparation and inspection.
+- [Climate projections](<Climate projections.ipynb>): projection composition and change-factor reading.
+- [Climate stress test](<Climate Stress Test.ipynb>): retained scenario/indicator exploration.
 
-Run model building before simulation; projection analysis is an independent terminal overlay. Notebook 3 does not rebuild the model — it binds to the one
-notebook 1 left behind, and refuses to run against a stale build.
+## Current status
+
+The cells execute real workflows and need installed tools, external data and sufficient storage/compute.
+Some code uses older configuration reads, result paths and indicator interfaces.
+Markdown notes identify those limitations; code has not been repaired or requalified in this prose pass.
+Use the [command-line quick start](../guide/quick-start.md) for the maintained execution route.
+Supported response-surface construction remains deferred; do not treat the third notebook as a verified
+current assessment tutorial.
 
 ## Running them
 
-The notebooks execute the real pipeline, so they need the toolbox installed, not
-just a Python kernel:
+Complete [installation/data checks](../guide/install.md), then open from your selected toolbox checkout:
 
-```bash
-pixi install       # Python stack, R toolchain, snakemake, graphviz
-pixi run install   # + weathergenr (R) and the Julia environment
-```
-
-Julia is **not** in the pixi environment — it is juliaup-managed and must
-already be on `PATH`. See `docs/site/setup/install.md` if setup misbehaves.
-
-Then start Jupyter (or VS Code) from inside that environment:
-
-```bash
+```powershell
 pixi run jupyter lab docs/notebooks
 ```
 
-Every notebook locates the repository root itself by walking up from the
-kernel's working directory, so it does not matter where you start it — there is
-no install path to edit.
-
-All three run against `test_case/project_config_rapid.yml`, the cheap
-end-to-end config. To point one at your own project, change the `CONFIG`
-constant in the setup cell; everything downstream is derived from the config.
-For a new project, scaffold from `config/templates/example-basin/` or copy the
-whole directory and follow its README; the project file needs its workflow files.
-
-Run the pipeline from the **primary checkout**, not from a task worktree.
-Snakemake keeps its up-to-date metadata under the working directory, so one
-project driven from two checkouts gets two stores that disagree, and each holds
-its own lock while writing the same outputs.
+Inspect every command and path before executing. Use one checkout for a case and one writer per output root.
+WF1 and WF3 independently supply WF4; WF2 is optional plausibility context.
+Changing `CONFIG` alone is not sufficient to qualify these notebooks for another case.
 
 ## Outputs are NOT committed
 
-Each notebook is committed as **source only**: every cell's outputs and
-execution counts are cleared. Two mechanisms, and the split between them
-matters:
-
-- `dev/scripts/notebook_outputs.py --strip` clears them, and `--check` reports.
-- `tests/test_notebook_outputs.py` is **the gate**, because it runs on both CI
-  legs and on every checkout. The `.githooks/pre-commit` hook is the fast local
-  echo of it, not the gate — `core.hooksPath` is a per-clone setting that
-  cloning does not install, so a hook alone protects only the machines that
-  opted in.
-
-**This reverses the 2026-08-13 ruling** (fao assessment §6.3, option C: commit
-outputs with a dated `rendered against <sha>` banner). What changed is the
-measured cost. A notebook carrying figures embeds them as base64 PNG and so does
-not delta-compress: every edit mints a fresh multi-megabyte blob that stays in
-history forever. On 2026-08-14 `Model building.ipynb` was 6.43 MB with **82 blob
-versions already in history**, and a rename sweep that rewrote three short
-strings inside the three notebooks turned a few hundred KB of text change into a
-**7.1 MB push**. Stripping took the set from 8.8 MB to 0.08 MB.
-
-The ruling was buying something real, and it is not simply given up: the point
-of committed outputs was that a reader sees the results without running the
-pipeline (assessment §6.1 point 6 — *"they teach the reading of the output"*).
-That is preserved by **publishing a rendered copy as an Artifact** instead of
-committing it, which is option D from the same table. Render with the nbconvert
-command below and publish the HTML; the repo keeps the source, the reader still
-gets the figures.
-
-Staleness moves with it. There is no longer a `<sha>` banner to trust or
-distrust, because there are no committed numbers to be stale — the prose is the
-only thing in the file, and it is kept current like any other document.
+The `.ipynb` file is the sole editable tutorial source. Keep outputs and execution counts cleared.
+`dev/scripts/notebook_outputs.py --check` reports stored outputs; `--strip` removes them.
+`tests/test_notebook_outputs.py` enforces source-only notebooks; a local hook is additional protection.
+No rendered artifact or measured result is supplied by an empty source notebook.
 
 ### Re-rendering
 
-From the primary checkout, on a commit that already carries the prose you want
-rendered:
-
-```bash
-pixi run jupyter nbconvert --to notebook --execute --inplace \
-  --ExecutePreprocessor.timeout=3600 "docs/notebooks/Model building.ipynb"
-```
-
-`--inplace` writes the outputs back into the **tracked** file, which is exactly
-what must not be committed. So publish the rendered result as an Artifact, then
-strip the notebook again before committing:
-
-```bash
-pixi run python dev/scripts/notebook_outputs.py --strip
-```
-
-The pre-commit hook catches it if you forget; `tests/test_notebook_outputs.py`
-catches it if the hook is not installed.
-
-Two things to know before you run it:
-
-- A run against an already up-to-date project reports "nothing to be done", so
-  the run cells render empty of work. Deleting the terminal outputs first — the
-  `plots/` directories, `performance_indicators.csv`, `experiments/*/results/` —
-  makes those rules re-execute without redoing the model build or the CMIP6
-  fetches.
-- Deleting `performance_indicators.csv` reruns evaluation using the retained
-  `run_default/output.csv`. Older trees where the native CSV was deleted need
-  one Wflow run to restore it.
-
-Verify by checking the executed notebooks rather than by reading them, on four
-counts:
-
-- no cell carries an `error` output;
-- no cell's captured text contains `Error in rule` or `Exiting because a job
-  execution failed`;
-- every code cell has an execution count, so none was skipped; and
-- every cell that asks for an image carries an `image/png` payload — 5 in
-  *Model building*, 4 in *Climate projections*, 2 in *Climate Stress Test*.
-
-The last two are what catch a cell that ran and produced nothing. `nbconvert`
-exiting 0 proves only that no Python exception escaped a cell, and the `run()`
-helper returns the subprocess exit code with nothing acting on it, so a failed
-Snakemake call inside a notebook otherwise reads as a successful cell.
-
-To read a rendered notebook as a web page. Pass `--output-dir`, or nbconvert
-writes a ~7 MB untracked `.html` beside the notebook, inside the tracked
-`docs/notebooks/`:
-
-```bash
-pixi run jupyter nbconvert --to html --embed-images \
-  --output-dir .tmp/notebooks-html "docs/notebooks/<name>.ipynb"
-```
-
-Add `--template basic` for a fragment with no external references at all; the
-default template pulls MathJax, mermaid and require.js from a CDN, which is
-harmless in a browser but not offline-clean.
+Rendering with execution runs the real pipeline; it is not part of the documentation build.
+Do not delete scientific outputs merely to make a notebook display fresh work.
+Use the owned runner and an explicit output root for any separately authorized execution.
+Afterwards inspect errors, workflow exit outcomes and expected tables/figures, not only nbconvert's exit code.
+Do not commit generated outputs or execution counts.
 
 ## Data
 
-The rapid config builds a small test basin from global datasets, registered in
-`config/catalogs/deltares_data_pdrive.yml` (physiography, land surface, climate) and
-`config/catalogs/cmip6_data.yml` (projections, generated from a live listing of
-the public CMIP6 store).
-
-Sources are never hardcoded in a rule: they are named in a catalog and handed to
-hydromt with `-d`, so retargeting a project at different inputs is a config
-edit. The table below is what the *default* configuration uses; a specific run's
-inputs are whatever its config named, and the catalog entry is the authoritative
-citation.
-
-| Name | Catalog entry | Type | Reference |
-|---|---|---|---|
-| MERIT Hydro IHU | `merit_hydro_ihu` | Hydrography | Eilander et al. (2020). doi:10.5281/zenodo.5166932 |
-| Reach-level bankfull river width | `hydro_rivers_lin` | Hydrography | Lin et al. (2019). doi:10.5281/zenodo.3552776 |
-| GlobCover v2.3 | `globcover` | Land cover | Arino et al. (2012). doi:10.1594/PANGAEA.787668 |
-| MODIS/Terra+Aqua Leaf Area Index | `modis_lai` | Leaf area index | Myneni et al. (2015). doi:10.5067/MODIS/MCD15A3H.006 |
-| SoilGrids | `soilgrids` | Soil properties | Hengl et al. (2017). doi:10.1371/journal.pone.0169748 |
-| GRanD v1.1 + HydroLAKES v10 + JRC 2016 | `hydro_reservoirs` | Reservoirs | Lehner et al. (2011). doi:10.1890/100125 |
-| HydroLAKES v10 | `hydro_lakes` | Lakes | Messager et al. (2016). doi:10.1038/ncomms13603 |
-| Randolph Glacier Inventory v6 | `rgi` | Glaciers | Pfeffer et al. (2014). doi:10.3189/2014JoG13J176 |
-| ERA5 reanalysis | `era5` | Climate | Hersbach et al. (2019). doi:10.1002/qj.3803 |
-| CMIP6 | `config/catalogs/cmip6_data.yml` | Climate projections | Eyring et al. (2016). doi:10.5194/gmd-9-1937-2016 |
-
-Which land-cover, LAI and soil products a run actually used is set by
-`basin.sources.{lulc,lai,soil}`; the waterbody sources come from
-`config/defaults/wflow_update_waterbodies.yml`.
-
-*The basin, the model and the results in these notebooks are for illustration.
-This is a rapid, uncalibrated, global-data deployment — see notebook 1's
-evaluation section for what that means when reading the numbers.*
+The rapid example references external catalogs under `config/catalogs/`.
+Check actual source entries and coverage; software installation does not supply model inputs.
+Use the [dataset reference](../technical-manual/datasets.md) and the case's retained provenance.
+The example is uncalibrated; execution and source agreement do not establish basin skill.
 
 ## Related reading
 
-- `README.md` — how the five workflows fit together.
-- `docs/references/cst-toolbox-technical-note-2025.md` — the stress-test method and the
-  design rationale behind it. Read this before changing *what* a workflow
-  computes.
-- `docs/site/setup/install.md`, `docs/site/setup/env-setup-notes.md` — when pixi, R or Julia setup
-  misbehaves.
+- [Notebook user guide](../guide/notebooks.md).
+- [Read indicator tables](../guide/outputs.md).
+- [Independent indicator module](../../blueearth_cst/indicators/README.md) for advanced calculations.

@@ -463,3 +463,20 @@ Revalidated allocation: continuing technical-writer in s1, fresh api-documenter 
 medium; at most two workers. cst-main owns commits/integration; s3 remains unrelated and untouched.
 Disjoint scope and checks are in `p4-content-assignments.md`. Role change requires ending the completed
 P3 engineer and checking fresh P4B context. Scientific writing remains deferred; P5/P6 are not dispatched.
+
+Dispatch confirmed after allocating both lanes from `a4d79ea6` with `task-start --no-launch --no-reseed`:
+
+- s1 `docs/t2610211349-user-guide`, technical-writer-p1 at w8:p1, continuing thread
+  `01a17846-bf43-7420-aea9-623ae9f3b811`. UI GPT-6.1-Sol medium; substantive working activity observed.
+  A nonblocking diagnostic-log warning was dismissed; no permissions/defaults changed.
+- s2 `docs/t2610211349-technical-manual`, api-documenter-p4b at w9:p1, fresh thread
+  `01a179f6-86b3-7611-a65e-c38e9fabd754`. Preflight confirmed no prior task and correct cwd/branch;
+  shared-server discovery confirmed identity. UI GPT-6.1-Sol medium. Substantive turn
+  `01a179f7-6931-7a13-8792-f4deeaf75ad5` began at epoch 1793047619; role and packet read observed.
+
+Both use full-contract manual roles in generic Codex; native-role activation is not claimed. Final skill
+loading, checks, turnaround and usage await returns. No worker may commit or land. New shared records
+after allocation are coordinator-only and do not invalidate the common implementation base.
+Board locator is P4A; P4B is the named parallel contributor in the same task note, so its CLI untracked
+branch row is explained rather than creating a duplicate task. Two older missing task branches are
+unrelated baseline rows. S3 remains owned by t2610261447 and was not controlled or edited.

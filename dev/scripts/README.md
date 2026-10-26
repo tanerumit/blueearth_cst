@@ -107,3 +107,10 @@ with a nonzero exit status and diagnostics. Staged prerequisites may remain in t
 |---|---|
 | [`notebook_outputs.py`](notebook_outputs.py) | Keep rendered outputs out of tracked notebooks. |
 | [`build_gf15_report.py`](build_gf15_report.py) | Package the frozen GF15 benchmark into its shipped report asset. |
+
+
+## Environment procedures
+
+[environment-notes.md](environment-notes.md) owns local installation fixes, data staging and developer
+runtime borrowing recipes. It links session/validation policy rather than defining a second workflow.
+User setup and recovery live in [the guide](../../docs/guide/install.md).

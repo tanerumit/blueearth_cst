@@ -1,287 +1,40 @@
 # Config templates
 
-**Scaffolds you copy. Nothing here is read by a running workflow.** Copy, fill
-in, point a config at your copy.
+Copyable starters live here; live engine defaults are in [config/defaults](../defaults/README.md).
+The single maintained project starter is [example-basin](example-basin/README.md).
+Its YAML comments explain each setting, expected input and optional choices.
 
-The configs a rule actually *reads* live in **`config/defaults/`**.
+- `example-basin/`: project file, five workflow files, case data and notes, used by `scripts/create_case.py`.
+- `indicator_set.template.yml`: optional named selection of registered indicators.
+- `example-basin/data/output_locations.csv`: example outlet to replace.
+- `example-basin/data/observed_daily_discharge_template.csv`: header only, not a usable observed series.
 
-| File | Purpose |
-| --- | --- |
-| `example-basin/` | Worked external-case starter consumed by `scripts/create_case.py`; review its README before running. |
-| `indicator_set.template.yml` | Optional named selection of registered WF4 indicators. |
-| `example-basin/data/output_locations.csv` | Example outlet; replace coordinates for the case. |
-| `example-basin/data/observed_daily_discharge_template.csv` | Header-only schema for optional observed discharge. |
-| `archive/` | Unmaintained single-workflow configs; see its own README |
+## Start a case
 
-`example-basin/` contains the single maintained configuration set: the project
-file and five workflow files, with optional parameters documented in place.
-To scaffold an external application, prefer `scripts/create_case.py`, which
-copies that directory and sets case paths and outlet coordinates. For manual
-setup, copy the whole directory and follow its [checklist](example-basin/README.md).
-The `config_path:` links already match the copied filenames.
-A filled-in rapid test example is `test_case/project_config_rapid.yml` with
-its siblings; `docs/guide/configuration.md` walks through the layout.
+Use [Create your own case](../../docs/guide/new-case.md) or copy the whole starter and follow its README.
+The starter uses the P-drive catalog with `hydro_rivers_lin` and `globcover` source names.
+Another catalog requires review of source names and coverage. Copying configuration does not supply data.
+Keep `config_path` links consistent with the copied filenames.
 
-Each parameter has a short definition immediately above it, followed by `Input:`
-for the expected format or `Options:` for fixed choices. Commented settings are
-optional examples: uncomment their YAML lines to enable them, retaining the
-explanatory comments. Longer notes explain scientific choices and dependencies.
+## Why the template's defaults are what they are
 
-The project template uses `config/catalogs/deltares_data_pdrive.yml`, backed
-by `P:/wflow_global/hydromt`. Mount the Deltares P-drive before running.
-It explicitly selects `basin.sources.rivers: hydro_rivers_lin` and
-`basin.sources.lulc: globcover` to match that catalog. For a local-data
-installation, select `config/catalogs/deltares_data.yml` and review the
-source names and geographic coverage of the local datasets.
+See the [configuration reference](../../docs/technical-manual/configuration.md) for the historical-window
+minimum, projection member choices and compute defaults. The generator requires at least 16 years;
+the historical model run is selected separately. Example grid/realization counts are not assessment advice.
+Use the actual catalog for available models rather than maintaining a second model list here.
 
-`wflow_sbm.reference.toml` sits here as a **reference copy only** — no Snakefile,
-script or test reads it. Rule 1.06 has hydromt generate the project's own TOML
-from hydromt_wflow's defaults. Treat this file as documentation, and expect it to
-lag: measured 2026-08-10, it was 126 lines against the 149 a real build emitted.
-The `.reference.` infix is there because the bare name `wflow_sbm.toml` read as a
-build input, which is exactly what it is not.
+`wflow_sbm.reference.toml` is a reference copy, not a model-build input.
+HydroMT generates the model's own TOML. Do not treat the reference copy as the complete current schema.
 
-Output-location layer names are derived from the CSV basename
-(`blueearth_cst/shared/gauges.py`); the starter uses `output_locations.csv`.
-Both CSV starters live in `example-basin/data/` and are copied by the scaffolder.
+## Observation inputs
 
----
+1. Replace the example location row with your intended coordinates.
+2. Resolve locations and obtain station IDs from `data/spatial/location_registry.csv`.
+3. Supply observed series only when available, using the required station IDs, dates and units.
+   The comma-separated locations file and semicolon-separated observations have different purposes.
+4. Configure optional observations in the build-model file. A selected observed variable must also be
+   requested in `model.outvars`; missing observations do not establish model skill.
 
-# Why the template's defaults are what they are
-
-The templates state what each key does. The reasoning behind the non-obvious
-defaults lives here.
-
-### `climate.window` — minimum 16 years
-
-Enforced at parse time and again at extraction. weathergenr's wavelet
-decomposition needs at least 16 annual observations, so a shorter record cannot
-support a stress test at all. The floor is `constraints.min_historical_years` in
-`config/advanced_settings.yml` and is **not** overridable per project.
-
-The window is inclusive water years; the model's own run period
-(`simulation_window` in the build_model file) is required, may be shorter, and
-must sit inside it. It does not default to the full climate record.
-
-### `members.preference` — why four labels, not one
-
-Not every model publishes `r1i1p1f1`. CNRM-\*, MIROC-ES2L, UKESM1-0-LL and
-MCM-UA-1-0 use `f2`; HadGEM3-GC31-\* use `f3`; CanESM5-CanOE uses `p2f1`. Pinning
-`r1i1p1f1` alone silently drops them — 38 of 45 usable models. A label a model
-does not publish is simply skipped, because the catalog declares exactly what
-exists.
-
-The four shipped labels were chosen empirically over the generated catalog: they
-reach 45 models across the tier-1 SSPs. Adding further physics variants (`p3f1`,
-`p5f1`, `r1i1000p1f1`, …) reaches *fewer*, because they make a model's historical
-and future member sets differ. When those differ, the change-factor stage raises
-`asymmetric hist/clim members` rather than quietly using the intersection. With
-this list that affects CAMS-CSM1-0, CanESM5, EC-Earth3 (ssp245), GISS-E2-1-G,
-GISS-E2-1-H, IPSL-CM6A-LR (ssp434/460), MCM-UA-1-0 and NorESM2-LM (ssp245) — for
-those, narrow `members.preference` to the one label the model shares across your
-scenarios, or name it in `members.overrides`.
-
-Per-model member counts: `dev/records/milestones/r08/wf2-cmip6-monthly-members.csv`.
-
-### `models` — every CMIP6 model with a historical member
-
-The template lists three. All 65 in the shipped catalog, as `Institution/Source`:
-
-```
-AS-RCEC/TaiESM1                 AWI/AWI-CM-1-1-MR               AWI/AWI-ESM-1-1-LR
-BCC/BCC-CSM2-MR                 BCC/BCC-ESM1                    CAMS/CAMS-CSM1-0
-CAS/CAS-ESM2-0                  CAS/FGOALS-f3-L                 CAS/FGOALS-g3
-CCCR-IITM/IITM-ESM              CCCma/CanESM5                   CCCma/CanESM5-CanOE
-CMCC/CMCC-CM2-HR4               CMCC/CMCC-CM2-SR5               CMCC/CMCC-ESM2
-CNRM-CERFACS/CNRM-CM6-1         CNRM-CERFACS/CNRM-CM6-1-HR      CNRM-CERFACS/CNRM-ESM2-1
-CSIRO/ACCESS-ESM1-5             CSIRO-ARCCSS/ACCESS-CM2         E3SM-Project/E3SM-1-0
-E3SM-Project/E3SM-1-1           E3SM-Project/E3SM-1-1-ECA       EC-Earth-Consortium/EC-Earth3
-EC-Earth-Consortium/EC-Earth3-AerChem                           EC-Earth-Consortium/EC-Earth3-CC
-EC-Earth-Consortium/EC-Earth3-Veg                               EC-Earth-Consortium/EC-Earth3-Veg-LR
-FIO-QLNM/FIO-ESM-2-0            HAMMOZ-Consortium/MPI-ESM-1-2-HAM
-INM/INM-CM4-8                   INM/INM-CM5-0                   IPSL/IPSL-CM5A2-INCA
-IPSL/IPSL-CM6A-LR               IPSL/IPSL-CM6A-LR-INCA          KIOST/KIOST-ESM
-MIROC/MIROC-ES2H                MIROC/MIROC-ES2L                MIROC/MIROC6
-MOHC/HadGEM3-GC31-LL            MOHC/HadGEM3-GC31-MM            MOHC/UKESM1-0-LL
-MPI-M/ICON-ESM-LR               MPI-M/MPI-ESM1-2-HR             MPI-M/MPI-ESM1-2-LR
-MRI/MRI-ESM2-0                  NASA-GISS/GISS-E2-1-G           NASA-GISS/GISS-E2-1-G-CC
-NASA-GISS/GISS-E2-1-H           NASA-GISS/GISS-E2-2-H           NCAR/CESM2
-NCAR/CESM2-FV2                  NCAR/CESM2-WACCM                NCAR/CESM2-WACCM-FV2
-NCC/NorCPM1                     NCC/NorESM2-LM                  NCC/NorESM2-MM
-NIMS-KMA/KACE-1-0-G             NIMS-KMA/UKESM1-0-LL            NOAA-GFDL/GFDL-CM4
-NOAA-GFDL/GFDL-ESM4             NUIST/NESM3                     SNU/SAM0-UNICON
-THU/CIESM                       UA/MCM-UA-1-0
-```
-
-The list is generated from the catalog; a model you add to
-`config/catalogs/cmip6_data.yml` qualifies the same way.
-
-### `reference_window` — why 1985–2014
-
-Thirty years ending at the last year the CMIP6 historical experiment covers
-(owner ruling OQ-4, 2026-07-29).
-
-- 30 years is the WMO climatological normal, and the workflow warns below 20. A
-  shorter reference makes every derived statistic noisier and the tail quantiles
-  unsupportable — which is why those are opt-in via `stats:`.
-- 2014 ends the historical experiment. Asking for more is not an error: the
-  window is **clipped** to 2014 and the run says so on stderr. Scenario data is
-  never spliced in to fill the gap, so the extra years simply do not arrive.
-- The range is inclusive **calendar** years, unlike `climate.window` in the
-  project file, which is water years. With the default `climate.water_year_start:
-  Jan` the two coincide; any other start month trims the partial years at both
-  ends one layer down. Every artifact reports the effective window and count
-  beside the nominal one.
-
-### `experiment_name` — why it is absent rather than set
-
-Left unset, the simulation runner selects `stress_test_01`, then retains the highest
-allocated number on plain reruns. Set a custom base such as `dry_scenario` to select
-`dry_scenario_01`, or set an exact numbered name to pin that experiment. Completion
-does not advance the number. Use `--new-experiment` on the runner to create the next one.
-
-To inspect selection without reserving anything or editing YAML:
-
-```console
-pixi run python scripts/suggest_experiment_name.py <your config>
-pixi run python scripts/suggest_experiment_name.py <your config> --name dry_scenario
-```
-
-The helper is always advisory. Changed scientific inputs require `--new-experiment`;
-interrupted simulations continue the selected identity if their scientific inputs still match.
-
-### `compute.julia_threads` / `compute.max_parallel_batches`
-
-WF4 runs its members in batches, one Julia session each. Left unset, the
-toolbox picks threads per batch and batches at once from the model's active
-cell count (`config/advanced_settings.yml`, `batching:`). Only the small-basin
-choice is measured (1 thread, 2 batches at once, on a 257-cell basin); the
-large-basin one is a provisional guess. Wflow parallelizes over grid cells, so
-threads pay on a big grid and cost time on a small one, and more than a couple
-of Julia sessions at once can slow every member down. To measure your own case:
-
-```console
-pixi run python scripts/calibrate_batching.py --project-dir <project> --years 5
-```
-
-It prints the two keys to set here. WF1's single historical run still uses
-`runtime.julia_threads`.
-
-### `compute.batch_size` / `compute.batch_size_max`
-
-Members are split evenly across the batches, one batch per slot, so each extra
-batch costs another Julia start-up. `batch_size_max` (no cap by default) bounds
-the members per batch, and an explicit `batch_size` wins outright. Both fail at parse time, naming the offending key, if
-set below 1. `compute.disk_headroom_gb` states an absolute disk budget; absent,
-the toolbox keeps `defaults.batch_disk_headroom_fraction` of free disk
-(`config/advanced_settings.yml`).
-
-### `basin.sources.hydrography` / `basin.sources.basin_index`
-
-Catalog **entry names**, not paths. They must match `setup_basemaps` in the
-`engine.build_config` template, or rule 1.01 fails loudly naming both files and
-both values.
-
----
-
-# Observation inputs
-
-The two CSV scaffolds above are the optional observation inputs of workflow 1
-(`build_model.smk`). Copy them next to your basin data and point the
-config at the copies by a path relative to the declaring YAML (schema 3) or an absolute path.
-Real basin data lives in the project
-folder, never in this repository (see `AGENTS.md` § Repo Map, the two-tier
-`project_dir` rule).
-
-Both inputs are optional. To run without them:
-
-```yaml
-# project file
-basin:
-  output_locations: null
-
-# build_model file
-observations:
-```
-
-**They work as a pair.** `observations` without `basin.output_locations` has
-nothing to key against: the series columns are matched by resolved `wflow_id`,
-and those ids only exist once output locations have driven the delineation.
-`observations` is keyed by variable, and the variable must be one of
-`model.outvars`; a series for a variable the model does not write is refused at
-parse time.
-
-## `example-basin/data/output_locations.csv`
-
-Output locations, **comma**-separated:
-
-| Column | Meaning |
-| --- | --- |
-| `wflow_id` | optional integer station id; when supplied it must exactly match the deterministic ID generated from the resolved basin/subbasin hierarchy |
-| `station_name` | free-text label used in figure titles and indicator tables |
-| `x`, `y` | longitude, latitude in EPSG:4326 |
-| `location_role` | optional role: `control` (default) defines a subbasin; `observation` is tracked without controlling delineation |
-
-### How `wflow_id` is built
-
-```
-wflow_id = basin_id*1000 + local_subbasin_number*10 + m
-```
-
-`m = 0` for the subbasin's own primary location and `1`–`9` for additional
-points inside it. Basin 1 reads `1010, 1011, 1020, 1030…`; basin 2 reads
-`2010, 2011, …`. Ids therefore group by basin, order by subbasin, and keep the
-subbasin legible in the flat integer.
-
-Both files are keyed by `wflow_id`, so the locations file's `wflow_id` column and
-the discharge file's column headers must agree. Neither failure is silent: a
-pinned `wflow_id` that does not match the resolved hierarchy stops preparation
-with an explicit old-ID → resolved-ID crosswalk, and an observation header
-carrying ids the registry does not know fails the WF1 header check by name.
-
-The simplest way to obtain ids is to **omit the `wflow_id` column**, run WF1
-once, and read the assigned ids out of `data/spatial/location_registry.csv` —
-the column is optional, and pinning it is only worth doing when you need the ids
-to stay fixed across rebuilds.
-
-`location_code` (`B001-S01-L01`) is for reading; `wflow_id` is the integer for
-joining and for scanning a CSV header.
-
-## `example-basin/data/observed_daily_discharge_template.csv`
-
-Observed discharge, **semicolon**-separated — deliberately a different
-separator from the locations file; both are read with explicit `sep=`
-arguments, so keep each file's separator as shipped.
-
-- First column `time`, ISO-8601 timestamps (`2000-01-01T00:00:00`).
-- One further column per station, named by the resolved **`wflow_id`** value in
-  `spatial/location_registry.csv` — not by `station_name`.
-- Missing values: leave the field empty.
-
-The shipped header (`time;1010;1020`) is illustrative — replace `1010` and `1020`
-with your own `wflow_id` values and add one column per station. The two files
-must be changed **together**. Before plotting, Workflow 1 checks the raw header
-against `spatial/location_registry.csv`: duplicate or unknown IDs fail
-explicitly, as does a missing series for any user-provided control or
-observation location. Automatically generated outlets may be included but do
-not require an observation series.
-
-## What consumes these
-
-The spatial-preparation phase reads output locations to control subbasin
-delineation and writes `spatial/location_registry.csv`. The Wflow adapter then
-uses that registry for gauge/output IDs; `plot_results.py` uses the same IDs for
-observation joins. A configured path is a declared Snakemake input, so a typo
-fails as a missing input instead of silently dropping observation outputs.
-
-## Where they end up
-
-Both files are snapshotted into `<project_dir>/config/basin_data/` by rule
-1.01, alongside the run's config (`config/`), catalogs (`config/catalogs/`)
-and build templates (`config/templates/`). The bin is named for what it holds —
-local, basin-scoped tabular inputs — not for observations alone: only one of the
-two files is an observation, the other declares where the model reports. They are
-referenced from wherever you keep them, so without that
-copy a finished project could not say what it was evaluated against — the
-indicators table would cite gauges and observations that exist only on the machine
-that ran it.
+The [input-format reference](../../docs/technical-manual/input-formats.md) owns the exact CSV schemas,
+matching rules, separators and provenance requirements. Keep local data with the case and record sources.
+Unmaintained examples in `archive/` are outside the supported starting route.

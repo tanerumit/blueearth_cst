@@ -22,3 +22,12 @@ repository inspection and maintenance tools live in `dev/scripts/` and are never
 | [`plot_workflow_dag.py`](plot_workflow_dag.py) | Render a workflow's DAG under the project's own `logs/dag/`. |
 | [`maintain_config_archives.py`](maintain_config_archives.py) | Inspect generated configuration history; `--apply` retains snapshots and removes completed launch bookkeeping. |
 | [`transfer_results.py`](transfer_results.py) | Export a WF2 product with its configuration and provenance as one bundle, or import a bundle into another project. |
+
+
+## Procedures and result inspection
+
+Start with [running](../docs/guide/running.md), [new cases](../docs/guide/new-case.md) or
+[indicator selection](../docs/guide/indicators.md); this file is an entry-point index, not a flag reference.
+Use `inspect_indicators.py` for saved-set integrity inspection and optional numerical rechecking;
+the [technical request reference](../docs/technical-manual/indicator-requests.md) explains their different
+requirements and limits. Inspection alone does not make stale outputs reusable.

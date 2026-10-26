@@ -77,7 +77,7 @@ def args(cases: Path) -> list[str]:
 
 @pytest.mark.parametrize("dry_run", [False, True])
 def test_create_preserves_template_and_leaves_inventory(
-    cases: Path, dry_run: bool, capsys: pytest.CaptureFixture[str]
+    cases: Path, template: Path, dry_run: bool, capsys: pytest.CaptureFixture[str]
 ) -> None:
     before = (cases / "cst-applications.md").read_bytes()
     assert main(args(cases) + (["--dry-run"] if dry_run else [])) == 0
@@ -146,6 +146,17 @@ def test_create_preserves_template_and_leaves_inventory(
     assert "--cores 3 -- --rerun-incomplete" in instructions
     assert "--cores 3 -- --unlock" in instructions
     assert "Set-Location" not in instructions
+    assert "Toolbox version at creation: `" in instructions
+    assert "Input datasets are external" in instructions
+    assert "The starter enables WF0 alone" in instructions
+    assert (
+        "completed `_engine/simulation.json` record, even for a dry run" in instructions
+    )
+    for chapter in ("new-case", "configuration", "running", "indicators", "outputs"):
+        assert (
+            f"<{template.parents[2].as_posix()}/docs/guide/{chapter}.md>"
+            in instructions
+        )
     notes = (application / "notes.md").read_text(encoding="utf-8")
     assert "Purpose: Test | basin" in notes
     assert "CST version at creation: " in notes

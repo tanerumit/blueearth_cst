@@ -7,7 +7,7 @@ Run the five-workflow rapid example on the supplied basin to see the output
 layout before configuring your own case. Allow at least an hour; data access,
 downloads, and local compute capacity affect the time.
 
-First complete the [Windows setup guide](../site/setup/install.md), including
+First complete the [Windows setup guide](install.md), including
 Pixi, juliaup-managed Julia 1.11.7, `pixi install`, and `pixi run install`.
 From the repository root, confirm that the rapid config's `project.catalog`
 entries and their data roots are available. Its base catalog expects the
@@ -21,6 +21,10 @@ if your data live elsewhere.
 
 Five workflows share one project configuration set. The arrows show the
 all-workflow runner's execution order. Select a workflow to see what it does.
+
+For a static reading: WF0 compares historical climate, WF1 builds the model, WF2 summarizes
+projections, WF3 generates weather and WF4 simulates responses/calculates indicators.
+Execution order is not a chain of scientific inputs: WF1 and WF3 independently supply WF4.
 
 <iframe src="assets/shape-of-a-run.html" title="Interactive diagram of the five workflows in execution order" style="width:100%;height:460px;border:0;" loading="lazy"></iframe>
 
@@ -91,7 +95,9 @@ test_case/test_rapid/
 
 Find the hydrological indicators under
 `experiments/experiment_rapid/results/indicator_sets/default/`, starting
-with `indicators.csv` for definitions and units. Run-level tables join through
+with `indicators.csv` for definitions and units. Open `q_run_indicators.csv` for the selected
+discharge indicator/location and check `status`, `reason` and `value`. Compare only available
+values with the stated reference; this example does not establish basin adequacy. Run-level tables join through
 `scenarios/scenario_run_lookup.csv`; group-level tables join through
 `group_metadata.csv` and `scenarios/perturbation_lookup.csv`. See
 [Reading the outputs](outputs.md) for the exact joins and interpretation limits.
@@ -99,18 +105,18 @@ with `indicators.csv` for definitions and units. Run-level tables join through
 ## When something goes wrong
 
 - **The catalog root is missing** — check that the P-drive is mounted and the
-  catalog source paths resolve. The [setup guide](../site/setup/install.md)
+  catalog source paths resolve. The [setup guide](install.md)
   shows the bounded path check.
 - **The project is locked** — confirm that no other run is active, then use
   the [workflow recovery instructions](running.md#run-one-workflow).
 - **`weathergenr` is missing** — complete `pixi run install` as described in
-  the [setup guide](../site/setup/install.md).
+  the [setup guide](install.md).
 - **Julia not found** — Julia is deliberately not in the pixi environment. It is
   managed by juliaup and must be on your `PATH`; see the
-  [Setup guide](../site/setup/install.md).
+  [Setup guide](install.md).
 
 ## Next
 
-- [Configuring a project](configuration.md) — point the toolbox at your own basin.
+- [Create your own case](new-case.md) — configure an external basin assessment.
 - [Running the workflows](running.md) — the flags, the wrapper, and experiments.
 - [Reading the outputs](outputs.md) — what a run wrote, and whether it is current.

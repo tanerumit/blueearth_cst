@@ -267,14 +267,22 @@ source environment.
 
 ## Reading an indicator set
 
-For post-processing, read CSVs from `experiments/<name>/results/indicator_sets/<set-id>/`, one folder per
-selected indicator set (`default` unless the WF4 file names others). Start with `indicators.csv`: one row
-per indicator with its title, variable, input and output units, quantity, method and parameters, grain and
-group policy, water-year start and block assignment, partial-block, missingness and validity policies,
-references, and `block_coverage`. Coverage lists every contributing run/location pair with its blocks
-(observed/expected days and missing values); it discloses coverage, not sample adequacy. An authored
-indicator shows its registered counterpart in `equivalent_definition`; its numbers equal that
-definition's, under its own indicator key.
+For post-processing, open the CSVs in `experiments/<name>/results/indicator_sets/<set-id>/`.
+There is one folder per selected indicator set: `default` unless the WF4 file names others.
+
+Start with `indicators.csv`.
+It has one row per indicator, describing:
+
+- Its title, variable, input and output units, quantity, method and parameters.
+- Its grain and group policy, water-year start and block assignment.
+- Its partial-block, missingness and validity policies, references, and `block_coverage`.
+
+`block_coverage` lists the blocks for every contributing run/location pair, including observed and
+expected days and missing values.
+It describes coverage, not sample adequacy.
+
+For an authored indicator, `equivalent_definition` identifies its registered counterpart.
+Its numbers equal that definition's, under its own indicator key.
 
 Every successful WF4 invocation requesting indicators refreshes each selected set's folder, including
 reuse of an existing set. `_engine/indicator_sets/names/<set-id>/current.json` records the committed
@@ -335,14 +343,19 @@ retain the underlying model responses for more detailed analysis.
 
 ### Opening an indicator table in Excel
 
-Run IDs such as `run_01` and group IDs such as `group_01` are prefixed strings, so ordinary CSV opening
-preserves them as text. Their suffix padding is consistent within the owning namespace. Groups are
-numbered independently of run count and selected indicators. Matching labels in different collections or
-indicator sets do not establish matching inputs or membership.
+Run IDs such as `run_01` and group IDs such as `group_01` are prefixed strings, so opening the CSV
+normally preserves them as text.
+When importing perturbation `st_id` values, explicitly preserve them as text in Excel and code.
 
-When reading in pandas, preserve identifiers explicitly with `dtype=str` on lookup tables and
-`keep_default_na=False` to retain the empty reference `st_id`. Indicator `value` columns remain numeric.
-Perturbation `st_id` values still require text-preserving import in Excel and code.
+When reading lookup tables in pandas, use `dtype=str` to preserve identifiers and
+`keep_default_na=False` to retain the empty reference `st_id`.
+Indicator `value` columns remain numeric.
+
+Keep these identifier conventions in mind when joining tables:
+
+- Suffix padding is consistent within the owning namespace.
+- Groups are numbered independently of run count and selected indicators.
+- Matching labels in different collections or indicator sets do not establish matching inputs or membership.
 
 ### Migrating existing outputs
 

@@ -63,16 +63,24 @@ indicator_set_definitions:
     config_path: indicator_sets/example_subset.yml   # relative to this file
 ```
 
-`operations` is a nonempty list of unique entries from `simulations` and `indicators`; order does not matter.
-`indicator_sets` accepts set ids or inline mappings; omitted means `[default]`.
-Set ids match `[a-z][a-z0-9_-]*`, at most 64 characters.
-`default` is bundled at `config/indicator_sets/default.yml` and expands to the existing suite for
-`model.outvars` (the toolbox defaults when the key is absent, or the retained variables when indicators
-run alone). A custom set's `config_path` may be absolute; a relative path resolves against the WF4 file
-that declares it. Selected set files are read once per invocation. Copy
-`config/templates/indicator_set.template.yml` for a custom set: it selects registered definitions,
-or names one registered calculation under an authored id. A set never defines arithmetic, units,
-calendars, missingness or grain.
+1. Choose what to run in `operations`.
+   Use a nonempty list of unique entries from `simulations` and `indicators`.
+   Their order does not matter.
+
+2. Choose the sets in `indicator_sets`.
+   You can use set ids or inline mappings; omitting the setting selects `[default]`.
+   Set ids must match `[a-z][a-z0-9_-]*` and be at most 64 characters long.
+
+   The bundled `default` set is defined in `config/indicator_sets/default.yml`.
+   It expands to the existing suite for `model.outvars`, using the toolbox defaults when that
+   key is absent, or the retained variables when indicators run alone.
+
+3. For a custom set, copy `config/templates/indicator_set.template.yml` and set its `config_path`.
+   You can use an absolute path; a relative path resolves against the WF4 file that declares it.
+   Selected set files are read once per invocation.
+
+   A custom set selects registered definitions or names one registered calculation under an authored id.
+   It never defines arithmetic, units, calendars, missingness or grain.
 
 To retain air temperature, add `temperature` to `model.outvars`. Its CSV code and response token are
 `temp`, units are degrees Celsius, and the default set emits `temp_annual_mean` using water-year

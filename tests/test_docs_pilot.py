@@ -49,10 +49,31 @@ def test_staging_preserves_sources_and_refreshes(source_copy: Path) -> None:
     assert "Return levels pool blocks instead." in assembled
     assert "native pandas missingness and partial-block weighting" in assembled
     assert "(repository/online reference)" in assembled
-    assert "/blueearth_cst/indicators/README.md)" in assembled
+    assert "/blueearth_cst/indicators/README.md#add-a-calculation)" in assembled
+    assert "The toolbox's registry and calculation scripts define" in assembled
+    assert "## Advanced implementation details" not in assembled
+    for token in (
+        "registry.py",
+        "calculations.py",
+        "checks.py",
+        "ASSUMPTIONS",
+        "PARAMETERS",
+    ):
+        assert token not in assembled
     assert "[Reading the outputs](#reading-an-indicator-set)" in assembled
     assert "### Migrating existing outputs" not in assembled
     assert "example_subset.yml" not in assembled
+    assert "1. Choose what to run in `operations`." in assembled
+    assert (
+        "It never defines arithmetic, units, calendars, missingness or grain."
+        in assembled
+    )
+    assert (
+        "Its numbers equal that definition's, under its own indicator key." in assembled
+    )
+    assert yaml.safe_load(assembled.split("---")[1])["subtitle"] == (
+        "P3 editorial working tree (base bed0ae1e)"
+    )
     canonical = (output / "technical-manual/indicator-requests.qmd").read_text(
         encoding="utf-8"
     )
@@ -61,7 +82,11 @@ def test_staging_preserves_sources_and_refreshes(source_copy: Path) -> None:
         assert f"{{#{name}}}" in assembled
     source = source_copy / "blueearth_cst/indicators/sets/default/README.md"
     source.write_text(
-        source.read_text(encoding="utf-8") + "\nREFRESH-MARKER\n", encoding="utf-8"
+        source.read_text(encoding="utf-8").replace(
+            "## Advanced implementation details",
+            "REFRESH-MARKER\n\n## Advanced implementation details",
+        ),
+        encoding="utf-8",
     )
     (output / "index.qmd").write_text("GENERATED-EDIT", encoding="utf-8")
     stage_pilot(source_copy, output)

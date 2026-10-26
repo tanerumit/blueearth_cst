@@ -149,6 +149,8 @@ def stage_pilot(repo: Path, output: Path) -> dict[str, str]:
     header = (
         "---\ntitle: "
         + json.dumps(manifest["title"], ensure_ascii=False)
+        + "\nsubtitle: "
+        + json.dumps(manifest["source_revision"], ensure_ascii=False)
         + "\n"
         + config
         + "\n---\n\n"

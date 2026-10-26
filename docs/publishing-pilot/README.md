@@ -30,6 +30,12 @@ The tracked isolated fixture under `tests/fixtures/docs-pilot/` demonstrates old
 before rendering. Its wrapper links to the represented canonical Markdown and preserves `#configuration`.
 Staging rebases that link to the corresponding HTML destination. The live page is untouched.
 
+The default README contributes only its reader conventions before `Advanced implementation details`.
+That advanced section remains in the canonical README and is excluded from both pilot formats.
+Its reader-facing link resolves to the existing module README's `Add a calculation` section.
+The pilot subtitle and input hashes identify revised working-tree content; unchanged external reference
+targets remain pinned to the earlier repository revision, without claiming online availability.
+
 The PDF and the HTML static fallback include all five workflow explanations and the order/dependency legend
 derived from the interactive asset. The HTML also retains the interactive iframe. Source links outside the
 sample are explicitly labelled repository/online references and pinned to the specification's source revision.

@@ -1,5 +1,6 @@
 {
   "title": "Indicator selection — publishing pilot",
+  "source_revision": "P3 editorial working tree (base bed0ae1e)",
   "repository_url": "https://github.com/tanerumit/blueearth_cst/blob/470fc7613b8fd2cf6b840b724b5b4a0d3f64505e/",
   "sections": [
     {
@@ -10,7 +11,7 @@
     },
     {
       "source": "docs/site/toolbox-reference/workflow-simulate-system.qmd",
-      "start": "`operations` is a nonempty list",
+      "start": "1. Choose what to run in `operations`.",
       "stop": "calendars, missingness or grain.",
       "include_stop": true,
       "heading": "## Configuration",
@@ -18,8 +19,8 @@
     },
     {
       "source": "docs/guide/outputs.md",
-      "start": "For post-processing, read CSVs",
-      "stop": "definition's, under its own indicator key.",
+      "start": "For post-processing, open the CSVs",
+      "stop": "Its numbers equal that definition's, under its own indicator key.",
       "include_stop": true,
       "heading": "## Reading an indicator set",
       "anchor": "reading-an-indicator-set"
@@ -32,6 +33,8 @@
     },
     {
       "source": "blueearth_cst/indicators/sets/default/README.md",
+      "start": "# Default indicators\n",
+      "stop": "## Advanced implementation details\n",
       "anchor": "default-indicators"
     },
     {

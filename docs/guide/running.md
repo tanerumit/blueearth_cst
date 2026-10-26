@@ -421,29 +421,35 @@ Indicators-only runs always use the retained simulation's members.
 
 ## Calculate different indicators from existing simulations
 
-An experiment is tied to its scenario collection, model, and simulation
-settings. Use `--new-experiment` for changed simulation inputs.
+You can calculate different indicators from completed simulations without rerunning the model.
+The selected experiment must have a completed `_engine/simulation.json` record, even for a dry run.
 
-To calculate different indicators from completed simulations, set
-`operations: [indicators]` in the simulation settings file, keep the existing
-`experiment_name`, and list the sets to publish in `indicator_sets`:
+In the simulation settings file:
+
+1. Keep the existing `experiment_name`.
+2. Set `operations: [indicators]`.
+3. List the sets to publish in `indicator_sets`.
+
+Then run:
 
 ```bash
 python scripts/simulate_system.py --config <config> --cores 3
 ```
 
-The selected experiment must have a completed `_engine/simulation.json` record.
-This prerequisite also applies to dry runs. For a fresh experiment, use
-`operations: [simulations, indicators]` to run the model before calculating indicators;
-enabling the other workflows does not override an indicators-only selection.
+The runner reads the retained model responses and publishes each selected set to its own
+`results/indicator_sets/<set-id>/` folder.
+You do not need `--target`; the runner infers it.
+The all-workflow runner does the same when the other four workflows are disabled.
+See [Reading the outputs](outputs.md) for the result files.
 
-This reads the retained model responses and publishes each selected set to its
-own `results/indicator_sets/<set-id>/` folder without rerunning the model. The
-all-workflow runner does the same when the other four workflows are disabled.
-No `--target` is needed; the runner infers it. The legacy `operation:
-indicators-only` setting still works for one release with `--target
-simulations_and_indicators`. See [Reading the outputs](outputs.md) for the
-result files.
+An experiment is tied to its scenario collection, model, and simulation settings.
+Use `--new-experiment` when those simulation inputs change.
+For a fresh experiment, use `operations: [simulations, indicators]` to run the model before
+calculating indicators.
+Enabling the other workflows does not override an indicators-only selection.
+
+For compatibility, the legacy `operation: indicators-only` setting still works for one release
+with `--target simulations_and_indicators`.
 
 ## Next
 

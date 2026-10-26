@@ -1,24 +1,40 @@
 # Default indicators
 
-`registry.py` retains the production default indicator names and declares fixed `ASSUMPTIONS`.
-`calculations.py` owns formulas and callable-keyed `PARAMETERS`; `checks.py` computes independent expected
-values. The complete authoring/input/result contract is in [the module README](../../README.md).
+The toolbox's registry and calculation scripts define the default indicators and formulas.
+See the [advanced authoring contract](../../README.md#add-a-calculation) for implementation details.
 
-Annual means, maxima, minima, p95, basin totals, rolling-seven-day extrema, baseflow ratio and reference
-month means retain native pandas missingness and partial-block weighting. The configured water-year anchor
-defines blocks; January–December applies only to a January water year. Rolling windows cross water-year
-boundaries, never member boundaries, and require seven nonmissing days. Reference months use pooled monthly
-sums and explicit reference membership/location. No new warm-up is removed.
+Use these conventions when reading results from the default set:
 
-Temperature uses token `temp` and units `degC`. `temp_annual_mean` averages daily air temperature
-within water-year blocks, then averages block means with equal weight. It never sums daily values.
-The default preset selects it only when temperature is configured or retained for that simulation.
+- **Summary statistics:** annual means, maxima, minima, p95, basin totals, rolling-seven-day extrema,
+  baseflow ratio and reference month means retain native pandas missingness and partial-block weighting.
+- **Water years:** the configured water-year anchor defines the blocks.
+  January–December applies only to a January water year.
+- **Rolling windows:** seven-day windows require seven nonmissing days.
+  They cross water-year boundaries, but never member boundaries.
+- **Reference months:** these use pooled monthly sums and explicit reference membership/location.
+- **Warm-up:** no new warm-up is removed.
+- **Temperature:** the token is `temp` and the units are `degC`.
+  `temp_annual_mean` averages daily air temperature within water-year blocks, then averages the block
+  means with equal weight.
+  It never sums daily values.
+  The default preset selects it only when temperature is configured or retained for that simulation.
+- **Member groups:** run indicators support equal-weight member means with NaN propagation.
+  Return levels pool blocks instead.
+- **Return levels:** these use member-local annual maxima or rolling-seven-day annual minima.
+  Only finite block values are used.
+  The sample is screened using max(ceil(T),10).
+  The estimator's source must pass qualification verification.
+  Only probabilities allowed by the supplied domain are accepted.
+  Fit-block counts differ from retained daily-input counts.
 
-Return levels retain member-local annual maxima / rolling-seven-day annual minima, finite-block filtering,
-max(ceil(T),10) sample screening, qualified estimator source verification and supplied probability-domain
-gating. `rolling_annual_min` accurately describes the fixed seven-day calculation; the old
-`rolling7_annual_min` selector remains a declarative compatibility alias. Annual maximum fits have no unused
-rolling-window parameter. Fit-block counts differ from retained daily-input counts.
+## Advanced implementation details
 
-Run indicators support equal-weight member means with NaN propagation. Return levels pool blocks instead.
-Units, reference behavior and accepted parameters appear next to each registration and formula.
+The [module authoring contract](../../README.md#add-a-calculation) describes registration, formulas,
+callable-keyed parameters, fixed assumptions and independent checks.
+The following details apply specifically to the default set:
+
+- `registry.py` retains the production default indicator names and declares fixed `ASSUMPTIONS`.
+- Units, reference behavior and accepted parameters appear next to each registration and formula.
+- `rolling_annual_min` describes the fixed seven-day calculation.
+  The old `rolling7_annual_min` selector remains a declarative compatibility alias.
+  Annual maximum fits have no unused rolling-window parameter.

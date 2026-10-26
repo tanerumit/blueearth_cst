@@ -1,6 +1,38 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: V9 and P4A/P4B accepted and landed.
+Date: 2026-10-26. Task: t2610211349. Status: P5 commissioned; P6 follows accepted assembly.
+
+## Current continuation authority
+
+The owner's "continue" after P4 acceptance authorizes P5 assembly followed by P6 fresh reader review.
+This supersedes the earlier uncommissioned-stage statements below. Scientific writing stays deferred.
+No deployment, push, hydrological execution or s3 use is authorized. cst-main retains commits/landing.
+
+P5 allocation: continuing technical-writer in s1, GPT-6.1-Sol medium, from current main. Own navigation,
+Quarto publication configuration, source inclusion/order, cross-format links, old-route wrappers and
+editorial integration for the ten guide and 16 manual chapters. Include the six complete canonical
+module/set sources in the offline technical manual. Preserve V9 wording/formatting and existing science.
+Own `docs/` publication surfaces and narrowly necessary documentation pointers; keep scientific sources,
+runtime configuration/defaults, model code, notebooks' executable cells and excluded dev guidance intact.
+Ordinary documentation configuration/build fixes are in scope. Substantial publisher implementation or
+tests require a concrete engineer repair packet before dispatch; report exact files and failed consumer.
+Workers do not delegate, commit, land or edit shared task records. Return lane-local evidence at
+`.tmp/tasks/t2610211349/p5-return.md`, including exact paths, builds, rendered inspection, source hashes,
+55-source disposition reconciliation, limitations, roles/skills and observed measurements.
+
+Acceptance: both full publications build HTML and PDF without execution, source drift or missing required
+appendices. Verify links/retained routes, readable tables/equations/figures, interactive/static treatment
+and absence of unintended internal/excluded publication. Use existing publisher/pilot machinery where
+suitable; inspect rendered artifacts, not just exit codes. Borrow the compatible main runtime without
+installation. Stop previews after browser review; distinguish browser denial/unavailability from HTTP checks.
+
+P6 allocation: fresh technical-writer in s2, GPT-6.1-Sol medium, only after the assembled candidate and
+artifacts are fixed. Review the three P2 reader journeys with no source edits or hydrological execution.
+The owner's standing permission to review under current permissions remains applicable; label this as
+procedural read-only if enforced isolation is unavailable, without changing permissions silently.
+Return severity, reader/action, reproducible evidence and proposed fixes. Coordinator assigns bounded
+repairs to the author and rechecks affected areas. At most two workers; no extra agent for measurement.
+Final acceptance and integration follow the existing plan and repository gates.
 
 Current authority: owner approved V9 and instructed cst-main to integrate s2 and commission P4A/P4B.
 P3 landed at `8963f661`. [P4 assignments](p4-content-assignments.md) fix disjoint s1/s2 ownership and

@@ -1,13 +1,13 @@
 ---
 title: Improving repo-wide documentation and instructions
 type: todo-item
-status: backlog
+status: active
 effort: 2
 area: docs
 queue:
-doc: dev/tasks/t2610211349/documentation-review-2026-10-21.md
+doc: dev/tasks/t2610211349/documentation-inventory-2026-10-26.md
 created: 2026-10-21
-updated: 2026-10-23
+updated: 2026-10-26
 ---
 
 > [!note] Overview
@@ -17,11 +17,12 @@ updated: 2026-10-23
 
 ## Progress
 
-Next: Choose the next documentation area and define its scope and completion criteria.
+Next: Review document purposes, audience boundaries, and unintended repetition using the file inventory.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
-- [ ] Agree priorities, scope, and completion criteria for the revision.
+- [x] Inventory all tracked documentation by audience — 656 files; coverage and relative links checked.
+- [ ] Review document purposes and boundaries; identify unintended repetition and redundancy.
 - [ ] Audit selected guidance against current implementation and authoritative sources.
 - [ ] Revise documentation and instructions, resolving stale references and duplication.
 - [ ] Verify affected links, examples, and rendered pages as appropriate.
@@ -46,7 +47,14 @@ documentation and agent-instruction revisions remain unscoped.
 - Owner-approved landing completed; broader documentation work remains open. Nothing was pushed.
 - Scratch: session-2 :: `.tmp/tasks/t2610211349/`; no shared runtime or production output mutations.
 
+## Inventory pass (2026-10-26)
+
+Saved a complete file register grouped by audience, with generated/external surfaces and embedded
+documentation identified separately. Verified 656 unique entries against tracked paths and checked all
+656 relative links. This pass does not assess content accuracy or decide consolidation.
+
 ## Refs
 
+- [Documentation inventory by audience](t2610211349/documentation-inventory-2026-10-26.md).
 - [Documentation landscape review](t2610211349/documentation-review-2026-10-21.md).
 - The initial review is an inventory, not a page-by-page accuracy audit.

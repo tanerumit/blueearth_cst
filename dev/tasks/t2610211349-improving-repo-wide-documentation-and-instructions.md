@@ -2,7 +2,7 @@
 title: Improving repo-wide documentation and instructions
 type: todo-item
 status: active
-branch: feat/t2610211349-publishing-pilot
+branch: docs/t2610211349-user-guide
 effort: 2
 area: docs
 queue:
@@ -102,7 +102,19 @@ Owner follow-up restricts this task to cst-main, s1 and s2; session-3 stays avai
 The artifact-first dispatch improvement is separately authorized infrastructure maintenance, not approval
 of the pending publication or migration choices.
 
-## P3 work location
+## Work location
+
+- Coordination/integration: cst-main :: `dev/tasks/t2610211349/`; only coordinator commits and lands.
+- P4A owner: session-1, `docs/t2610211349-user-guide`; continuing technical-writer-p1, medium.
+- P4B contributor: session-2, `docs/t2610211349-technical-manual`; fresh api-documenter-p4b, medium.
+- Shared allocation base: `a4d79ea6`, including approved V9 landing `8963f661`.
+- Implementation ownership and checks: [P4 packet](t2610211349/p4-content-assignments.md).
+- Returns: lane-local `.tmp/tasks/t2610211349/p4a-return.md` and `p4b-return.md` respectively.
+- Next: workers complete their disjoint packets; cst-main reviews the returns. No current blocker.
+- Retention: preserve s2 P3 artifacts while the central review index links them. No cleanup yet.
+- s3 is reserved for unrelated work. P4C is deferred; P5/P6 are not yet commissioned.
+
+## Completed P3 work location
 
 - Owner: session-2; branch: `feat/t2610211349-publishing-pilot`; implementation commit `bed0ae1e`.
 - Implementation: session-2 :: publication pilot mechanics, manifest and isolated compatibility fixture.
@@ -110,7 +122,7 @@ of the pending publication or migration choices.
 - Scratch and outputs: session-2 :: `.tmp/tasks/t2610211349/p3/`.
 - Verification: 14 affected tests, scoped Ruff, source integrity, refresh, link and visual checks pass.
 - Retention: keep pilot outputs/evidence in s2 until owner review and a retention decision; no cleanup.
-- Next action: owner reviews the completed pilot; branch retained without landing or migration.
+- Final outcome: V9 approved, committed as `fb9aca81`, landed at `8963f661`; pilot branch deleted.
 - Specification: [frozen content](t2610211349/publishing-pilot-content-specification.md).
 - Assignment: [P3 engineer packet](t2610211349/publishing-pilot-assignment.md).
 - Return: [P3 evidence and limits](t2610211349/publishing-pilot-return.md).
@@ -123,7 +135,8 @@ writing (P4C) is deferred, with its outline and existing material retained. The 
 include bounded generated-case instruction reconciliation, retain initial tracked compatibility pages,
 and limit the first publication to indicator-table interpretation, selection and extension. Supported
 surface construction is deferred. The owner subsequently authorized P3 at medium effort in s2,
-returning the pilot for review before migration. P4–P6 remain held.
+returning the pilot for review before migration. V9 is now approved and integrated; P4A/P4B are commissioned.
+P4C remains deferred; P5/P6 are subsequent stages.
 
 - [Proposed boundary map and outlines](t2610211349/documentation-boundary-map.md).
 - [Independent boundary critique](t2610211349/documentation-boundary-critique.md).

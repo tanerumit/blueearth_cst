@@ -17,7 +17,7 @@ updated: 2026-10-26
 
 ## Progress
 
-Next: Review document purposes, audience boundaries, and unintended repetition using the file inventory.
+Next: Prepare the 55-file purpose-and-boundary matrix and proposed central-document chapter outlines.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
@@ -56,8 +56,14 @@ Excluded `.github/` and `CHANGELOG.md`, retaining the earlier directory exclusio
 and embedded documentation surfaces are outside the review scope; the inventory records the full boundary.
 This pass does not assess content accuracy or decide consolidation.
 
+## Landscape assessment (2026-10-26)
+
+Retained the high-level assessment: central reader journeys, local instructions, and shared Markdown
+sources for derived publications. Recommendations remain proposals; no restructuring was implemented.
+
 ## Refs
 
+- [Documentation landscape assessment](t2610211349/documentation-landscape-assessment-2026-10-26.md).
 - [Documentation inventory by audience](t2610211349/documentation-inventory-2026-10-26.md).
 - [Documentation landscape review](t2610211349/documentation-review-2026-10-21.md).
 - The initial review is an inventory, not a page-by-page accuracy audit.

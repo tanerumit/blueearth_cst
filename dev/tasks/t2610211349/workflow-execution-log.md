@@ -665,3 +665,24 @@ enforced isolation. Lane-local review report/evidence writes explicitly allowed;
 scientific execution, commits and nested delegation prohibited. No s3 use or policy changes.
 Fixed input is s1 `e18d7316`, not s2's older documentation. Build/all-page proof may be reused; review
 must independently walk the three journeys. Main source landing remains held until P6 acceptance.
+
+### P6 return and bounded own-basin correction
+
+Fresh reviewer completed all three rendered journeys at fixed s1 `e18d7316`. Retained `p6-review.md`
+SHA-256 `3cb1f0621044ec550a32397bb431f0a0a3fcc52f73a2bdc98d5faa1ceb1c57f4` reports one medium
+finding: starter `climate.window` comments incorrectly call calendar-year bounds water years (P6-01).
+The guide/manual and `historical_window_bounds` agree on January–December extraction; copying the
+starter preserves contradictory point-of-edit advice. P6-02 duplicate website appendix title remains
+explicitly deferred minor, with readable content and unaffected full volumes.
+
+Four artifact hashes and all 63 consumed hashes independently match P5. Reviewer reused build/audit
+evidence, inspected rendered journeys and selected PDF pages, closed its tab and stopped the preview.
+Observed interval 22:17:23–22:26:19 UTC is 8m56s; active compute/tokens/cost unknown. Full manually
+applied role and actual skills are recorded, including one corrected loading-order deviation; no
+governing read remains incomplete. Source/runtime tracked trees stayed clean. No source edits.
+
+Owner requests retention and bounded correction/recheck. Reconfirmed writer `w8:p1` and reviewer
+`w9:p1` ownership. Assigned only starter YAML comments to continuing s1 technical-writer at medium:
+calendar-year endpoints and reporting-anchor distinction, no values/code/guide edits. Require parsed
+YAML equality, copying-path inspection and whitespace; no publication rerender. Fresh s2 reviewer will
+recheck after the fixed correction, with the same source-read-only boundary. Main landing stays held.

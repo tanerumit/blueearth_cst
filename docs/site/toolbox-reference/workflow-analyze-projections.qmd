@@ -89,8 +89,8 @@ WF2 retains the acquired slices and basin monthly series, a change-factor produc
 Launcher runs record which invocation produced each current product file in
 `_engine/execution/production.json`, beside copies of those invocations' logs and benchmarks.
 `scripts/transfer_results.py` exports a completed product with its configuration snapshots and basin
-polygon, and imports it into another project after integrity and compatibility checks. The user guide's
-outputs page owns the record semantics, transfer commands and compatibility rules.
+polygon, and imports it into another project after checking file integrity and whether the destination
+can accept the product. The output guide describes the records, commands and destination checks.
 
 The `analysis/` tables use the configured `reference_window` and `future_windows`, retaining complete water
 years inside their calendar bounds. January 2041–2060 uses all 20 years; an October start uses WY 2041–2059

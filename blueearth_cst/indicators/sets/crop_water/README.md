@@ -40,7 +40,9 @@ indicator_sets:
 
 The registered `season: summer` is inherited. WF4 binds the rule to its project's
 `models/hydrology/wflow` model and derives source identity from the historical artifacts.
-Legacy explicit `model_root` (relative to its set file) and `source_id` remain supported.
+Use `model_root` to select a model directory; relative paths resolve beside the set file.
+`source_id` labels the historical discharge in threshold provenance; it does not select another dataset.
+If omitted, these use the project's model and the label `wf1-historical-model-discharge`.
 Preparation reads `run_default/output.csv` with
 `wflow_sbm.toml`, verifies the historical forcing binding (`inmaps_historical.nc`), and refuses missing
 or incompatible inputs. With all workflows enabled, startup validates the rule without opening
@@ -60,7 +62,7 @@ when their reference period is incomplete. An explicit list such as `years: [199
 restricts the request; unavailable requested years are also reported as excluded. No reference
 period is inferred from the project's climate window.
 For Q80 use 0.80 exceedance, or equivalently 0.20 nonexceedance. Probabilities must lie strictly between
-0 and 1. `reference_period: summer` pools complete May–October periods for compatibility; `annual`
+0 and 1. `reference_period: summer` pools complete May–October periods; `annual`
 pools complete calendar years. This changes the reference distribution only: the indicator still
 counts May–October low-flow days. Choose periods for the basin rather than treating this season as a
 global crop calendar. Supported quantile methods are linear (default), lower, higher, midpoint and nearest.
@@ -73,10 +75,9 @@ included/excluded periods, sample count and per-year expected/finite-day coverag
 periods are excluded per location; no complete period is an error. Inspect exclusions before scientific use.
 These values and provenance enter calculation identity, so changing inputs or rules changes identity.
 Omission and `years: all` have the same resolved identity. An explicit list records explicit intent
-even if it happens to match the discovered years. New derived records include these provenance fields;
-previous explicit threshold records remain readable.
-Existing explicit records with `value`, `source_id`, `years`, `used_summers`, `excluded_summers`,
-`method: supplied operational` (or legacy `linear p=0.10`) and `units: m3 s-1` remain supported.
+even if it happens to match the discovered years.
+Explicit threshold records specify `value`, `source_id`, `years`, `used_summers`, `excluded_summers`,
+`method: supplied operational` and `units: m3 s-1`.
 Do not mix explicit thresholds and a baseline rule. A zero threshold makes a strict low-flow count
 uninformative. The bundled registry uses an empty threshold mapping so case preparation must supply it
 through a case-specific `selection.registry.overrides.summer_low_flow_days` mapping before a complete

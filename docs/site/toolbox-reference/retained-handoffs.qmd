@@ -11,7 +11,7 @@ independent plausibility overlay and does not select stress-test scenarios.
 |---|---|---|
 | Scenario collection | `scenarios/<collection_id>/` for generated series and lookups; `scenarios/_engine/collections/<collection_id>/collection.json` for the inventory | WF4 selects a ready collection and explicit run IDs. |
 | Simulation responses | `experiments/<experiment_name>/hydrology/wflow/output/`, with `experiments/<experiment_name>/_engine/response_inventory.json` | Indicator reduction reads retained native Wflow responses. |
-| Indicator set | The experiment's `_engine/indicator_sets/<indicator_set_id>/` (`indicators.json`, `data/` tables and lookups, coverage evidence); legacy sets may keep tables at `results/indicator_sets/<indicator_set_id>/` | Result readers join indicator tables to their run-group lookup and request metadata. |
+| Indicator set | The experiment's `_engine/indicator_sets/<indicator_set_id>/` (`indicators.json`, `data/` tables and lookups, coverage evidence) | Result readers join indicator tables to their run-group lookup and request metadata. |
 | Named indicator set | `experiments/<experiment_name>/results/indicator_sets/<set-id>/` (tables, lookups, `indicators.csv`), committed by `_engine/indicator_sets/names/<set-id>/current.json` | Post-processing reads one set's readable view after the workflow finishes. |
 
 The collection, simulation, and indicator set have separate identities. A changed
@@ -33,27 +33,17 @@ The launcher does not load HydroMT for these checks. Catalog expansion, driver/a
 forcing-unit verification occur in the consuming workflows. Invalid adapter definitions can therefore
 be reported when their workflow starts rather than during experiment admission.
 
-New reservations use `experiment-request/2`, whose catalog entries retain source YAML and root context.
-Version 1 records remain readable and keep their original bytes and hashes. Cross-version request
-comparison projects their retained catalogs to the same source/root view. Other scientific fields,
-including producer code, still have to match. A legacy catalog whose materialized root differs from its
-current source root is refused rather than guessed or rewritten.
-
-**Compatibility after deferring HydroMT imports:** moving the imports into the WF3/WF4 consumers changes
-the fingerprints of `generation_sources.py` and `wf4_ancillary_descriptor.py`.
-The scientific inventory intentionally hashes full source
-contents, including imports. An existing full-pipeline experiment created with the earlier fingerprint
-therefore needs `--new-experiment`; its records and results remain intact. New collection identities
-change, and automatic seeds can change with them. The forcing conversions themselves are unchanged.
-Existing records and retained indicator results remain readable. Re-creating a scientific stage with
-changed code remains subject to its normal immutable-identity checks.
+Experiment requests retain catalog source YAML and root context. Reuse requires the current source
+root and scientific inputs, including producer code, to match the recorded request. A different root
+is refused rather than guessed or rewritten. Changed scientific code requires a new experiment;
+records and results remain intact. Collection identity also depends on scientific code, so automatic
+seeds can change when that code changes.
 
 For a stable post-processing path, WF4 publishes each selected indicator set to
 `experiments/<experiment_name>/results/indicator_sets/<set-id>/` after each invocation, including reuse.
 Each set's committed inventory is `_engine/indicator_sets/names/<set-id>/current.json` within the
 experiment; sets commit independently. Read these copies after the workflow finishes; the hashed
-indicator sets remain immutable. Older flat exports directly under `results/indicator_sets/` are preserved
-but no longer refreshed.
+indicator sets remain immutable.
 
 WF3 similarly mirrors the selected collection's full contents directly into `scenarios/`, including
 lookup CSVs, `series/`, `config/`, and `weathergenr/`.
@@ -65,5 +55,4 @@ Use the owned launchers: `scripts/run_workflows.py` for generation and
 [WF3 workflow](workflow-generate-scenarios.qmd),
 [WF4 workflow](workflow-simulate-system.qmd), and
 [output guide](../guide/outputs.md) give the current controls, paths, and join
-keys. The [historical migration records](https://github.com/tanerumit/blueearth_cst/tree/main/dev/records/milestones)
-describe older layouts.
+keys.

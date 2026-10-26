@@ -5,7 +5,7 @@
 # Commented YAML entries are optional settings or examples.
 # See README.md here and config/templates/README.md for setup and rationale.
 
-# Identify the project configuration schema. Options: 2 (legacy) | 3 (portable).
+# Identify the project configuration schema. Options: 2 (run-directory paths) | 3 (portable paths).
 schema_version: 3
 
 

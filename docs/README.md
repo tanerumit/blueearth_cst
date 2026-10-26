@@ -29,5 +29,4 @@ their appearance in other Markdown previews depends on the editor.
 For current commands and file layouts, use the guide and
 [toolbox reference](site/toolbox-reference/overview.qmd).
 The external guides describe their own tools; the 2025 note records the original
-method and platform design rather than the current workflow contract. Historical
-migration guides live under [`dev/records/milestones/`](../dev/records/milestones/).
+method and platform design rather than the current workflow contract.

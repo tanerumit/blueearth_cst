@@ -11,29 +11,12 @@ your own edited copy elsewhere). Shared appearance defaults live separately in
 | `wflow_update_waterbodies.yml` | `build_model.smk` — default for `workflows.build_model.engine.waterbodies_config`; rule 1.07 `add_reservoirs_lakes_glaciers` |
 | `weathergen_config.yml` | `generate_scenarios.smk` — default for `weathergen_config`, read by planning step 3.06 `prepare_weather_generator_settings` and recorded in the generation plan |
 
-The template's path is recorded in the generation plan, so editing it changes
-the plan and schedules a new collection rather than being silently ignored — a
-params-only read before 2026-08-05 kept generating from superseded settings.
+The template's path is recorded in the generation plan. Editing it changes the plan and schedules
+a new collection.
 
-## Why this is a separate directory
+## Configuration snapshots in project outputs
 
-Until 2026-08-11 these three sat in `config/templates/` alongside the scaffolds.
-That name asserted one kind of file and the directory held two, so a rule input
-read as something you were meant to copy and edit.
-
-## The project tree keeps the name `templates/`
-
-`<project_dir>/config/templates/` is unrelated to this split and did **not**
-move. It is a generated provenance bin: rule 1.01 snapshots the shipped configs
-a run actually used into it, so a finished project can state what it was
-evaluated against (`blueearth_cst/model/copy_config_files.py`, which derives the
-destination from `params.config_dir` and never from the source path). The word
-means "verbatim snapshot of a shipped config" there, not "scaffold".
-
-## Old paths
-
-These files have moved twice: pre-R6 flat `config/`, then `config/templates/`,
-now here. Both earlier spellings are normalized onto the current path by
-`_COPIED_CONFIG_PATH_MAP` in `blueearth_cst/experiment/check_project_consistency.py`
-and `COPIED_CONFIG_PATH_MAP` in `dev/scripts/semantic_tree_diff.py`, so a project
-config or reference tree from either era still compares clean.
+`<project_dir>/config/templates/` holds verbatim archives of rule-read engine configuration files when
+the workflow needs to copy them. Files recoverable from the toolbox are recorded in the run record
+rather than copied. These generated records show which configuration a run used; they are not scaffolds
+to edit. Change the source configuration when you want to change a run.

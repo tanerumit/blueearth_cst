@@ -62,17 +62,22 @@ def test_staging_preserves_sources_and_refreshes(source_copy: Path) -> None:
         assert token not in assembled
     assert "[Reading the outputs](#reading-an-indicator-set)" in assembled
     assert "### Migrating existing outputs" not in assembled
+    assert "## Return levels and their limits" not in assembled
+    assert "operation:" not in assembled
     assert "example_subset.yml" not in assembled
-    assert "1. Choose what to run in `operations`." in assembled
     assert (
-        "It never defines arithmetic, units, calendars, missingness or grain."
+        "1. In `operations`, select `simulations`, `indicators`, or both." in assembled
+    )
+    assert (
+        "It does not change arithmetic, units, calendars, missingness or grain."
         in assembled
     )
     assert (
-        "Its numbers equal that definition's, under its own indicator key." in assembled
+        "The values are the same; they are reported under your indicator name."
+        in assembled
     )
     assert yaml.safe_load(assembled.split("---")[1])["subtitle"] == (
-        "P3 editorial working tree (base bed0ae1e)"
+        "P3 plain-language working tree (base bbf5fec6)"
     )
     canonical = (output / "technical-manual/indicator-requests.qmd").read_text(
         encoding="utf-8"

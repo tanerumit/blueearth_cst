@@ -1,6 +1,6 @@
 {
   "title": "Indicator selection — publishing pilot",
-  "source_revision": "P3 editorial working tree (base bed0ae1e)",
+  "source_revision": "P3 plain-language working tree (base bbf5fec6)",
   "repository_url": "https://github.com/tanerumit/blueearth_cst/blob/470fc7613b8fd2cf6b840b724b5b4a0d3f64505e/",
   "sections": [
     {
@@ -11,7 +11,7 @@
     },
     {
       "source": "docs/site/toolbox-reference/workflow-simulate-system.qmd",
-      "start": "1. Choose what to run in `operations`.",
+      "start": "1. In `operations`, select `simulations`, `indicators`, or both.",
       "stop": "calendars, missingness or grain.",
       "include_stop": true,
       "heading": "## Configuration",
@@ -20,7 +20,7 @@
     {
       "source": "docs/guide/outputs.md",
       "start": "For post-processing, open the CSVs",
-      "stop": "Its numbers equal that definition's, under its own indicator key.",
+      "stop": "The values are the same; they are reported under your indicator name.",
       "include_stop": true,
       "heading": "## Reading an indicator set",
       "anchor": "reading-an-indicator-set"
@@ -28,7 +28,7 @@
     {
       "source": "docs/guide/outputs.md",
       "start": "### Opening an indicator table in Excel\n",
-      "stop": "### Migrating existing outputs\n",
+      "stop": "## Return levels and their limits\n",
       "anchor": "opening-an-indicator-table-in-excel"
     },
     {

@@ -72,7 +72,7 @@ outputs under `../../runs/<basin>/`, or use absolute paths for external storage.
 For a permanent output reset during testing, see
 [rebuilding outputs](../../../docs/guide/running.md#rebuild-outputs-for-testing).
 The runner previews the affected paths and asks for confirmation before erasing them.
-See [path rules and schema-2 migration](../../../docs/guide/configuration.md#how-paths-are-read).
+See [configuration path rules](../../../docs/guide/configuration.md#how-paths-are-read).
 Run Pixi commands from the toolbox root.
 
 ## Run in stages

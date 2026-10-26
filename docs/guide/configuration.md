@@ -83,29 +83,10 @@ workflows:
     config_path: project_config_rapid_simulate_system.yml
 ```
 
-**Schemas 2 and 3 are supported.** Schema 2 retains its original run-directory-relative paths;
-changing only its version number is not a migration. Version 1 needs the v1-to-v2 converter in
-toolbox v0.3.0 first. Unknown future versions are refused.
-
-### Migrate an existing case to schema 3
-
-1. Keep a copy of the source configuration set. Identify the run directory used by schema 2
-   (normally the toolbox root), and resolve each existing input and output path against that base.
-2. Rewrite case paths relative to the YAML declaring them. For example, the shipped seed changes
-   `test_case/test_rapid` to `test_rapid`, and `test_case/test_data/output_locations.csv` to
-   `test_data/output_locations.csv`. Use `toolbox:config/...` for bundled resources.
-   Absolute paths may remain absolute; cross-drive storage does not require a relative spelling.
-3. Keep workflow `config_path` and custom indicator-definition `config_path` values unchanged:
-   they were already relative to their declaring file. Do not rewrite dataset locations inside catalogs.
-4. Set `schema_version: 3` in the project file, then run the owned runner with `-- --dry-run`.
-   Check the reported output folder and inputs before execution. Migration edits source YAML only;
-   it does not move outputs or rewrite retained records.
-
-Archives retain exact source YAML and record resolved runtime paths separately. Existing schema-2
-archives remain readable. Changing the schema or locator spelling can change configuration provenance
-digests; it does not alter the scientific collection/simulation identity algorithms. A moved run tree
-still follows the explicit archived-rerun relocation contract: portable source configs alone do not
-promise that every retained output or external dataset can be relocated automatically.
+Use `schema_version: 3` for paths relative to each declaring YAML file. Schema 2 resolves paths
+relative to the run directory. Unknown schema versions are refused. Archives preserve exact source
+YAML and resolved runtime paths. Moving a case configuration does not automatically relocate its
+retained outputs or external datasets.
 
 ### Shared settings
 
@@ -209,9 +190,8 @@ simulation_window: {start: 2010, end: 2016}
 
 `build_model.simulation_window` is required and must fit inside `climate.window`.
 Choose the Wflow run period separately from the longer climate analysis record.
-Existing configs that omitted or commented out this setting must add inclusive
-`start` and `end` years. Use the climate record's endpoints explicitly to retain
-the former full-record run, or select a shorter period.
+Set inclusive `start` and `end` years. Use the climate record's endpoints for the full record,
+or select a shorter period.
 
 Use unquoted `true` or `false` for `enabled:`.
 
@@ -243,10 +223,6 @@ separate title and caption inventories remain available in every mode.
 The setting is optional and defaults to `none`. It belongs in the project file, not a workflow file.
 Changing it schedules affected plotting jobs without changing scenario or simulation identity.
 WF1 evaluation also refreshes the indicators written by its combined evaluation/plotting job.
-
-The former WF0 `diagnostics.captioned_figures` and WF2 `captioned_figures` settings are retired.
-Remove them and set `plotting.annotation: caption` in the project file to embed captions at the
-ordinary plot paths. Existing files under `plots/captioned/` are left in place and are no longer targeted.
 
 ### Colour defaults
 
@@ -313,6 +289,3 @@ refuses the request before producers run. See [running](running.md#select-resume
 - [Running the workflows](running.md) — run the whole project or selected workflows.
 - [Reading the outputs](outputs.md) — what the run wrote, and whether it is
   still current.
-
-An older (pre-R14) project file is migrated with `scripts/migrate_project_config.py`
-from toolbox release `v0.3.0`, which also carries its guide.

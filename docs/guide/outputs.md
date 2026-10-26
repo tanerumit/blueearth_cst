@@ -78,48 +78,14 @@ reference consume its sealed fields, so changing rendering or display classes do
 annual-field preparation. Snakemake tracks the scientific inputs and implementation separately
 from display dependencies.
 
-Separating these dependencies changes preparation identities once. Existing fields and the display
-reference are regenerated at their existing paths on the first affected run; acquired climate inputs
-remain reusable. Scientific methods, defaults, payload corruption checks and environment qualification
-are unchanged. Older fields fail the current-identity guard until regenerated.
+Collections and indicator sets store immutable data under `_engine/`. The stable scenario export is
+`scenarios/`. Indicator sets publish their readable tables at
+`experiments/<name>/results/indicator_sets/<set-id>/`.
 
-Fresh collections and indicator sets keep their immutable data under `_engine/`. Readers still accept
-completed legacy data at `scenarios/<id>/`; their manifests retain those paths.
-The stable scenario export remains at `scenarios/`. Indicator sets publish one folder each at
-`experiments/<name>/results/indicator_sets/<set-id>/`; a set id never takes over a legacy
-`results/indicator_sets/<id>/` root.
-
-### Indicator terminology migration
-
-The toolbox now uses **indicator** consistently in configuration, Python APIs, logs and outputs.
-New publications use `results/indicator_sets/<set-id>/`, immutable records under
-`_engine/indicator_sets/<id>/indicators.json`, and an `indicator` column in result tables.
-The calculation package is `blueearth_cst.indicators`; the inspection command is
-`pixi run python scripts/inspect_indicators.py`.
-WF1 model-evaluation tables are now named `performance_indicators.csv` and use an `indicators` index.
-
-Existing `_engine/metric_sets/<id>/metrics.json` publications and named exports at
-`results/metric_sets/<set-id>/` remain readable. Their original hashes and table schemas are checked
-before their fields are translated in memory. Saved files are never renamed or rewritten.
-`inspect_indicators.py --experiment <experiment> --list` discovers both layouts.
-Fresh numerical rechecking of an old publication is unavailable because it names the old execution
-sources; saved integrity checks and historical receipts remain available.
-
-Rerun WF4 with `operations: [indicators]` to calculate and publish the new layout from retained
-simulation responses, without running Wflow again. Calculation identities change with the renamed
-source files and contracts, so old and new publications have different identifiers. Update downstream
-scripts to the new paths, `indicator` column and manifest fields such as `indicator_set_id`.
-The reviewed vocabulary-only change to the native reader's docstring is accepted when reopening
-retained simulations. Saved reader identities remain unchanged; other reader changes and altered
-native files still fail the existing integrity checks.
-Old scalar `operation: metrics-only` / `simulate-and-metrics`, the `metrics` selection key and the
-`--target metrics` alias remain accepted as inputs for compatibility; maintained examples use
-indicator terminology. Older flat exports are preserved and no longer refreshed.
-
-New projects use this layout from October 2026: the former `config/runs/` contents now sit directly
-under `config/`, and former `config/experiments/` state sits under `experiments/_engine/`.
-Existing output trees are not migrated or supported through path aliases; use a fresh output root
-with this toolbox version.
+To inspect saved indicator sets, use `pixi run python scripts/inspect_indicators.py`.
+Inspection checks saved hashes and table structure without rewriting the files.
+Numerical rechecking also requires matching execution sources, inputs and recorded dependencies.
+Integrity inspection does not make stale outputs reusable.
 
 ### Climate extent and basin cells
 
@@ -197,9 +163,6 @@ scope fields, for example `cmip6_precip_temp_annual_change_cloud_basin_avg.png`.
 the plot manifest and the analysis record share one `_engine/` at the ensemble root. User-facing provenance
 remains with its data products in `summary/`.
 
-The former `plots/overview/` and `plots/windows/` figure paths are retired. Existing
-files at those paths are not current suite outputs and are not deleted automatically.
-
 ### Which run produced these files
 
 Runs launched through `scripts/run_workflows.py` or `scripts/run_workflow.py` keep
@@ -238,7 +201,7 @@ Use `--ensemble <name>` when the project has no captured WF2 configuration namin
 Export refuses an `incomplete` product, missing required files, a `region.geojson` whose polygon differs
 from the one recorded in `summary/provenance.json`, and provenance that matches no retained
 configuration snapshot. Files whose bytes no longer match the production record are exported with
-`producer: null`. Products from before production records export as `legacy-unattributed`; their
+`producer: null`. Products without production records export as `legacy-unattributed`; their
 configuration snapshot is the one whose digests match `summary/provenance.json`.
 
 Import checks the whole bundle before writing: member names, sizes, checksums, the manifest's identity,
@@ -274,15 +237,16 @@ Start with `indicators.csv`.
 It has one row per indicator, describing:
 
 - Its title, variable, input and output units, quantity, method and parameters.
-- Its grain and group policy, water-year start and block assignment.
+- What each value represents (`grain`), how group results are calculated, the water-year start, and how days
+  are assigned to blocks.
 - Its partial-block, missingness and validity policies, references, and `block_coverage`.
 
 `block_coverage` lists the blocks for every contributing run/location pair, including observed and
 expected days and missing values.
-It describes coverage, not sample adequacy.
+This records coverage; it does not establish whether the sample is adequate.
 
-For an authored indicator, `equivalent_definition` identifies its registered counterpart.
-Its numbers equal that definition's, under its own indicator key.
+For an indicator you name yourself, `equivalent_definition` identifies the existing calculation it uses.
+The values are the same; they are reported under your indicator name.
 
 Every successful WF4 invocation requesting indicators refreshes each selected set's folder, including
 reuse of an existing set. `_engine/indicator_sets/names/<set-id>/current.json` records the committed
@@ -297,22 +261,16 @@ a reused formula invalidates its dependent selections. Upstream implementation, 
 edits do not change calculation identity over unchanged retained responses. Resolved selections and
 water-year settings, native response interpretation, grouping and stored value precision remain covered.
 Snakemake continues to schedule the jobs; immutable publication guards still verify retained artifacts.
-Narrowing the former all-set and workflow-wide inventory changes existing request identities once:
-the first indicator run after this update recalculates selected
-sets from retained responses. Saved publications remain readable, and model simulations are unaffected.
-Original publication identifiers and provenance are preserved; old results are not relabelled as newly
-qualified calculations.
 
 WF1 retains its full-precision historical `run_default/output.csv` for evaluation and table exports.
 Changing evaluation settings does not rebuild thematic maps. Shared spatial preparation and WF1 model
 updates declare their scientific helper modules as Snakemake inputs, so helper edits schedule their
-producers without including logging or rendering modules. Adding these previously missing dependencies
-can cause one refresh of affected existing products. Their numerical methods and paths are unchanged.
+producers without including logging or rendering modules.
 
 Wait for workflow completion before reading an export: replacement is atomic per file, not across the
 folder. Ordinary export I/O failures roll back the replaced files. Dry-runs and `simulations_only` do not
 refresh exports. A folder is refreshed only when this set's committed publication owns it; an existing
-folder with unknown files, or one claimed by a legacy indicator set, is refused and left untouched. A
+folder with unknown files, or one claimed by another indicator set, is refused and left untouched. A
 rerun restores managed files edited by hand; keep custom tables elsewhere.
 
 Annual-total indicators (`aet`, `gwr`, `precip`) report **mm**: daily depths summed within each
@@ -334,7 +292,6 @@ mean, extrema, quantiles, seven-day extrema, baseflow index, basin reductions an
 Unequal record lengths do not change realization weights. A NaN member propagates to the group summary;
 infinite values are refused. Existing per-run reduction rules remain in force. Wet- and dry-month indicators
 use the same month selected from the unperturbed reference and first native discharge location.
-Their new group means can differ from the former pooled-month carrier when records or missingness differ.
 
 Return levels retain pooled estimation from member-local annual blocks, with the existing sample screening
 and estimator validity rules. A singleton group uses those same rules, not a substitute run statistic.
@@ -344,7 +301,7 @@ retain the underlying model responses for more detailed analysis.
 ### Opening an indicator table in Excel
 
 Run IDs such as `run_01` and group IDs such as `group_01` are prefixed strings, so opening the CSV
-normally preserves them as text.
+normally keeps them as text.
 When importing perturbation `st_id` values, explicitly preserve them as text in Excel and code.
 
 When reading lookup tables in pandas, use `dtype=str` to preserve identifiers and
@@ -353,19 +310,9 @@ Indicator `value` columns remain numeric.
 
 Keep these identifier conventions in mind when joining tables:
 
-- Suffix padding is consistent within the owning namespace.
+- Each kind of ID uses a consistent number of digits within its collection or set.
 - Groups are numbered independently of run count and selected indicators.
 - Matching labels in different collections or indicator sets do not establish matching inputs or membership.
-
-### Migrating existing outputs
-
-The prefixed collection and split indicator contracts use new schema revisions. Numeric-ID collections
-and mixed `<token>_indicators.csv` / `indicator_run_lookup.csv` products are not silently reinterpreted.
-Keep old output roots for provenance; regenerate scenarios, then simulate under a new experiment name
-to produce the new contract. Existing files are not migrated in place. `indicators-only` is for responses
-whose retained collection and simulation records already satisfy the new contract.
-Automatic weather seeds include provider-code identity, so regeneration after this update may resolve
-a different seed. Use the same explicit seed and matched inputs when comparing generated samples.
 
 ## Return levels and their limits
 
@@ -399,7 +346,7 @@ simulation settings file.
 
 The `_engine/simulation.json` record ties an experiment to its collection,
 model, and simulation settings. Use a new experiment name when those inputs
-change. If you change only the indicators, `operation: indicators-only` creates a
+change. If you change only the indicators, use `operations: [indicators]` to create a
 new indicator set from retained model responses without rerunning simulation.
 
 Simulation implementation identity follows the forcing preparation and Wflow
@@ -408,16 +355,10 @@ exports, generation implementation and configuration archive code are outside
 that boundary; selected collection contents and resolved simulation inputs
 remain checked separately. Snakemake continues to schedule jobs.
 
-Completed simulations accept the audited source transition from `040a8e61`
-and the native-temperature reader extension after `76a2a874` without rewriting
-their identity or provenance. Each accepted source pair is pinned, including
-the previously supported transition. Existing response reads are unchanged;
-adding temperature outputs to the model changes its TOML digest and requires
-a new experiment. An unknown historical implementation also requires one.
-Incomplete experiments retain their strict freeze checks. Changed scientific
-code, model inputs, settings, preparation, response requirements or relevant
-environment also require a new experiment. The Julia progress helper remains
-tracked because it invokes Wflow.
+Changed scientific code, model inputs, settings, preparation, response requirements or relevant
+environment require a new experiment. Adding temperature outputs changes the model's TOML digest
+and also requires a new experiment. Incomplete experiments keep their strict input checks.
+The Julia progress helper is part of the simulation identity because it invokes Wflow.
 
 For a reproducible comparison, keep the whole project output directory, not
 only the indicator CSVs. The model build settings used by HydroMT are recorded

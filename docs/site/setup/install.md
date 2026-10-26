@@ -174,7 +174,7 @@ the R installer and Windows activation script. Any difference fails before Pixi 
 check also rejects task-only manifest changes. It checks contract equality, not the health of an
 arbitrarily modified installation; the owner's provisioning and verification remain prerequisites.
 
-TOML comments and formatting do not affect compatibility.
+TOML comments and formatting do not affect this contract comparison.
 The helper runs an **executable**, so spell checks out as `python -m pytest ...`, `ruff ...`, or
 `Rscript --vanilla ...`; Pixi task names such as `test-fast` are not expanded. It uses
 `pixi run --as-is --executable --manifest-path <runtime>/pixi.toml`, preserving the session's working

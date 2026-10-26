@@ -36,5 +36,4 @@ The following details apply specifically to the default set:
 - `registry.py` retains the production default indicator names and declares fixed `ASSUMPTIONS`.
 - Units, reference behavior and accepted parameters appear next to each registration and formula.
 - `rolling_annual_min` describes the fixed seven-day calculation.
-  The old `rolling7_annual_min` selector remains a declarative compatibility alias.
   Annual maximum fits have no unused rolling-window parameter.

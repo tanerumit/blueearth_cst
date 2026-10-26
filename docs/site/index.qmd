@@ -1,5 +1,6 @@
 ---
 title: "BlueEarth Climate Stress Test"
+format: html
 subtitle: "First-order climate vulnerability assessment of river basins"
 toc: false
 number-sections: false
@@ -12,16 +13,17 @@ Outputs support screening, not an automatically calibrated basin model or a deci
 
 ## Start here
 
-1. [Install](setup/install.md) and check external-data access.
+1. [Install](guide/install.qmd) and check external-data access.
 2. [Run the example](guide/quick-start.md) and find its output tables.
-3. Use the repository's [own-case guide](../guide/new-case.md) and
-   [indicator guide](../guide/indicators.md) for your assessment choices.
+3. Use the [own-case guide](guide/new-case.qmd) and
+   [indicator guide](guide/indicators.qmd) for your assessment choices.
 4. [Run/resume](guide/running.md), [read outputs](guide/outputs.md) and check qualifications.
 
-The [technical reference](toolbox-reference/overview.qmd) describes implemented interfaces.
+The [technical manual](technical-manual/overview.qmd) describes implemented interfaces.
 The existing [scientific approach](scientific-approach/overview.qmd) explains assessment rationale and limits.
-This writing tranche covers table interpretation, selection and extension; supported surface construction
-and further scientific-approach writing remain deferred.
+The manuals cover table interpretation, selection and extension. A supported response-surface construction
+walkthrough is not yet available. Use [Downloads](downloads.qmd) for complete HTML and PDF volumes;
+the technical manual includes the module contract and all five indicator-set references.
 
 ## The five workflows
 

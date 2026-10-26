@@ -3,11 +3,9 @@
 # Rooted at docs/site/, so repository-only sources stay outside the render
 # scope. Documentation layout and authoring entry point: docs/README.md.
 #
-# PHASE 3, in progress (t2608202351b). The site publishes the landing page,
-# setup guide and user guide. The scientific approach and toolbox reference summarize current methods and interfaces
-# without republishing the 2025 note. That note's 38 figures are absent from the
-# repository, so it remains outside the render list (t2608202351). Its GUI and
-# platform chapters remain unpublished by ruling O-1c.
+# The site stages canonical guide/manual chapters and complete local indicator sources.
+# Existing scientific pages are retained; new scientific writing is deferred.
+# Upstream references, notebooks and developer guidance stay outside the render list.
 #
 # Nothing here publishes. There is deliberately no `site-url` and no deploy
 # workflow: the subpath a GitHub Pages project page needs is not known until the
@@ -19,11 +17,15 @@ project:
     - "python ../../dev/scripts/stage_site_guides.py"
   resources:
     - "guide/assets/shape-of-a-run.html"
+    - "manuals/**"
   render:
     # Globs, not directories. A bare `guide/` matches nothing and renders
     # nothing -- silently, with a successful exit and a smaller site.
     - "index.qmd"
-    - "guide/*.md"
+    - "downloads.qmd"
+    - "guide/*.qmd"
+    - "technical-manual/*.qmd"
+    - "technical-manual/appendices/*.qmd"
     - "scientific-approach/*.qmd"
     - "toolbox-reference/*.qmd"
     # Explicit, like everything else here: quarto special-cases a 404.qmd only
@@ -39,16 +41,17 @@ website:
   title: "Climate Stress Testing (CST) Toolbox"
   description: "Climate stress testing for water systems — the workflow toolbox"
   favicon: _images/favicon.svg
+  page-navigation: true
   navbar:
     left:
       - text: "User guide"
-        href: guide/quick-start.md
-      - text: "Setup"
-        href: setup/install.md
+        href: guide/quick-start.qmd
+      - text: "Technical manual"
+        href: technical-manual/overview.qmd
       - text: "Scientific approach"
         href: scientific-approach/overview.qmd
-      - text: "Toolbox reference"
-        href: toolbox-reference/overview.qmd
+      - text: "Downloads"
+        href: downloads.qmd
     right:
       - icon: github
         href: https://github.com/tanerumit/blueearth_cst
@@ -60,21 +63,21 @@ website:
       contents:
         - section: "Getting started"
           contents:
-            - guide/quick-start.md
-            - guide/configuration.md
+            - guide/install.qmd
+            - guide/quick-start.qmd
+            - guide/new-case.qmd
+            - guide/configuration.qmd
         - section: "Running and results"
           contents:
-            - guide/running.md
-            - guide/benchmarking.md
-            - guide/outputs.md
-    - title: "Setup"
-      style: docked
-      collapse-level: 3
-      contents:
-        - section: "Installation"
+            - guide/running.qmd
+            - guide/indicators.qmd
+            - guide/outputs.qmd
+            - guide/benchmarking.qmd
+        - section: "Help and interactive use"
           contents:
-            - setup/install.md
-            - setup/env-setup-notes.md
+            - guide/troubleshooting.qmd
+            - guide/notebooks.qmd
+        - downloads.qmd
     - title: "Scientific approach"
       style: docked
       collapse-level: 3
@@ -85,35 +88,49 @@ website:
             - scientific-approach/models-and-methods.qmd
             - scientific-approach/climate-information.qmd
             - scientific-approach/conventions-and-interpretation.qmd
-    - title: "Toolbox reference"
+    - title: "Technical manual"
       style: docked
       collapse-level: 3
       contents:
-        - toolbox-reference/overview.qmd
+        - technical-manual/overview.qmd
+        - technical-manual/environment.qmd
+        - technical-manual/configuration.qmd
+        - technical-manual/input-formats.qmd
+        - technical-manual/datasets.qmd
         - section: "Workflows"
-          href: toolbox-reference/workflows.qmd
+          href: technical-manual/workflows.qmd
           contents:
             - text: "0.Analyze climate"
-              href: toolbox-reference/workflow-analyze-climate.qmd
+              href: technical-manual/workflow-analyze-climate.qmd
             - text: "1.Build model"
-              href: toolbox-reference/workflow-build-model.qmd
+              href: technical-manual/workflow-build-model.qmd
             - text: "2.Analyze projections"
-              href: toolbox-reference/workflow-analyze-projections.qmd
+              href: technical-manual/workflow-analyze-projections.qmd
             - text: "3.Generate scenarios"
-              href: toolbox-reference/workflow-generate-scenarios.qmd
+              href: technical-manual/workflow-generate-scenarios.qmd
             - text: "4.Simulate system"
-              href: toolbox-reference/workflow-simulate-system.qmd
-            - toolbox-reference/retained-handoffs.qmd
-        - section: "Modeling Tools"
-          href: toolbox-reference/modeling-tools.qmd
+              href: technical-manual/workflow-simulate-system.qmd
+        - section: "Results and provenance"
           contents:
-            - text: "Overview"
-              href: toolbox-reference/modeling-tools.qmd
-        - section: "Datasets"
-          href: toolbox-reference/datasets.qmd
+            - technical-manual/retained-handoffs.qmd
+            - technical-manual/execution-and-provenance.qmd
+            - technical-manual/results-transfer.qmd
+        - section: "Indicators"
           contents:
-            - text: "Overview"
-              href: toolbox-reference/datasets.qmd
+            - technical-manual/indicator-requests.qmd
+            - technical-manual/indicator-extension.qmd
+            - text: "Module contract"
+              href: technical-manual/appendices/indicator-module.qmd
+            - text: "Default indicators"
+              href: technical-manual/appendices/indicator-default.qmd
+            - text: "Flow regime"
+              href: technical-manual/appendices/indicator-flow-regime.qmd
+            - text: "Environmental flow (ERFA)"
+              href: technical-manual/appendices/indicator-eflow-erfa.qmd
+            - text: "Crop-water screening"
+              href: technical-manual/appendices/indicator-crop-water.qmd
+            - text: "Flood discharge hazards"
+              href: technical-manual/appendices/indicator-flood-risk.qmd
   search:
     location: navbar
     type: textbox
@@ -134,9 +151,9 @@ format:
 language:
   search-text-placeholder: Search
 
-# The site must never execute anything during a build. A render has no
-# project_dir, no CMIP6 access and no Julia, and a fresh rapid run costs ~73
-# minutes. `freeze: auto` means a document is only ever executed if its stored
-# output is missing or stale -- and nothing here is executable yet.
+filters:
+  - ../../dev/scripts/publication_links.lua
+
+# Commands are displayed examples. Rendering must never execute code or acquire data.
 execute:
-  freeze: auto
+  enabled: false

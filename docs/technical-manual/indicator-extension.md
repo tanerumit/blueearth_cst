@@ -10,10 +10,9 @@ WF4 owns input selection, warm-up handling, file publication and reuse guards.
 
 ## Canonical sources
 
-The offline manual must assemble the complete sources below, in this order, without a second editable copy.
-The explicit declaration is [local-source-appendix.yml](local-source-appendix.yml).
-Paths in that declaration resolve against the repository root. Links inside each source resolve against
-its own directory; the P5 assembler must rebase them rather than treating them as chapter-local links.
+The complete manual includes the sources below in this order.
+They remain maintained beside their implementations; the publication uses those sources directly.
+The [source declaration](local-source-appendix.yml) identifies their canonical locations.
 
 | Appendix anchor | Maintained source |
 |---|---|
@@ -25,7 +24,7 @@ its own directory; the P5 assembler must rebase them rather than treating them a
 | `indicator-flood-risk` | [Flood hazards](../../blueearth_cst/indicators/sets/flood_risk/README.md) |
 
 Each set retains its formulas, units, missingness and qualification limits beside its implementation.
-Crop-water includes its complete preparation contract here through inclusion, including historical Qcrit.
+The crop-water appendix includes its complete preparation contract, including historical Qcrit.
 No central rewrite of those rules is authoritative.
 
 ## Evidence availability

@@ -15,10 +15,11 @@ The technical manual and local component READMEs own reference detail.
 The site configuration selects published sources and stages derived guide copies; edit canonical sources,
 never those generated copies. Repository source compatibility pages remain at existing setup/reference routes.
 
-The accepted publication pilot demonstrates shared-source HTML/PDF handling; whole-manual assembly is a
-separate integration step. The new source chapters here do not imply that every route is already published.
-Use the [site configuration](site/_quarto.yml) to inspect the current render list.
-`pixi run docs-build` and `pixi run docs-preview` operate that configured site, not arbitrary repository files.
+The [publication manifest](publication/manifest.json) selects the ten user-guide chapters, sixteen
+technical-manual chapters and six complete local module/set sources for shared HTML/PDF assembly.
+See [Build the publications](publication/README.md) for exact commands and output locations.
+The [site configuration](site/_quarto.yml) owns navigation and retained routes.
+Build the complete manuals before rendering the site so its downloads are available.
 
 Notebooks remain editable `.ipynb` sources and are not executed by documentation rendering.
 [Upstream references](references/) are repository-only consultation material; the 2025 note describes

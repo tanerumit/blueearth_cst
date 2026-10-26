@@ -37,7 +37,8 @@ Copy this section for a real attempt; do not prefill planned attempts as execute
 - Objective and owned paths:
 - Input revision / returned candidate / accepted revision:
 - Worker identity; new dispatch or continuation:
-- Requested role / model / effort:
+- Requested role / model / effort (medium default):
+- Exceptional high effort: specific reason, bounded scope, outcome and return to medium, or not used:
 - Observed role / model / effort; evidence or unknown:
 - Context mode and isolation/worktree; runtime identity verified:
 - Skills requested:

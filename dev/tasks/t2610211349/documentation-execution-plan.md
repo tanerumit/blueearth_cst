@@ -46,20 +46,24 @@ Git integration and measurement. Specialists own bounded work; they do not indep
 
 | Work | Registered role | Proposed model / effort |
 |---|---|---|
-| P1 boundaries and outline | technical_writer | gpt-6.1-sol / high |
-| P2 independent boundary critique | critical_thinker | gpt-6-astra / high |
+| P1 boundaries and outline | technical_writer | gpt-6.1-sol / medium |
+| P2 independent boundary critique | critical_thinker | gpt-6-astra / medium |
 | P3 publication pilot | python_engineer | gpt-6.1-sol / medium |
 | P4A user/local guidance | technical_writer | gpt-6.1-sol / medium |
-| P4B technical reference | api_documenter | gpt-6.1-sol / high |
-| P4C scientific explanation | academic_writer | gpt-6-astra / high |
+| P4B technical reference | api_documenter | gpt-6.1-sol / medium |
+| P4C scientific explanation | academic_writer | gpt-6-astra / medium |
 | P5 assembly and integration | technical_writer + coordinator | gpt-6.1-sol / medium |
-| P6 fresh reader review | technical_writer, fresh context | gpt-6.1-sol / high |
+| P6 fresh reader review | technical_writer, fresh context | gpt-6.1-sol / medium |
 
-These are starting allocations, not measured performance rankings. High effort is reserved for unsettled
-boundaries, interface consistency and scientific synthesis. Settled execution starts at medium.
-Do not use xhigh/max routinely or split off a mechanical worker merely to use a smaller model.
+Owner preference: medium effort is the default for every stage, including planning and independent review.
+Use high only for an exceptional, specific problem that remains unresolved at medium after checking the
+brief, evidence and tools, or for a clearly identified consequential reasoning problem. Record the reason,
+bounded scope and result in the execution log; return to medium when that problem is resolved.
+Scientific content or a reviewer role alone does not justify high. Do not use xhigh/max under this plan.
+These are starting allocations, not measured performance rankings or guaranteed token savings.
+Do not split off a mechanical worker merely to use a smaller model.
 
-Fallbacks: GPT-6 Sol at the same effort for GPT-6.1 Sol, and GPT-6.1 Sol/high for Astra, only after checking
+Fallbacks: GPT-6 Sol at the same effort for GPT-6.1 Sol, and GPT-6.1 Sol/medium for Astra, only after checking
 availability, governing role pins and adequacy for the packet. If those checks fail, hold the affected packet.
 Missing evidence or a broken tool should be resolved directly, not treated as a model-capacity problem.
 

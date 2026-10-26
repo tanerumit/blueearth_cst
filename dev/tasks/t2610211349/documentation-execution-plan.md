@@ -1,6 +1,6 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: P1–P3 complete; pilot awaits owner review before migration.
+Date: 2026-10-26. Task: t2610211349. Status: P3 editorial revision reviewed; migration remains held.
 
 Execution boundary: the owner's 2026-10-26 instruction commissions P1 in s1 and independent P2 in s2,
 both at medium effort. cst-main retains all commit and integration authority. Return the reviewed

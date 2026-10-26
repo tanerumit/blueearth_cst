@@ -4,6 +4,18 @@
 
 ### Frozen source selection
 
+Owner revision, 2026-10-26: improve the pilot's language with user-centric, simpler sentences,
+numbered actions and grouped bullets, especially Configuration and Default indicators. This supersedes
+the original verbatim-wording requirement below. Revise only selected canonical excerpts in the s2
+pilot branch, preserving headings, keys, commands, units, prerequisites and scientific qualifications.
+Refresh the manifest boundaries and affected checks as needed; do not create another editable prose copy.
+Migration and scientific-approach writing remain held. The s1 editorial lead drafts; s2 applies and renders.
+
+Further owner direction: the user-facing pilot includes only the reader-facing default-indicator
+section, with a brief explanation and an advanced-reader link. File-by-file registry/calculation/check
+details remain in canonical advanced material and are excluded from the pilot, superseding full README
+inclusion below. Keep scientific interpretation limits that a user needs to read results correctly.
+
 Assemble these existing sections in the following order. Preserve their substantive wording; only heading levels, link destinations, source attribution and format handling may change.
 
 | Order | Existing source | Exact inclusion |

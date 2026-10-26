@@ -18,9 +18,13 @@ updated: 2026-10-26
 
 ## Progress
 
-*Blocked — Awaiting owner review of the completed P3 HTML/PDF pilot; resume on owner acceptance before migration.*
+*Blocked — Owner review of revised P3 pilot before migration.*
 
-Next: Owner reviews the P3 HTML/PDF samples before authorizing migration; scientific writing stays deferred.
+Next: Owner reviews the revised pilot wording and audience boundary before authorizing migration.
+
+Editorial pilot revision: `bbf5fec6` in s2, retained without landing. Both formats use numbered steps and
+reader conventions; implementation details remain in linked advanced material. See
+[editorial return](t2610211349/publishing-pilot-editorial-return.md) for artifacts and verification.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.

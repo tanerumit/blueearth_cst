@@ -344,3 +344,59 @@ state placement, annex pagination, cache confinement, portable recipe and the us
 The last label-only HTML rerender reused unchanged PDF checks; no broad suite was added.
 Owner review is the next gate. The worker proposed a separate Quarto skill check for alternate-format
 links; current skill verification does not name that case. No shared skill edit is authorized or applied.
+
+## P3 editorial revision — 2026-10-26
+
+Owner found content mostly acceptable but requested simpler user-centric wording, with numbered steps
+or bullets, especially Configuration and Default indicators. This commissions a bounded P3 revision,
+not migration or scientific-approach writing. Primary audience clarified in conversation: a practitioner
+selecting indicators from completed simulations and interpreting their tables; author details are secondary.
+
+Rechecked live lane/pane ownership: s1 still holds technical-writer-p1 (w8:p1), s2 still holds
+python-engineer-p3 (w9:p1), clean at `bed0ae1e`. No s3 control/writes. Continued both workers sequentially
+at UI-observed GPT-6.1-Sol medium. No fresh agents or nested delegation.
+
+Writer turn `01a178b4-f0dd-7e81-93b9-1fc8c531a5ff` completed in 241.120 seconds. New applicable skills:
+writing-feedback-revision with revision reference, and Quarto; other completed reads reused. Full loading
+and semantic checklist are recorded in `publishing-pilot-editorial-draft.md`. Coordinator reviewed five
+replacement blocks, requested a more accurate summary label and shorter return-level sentences, then
+retained the completed draft with matching transfer hash
+`345b9370af0b0dd6cef108d35fd9aa5121fec222ae120beb0fcfff7076a0da65`.
+
+Engineer continuation applies the approved draft to four canonical sources, plus necessary selectors
+and wording-sensitive checks, under `publishing-pilot-editorial-revision.md`. Rendered-output and source
+integrity checks cover revised prose; unchanged interaction/failure evidence may be reused. No new prose
+copy, runtime behavior, model execution, source relocation or scaffold change is authorized.
+Engineer duration/usage and final acceptance remain pending.
+
+Owner further clarified the audience boundary: named implementation files belong to advanced material,
+not the user-facing pilot. Writer revised E to retain unique details under an excluded advanced heading,
+with a brief script-ownership statement and link to the existing module authoring contract for readers.
+Coordinator reviewed the replacement and retained matching SHA256
+`8740f5b4c8a0cfd4ca25348c52dbdf4f96a8603a7e16944cf026624a89ae4a71`.
+This supersedes the earlier draft hash and full-default-README inclusion. Engineer held E while applying
+A–D, then received the reviewed revision. No new manual page or duplicate prose home is commissioned.
+
+Writer follow-up turn `01a178be-00db-7c22-803d-92230f5970b0` reports 7,963.470 seconds elapsed;
+this is wall-clock turnaround, not active compute. Its retained artifact records final verification at
+17:17:06 UTC. Role/skills were reused, no new reads were triggered, and s1 remained clean/detached.
+
+### Editorial acceptance
+
+Engineer turn `01a178b9-22fa-7c43-ad89-2e144390ddef` completed and is idle. Reported wall-clock duration:
+8,780.361 seconds, including an uninstrumented gap and the E hold; active compute and cash cost are unknown.
+Role remains python-engineer implement mode, full manual application, requested/UI medium. Newly applied
+writing-feedback-revision and its revision reference; other completed guidance reused. Detailed skill and
+timing evidence is retained in `publishing-pilot-editorial-return.md`, transfer SHA256
+`d2d1603eff4c4585c04adbacaf41924ae4c619cb59b088adc6fee3eca98e21cf`.
+
+Coordinator reviewed all eight changed files, all four PDF pages and the revised HTML conventions view.
+Reused 14 passing affected tests, scoped Ruff/compile checks, exact five-block replacement comparison,
+10-input render integrity, 41 rendered content checks and affected navigation/link evidence. Staged
+whitespace check passed. External online availability is not claimed; the advanced target resolves in
+the pinned repository content. The separate annex retains extra whitespace on PDF page 3.
+
+Committed in s2 as `bbf5fec6`; branch is clean and retained for owner review, without landing or pushing.
+Current artifacts are under s2 `.tmp/tasks/t2610211349/p3/editorial/build/`; the earlier pilot is separate.
+Owner reviews wording and audience separation next. Migration and scientific-approach writing remain held.
+No s3 activity occurred. Unrelated primary task-board additions are preserved.

@@ -9,6 +9,9 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Fix --unlock being rejected by the WF0–WF2 source-capture guard when forwarded through
+  the all-workflow runner.
+
 - Fix project rebuilds leaving stale WF3/WF4 archive journals that prevented scenario generation
   or experiment publication with `archive terminal state is corrupt: committed`.
 

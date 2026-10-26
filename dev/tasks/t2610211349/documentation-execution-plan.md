@@ -1,6 +1,12 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: proposed; no workers dispatched.
+Date: 2026-10-26. Task: t2610211349. Status: P1–P2 authorized and in execution.
+
+Execution boundary: the owner's 2026-10-26 instruction commissions P1 in s1 and independent P2 in s2,
+both at medium effort. cst-main retains all commit and integration authority. Return the reviewed
+structure and owner decisions before P3 or migration; later-stage descriptions below remain proposals.
+P1–P2 inspect current main and return evidence to the coordinator without editing lane source files.
+Their detached lanes therefore require no implementation branch or landing operation.
 
 ## Outcome
 

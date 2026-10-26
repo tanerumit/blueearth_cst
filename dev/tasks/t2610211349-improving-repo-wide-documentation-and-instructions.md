@@ -17,7 +17,7 @@ updated: 2026-10-26
 
 ## Progress
 
-Next: Resume coordination in cst-main; on execution instruction, commission P1 in s1 at medium effort.
+Next: Review P2's independent critique from s2 and have the editorial lead reconcile the structure.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
@@ -70,8 +70,22 @@ Owner-selected topology: cst-main coordinates; s1, s2 and s3 execute bounded pac
 Parallel lane execution is authorized where independent. cst-main alone commits and merges/lands;
 user-facing and human decisions return to the owner. The plan records the coordinator handoff.
 
+## P1–P2 execution (2026-10-26)
+
+Owner authorized P1–P2 only, with a return of reviewed structure and decisions before pilot or migration.
+Coordination-plan changes reviewed and committed on main at `58efe411`; whitespace checks passed.
+cst-main owns shared evidence, acceptance and commits. P1 runs in s1 as `technical-writer-p1`, reading
+current main and returning evidence without source edits. P2 uses fresh s2 context after P1 is accepted.
+Both lanes were clean and detached; their startup conversations confirmed no prior task owner.
+No implementation branches or source edits are needed for these evidence-only stages.
+Execution measurements and permission-boundary status belong in the linked observations log.
+P1's complete 55-file map and four collection outlines are retained and accepted for independent critique.
+P2 was dispatched to `critical-thinker-p2` in s2 at medium effort. Owner expressly allowed review under
+current runtime permissions; read-only instructions apply without a claim of enforced isolation.
+
 ## Refs
 
+- [Proposed boundary map and outlines](t2610211349/documentation-boundary-map.md).
 - [Execution plan](t2610211349/documentation-execution-plan.md).
 - [Workflow execution observations](t2610211349/workflow-execution-log.md).
 - [Documentation landscape assessment](t2610211349/documentation-landscape-assessment-2026-10-26.md).

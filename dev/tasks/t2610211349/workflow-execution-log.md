@@ -442,3 +442,24 @@ effects from comment changes; only scaffold YAML comments remain changed. Runtim
 Coordinator committed `865803b2` in s2; branch is clean and retained for owner review. Latest artifacts:
 s2 `.tmp/tasks/t2610211349/p3/plain-language/build/index.html` and `index.pdf`. No landing, push, migration,
 scientific-approach writing or s3 work. Historical dev/upstream evidence remains intact.
+
+## V9 acceptance, landing and P4 commission — 2026-10-26
+
+Owner explicitly approved V9, integration and P4A/P4B. Live s2 had six uncommitted follow-up paths beyond
+`865803b2`, with completed returns for concrete filenames/YAML, plain-language IDs, output-folder tree,
+highlighting, flush-left PDF contents and ragged-right body. Coordinator reviewed the exact diff and
+retained `publishing-pilot-v9-return.md`. Reused 14 source/pilot checks for content, 12 final pilot tests,
+46 rendered-block/link/hash checks and worker visual inspection; staged whitespace passed.
+These worker follow-ups reused the full manual engineer role/skills at medium. Detailed wall time/usage
+for the intervening turns is not consolidated; no estimate is claimed.
+
+Committed V9 as `fb9aca81`. Fetched origin: main was 20 ahead/0 behind. Synchronized main into s2 without
+rewriting reviewed commits, then guarded `task-land` verified equality to `fb9aca81` outside coordinator
+task/board records. Landed at `8963f661`; ancestry/tree assertions passed and the pilot branch was deleted.
+Session-2 parked clean. Unrelated unstaged primary board/task additions were preserved. No push.
+Retain all P3 review artifacts in s2 while the central review index links them; no scratch deletion.
+
+Revalidated allocation: continuing technical-writer in s1, fresh api-documenter in s2, both GPT-6.1-Sol
+medium; at most two workers. cst-main owns commits/integration; s3 remains unrelated and untouched.
+Disjoint scope and checks are in `p4-content-assignments.md`. Role change requires ending the completed
+P3 engineer and checking fresh P4B context. Scientific writing remains deferred; P5/P6 are not dispatched.

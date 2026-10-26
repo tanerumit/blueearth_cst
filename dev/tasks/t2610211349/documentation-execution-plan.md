@@ -1,6 +1,12 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: P3 editorial revision reviewed; migration remains held.
+Date: 2026-10-26. Task: t2610211349. Status: V9 accepted and landed; P4A/P4B commissioned.
+
+Current authority: owner approved V9 and instructed cst-main to integrate s2 and commission P4A/P4B.
+P3 landed at `8963f661`. [P4 assignments](p4-content-assignments.md) fix disjoint s1/s2 ownership and
+supersede earlier holds on those packets. P4C remains deferred; P5/P6 are subsequent, uncommissioned stages.
+V9's direct wording, concrete filenames/examples and PDF alignment are the accepted editorial baseline.
+Do not restore obsolete-interface or development-migration narratives from the historical map below.
 
 Execution boundary: the owner's 2026-10-26 instruction commissions P1 in s1 and independent P2 in s2,
 both at medium effort. cst-main retains all commit and integration authority. Return the reviewed

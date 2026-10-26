@@ -1,7 +1,7 @@
 ---
 title: Improving repo-wide documentation and instructions
 type: todo-item
-status: blocked
+status: active
 branch: feat/t2610211349-publishing-pilot
 effort: 2
 area: docs
@@ -18,9 +18,10 @@ updated: 2026-10-26
 
 ## Progress
 
-*Blocked — Owner review of revised P3 pilot before migration.*
+Next: Execute P4A in s1 and P4B in s2 under the commissioned content assignments; cst-main reviews returns.
 
-Next: Owner reviews the revised pilot wording and audience boundary before authorizing migration.
+V9 accepted and landed at `8963f661`; P4A/P4B commissioned in
+[content assignments](t2610211349/p4-content-assignments.md). Scientific-approach writing remains deferred.
 
 Latest plain-language revision: `865803b2` in s2. Simplifies choices and removes development-only
 compatibility/migration guidance from maintained documents. See the

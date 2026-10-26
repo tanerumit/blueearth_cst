@@ -2,6 +2,7 @@
 title: Improving repo-wide documentation and instructions
 type: todo-item
 status: blocked
+branch: feat/t2610211349-publishing-pilot
 effort: 2
 area: docs
 queue:
@@ -17,9 +18,17 @@ updated: 2026-10-26
 
 ## Progress
 
-*Blocked — Awaiting owner decisions on reviewed structure, generated case instructions, source compatibility and publication endpoint; revisit on owner response before P3 or migration.*
+*Blocked — Owner review of revised P3 pilot before migration.*
 
-Next: Owner reviews the reconciled map and decides scope, compatibility and the first publication endpoint.
+Next: Owner reviews the revised pilot wording and audience boundary before authorizing migration.
+
+Latest plain-language revision: `865803b2` in s2. Simplifies choices and removes development-only
+compatibility/migration guidance from maintained documents. See the
+[plain-language return](t2610211349/publishing-pilot-plain-language-return.md) for current review samples.
+
+Editorial pilot revision: `bbf5fec6` in s2, retained without landing. Both formats use numbered steps and
+reader conventions; implementation details remain in linked advanced material. See
+[editorial return](t2610211349/publishing-pilot-editorial-return.md) for artifacts and verification.
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
@@ -92,7 +101,28 @@ Owner follow-up restricts this task to cst-main, s1 and s2; session-3 stays avai
 The artifact-first dispatch improvement is separately authorized infrastructure maintenance, not approval
 of the pending publication or migration choices.
 
+## P3 work location
+
+- Owner: session-2; branch: `feat/t2610211349-publishing-pilot`; implementation commit `bed0ae1e`.
+- Implementation: session-2 :: publication pilot mechanics, manifest and isolated compatibility fixture.
+- Coordination: main :: `dev/tasks/t2610211349/`.
+- Scratch and outputs: session-2 :: `.tmp/tasks/t2610211349/p3/`.
+- Verification: 14 affected tests, scoped Ruff, source integrity, refresh, link and visual checks pass.
+- Retention: keep pilot outputs/evidence in s2 until owner review and a retention decision; no cleanup.
+- Next action: owner reviews the completed pilot; branch retained without landing or migration.
+- Specification: [frozen content](t2610211349/publishing-pilot-content-specification.md).
+- Assignment: [P3 engineer packet](t2610211349/publishing-pilot-assignment.md).
+- Return: [P3 evidence and limits](t2610211349/publishing-pilot-return.md).
+
 ## Refs
+
+Owner structure decision (2026-10-26): approved the user-guide, technical-manual and scientific-approach
+structure; focus the next writing tranche on the user guide and technical manual. Scientific-approach
+writing (P4C) is deferred, with its outline and existing material retained. The owner selected 1A, 2A, 3A:
+include bounded generated-case instruction reconciliation, retain initial tracked compatibility pages,
+and limit the first publication to indicator-table interpretation, selection and extension. Supported
+surface construction is deferred. The owner subsequently authorized P3 at medium effort in s2,
+returning the pilot for review before migration. P4–P6 remain held.
 
 - [Proposed boundary map and outlines](t2610211349/documentation-boundary-map.md).
 - [Independent boundary critique](t2610211349/documentation-boundary-critique.md).

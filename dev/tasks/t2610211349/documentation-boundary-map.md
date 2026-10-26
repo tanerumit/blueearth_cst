@@ -1,7 +1,7 @@
 # P1 documentation boundary map and chapter outlines
 
 Task: t2610211349. Coordinator: cst-main. Worker: s1, technical-writer, degraded generic runtime.
-Status: proposed structural handoff for P2; owner decisions remain open. No migration has begun.
+Status: P1–P2 reviewed; structure and scope approved; P3 pilot authorized. No migration has begun.
 
 Coordinator status: P1–P2 completed on 2026-10-26. The final P2 reconciliation addendum below governs
 where it refines the original proposal. All 55 original source dispositions remain; external consumers
@@ -26,6 +26,14 @@ evidence without becoming additional dispositions. No source edits, Git mutation
 builds, model runs, delegation, or publication occurred. Only this later-authorized scratch return was saved.
 
 ## Proposed boundaries
+
+Owner decision, 2026-10-26: the three central document structures are approved. User-guide and
+technical-manual writing take priority; scientific-approach writing is deferred. Its outline and
+source dispositions remain retained for later work. The owner subsequently approved bounded generated-case
+instruction reconciliation, initial tracked source-path compatibility pages, and a table-level first
+publication with surface construction deferred (1A, 2A, 3A). These decisions resolve the corresponding
+choices in the historical proposal and reconciliation below. The owner subsequently authorized P3 in
+s2 at medium effort, returning the pilot before migration. See the execution plan for this tranche.
 
 Centralize the reader journeys, with local sources retained where a directory reader needs their detail.
 Proposed collection roots are `docs/guide/`, `docs/technical-manual/`, and `docs/scientific-approach/`.

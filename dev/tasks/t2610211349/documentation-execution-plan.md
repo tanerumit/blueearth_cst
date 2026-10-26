@@ -1,6 +1,6 @@
 # Documentation streamlining execution plan
 
-Date: 2026-10-26. Task: t2610211349. Status: P1–P2 complete; owner decisions precede P3/migration.
+Date: 2026-10-26. Task: t2610211349. Status: P3 editorial revision reviewed; migration remains held.
 
 Execution boundary: the owner's 2026-10-26 instruction commissions P1 in s1 and independent P2 in s2,
 both at medium effort. cst-main retains all commit and integration authority. Return the reviewed
@@ -11,10 +11,26 @@ Their detached lanes therefore require no implementation branch or landing opera
 Reviewed output: [boundary map and reconciliation](documentation-boundary-map.md), challenged by the
 [independent critique](documentation-boundary-critique.md). Three major findings and one minor finding
 were accepted and dispositioned. The map's final addendum owns the refined recommendations and explicit
-deferrals; P3–P6 below have not been commissioned. In particular, source-link compatibility, generated
-case instructions and the response-surface publication promise need the owner's decisions.
+deferrals; P3 is now commissioned, with P4–P6 held. The owner's decisions below settle source-link
+compatibility, generated case instructions and the response-surface publication promise.
 
 ## Outcome
+
+Owner decision, 2026-10-26: the user-guide, technical-manual and scientific-approach structure is
+approved. Prioritize writing the user guide and technical manual; defer scientific-approach writing
+(P4C). Preserve its outline and existing material for later work. P5/P6 acceptance for this tranche
+covers the user guide and technical manual, without claiming a completed scientific-approach volume.
+The owner subsequently selected 1A, 2A and 3A:
+
+- Include bounded reconciliation of the scaffolder's generated `INSTRUCTIONS.md` with the central guide.
+- Retain small tracked compatibility pages at moved source paths initially.
+- Promise indicator-table interpretation, selection and extension in the first publication; defer
+  supported response-surface construction pending axis-authority reconciliation and a checked example.
+
+These decisions supersede broader future-stage descriptions below. The owner subsequently authorized
+P3 in s2 at medium effort, returning the pilot for review before migration. P4–P6 remain held.
+Version-identifiable documentation access remains an implementation detail
+to make concrete in the bounded generated-instruction packet; no bundle or deployed URL is assumed.
 
 Provide coherent quick-start, user-guide, technical-manual and scientific-approach collections from
 canonical Markdown, while keeping necessary component instructions in their home directories.
@@ -64,7 +80,7 @@ Git integration and measurement. Specialists own bounded work; they do not indep
 | P3 publication pilot | python_engineer | gpt-6.1-sol / medium |
 | P4A user/local guidance | technical_writer | gpt-6.1-sol / medium |
 | P4B technical reference | api_documenter | gpt-6.1-sol / medium |
-| P4C scientific explanation | academic_writer | gpt-6-astra / medium |
+| P4C scientific explanation — deferred | academic_writer | gpt-6-astra / medium |
 | P5 assembly and integration | technical_writer + coordinator | gpt-6.1-sol / medium |
 | P6 fresh reader review | technical_writer, fresh context | gpt-6.1-sol / medium |
 
@@ -192,23 +208,23 @@ commit/landing policy. Pushing, publishing and task closure follow existing auth
 Owner-selected topology: coordinate from `cst-main` (the primary checkout on `main`) and execute work
 through `session-1` and `session-2`, referred to as s1 and s2. The owner's 2026-10-26 follow-up reserves
 session-3 for unrelated work: this task must not claim its worktree or pane. This selects the execution
-layout; it does not authorize stages beyond P1–P2.
+layout; the subsequent owner decision authorizes P3 only beyond completed P1–P2.
 
 | Location | Responsibility | Proposed stage assignments |
 |---|---|---|
 | cst-main / main | Coordinator, task evidence, acceptance, metrics and integration | All stage handoffs |
 | s1 / session-1 | Editorial lead and documentation assembly | P1, P4A, P5 |
-| s2 / session-2 | Critique, publishing, interface/scientific packets and fresh final review | P2, P3, P4B, P4C, P6 |
+| s2 / session-2 | Critique, publishing, interface packets and fresh final review | P2, P3, P4B, P6 |
 
 These are reusable execution slots, not permanent role identities. Reuse a worker only for related work;
 role changes require a fresh agent context. In s2, P2 and P6 are independent fresh reviewers, separate from
 the P4B author. In s2, finish each packet and release its worker ownership before changing roles.
 Retain the medium-effort default and exceptional-high policy for every location.
 
-Dependencies: P1 → P2 → P3 → {P4A, P4B, P4C} → P5 → P6.
+Current-tranche dependencies: P1 → P2 → P3 → {P4A, P4B} → P5 → P6. P4C is deferred.
 Early stages are sequential because they settle boundaries and publication behavior. After P3 acceptance,
 parallel work across the lanes is owner-authorized when exact write ownership is disjoint and the shared
-base is current. P4A in s1 may overlap P4B or P4C in s2; P4B and P4C run sequentially.
+base is current. P4A in s1 may overlap P4B in s2. Do not dispatch P4C in this tranche.
 Use at most two workers plus the coordinator; leave lanes idle when there is no independent ready packet.
 Shared navigation, bibliography and style assets have one assigned owner; other workers submit suggestions.
 Keep the task evidence and execution observations coordinator-owned in main throughout.

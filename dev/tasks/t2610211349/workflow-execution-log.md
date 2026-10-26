@@ -277,3 +277,168 @@ Fresh-session behavioral adoption remains unverified. No push was requested or p
 The owner also reserved CST session-3 for unrelated work. Remaining proposed packets use only cst-main,
 s1 and s2; P3/P4B/P4C/P6 share s2 sequentially, with fresh contexts at role changes. No s3 pane or worktree
 was claimed, stopped, cleared or modified by this task. P3/migration decisions remain pending.
+
+## Owner structure and scope decisions — 2026-10-26
+
+The owner approved the three central document structures, prioritizing the user guide and technical
+manual and deferring scientific-approach writing (P4C). Then selected 1A, 2A, 3A: include bounded
+generated-case instruction reconciliation; retain small tracked compatibility pages at moved source
+paths initially; promise table-level indicator interpretation, selection and extension, with supported
+surface construction deferred. Updated the map, plan and task progress to reflect these decisions.
+P3 authorization remains pending; no pilot, writing worker or migration was started. Only main, s1
+and s2 remain allocated to this task. Future decisions should use numbered choices in the console,
+because the interactive-question tool did not produce selectable controls for the owner.
+
+## P3 dispatch — 2026-10-26
+
+Owner chose A: start the pilot in s2 at medium effort, return for review before migration.
+Reused s1 technical-writer context for the frozen content specification only; completed return read
+through the thread API after terminal capture exposed only its first portion. Source check interval
+14:18:27–14:20:15 UTC; full return retained in `publishing-pilot-content-specification.md`.
+This continuation added task-brief and its triggered reference; other skills remain as reported there.
+
+Live discovery found s2 clean/detached with this task's completed P2 critic in w9:p1. The critic was
+idle with a completed substantive return; exited its UI and verified shell before replacement.
+Claimed s2 from local main `470fc761` with the advisory task-start helper, no reseed (docs-only scope).
+Branch: `feat/t2610211349-publishing-pilot`. No s3 control or writes.
+
+Fresh engineer: `python-engineer-p3`, Herdr w9:p1, thread `01a17894-57b3-7131-ad6c-78e54fed6043`.
+Freshness/cwd preflight completed; shared-server discovery confirms the new thread and s2 cwd.
+Initial preflight ran at default low effort (52.167 seconds); before implementation the model picker
+was set to GPT-6.1-Sol medium for this session only and the UI confirmed it. Backend settings unknown.
+Role: python-engineer implement mode, manually instructed full-contract generic runtime; loading is
+not yet verified. Full packet: `publishing-pilot-assignment.md`; initial substantive activity observed.
+Coordinator owns commits, integration, shared records and acceptance. Worker returns lane-local evidence.
+P3 acceptance covers HTML/PDF visual quality, shared-source integrity/refresh, clear missing-input
+failure, source/rendered compatibility and complete static fallback. No P4 writing or migration.
+Worker usage, total turnaround and final verification remain pending until completion.
+
+## P3 coordinator acceptance — 2026-10-26
+
+Engineer completed substantive turn `01a17897-3b0c-74b0-9042-6c26c3792175` without an error and is idle.
+The full return is retained in `publishing-pilot-return.md`; transfer SHA256 matched the lane original
+(`06d70bf1ed35cd2b57e0121fed5de3927497c4e97e0c484e5c2c9e522fe914ce`). Delivery HTML/PDF hashes matched
+the return. Inspected implementation, tests, both HTML screenshots and all three PDF pages. Reused
+attributable 14-test/Ruff/compile/build/refresh/link/source-integrity evidence; staged whitespace passes.
+All P3 acceptance claims pass, with full-manual, citation/equation and portability limits as recorded.
+
+Coordinator committed seven new pilot files in s2 as `bed0ae1e`; no preexisting source was changed.
+The branch is clean and retained for owner pilot review. No landing, push, deployment, migration or P4.
+Production publication configuration is unchanged. Preview stopped; artifacts/evidence stay in s2.
+Board check retains eight unrelated baseline errors; this task has a length warning only. Worktree
+mapping identifies the pilot correctly; detached s1 and two older missing branches are unrelated.
+
+P3 used one continuing technical writer for its frozen specification and one fresh engineer. Engineer
+substantive turn ran 14:22:19 to 14:46:25 UTC, approximately 24m 06s, including renders and review fixes.
+UI settings remained GPT-6.1-Sol medium. Full manual role/skill application is confirmed by the worker
+return; no native-role activation is claimed. Coordinator additionally applied python-discipline,
+testing-policy and PDF visual-review guidance to acceptance.
+
+Local rollout counters, excluding the preflight: 9,128,234 input / 8,928,384 cached input / 35,926 output
+tokens. Cached input is included in input; output includes reasoning. Source is this engineer's final
+token-count event minus its completed preflight event. Root and s1 follow-up usage are unseparated here;
+active compute, process-wait totals and cash cost are unknown. No comparative efficiency claim.
+
+Rework included one real broken alternate-format link, Windows Sass process permissions, local preview
+state placement, annex pagination, cache confinement, portable recipe and the user-facing PDF label.
+The last label-only HTML rerender reused unchanged PDF checks; no broad suite was added.
+Owner review is the next gate. The worker proposed a separate Quarto skill check for alternate-format
+links; current skill verification does not name that case. No shared skill edit is authorized or applied.
+
+## P3 editorial revision — 2026-10-26
+
+Owner found content mostly acceptable but requested simpler user-centric wording, with numbered steps
+or bullets, especially Configuration and Default indicators. This commissions a bounded P3 revision,
+not migration or scientific-approach writing. Primary audience clarified in conversation: a practitioner
+selecting indicators from completed simulations and interpreting their tables; author details are secondary.
+
+Rechecked live lane/pane ownership: s1 still holds technical-writer-p1 (w8:p1), s2 still holds
+python-engineer-p3 (w9:p1), clean at `bed0ae1e`. No s3 control/writes. Continued both workers sequentially
+at UI-observed GPT-6.1-Sol medium. No fresh agents or nested delegation.
+
+Writer turn `01a178b4-f0dd-7e81-93b9-1fc8c531a5ff` completed in 241.120 seconds. New applicable skills:
+writing-feedback-revision with revision reference, and Quarto; other completed reads reused. Full loading
+and semantic checklist are recorded in `publishing-pilot-editorial-draft.md`. Coordinator reviewed five
+replacement blocks, requested a more accurate summary label and shorter return-level sentences, then
+retained the completed draft with matching transfer hash
+`345b9370af0b0dd6cef108d35fd9aa5121fec222ae120beb0fcfff7076a0da65`.
+
+Engineer continuation applies the approved draft to four canonical sources, plus necessary selectors
+and wording-sensitive checks, under `publishing-pilot-editorial-revision.md`. Rendered-output and source
+integrity checks cover revised prose; unchanged interaction/failure evidence may be reused. No new prose
+copy, runtime behavior, model execution, source relocation or scaffold change is authorized.
+Engineer duration/usage and final acceptance remain pending.
+
+Owner further clarified the audience boundary: named implementation files belong to advanced material,
+not the user-facing pilot. Writer revised E to retain unique details under an excluded advanced heading,
+with a brief script-ownership statement and link to the existing module authoring contract for readers.
+Coordinator reviewed the replacement and retained matching SHA256
+`8740f5b4c8a0cfd4ca25348c52dbdf4f96a8603a7e16944cf026624a89ae4a71`.
+This supersedes the earlier draft hash and full-default-README inclusion. Engineer held E while applying
+A–D, then received the reviewed revision. No new manual page or duplicate prose home is commissioned.
+
+Writer follow-up turn `01a178be-00db-7c22-803d-92230f5970b0` reports 7,963.470 seconds elapsed;
+this is wall-clock turnaround, not active compute. Its retained artifact records final verification at
+17:17:06 UTC. Role/skills were reused, no new reads were triggered, and s1 remained clean/detached.
+
+### Editorial acceptance
+
+Engineer turn `01a178b9-22fa-7c43-ad89-2e144390ddef` completed and is idle. Reported wall-clock duration:
+8,780.361 seconds, including an uninstrumented gap and the E hold; active compute and cash cost are unknown.
+Role remains python-engineer implement mode, full manual application, requested/UI medium. Newly applied
+writing-feedback-revision and its revision reference; other completed guidance reused. Detailed skill and
+timing evidence is retained in `publishing-pilot-editorial-return.md`, transfer SHA256
+`d2d1603eff4c4585c04adbacaf41924ae4c619cb59b088adc6fee3eca98e21cf`.
+
+Coordinator reviewed all eight changed files, all four PDF pages and the revised HTML conventions view.
+Reused 14 passing affected tests, scoped Ruff/compile checks, exact five-block replacement comparison,
+10-input render integrity, 41 rendered content checks and affected navigation/link evidence. Staged
+whitespace check passed. External online availability is not claimed; the advanced target resolves in
+the pinned repository content. The separate annex retains extra whitespace on PDF page 3.
+
+Committed in s2 as `bbf5fec6`; branch is clean and retained for owner review, without landing or pushing.
+Current artifacts are under s2 `.tmp/tasks/t2610211349/p3/editorial/build/`; the earlier pilot is separate.
+Owner reviews wording and audience separation next. Migration and scientific-approach writing remain held.
+No s3 activity occurred. Unrelated primary task-board additions are preserved.
+
+## P3 plain-language follow-up — 2026-10-26
+
+Owner requested direct option wording (select simulations, indicators, or both) instead of list-schema
+language, and removal of legacy-operation compatibility advice: those interfaces were private development
+steps, not public interfaces requiring migration guidance. This supersedes the editorial draft's requirement
+to preserve that legacy paragraph. Current examples should use `operations`; historical dev evidence and
+actual runtime compatibility conditions are outside this prose cleanup.
+
+Live discovery confirmed python-engineer-p3 idle in s2 w9:p1 on its clean pilot branch at `bbf5fec6`.
+Continued the same full-contract engineer at requested medium effort to apply this bounded revision,
+including maintained guide/reference/notebook occurrences, then rebuild and inspect the pilot. No new
+agent, s3 work, runtime behavior change, notebook execution, migration or landing is authorized.
+Worker returns lane-local `p3/plain-language-return.md`; coordinator retains commit authority.
+New checks, measurements and final acceptance pending.
+
+Clarified the cleanup boundary to include development migration/layout and source-transition history
+in maintained toolbox guides. Preserve current integrity/refusal requirements stated directly, and
+preserve historical dev evidence and upstream reference material. The publishing fixture still checks
+old-path routing; it does not document the removed legacy operation. No runtime support is being removed.
+
+### Plain-language acceptance
+
+Engineer completed turn `01a1794c-6207-76a2-9d2c-4cd893747577` in 764.598 seconds wall-clock and is idle.
+Retained return: `publishing-pilot-plain-language-return.md`, SHA256
+`b5550c15feae2b796661ea399b09e6540f67396041f32622c2b673a0c9035d89`.
+Same full manual python-engineer role and medium allocation; completed applicable skills reused, no new
+skill reads required. Tokens, active compute, tool-wait totals and cost are unknown.
+
+Coordinator reviewed the 22-file diff and affected PDF pages. Seventeen affected tests pass (eight unrelated
+notebook Git-index/strip tests deselected); scoped Ruff, compile, whitespace, notebook nonprose identity,
+scaffold parsed-setting identity, 51-document scan, 40 rendered-block checks and HTML/PDF inspection pass.
+The pre-commit notebook-output check passes. Search found no maintained links to the removed headings.
+Current operation examples replace the obsolete syntax; development migration/history prose is removed.
+
+Review corrections preserved snapshot-role guidance, corrected source-label wording and avoided a broader
+fixed-owner claim. The run-read weather-generator default was restored byte-for-byte to avoid identity
+effects from comment changes; only scaffold YAML comments remain changed. Runtime behavior is unchanged.
+
+Coordinator committed `865803b2` in s2; branch is clean and retained for owner review. Latest artifacts:
+s2 `.tmp/tasks/t2610211349/p3/plain-language/build/index.html` and `index.pdf`. No landing, push, migration,
+scientific-approach writing or s3 work. Historical dev/upstream evidence remains intact.

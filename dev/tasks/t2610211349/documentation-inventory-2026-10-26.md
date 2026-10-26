@@ -1,105 +1,64 @@
 # Repository documentation inventory by audience
 
 Date: 2026-10-26. Task: t2610211349. Revised scope: main checkout before this update.
-Source commit: `fb4366c3bfd709d56da9d77a2a0b7b1675b3a8e3`.
+Source commit: `145d23e6c765e5b10341cfc50eccb4bca2af4eea`.
 
 ## Scope and method
 
-This is a file-level inventory for the next boundary, purpose and redundancy review.
-Audience assignments are provisional classifications from location, titles and collection entry points;
-they do not certify the accuracy, currency, intended authority or uniqueness of every document.
-No documentation consolidation, deletion or scientific correctness review has been performed.
+This file-level inventory supports the next boundary, purpose and redundancy review.
+The scope is limited to the five audience groups below, excluding `.github/` and `CHANGELOG.md`.
+The register contains **55 tracked files**, with each file listed exactly once.
 
-The register contains **64 tracked files**, each listed exactly once under a primary audience group.
-It includes Markdown, Quarto, notebooks, HTML documents/templates, and LICENSE.
-The selector also checked R Markdown, reStructuredText, PDF, Word, bibliography, AsciiDoc, TeX and Typst.
-No additional files in those latter formats were found. Binary figures and data are not document entries.
-Excluded from review: `dev/tasks/`, `dev/reference/`, `dev/references/`, `dev/records/`,
-`docs/references/` and `dev/LOG.md` (the repository LOG.md).
-`dev/reference/` is the existing directory corresponding to the requested `dev/references/`.
-This inventory remains saved under the task directory, which is excluded from its own review scope.
-Other dev documents, including dev/README.md, dev/scripts, dev/templates and dev/TODO.md, remain in scope.
+Earlier exclusions remain: `dev/tasks/`, `dev/reference/`, `dev/records/`, `docs/references/`
+and `dev/LOG.md`. The requested `dev/references/` corresponds to the actual `dev/reference/` directory.
+Agent instructions, validation evidence, task coordination/handoffs and legal/reuse documents are also
+excluded. The inventory remains saved under the task directory as evidence, outside its own review scope.
 
-Enumeration used `git ls-files` in the canonical main checkout, including hidden tracked directories.
-File headings/frontmatter were sampled for labels; collection indexes and site configuration were read.
-Labels marked "filename label" have no extracted heading and should not be read as inferred purpose.
-No untracked, nonignored files were present at enumeration. Ignored outputs and external linked agent
-libraries are described separately below rather than silently counted as repository-owned documents.
-All register links are relative to this task directory and resolve to files in the same checkout.
+Audience assignments are provisional classifications from location, titles and collection entry points.
+They do not certify accuracy, currency, authority or uniqueness. No consolidation or content review has
+been performed. File headings/frontmatter were sampled for labels; collection indexes and site configuration
+were read. A "filename label" indicates that no heading was extracted.
+
+Enumeration uses `git ls-files` in main, including hidden tracked directories, filtered to the agreed scope.
+The register covers Markdown, Quarto, notebooks and HTML documents/templates. Binary figures, generated
+site copies, external linked libraries, local state and run outputs are excluded. All register links are
+relative to this task directory and resolve within the same checkout.
 
 ## Audience summary
 
 | Group | Files |
 |---|---:|
-| Toolbox users and practitioners | 29 |
+| Toolbox users and practitioners | 28 |
 | Scientific explanation | 4 |
 | Indicator users and extension authors | 6 |
 | Configuration users and maintainers | 9 |
-| Developer and maintainer guidance | 9 |
-| Agent instructions | 2 |
-| Validation evidence | 2 |
-| Task coordination and handoffs | 2 |
-| Legal and reuse | 1 |
+| Developer and maintainer guidance | 8 |
 
 ## Collection roles and review boundaries
 
 - User entry points: root README, docs index, setup pages, user guides and script index.
 - Published explanation and reference: scientific-approach and toolbox-reference pages under docs/site.
-- Copyable examples: config/templates; runtime settings: config/defaults. Their READMEs are distinct entries.
-- Developer entry points and tools: dev/README.md and dev/scripts; reusable forms: dev/templates.
-- Agent authority: AGENTS.md; CLAUDE.md imports it. Shared role/skill libraries have external owners.
-- In-scope evidence: baseline provenance and test-oracle notes. Retained dev/records are excluded.
-- Work coordination: dev/TODO.md and DEVLOG.md remain listed; task records and dev/LOG.md are excluded.
-- Legal text: LICENSE is included for completeness, outside the editorial consolidation review.
+- Indicator guidance: indicator-module and individual indicator-set READMEs.
+- Configuration guidance: config READMEs, example-basin notes and template guidance.
+- Developer guidance: dev/README.md, dev/scripts/README.md and dev/templates documents.
 
-## Documentation surfaces beyond standalone documents
-
-These surfaces need consideration in the next review; they are not included in the file-register total.
-This inventory does not enumerate or assess every individual comment, docstring or help string.
-
-| Surface | Primary audience | Review relevance |
-|---|---|---|
-| scripts/ CLI help and module docstrings | Users | Execution arguments and examples |
-| blueearth_cst/ docstrings and R comments | Developers | Interfaces, units and assumptions |
-| Root *.smk and workflow rule comments | Developers | Workflow contracts and dependencies |
-| config/ YAML and TOML comments | Case authors | Defaults, choices and configuration examples |
-| test_case/ configuration examples | Developers | Verification examples and provenance |
-| tests/ assertions and fixtures | Developers | Executable contract evidence |
-| dev/scripts/ help and docstrings | Maintainers | Repository maintenance procedures |
-| pixi.toml and pyproject.toml | Users, maintainers | Commands, environment and tooling |
-| .git-workflow.yml and .testing-policy.yml | Agents, maintainers | Machine-readable policy |
-| .agent-system/agent-manifest.yml and .agent-env.yml | Agents | Activation and environment |
-| .github/workflows/ and profiles/ | Maintainers | CI and execution settings |
-| docs/site/_quarto.yml | Documentation authors | Navigation and publication scope |
-
-### Generated and external surfaces
-
-- docs/site/guide is staged from docs/guide by dev/scripts/stage_site_guides.py; edit the source.
-- docs/site/_site is rendered output. Generated copies are not independent documentation authorities.
-- dev/TODO.md is a tracked generated view and is counted; its task notes are the editable sources.
-- STATUS.md is ignored lane-local state. It is outside this reproducible tracked-file inventory.
-- .agents, .claude and .codex expose local roles, skills and runtime settings, including linked sources.
-  Their bodies are outside repository ownership and this register; dev-agent-activation.md and the
-  tracked agent manifest are the project-facing entry points. No external library was copied here.
-- Run-generated reports, caches, local environments and external basin outputs are excluded.
-- Figures and interactive assets are supporting material: tracked HTML is included; images are excluded.
+The review targets only the files in this register. Source code, CLI help, configuration comments and
+publication settings may be consulted to verify claims; they are not additional review deliverables.
+The generated docs/site/guide copies come from docs/guide, and docs/site/_site is rendered output.
+Review and edit the registered sources rather than their generated copies.
 
 ## Next review
 
-For each current document, record its primary reader, reader question, authoritative scope, inputs,
-outputs, overlaps and required links. Compare overlapping claims before deciding whether to consolidate,
-shorten or cross-link. Preserve purposeful differences between tutorials, procedures, explanations,
-references and executable contracts. Apply this review only to the in-scope files and surfaces above.
-Start with the user/developer/agent collections; docs/references is excluded from this review.
+For each registered document, record its primary reader, reader question, authoritative scope, overlaps
+and required links. Compare overlapping claims before deciding whether to consolidate, shorten or cross-link.
+Preserve purposeful differences between tutorials, procedures, explanations and references.
 
 ## Complete file register
 
-### Toolbox users and practitioners (29)
+### Toolbox users and practitioners (28)
 
 Primary: users running assessments. Secondary: trainers and support maintainers.
 
-- [CHANGELOG.md](../../../CHANGELOG.md)
-  Label: Changelog
 - [docs/guide/assets/shape-of-a-run.html](../../../docs/guide/assets/shape-of-a-run.html)
   Label: The shape of a run · BlueEarth CST
 - [docs/guide/benchmarking.md](../../../docs/guide/benchmarking.md)
@@ -210,12 +169,10 @@ Primary: case authors. Secondary: developers maintaining configuration contracts
 - [config/templates/README.md](../../../config/templates/README.md)
   Label: Config templates
 
-### Developer and maintainer guidance (9)
+### Developer and maintainer guidance (8)
 
 Primary: contributors and maintainers. Secondary: coding agents.
 
-- [.github/pull_request_template.md](../../../.github/pull_request_template.md)
-  Label: pull_request_template (filename label)
 - [dev/README.md](../../../dev/README.md)
   Label: Development workspace
 - [dev/scripts/README.md](../../../dev/scripts/README.md)
@@ -233,45 +190,10 @@ Primary: contributors and maintainers. Secondary: coding agents.
 - [dev/templates/workflow-report.md](../../../dev/templates/workflow-report.md)
   Label: Workflow report template
 
-### Agent instructions (2)
-
-Primary: coding agents. Secondary: maintainers of repository instructions.
-
-- [AGENTS.md](../../../AGENTS.md)
-  Label: AGENTS.md
-- [CLAUDE.md](../../../CLAUDE.md)
-  Label: CLAUDE.md
-
-### Validation evidence (2)
-
-Primary: validators and maintainers. Secondary: scientific reviewers.
-
-- [dev/baseline/provenance.md](../../../dev/baseline/provenance.md)
-  Label: Baseline provenance
-- [tests/data/eflow-erfa-r-oracle.md](../../../tests/data/eflow-erfa-r-oracle.md)
-  Label: ERFA numerical reference
-
-### Task coordination and handoffs (2)
-
-Primary: task owners, contributors and agents. Secondary: project maintainers.
-
-- [dev/TODO.md](../../../dev/TODO.md)
-  Label: TODO
-- [DEVLOG.md](../../../DEVLOG.md)
-  Label: DEVLOG: feat/wf2-cmip6-improvements
-
-### Legal and reuse (1)
-
-Primary: users and redistributors. Secondary: contributors.
-
-- [LICENSE](../../../LICENSE)
-  Label: LICENSE (filename label)
-
 ## Verification and limitations
 
-- Enumerated 64 unique source paths and verified that every path exists.
-- Register coverage was checked against the selector; every selected file occurs once.
-- Relative links were checked against the main checkout; no site build or workflow execution was needed.
-- Grouping is an inventory aid, not a completed purpose or authority audit.
-- Contents of every notebook cell were not read in full.
-- This supersedes the earlier structural inventory for coverage, while preserving that dated record.
+- Verified 55 unique entries against the scoped tracked-file selection and checked all relative links.
+- Confirmed that only the five selected audience groups remain; no excluded paths are listed.
+- Grouping is an inventory aid, not a completed purpose, authority or content-accuracy audit.
+- Notebook cells were not read in full. No site build or workflow execution was needed.
+- Earlier broader inventory revisions remain recoverable through Git history.

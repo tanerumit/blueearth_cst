@@ -21,7 +21,7 @@ Next: Review document purposes, audience boundaries, and unintended repetition u
 
 - [x] Map the documentation landscape — retained the structural review dated 2026-10-21.
 - [x] Repair onboarding entry points — three source documents landed at `2945a397`; site build passed.
-- [x] Inventory in-scope documentation by audience — 64 files; coverage and relative links checked.
+- [x] Inventory in-scope documentation by audience — 55 files; coverage and relative links checked.
 - [ ] Review document purposes and boundaries; identify unintended repetition and redundancy.
 - [ ] Audit selected guidance against current implementation and authoritative sources.
 - [ ] Revise documentation and instructions, resolving stale references and duplication.
@@ -49,11 +49,12 @@ documentation and agent-instruction revisions remain unscoped.
 
 ## Inventory pass (2026-10-26)
 
-Saved the scoped file register grouped by audience, with generated/external surfaces and embedded
-documentation identified separately. Verified 64 unique entries against tracked paths and checked all
-64 relative links. This pass does not assess content accuracy or decide consolidation.
-Scope revised at owner request: exclude dev/tasks/, dev/reference/ (requested as dev/references/),
-dev/records/, docs/references/ and dev/LOG.md. The inventory is retained here as task evidence.
+Saved the scoped file register for the five selected audience groups: toolbox users, scientific explanation,
+indicator users/extension authors, configuration users/maintainers, and developer/maintainer guidance.
+Verified 55 unique entries against tracked paths and checked all relative links.
+Excluded `.github/` and `CHANGELOG.md`, retaining the earlier directory exclusions. Other audience groups
+and embedded documentation surfaces are outside the review scope; the inventory records the full boundary.
+This pass does not assess content accuracy or decide consolidation.
 
 ## Refs
 

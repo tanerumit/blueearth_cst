@@ -22,6 +22,10 @@ updated: 2026-10-26
 
 Next: Owner reviews the revised pilot wording and audience boundary before authorizing migration.
 
+Latest plain-language revision: `865803b2` in s2. Simplifies choices and removes development-only
+compatibility/migration guidance from maintained documents. See the
+[plain-language return](t2610211349/publishing-pilot-plain-language-return.md) for current review samples.
+
 Editorial pilot revision: `bbf5fec6` in s2, retained without landing. Both formats use numbered steps and
 reader conventions; implementation details remain in linked advanced material. See
 [editorial return](t2610211349/publishing-pilot-editorial-return.md) for artifacts and verification.

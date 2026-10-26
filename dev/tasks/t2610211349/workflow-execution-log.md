@@ -400,3 +400,45 @@ Committed in s2 as `bbf5fec6`; branch is clean and retained for owner review, wi
 Current artifacts are under s2 `.tmp/tasks/t2610211349/p3/editorial/build/`; the earlier pilot is separate.
 Owner reviews wording and audience separation next. Migration and scientific-approach writing remain held.
 No s3 activity occurred. Unrelated primary task-board additions are preserved.
+
+## P3 plain-language follow-up — 2026-10-26
+
+Owner requested direct option wording (select simulations, indicators, or both) instead of list-schema
+language, and removal of legacy-operation compatibility advice: those interfaces were private development
+steps, not public interfaces requiring migration guidance. This supersedes the editorial draft's requirement
+to preserve that legacy paragraph. Current examples should use `operations`; historical dev evidence and
+actual runtime compatibility conditions are outside this prose cleanup.
+
+Live discovery confirmed python-engineer-p3 idle in s2 w9:p1 on its clean pilot branch at `bbf5fec6`.
+Continued the same full-contract engineer at requested medium effort to apply this bounded revision,
+including maintained guide/reference/notebook occurrences, then rebuild and inspect the pilot. No new
+agent, s3 work, runtime behavior change, notebook execution, migration or landing is authorized.
+Worker returns lane-local `p3/plain-language-return.md`; coordinator retains commit authority.
+New checks, measurements and final acceptance pending.
+
+Clarified the cleanup boundary to include development migration/layout and source-transition history
+in maintained toolbox guides. Preserve current integrity/refusal requirements stated directly, and
+preserve historical dev evidence and upstream reference material. The publishing fixture still checks
+old-path routing; it does not document the removed legacy operation. No runtime support is being removed.
+
+### Plain-language acceptance
+
+Engineer completed turn `01a1794c-6207-76a2-9d2c-4cd893747577` in 764.598 seconds wall-clock and is idle.
+Retained return: `publishing-pilot-plain-language-return.md`, SHA256
+`b5550c15feae2b796661ea399b09e6540f67396041f32622c2b673a0c9035d89`.
+Same full manual python-engineer role and medium allocation; completed applicable skills reused, no new
+skill reads required. Tokens, active compute, tool-wait totals and cost are unknown.
+
+Coordinator reviewed the 22-file diff and affected PDF pages. Seventeen affected tests pass (eight unrelated
+notebook Git-index/strip tests deselected); scoped Ruff, compile, whitespace, notebook nonprose identity,
+scaffold parsed-setting identity, 51-document scan, 40 rendered-block checks and HTML/PDF inspection pass.
+The pre-commit notebook-output check passes. Search found no maintained links to the removed headings.
+Current operation examples replace the obsolete syntax; development migration/history prose is removed.
+
+Review corrections preserved snapshot-role guidance, corrected source-label wording and avoided a broader
+fixed-owner claim. The run-read weather-generator default was restored byte-for-byte to avoid identity
+effects from comment changes; only scaffold YAML comments remain changed. Runtime behavior is unchanged.
+
+Coordinator committed `865803b2` in s2; branch is clean and retained for owner review. Latest artifacts:
+s2 `.tmp/tasks/t2610211349/p3/plain-language/build/index.html` and `index.pdf`. No landing, push, migration,
+scientific-approach writing or s3 work. Historical dev/upstream evidence remains intact.

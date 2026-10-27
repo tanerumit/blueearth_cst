@@ -68,9 +68,16 @@ _ARCHIVE_PRODUCT = {
 # Schema-2 staging is unchanged. No scientific source inventory changed.
 # Covered by test_config_paths (relocation/staging), archive lifecycle, and reuse
 # rejection tests. Keep the preceding product-observation bridge valid as well.
-_ARCHIVE_AFTER = {
+_ARCHIVE_PORTABLE = {
     **_ARCHIVE_PRODUCT,
     _ARCHIVE_LAUNCH: "28592d85d8c7c9cb3614b53b7ddf3c018a139de671fa781c3adeee1546498508",
+}
+# Re-audited after 7697721c: only --unlock admission and its comment changed.
+# Unlock runs no producer; scientific staging, inputs and execution are unchanged.
+# Preserve the schema-3 target as well as allowing its upgrade to this revision.
+_ARCHIVE_AFTER = {
+    **_ARCHIVE_PORTABLE,
+    _ARCHIVE_LAUNCH: "9895b3f9ecffb8fda76a1db58cfbb079a38e68696c8672180ec821811d7a4915",
 }
 
 
@@ -85,9 +92,10 @@ def _archive_upgrade_paths(
         {_ARCHIVE_LAUNCH: _ARCHIVE_BEFORE},
         _ARCHIVE_PREVIOUS,
         _ARCHIVE_PRODUCT,
+        _ARCHIVE_PORTABLE,
     ) and any(
         all(new.get(path) == checksum for path, checksum in target.items())
-        for target in (_ARCHIVE_PRODUCT, _ARCHIVE_AFTER)
+        for target in (_ARCHIVE_PRODUCT, _ARCHIVE_PORTABLE, _ARCHIVE_AFTER)
     ):
         return set(_ARCHIVE_AFTER)
     return set()

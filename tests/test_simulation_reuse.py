@@ -181,8 +181,19 @@ def test_audited_archive_update_reuses_original_simulation_without_rewriting_it(
         "duplicate_code",
     ],
 )
-def test_archive_bridge_refuses_any_unaudited_or_scientific_change(retained, change):
+@pytest.mark.parametrize("portable_source", [False, True])
+def test_archive_bridge_refuses_any_unaudited_or_scientific_change(
+    retained, change, portable_source
+):
     previous, current = _archive_upgrade(retained)
+    if portable_source:
+        from blueearth_cst.experiment.simulation_reuse import _ARCHIVE_PORTABLE
+
+        previous = deepcopy(current)
+        for item in previous["documents"]["simulator_adapter_code"]:
+            if item["path"] in _ARCHIVE_PORTABLE:
+                item["sha256"] = _ARCHIVE_PORTABLE[item["path"]]
+        previous = _rebuild(previous)
     code = current["documents"]["simulator_adapter_code"]
     if change == "launcher":
         code[-2]["sha256"] = "f" * 64
@@ -206,14 +217,30 @@ def test_archive_bridge_refuses_any_unaudited_or_scientific_change(retained, cha
         check_simulation_reuse(previous, _rebuild(current))
 
 
-def test_previous_archive_bridge_remains_valid(retained):
-    from blueearth_cst.experiment.simulation_reuse import _ARCHIVE_PRODUCT
+@pytest.mark.parametrize("target_name", ["_ARCHIVE_PRODUCT", "_ARCHIVE_PORTABLE"])
+def test_previous_archive_bridge_remains_valid(retained, target_name):
+    from blueearth_cst.experiment import simulation_reuse
 
+    target = getattr(simulation_reuse, target_name)
     previous, current = _archive_upgrade(retained)
     for item in current["documents"]["simulator_adapter_code"]:
-        if item["path"] in _ARCHIVE_PRODUCT:
-            item["sha256"] = _ARCHIVE_PRODUCT[item["path"]]
+        if item["path"] in target:
+            item["sha256"] = target[item["path"]]
     check_simulation_reuse(previous, _rebuild(current))
+
+
+def test_portable_archive_upgrade_reuses_without_rewriting_intents(retained):
+    from blueearth_cst.experiment.simulation_reuse import _ARCHIVE_PORTABLE
+
+    _, current = _archive_upgrade(retained)
+    previous = deepcopy(current)
+    for item in previous["documents"]["simulator_adapter_code"]:
+        if item["path"] in _ARCHIVE_PORTABLE:
+            item["sha256"] = _ARCHIVE_PORTABLE[item["path"]]
+    previous = _rebuild(previous)
+    before = deepcopy((previous, current))
+    check_simulation_reuse(previous, current)
+    assert (previous, current) == before
 
 
 def test_archive_bridge_matches_the_audited_checkout():

@@ -723,3 +723,43 @@ sessions detached/parked at the landing SHA. Required review artifacts retained 
 S3 remains on its unrelated task. Primary unrelated board/task changes preserved. No push/deployment.
 Origin/main was 51 ahead, 0 behind immediately after landing; final task-record commits add to that count.
 Current commissioned tranche is complete; overall task remains open for owner review and deferred scope.
+
+### Requested origin push — 2026-10-27
+
+Owner requested push. Fetched origin; candidate `76ad380c` is 53 ahead, 0 behind. Required integrated
+`pixi run --frozen test-fast` in primary watch `w7:p6` completed in 871.35s: 5295 passed, 31 skipped,
+one expected failure and one failure. Log/exit/candidate retained under `.tmp/tasks/t2610211349/push/`.
+Failure `test_archive_bridge_matches_the_audited_checkout` detects the outgoing `7697721c` unlock
+launcher edit against the prior pinned hash. The diff adds only `--unlock` non-producing admission and
+updates its explanatory comment; the compatibility audit allowlist was not advanced with that edit.
+
+Allocated prior-authorized s1 as `fix/t2610211349-push-audit` for isolated repair; no source change applied.
+Automatic approval review rejected the proposed new audit pin and preserved-version tests because
+changing the scientific-output reuse boundary requires explicit authority beyond the push request.
+Interactive owner approval requested. Push remains blocked; no bypass, forced push or gate waiver.
+Unrelated primary task changes preserved; s3 untouched. Resume only after the owner's bounded decision.
+
+Owner subsequently explicitly authorizes the bounded repair in session-3. Session-3 was clean on
+`chore/t2610261447-simplify-activation-declarations` with two unmerged activation commits; preserve that
+branch at `68c7abd9` without landing it. Switched the worktree to current main and adopted
+`fix/t2610211349-push-audit-s3` through the supported identity-reconciliation command after the initial
+allocator reported its retained old claim. No work discarded. Unused clean s1 repair allocation released.
+
+Audit of `7697721c` compared complete launcher ASTs: removing only the added `--unlock` constant from
+the current non-producing option set yields exact equality with its parent. Comment-only text also
+changed. No scientific producer/staging/settings code changed. Current normalized launcher hash is
+`9895b3f9ecffb8fda76a1db58cfbb079a38e68696c8672180ec821811d7a4915`.
+Repair retains the prior schema-3 audit target separately, accepts its upgrade to this exact revision,
+and extends old-target preservation plus unaudited/scientific-change rejection tests. No blanket hash
+exemption or scientific-source boundary change. Earlier automatic-review block resolved by explicit
+owner authorization; the patch was then accepted. Focused tests in s3 watch `wA:p5`; source/runtime
+roots verified by the established runtime helper. Reuse unaffected 5295 passing batch checks; recheck
+the corrected failure and all affected reuse/launcher behavior. Do not relabel the initial suite green.
+
+Focused `test_simulation_reuse.py` and `test_workflow_archive_launch.py`: 121 passed in 98.82s, exit 0.
+Includes preserved earlier targets, schema-3-to-unlock upgrade without intent mutation, and eight classes
+of unaudited/scientific changes rejected for both old and schema-3 sources. Scoped Ruff check/format,
+compile and whitespace pass. No scientific calculation or workflow producer changed; no model run owed.
+The initial 5295 passing batch checks remain applicable outside this two-file repair; all changed
+behavior and the prior single failure now covered by fresh focused checks. Unchanged document/PDF/HTML
+evidence retained. This is selective evidence reuse, not a claimed fresh whole-suite pass.

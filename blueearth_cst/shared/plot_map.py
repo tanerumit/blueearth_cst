@@ -238,62 +238,16 @@ def load_spatial_basin_layers(spatial_dir):
 
 
 def plot_basin_map_from_spatial(spatial_dir, plot_dir=None, *, annotation="none"):
-    """Render elevation_basin.{pdf,png} from the shared spatial products.
+    """Render elevation_basin.png from the shared spatial products.
 
-    Reading the foundation rather than the model retired this rule's HDF5 race
-    workaround: it no longer opens ``staticmaps.nc``, so it no longer has to be
-    ordered behind every writer of that file. Since 2026-08 it is no longer the
-    rule's entry point either — ``plot_spatial_maps.plot_spatial_figure_set``
-    is, and calls this first — because elevation_basin and the thematic family are
-    one deliverable.
-
-    It carries the same source footnote as the rest of that set, so the folder
-    credits its data uniformly. The credit table is imported from the family
-    module rather than duplicated: it is ONE table, and two copies would drift
-    the moment a catalog entry changed. Imported inside the function because the
-    family module imports this one in the same way — neither owns the other, and
-    deferring both keeps module import order irrelevant.
+    Delegates to ``plot_spatial_maps.plot_elevation_basin``, which draws it on
+    the map template with the rest of rule 1.11's set (PNG only since
+    2026-08-10). Imported inside the function because the family module imports
+    this one the same way.
     """
-    from blueearth_cst.shared.plot_spatial_maps import source_caveat
+    from blueearth_cst.shared.plot_spatial_maps import plot_elevation_basin
 
-    spatial_dir = Path(spatial_dir)
-    if plot_dir is None:
-        plot_dir = spatial_dir / "plots"
-    elevation, layers = load_spatial_basin_layers(spatial_dir)
-    basins = layers["basins"]
-    fig, _ = plot_basin_map(
-        elevation,
-        layers.get("rivers"),
-        _basin_outline(basins),
-        subbasins=layers.get("subbasins"),
-        gauges=layers.get("gauges"),
-        caveat=source_caveat(elevation),
-        # The rule 1.11 style, shared with the thematic maps in this folder.
-        profile="spatial",
-        vector_legend=False,
-    )
-    # PNG only since 2026-08-10 (owner's call). The PDF was the vector,
-    # embedded-font deliverable and nothing in the toolbox or the platform read
-    # it; at 600 dpi and 180 mm the PNG carries the figure everywhere it is
-    # actually used. Dropping it also halves this rule's render time, since the
-    # figure was serialised twice.
-    record = {
-        "title": "Basin elevation and drainage network",
-        "caption": "Elevation within the basin, with basin and subbasin boundaries, rivers and supplied observation locations. "
-        + (source_caveat(elevation) or ""),
-    }
-    # Caption tokens only: the cartographic map keeps its own rcParams.
-    with use_preset(CST_PRESET, rcparams=False):
-        save_figure(
-            os.path.join(str(plot_dir), "elevation_basin.png"),
-            fig=fig,
-            annotation=annotation,
-            **record,
-            dpi=RASTER_DPI,
-            metadata={"Software": None},
-        )
-    plt.close(fig)
-    write_figure_captions(plot_dir, {"elevation_basin.png": record})
+    plot_elevation_basin(spatial_dir, plot_dir=plot_dir, annotation=annotation)
 
 
 def plot_basin_map_from_model(

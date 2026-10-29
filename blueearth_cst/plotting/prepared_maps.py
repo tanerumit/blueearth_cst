@@ -37,8 +37,10 @@ KM_PER_DEGREE = 111.32
 # Side panel geometry, in map-axes fractions (>1 lies right of the frame).
 PANEL_LEFT = 1.03
 PANEL_GAP = 0.04
-#: Locator inset width; its height keeps it square on the page.
+#: Locator inset width in the side panel, and inside the map on overview maps;
+#: its height keeps it square on the page.
 PANEL_LOCATOR_WIDTH = 0.22
+MAP_LOCATOR_WIDTH, MAP_LOCATOR_MAX_HEIGHT = 0.28, 0.4
 #: Colourbar length, its floor when the locator and title crowd it, and the
 #: room its two-line title takes above it.
 COLORBAR_HEIGHT, COLORBAR_MIN, COLORBAR_TITLE_ROOM = 0.7, 0.25, 0.12
@@ -112,13 +114,20 @@ class LocatorMap:
 
 @dataclass(frozen=True)
 class RasterMap:
-    """Native latitude × longitude values and one-more-element cell-edge arrays."""
+    """Native latitude × longitude values and one-more-element cell-edge arrays.
+
+    ``rgba`` optionally replaces the classified fill with an adapter-prepared
+    image of the same rows and columns (a hillshaded relief), drawn over the
+    classes; transparent pixels show the classes or missing colour beneath.
+    The key still comes from the scale.
+    """
 
     values: NDArray[np.number]
     longitude_edges: NDArray[np.number]
     latitude_edges: NDArray[np.number]
     inside: NDArray[np.bool_] | None = None
     cell_edges: bool = True
+    rgba: NDArray[np.floating] | None = None
 
 
 class _ClosedUpperBoundaryNorm(BoundaryNorm):
@@ -183,6 +192,8 @@ def _validate(
             raise ValueError("inside must be an unmasked boolean array matching values")
     if not isinstance(raster.cell_edges, bool):
         raise ValueError("cell_edges must be boolean")
+    if raster.rgba is not None and np.shape(raster.rgba) != (*values.shape, 4):
+        raise ValueError("rgba must be a rows × columns × 4 array matching values")
     extent = _numeric_vector(frame.extent, "frame extent")
     if len(extent) != 4:
         raise ValueError("Frame extent must contain west/east/south/north")
@@ -404,7 +415,12 @@ def _place_point_labels(
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     radius = 4 * fig.dpi / 72
-    occupied = []
+    # An in-map locator is occupied ground; side-panel insets lie outside the frame.
+    occupied = [
+        box
+        for child in ax.child_axes
+        if ax.bbox.contains(*(box := child.get_window_extent(renderer)).p0 + 1)
+    ]
     for x, y, _ in labels:
         px, py = ax.transData.transform((x, y))
         occupied.append(
@@ -494,14 +510,76 @@ def _polygon_paths(geometry: Mapping[str, Any]) -> list[Path]:
     return paths
 
 
-def _draw_locator(ax: Axes, locator: LocatorMap, frame: MapFrame, top: float) -> float:
-    """The locator inset at the top of the side panel; returns its height fraction."""
+def _in_map_corner(
+    ax: Axes,
+    frame: MapFrame,
+    overlays: Mapping[str, Sequence[Mapping[str, Any]]],
+    width: float,
+    height: float,
+) -> tuple[float, float]:
+    """Lower-left of the in-map corner box covering the least basin and locations.
+
+    The lower-left corner is the scale bar's, so it is never offered. Ties keep
+    the upper left.
+    """
+    west, east, south, north = frame.extent
+    points = [
+        point
+        for key in ("basins", "locations")
+        for feature in overlays.get(key, [])
+        for line in (
+            _geometry_lines(feature["geometry"])
+            if feature["geometry"]["type"] != "Point"
+            else [[feature["geometry"]["coordinates"]]]
+        )
+        for point in line
+    ]
+    xy = np.asarray(points, dtype=float)[:, :2] if points else np.empty((0, 2))
+    fx = (xy[:, 0] - west) / (east - west)
+    fy = (xy[:, 1] - south) / (north - south)
+    corners = ((0.0, 1.0 - height), (1.0 - width, 1.0 - height), (1.0 - width, 0.0))
+    return min(
+        corners,
+        key=lambda c: int(
+            (
+                (fx >= c[0])
+                & (fx <= c[0] + width)
+                & (fy >= c[1])
+                & (fy <= c[1] + height)
+            ).sum()
+        ),
+    )
+
+
+def _draw_locator(
+    ax: Axes,
+    locator: LocatorMap,
+    frame: MapFrame,
+    top: float,
+    overlays: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
+) -> float:
+    """Draw the locator inset; return the side-panel height it took.
+
+    In the side panel by default. With ``overlays`` it sits inside the map, in
+    the clearest upper or lower-right corner, flush with the frame, and takes
+    no panel height (the overview-map exception).
+    """
     maps = active().maps
     west, east, south, north = frame.extent
     axes_ratio = frame.aspect * (north - south) / (east - west)
-    width = PANEL_LOCATOR_WIDTH
-    height = min(width / axes_ratio, top)
-    inset = ax.inset_axes((PANEL_LEFT, top - height, width, height))
+    if overlays is not None:
+        # Square on the page and small: a wide basin's short frame caps the height.
+        height = min(MAP_LOCATOR_WIDTH / axes_ratio, MAP_LOCATOR_MAX_HEIGHT)
+        width = height * axes_ratio
+        x0, y0 = _in_map_corner(ax, frame, overlays, width, height)
+        inset = ax.inset_axes((x0, y0, width, height))
+        inset.set_zorder(7)
+        taken = 0.0
+    else:
+        width = PANEL_LOCATOR_WIDTH
+        height = min(width / axes_ratio, top)
+        inset = ax.inset_axes((PANEL_LEFT, top - height, width, height))
+        taken = height
     w0, e0, s0, n0 = locator.window
     inset.set_facecolor(maps["locator_ocean"])
     for feature in locator.land:
@@ -519,9 +597,15 @@ def _draw_locator(ax: Axes, locator: LocatorMap, frame: MapFrame, top: float) ->
             points = np.asarray(coordinates)
             inset.plot(points[:, 0], points[:, 1], color=maps["locator_border"], lw=0.3)
     halo = [Stroke(linewidth=1.6, foreground=maps["halo"]), Normal()]
+    # Places arrive largest first; one whose label would hit an earlier one is
+    # dropped rather than overprinted.
+    inset.set_xlim(w0, e0)
+    inset.set_ylim(s0, n0)
+    renderer = ax.figure.canvas.get_renderer()
+    placed: list[Bbox] = []
     for x, y, name in locator.places:
-        inset.plot(x, y, "o", ms=1.8, color=maps["locator_city"])
-        inset.annotate(
+        (marker,) = inset.plot(x, y, "o", ms=1.8, color=maps["locator_city"])
+        text = inset.annotate(
             name,
             (x, y),
             xytext=(2, 0),
@@ -532,6 +616,14 @@ def _draw_locator(ax: Axes, locator: LocatorMap, frame: MapFrame, top: float) ->
             path_effects=halo,
             annotation_clip=True,
         )
+        box = Bbox.union(
+            [text.get_window_extent(renderer), marker.get_window_extent(renderer)]
+        ).expanded(1.05, 1.2)
+        if any(box.overlaps(other) for other in placed):
+            text.remove()
+            marker.remove()
+            continue
+        placed.append(box)
     inset.add_patch(
         Rectangle(
             (west, south),
@@ -556,7 +648,7 @@ def _draw_locator(ax: Axes, locator: LocatorMap, frame: MapFrame, top: float) ->
     for spine in inset.spines.values():
         spine.set_linewidth(0.6)
         spine.set_edgecolor(active().colors["ink"])
-    return height
+    return taken
 
 
 def _side_legend(ax: Axes, handles: list, title: str | None, fontsize: float) -> Any:
@@ -629,6 +721,7 @@ def draw_raster_map(
     colorbar_title: str | None = None,
     locator: LocatorMap | None = None,
     show_key: bool = True,
+    locator_in_map: bool = False,
 ) -> Figure:
     """Draw supplied classes or honest unscaled hatching; never change input arrays.
 
@@ -636,9 +729,11 @@ def draw_raster_map(
     nominal raster with a class legend. Finite unscaled cells receive neutral
     hatching; missing cells take the missing colour and are keyed "No data" when
     any are drawn; cells outside ``inside`` stay white. The side panel stacks
-    the optional ``locator`` at the top and the key at the bottom. Geographic
-    grids use the supplied ticks/aspect. ``colorbar_title`` defaults to the
-    scale's units; ``show_key=False`` omits the key.
+    the optional ``locator`` at the top and the key at the bottom;
+    ``locator_in_map`` instead places it inside the map's clearest corner (the
+    overview maps' exception). Geographic grids use the supplied ticks/aspect.
+    ``colorbar_title`` defaults to the scale's units; ``show_key=False`` omits
+    the key.
     """
     _validate(raster, frame, scale)
     fig, ax = plt.subplots(figsize=(180 / 25.4, 113 / 25.4), layout="constrained")
@@ -687,6 +782,19 @@ def draw_raster_map(
         linewidth=0.25 if raster.cell_edges else 0,
         alpha=classes.alpha if classes is not None else None,
     )
+    if raster.rgba is not None:
+        x, y = np.asarray(raster.longitude_edges), np.asarray(raster.latitude_edges)
+        north_first = y[0] > y[-1]
+        ax.imshow(
+            raster.rgba,
+            extent=(x[0], x[-1], y[-1], y[0])
+            if north_first
+            else (x[0], x[-1], y[0], y[-1]),
+            origin="upper" if north_first else "lower",
+            interpolation="none",
+            aspect="auto",
+            zorder=1,
+        )
     if classes is None and scale.status == "unavailable":
         xedges, yedges = raster.longitude_edges, raster.latitude_edges
         for i, j in np.argwhere(inside & ~np.ma.getmaskarray(values)):
@@ -728,7 +836,9 @@ def draw_raster_map(
 
     # --- side panel: locator on top, key on the frame's bottom ---------------
     top = 1.0
-    if locator is not None:
+    if locator is not None and locator_in_map:
+        _draw_locator(ax, locator, frame, top, overlays)
+    elif locator is not None:
         top -= _draw_locator(ax, locator, frame, top) + PANEL_GAP
     missing_color = scale.missing_color
     if show_key and classes is not None:

@@ -36,13 +36,16 @@ def _wf1_forcing(args):
 
 
 def _spatial(args):
-    from blueearth_cst.shared.plot_spatial_maps import plot_spatial_maps_from_project
+    from blueearth_cst.shared.plot_spatial_maps import (
+        SPATIAL_DIRNAME,
+        plot_spatial_figure_set,
+    )
 
     if args.source:
         raise ValueError("--source does not apply to spatial")
     plot_dir = args.out / "spatial" / "plots"
-    plot_spatial_maps_from_project(
-        args.project, plot_dir=plot_dir, annotation=args.annotation
+    plot_spatial_figure_set(
+        args.project / SPATIAL_DIRNAME, plot_dir=plot_dir, annotation=args.annotation
     )
     return {"spatial": plot_dir}
 
@@ -59,7 +62,7 @@ FAMILIES = {
         _wf1_forcing,
     ),
     "spatial": (
-        "WF1 rule 1.11 spatial maps: subbasins, land cover, LAI, soils (not elevation yet)",
+        "WF1 rule 1.11 spatial maps: elevation, subbasins, land cover, LAI, soils",
         _spatial,
     ),
 }

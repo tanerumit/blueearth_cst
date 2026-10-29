@@ -205,8 +205,8 @@ viewport. Without basin geometry, they retain the reference frame. Native source
 model-grid basin masks retain their scientific support. Common colors do not establish equal periods,
 eligibility policies or PET methods; captions state those differences.
 
-Every available reference colorbar shows both rectangular extensions and reports strict under/over counts
-in captions. The final class includes its upper boundary. Missing cells are gray, outside-model and
+Every available reference colorbar shows both rectangular extensions. Captions report strict under/over
+counts only when nonzero; the map metadata always records them. The final class includes its upper boundary. Missing cells are gray, outside-model and
 uncovered areas white. With no finite historical scale, finite cells use an unscaled neutral hatch and
 there is no numerical colorbar. Never infer a scale from model forcing or invent a default 0–1 scale.
 Suppress individual model-cell outlines on the fine forcing grid so they do not obscure the field.
@@ -376,6 +376,10 @@ in this visual review.
   support, missing values and material caveats. Do not describe internal rules, review logic or gates.
 - Move footer information from the plot into its caption. Keep captions left-aligned to the plotting
   area, slightly smaller than axis text, in gray.
+- Every geographic map caption uses one skeleton, `shared/map_frames.map_caption`, of about 40–70
+  words: quantity with units, grid and period; colour encoding, gray and white cells (each only when
+  drawn) and the context layers; material caveats; then `Source:` with the product credit from
+  `map_frames.SOURCE_CREDITS`. Support counts, thresholds and reference provenance stay in metadata.
 - Include captions inside the preview canvas when enabled. Add space below the image without resizing
   the plotting area or changing its proportions. Keep caption-to-axis font proportions consistent.
 - `plotting.fundamentals.add_caption(fig, text)` finalizes an already drawn figure for its captioned

@@ -1,8 +1,9 @@
 """Adapter helpers that turn workflow geometry into ``prepared_maps`` inputs.
 
 One home for what every map adapter (WF0/WF1 climate maps, the spatial set)
-prepares the same way: the basin-zoom frame, regular-grid cell edges and the
-overlay features, including the merged divide linework.
+prepares the same way: the basin-zoom frame, regular-grid cell edges, the
+overlay features, including the merged divide linework, and the caption
+skeleton with its product credits.
 """
 
 from __future__ import annotations
@@ -18,6 +19,59 @@ from blueearth_cst.plotting.prepared_maps import MapFrame
 
 #: Coordinate names tried for the horizontal and vertical raster axes.
 _X_NAMES, _Y_NAMES = ("longitude", "lon", "x"), ("latitude", "lat", "y")
+
+#: Product credits, keyed by the catalog entry or source name a layer records.
+#: References follow the catalogs' ``paper_ref``, so a caption and the catalog
+#: cannot credit the same product differently.
+SOURCE_CREDITS = {
+    "merit_hydro_ihu": "MERIT Hydro IHU (Eilander et al., 2020)",
+    "vito": "Copernicus Global Land Cover v2.0.2 (Buchhorn et al., 2020)",
+    "globcover": "GlobCover 2009 v2.3 (Arino et al., 2012)",
+    "globcover_2009_v2.3": "GlobCover 2009 v2.3 (Arino et al., 2012)",
+    "modis_lai": "MODIS MCD15A3H V006 (Myneni et al., 2015)",
+    "soilgrids": "SoilGrids (ISRIC, 2017)",
+    "era5": "ERA5 (Hersbach et al., 2019)",
+    "chirps": "CHIRPS v2.0 (Funk et al., 2015)",
+    "chirps_global": "CHIRPS v2.0 (Funk et al., 2015)",
+}
+
+#: Overlay keys in the order the context sentence names them.
+_OVERLAY_NAMES = (
+    ("basins", "basin boundary"),
+    ("divides", "subbasin divides"),
+    ("rivers", "rivers"),
+    ("locations", "gauges"),
+)
+
+
+def map_caption(
+    lead: str,
+    encoding: Sequence[str] = (),
+    caveats: Sequence[str] = (),
+    source: str | None = None,
+) -> str:
+    """The one map caption skeleton: what is shown, how it is drawn, caveats, credit.
+
+    ``lead`` names the quantity, units, grid and period; ``encoding`` explains
+    colours, gray and white cells and overlays; ``caveats`` hold material
+    differences only. Support counts and thresholds stay in the metadata.
+    """
+    parts = [lead, *encoding, *caveats]
+    if source:
+        parts.append(f"Source: {SOURCE_CREDITS.get(source, source)}")
+    return " ".join(
+        part if part.endswith(".") else f"{part}." for part in parts if part
+    )
+
+
+def overlay_sentence(overlays: Mapping[str, Sequence[Any]]) -> str:
+    """Name the drawn context layers, or ``""`` when none are drawn."""
+    names = [name for key, name in _OVERLAY_NAMES if overlays.get(key)]
+    if not names:
+        return ""
+    if len(names) == 1:
+        return f"The {names[0]} gives spatial context"
+    return f"The {', '.join(names[:-1])} and {names[-1]} give spatial context"
 
 
 def frame_from_extent(extent: Sequence[float]) -> MapFrame:

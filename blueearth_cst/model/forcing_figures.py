@@ -11,6 +11,8 @@ import xarray as xr
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis import diagnostics as dg
 from blueearth_cst.climate_analysis.diagnostic_render import (
+    MAP_QUANTITIES,
+    eligible_years,
     load_map_overlays,
     prepared_map,
 )
@@ -20,6 +22,7 @@ from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import MONTH_ABBR
 from blueearth_cst.plotting.preset import use_preset
+from blueearth_cst.shared.map_frames import map_caption
 from blueearth_cst.shared.plot_preset import CST_PRESET
 from blueearth_cst.shared.variable_registry import CLIMATE_VARS
 
@@ -208,7 +211,7 @@ def render_forcing_figures(
             with use_preset(CST_PRESET):
                 if kind == "map":
                     field = fields[variable]
-                    fig, map_info, reference_text = prepared_map(
+                    fig, map_info, map_encoding = prepared_map(
                         field,
                         fields[f"{variable}_valid_years"],
                         reference,
@@ -223,26 +226,16 @@ def render_forcing_figures(
                         "max_missing_days_month": max_month,
                         "max_missing_days_year": max_year,
                     }
-                    encoding = (
-                        "Mean of eligible reporting-year means"
-                        if is_temperature
-                        else "Mean of eligible reporting-year totals"
+                    map_text = map_caption(
+                        f"{MAP_QUANTITIES[variable]} in the Wflow model forcing on the model grid, "
+                        f"reporting years {years[0]}–{years[-1]}"
+                        + eligible_years(map_info["eligible_year_counts"]),
+                        map_encoding,
+                        [
+                            "The forcing includes the model build's regridding, temperature "
+                            "correction and PET derivation"
+                        ],
                     )
-                    counts = fields[f"{variable}_valid_years"].values
-                    positive = counts[counts > 0]
-                    count_text = (
-                        str(int(positive.min()))
-                        if positive.size and positive.min() == positive.max()
-                        else f"{int(positive.min())}–{int(positive.max())}"
-                        if positive.size
-                        else "0"
-                    )
-                    details = (
-                        f"{encoding} at each model cell ({unit}); {count_text} eligible years per available cell. "
-                        "White cells are outside the model basin; gray basin cells have no finite annual climatology. "
-                        "Basin and subbasin boundaries, rivers and gauges are shown where supplied. No spatial interpolation."
-                    )
-                    details += " " + reference_text
                     available = bool(map_info["finite_cells"])
                 elif kind == "annual":
                     fig = pc.annual_series(
@@ -288,19 +281,23 @@ def render_forcing_figures(
                 name = f"forcing_{variable}_{kind}.png"
                 path = root / name
             caption = (
-                f"{label} in Wflow forcing on the model grid, reporting years {years[0]}–{years[-1]}. {details} "
-                f"Input dates: {input_period[0]}–{input_period[1]}; basin support: {basin_cells} model cells. "
-                f"Reporting years start in month {m0} and carry the start-year label. "
-                + (
-                    f"Partial boundary reporting years {', '.join(map(str, partial_years))} are excluded. "
-                    if partial_years
-                    else ""
+                map_text
+                if kind == "map"
+                else (
+                    f"{label} in Wflow forcing on the model grid, reporting years {years[0]}–{years[-1]}. {details} "
+                    f"Input dates: {input_period[0]}–{input_period[1]}; basin support: {basin_cells} model cells. "
+                    f"Reporting years start in month {m0} and carry the start-year label. "
+                    + (
+                        f"Partial boundary reporting years {', '.join(map(str, partial_years))} are excluded. "
+                        if partial_years
+                        else ""
+                    )
+                    + f"Only full reporting years with at most {max_month} missing days in every month and {max_year} "
+                    "in total are eligible. Tolerated gaps in "
+                    "annual summaries and amount climatologies use the month's observed mean; monthly temperature "
+                    "uses observed-day means. The input forcing is unchanged. Model forcing includes the build's "
+                    "regridding, configured temperature correction and PET derivation."
                 )
-                + f"Only full reporting years with at most {max_month} missing days in every month and {max_year} "
-                "in total are eligible. Tolerated gaps in "
-                "annual summaries and amount climatologies use the month's observed mean; monthly temperature "
-                "uses observed-day means. The input forcing is unchanged. Model forcing includes the build's "
-                "regridding, configured temperature correction and PET derivation."
             )
             records[name] = {
                 "title": f"{label} {'annual climatology map' if kind == 'map' else 'annual series' if kind == 'annual' else 'monthly climatology'} — Wflow forcing; {years[0]}–{years[-1]}; model basin cells",

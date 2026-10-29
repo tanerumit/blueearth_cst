@@ -749,6 +749,17 @@ def _in_frame(raster: RasterMap, frame: MapFrame) -> NDArray[np.bool_]:
     return ys[:, None] & xs[None, :]
 
 
+def missing_shown(raster: RasterMap, frame: MapFrame) -> bool:
+    """Whether the map draws missing cells, which is when it keys "No data"."""
+    inside = (
+        np.ones(np.shape(raster.values), dtype=bool)
+        if raster.inside is None
+        else np.asarray(raster.inside)
+    )
+    missing = ~np.isfinite(np.asarray(raster.values, dtype=float))
+    return bool((inside & _in_frame(raster, frame) & missing).any())
+
+
 def draw_raster_map(
     raster: RasterMap,
     frame: MapFrame,
@@ -779,8 +790,7 @@ def draw_raster_map(
         if raster.inside is None
         else np.asarray(raster.inside)
     )
-    shown = inside & _in_frame(raster, frame)
-    missing = bool((shown & np.ma.getmaskarray(values)).any())
+    missing = missing_shown(raster, frame)
     classes = scale if isinstance(scale, MapClasses) else None
     present: list[int] = []
     if classes is not None:

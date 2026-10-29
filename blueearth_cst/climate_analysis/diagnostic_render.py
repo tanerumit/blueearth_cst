@@ -23,7 +23,12 @@ from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import new_fig
 from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
 from blueearth_cst.plotting.preset import use_preset
-from blueearth_cst.shared.map_frames import basin_frame, overlay_features
+from blueearth_cst.shared.map_frames import (
+    basin_frame,
+    map_caption,
+    overlay_features,
+    overlay_sentence,
+)
 from blueearth_cst.shared.map_reference import (
     drawing_frame,
     drawing_scale,
@@ -46,6 +51,22 @@ def load_map_overlays(overlays):
             if Path(path).is_file()
         }
     )
+
+
+#: Caption leads of the historical climate maps, with their display units.
+MAP_QUANTITIES = {
+    "precip": "Mean annual precipitation (mm yr⁻¹)",
+    "temp": "Mean annual temperature (°C)",
+    "pet": "Mean annual potential evapotranspiration (PET, mm yr⁻¹)",
+}
+
+
+def eligible_years(counts) -> str:
+    """``"; N eligible years per cell"`` from a ``[min, max]`` pair, or ``""``."""
+    if not counts:
+        return ""
+    low, high = counts
+    return f"; {low if low == high else f'{low}–{high}'} eligible years per cell"
 
 
 def prepared_map(
@@ -117,29 +138,30 @@ def prepared_map(
         "strict_over_cells": above,
         "scale_status": scale["status"],
     }
-    periods = (
-        "; ".join(
-            f"{source['source']} ({source['role']}), {source['effective_dates'][0]}–{source['effective_dates'][1]}"
-            for source in scale["sources"]
-        )
-        or "no contributing source"
-    )
-    policy = reference["identity"]["completeness"]
-    text = (
-        f"Historical display reference: {periods}; native cells touching the closed selected-source frame. "
-        "Maps zoom to the basin bounds with spatial-map padding when basin geometry is available. "
-        f"Reference eligibility permits at most {policy['max_missing_days_month']} missing days/month and "
-        f"{policy['max_missing_days_year']} days/year. Equal classes do not imply equal support, periods or PET methods. "
-        f"Displayed support: {info['finite_cells']} finite and {info['unavailable_cells']} unavailable cells. "
-    )
+    # Caption encoding sentences (map_frames.map_caption); support counts,
+    # periods and thresholds stay in ``info``.
     if boundaries:
-        text += f"Strictly below/above the reference class boundaries: {below}/{above} cells; the final upper endpoint is included. "
+        encoding = [
+            "Colour classes are shared across the historical climate maps and do not imply "
+            "equal periods or methods"
+        ]
+        if below or above:
+            encoding.append(
+                f"{below} cells fall below and {above} above the colour scale"
+            )
     else:
-        text += f"Historical reference unavailable ({scale['reason']}): finite cells use neutral hatching without a numerical colorbar. "
+        encoding = [
+            f"No historical colour scale is available ({scale['reason']}); "
+            "cells with values are hatched"
+        ]
     if not info["displayed_cells"]:
-        text += "No native support intersects the displayed frame. "
-    text += "Gray cells have no finite annual climatology; white cells are outside model support or raster coverage. No interpolation."
-    return fig, info, text
+        encoding.append("No source cells intersect the map")
+    if info["unavailable_cells"]:
+        encoding.append("Gray cells have no valid annual climatology")
+    if mask is not None:
+        encoding.append("Areas outside the model basin are white")
+    encoding.append(overlay_sentence(overlays))
+    return fig, info, encoding
 
 
 def load_result(root, source):
@@ -329,7 +351,7 @@ def render(
                 variable = form.removeprefix("map-")
                 field = retained[variable]
                 counts = retained[f"{variable}_valid_years"]
-                fig, map_info, reference_text = prepared_map(
+                fig, map_info, encoding = prepared_map(
                     field, counts, reference, variable, features
                 )
                 map_info["preparation_id"] = retained.attrs["map_preparation_id"]
@@ -342,22 +364,29 @@ def render(
                 map_info["source_role"] = reference["identity"]["source_preparations"][
                     sources[0]
                 ]["preparation_identity"]["role"]
-                text = (
-                    f"{sources[0].upper()} native-grid annual {variable} climatology, {period[0]}–{period[1]}. "
-                    f"Eligible reporting-year {'means' if variable == 'temp' else 'totals'}; "
-                    f"eligible years per finite displayed cell: {map_info['eligible_year_counts']}. "
-                    + reference_text
-                )
+                caveats = []
                 if (
                     variable == "pet"
                     and map_info["source_role"] == "temperature-carrier"
                 ):
-                    text += " PET is derived on the source grid with the existing de Bruin machinery and can differ from model PET."
+                    caveats.append(
+                        "PET is derived on the source grid (de Bruin) and can differ from model PET"
+                    )
                 elif (
                     variable in {"temp", "pet"}
                     and map_info["source_role"] == "precipitation-only"
                 ):
-                    text += " This retained auxiliary field is excluded from the historical reference pool."
+                    caveats.append(
+                        "This auxiliary field does not set the colour classes"
+                    )
+                text = map_caption(
+                    f"{MAP_QUANTITIES[variable]} on the {view.labels[sources[0]]} native grid, "
+                    f"reporting years {period[0]}–{period[1]}"
+                    + eligible_years(map_info["eligible_year_counts"]),
+                    encoding,
+                    caveats,
+                    sources[0],
+                )
                 if not map_info["displayed_cells"]:
                     availability = "not displayed: native support does not intersect the displayed frame"
                 elif not map_info["finite_cells"]:
@@ -415,7 +444,7 @@ def render(
                         "annual values. Dataset positions are offset slightly for readability."
                     )
                 )
-            if form.startswith("map-") or form in {"spi-checks", "sensitivity"}:
+            if form in {"spi-checks", "sensitivity"}:
                 text += f" Sources: {', '.join(view.labels.values())}. {support}."
             if form == "spi-checks":
                 details = []

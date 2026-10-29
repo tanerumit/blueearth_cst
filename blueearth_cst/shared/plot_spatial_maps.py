@@ -29,7 +29,7 @@ Two things every figure here does NOT have, and both are deliberate:
   FILENAME is what names the figure, which is why the stems read as the
   quantity (``soil_ph_basin``) rather than as a position in a set. The one
   thing the title did carry and a filename cannot — the product credit — moved
-  to a footnote under the axes; see :data:`SOURCE_CREDITS`.
+  to the caption; see ``map_frames.SOURCE_CREDITS``.
 * **no overlay key.** Rivers, the basin outline, the divides and the points of
   interest are still DRAWN — that is what ties ten rasters to one basin — but
   they get no legend entries. The styling reads without one (black outline,
@@ -118,22 +118,6 @@ BASIN_MASK_VARIABLE = "subbasin_id"
 #: folder ``elevation_basin`` uses — this family is the rest of that figure's set.
 PLOTS_DIRNAME = "plots"
 
-#: Product credits, keyed by the catalog entry name each layer records in its
-#: own ``source`` attribute. The attr is OUR plumbing ("vito"); a figure credits
-#: the PRODUCT, with the reference the catalog already carries
-#: (``metadata.paper_ref`` / ``source_version``), so the footnote and the
-#: catalog cannot say different things about the same layer.
-#:
-#: This is the one piece of provenance the figures still show. It used to ride
-#: on the title; dropping titles took it with them, and a filename cannot carry
-#: it, so it moved to a footnote under the axes — smaller, out of the way, and
-#: still on the sheet when the sheet is the only thing a reader has.
-SOURCE_CREDITS = {
-    "merit_hydro_ihu": "MERIT Hydro IHU (Eilander et al., 2020)",
-    "vito": "Copernicus Global Land Cover v2.0.2 (Buchhorn et al., 2020)",
-    "modis_lai": "MODIS MCD15A3H V006 (Myneni et al., 2015)",
-    "soilgrids": "SoilGrids (ISRIC, 2017)",
-}
 
 # ---------------------------------------------------------------------------
 # CLASS TABLES FOR THE NOMINAL LAYERS
@@ -775,19 +759,41 @@ def _is_degenerate(layer):
     return False, ""
 
 
-def source_caveat(layer):
-    """``"Source: <product>."`` for the footnote, or ``None`` if unattributed.
+#: Mathtext in style labels and its plain-text caption form.
+_PLAIN_UNITS = (
+    ("$^2$", "²"),
+    ("$^{-2}$", "⁻²"),
+    ("$^{-3}$", "⁻³"),
+    ("$_2$", "₂"),
+)
 
-    An UNMAPPED source falls back to the catalog key rather than dropping the
-    line. "Source: vito." is our plumbing showing through and reads badly, but a
-    figure that silently loses its attribution because a catalog gained an entry
-    is worse — the ugly version is visible and gets fixed, the missing one is
-    not. ``None`` is only for a layer that records no source at all.
+
+def _caption_lead(title, style):
+    """The figure title with the key's unit in plain text, e.g. ``(mass %)``."""
+    if style is None or " (" not in style.label:
+        return title
+    unit = style.label.rpartition(" (")[2].rstrip(")")
+    for math, plain in _PLAIN_UNITS:
+        unit = unit.replace(math, plain)
+    return f"{title} ({unit})"
+
+
+def _spatial_caption(lead, encoding, raster, frame, overlay, layer):
+    """A spatial map caption on the shared skeleton (``map_frames.map_caption``).
+
+    The credit falls back to the catalog key when unmapped: "Source: vito." reads
+    badly, but a figure that silently loses its attribution is worse.
     """
-    source = layer.attrs.get("source")
-    if not source:
-        return None
-    return f"Source: {SOURCE_CREDITS.get(source, source)}."
+    from blueearth_cst.plotting.prepared_maps import missing_shown
+    from blueearth_cst.shared.map_frames import map_caption, overlay_sentence
+
+    drawn = list(encoding)
+    if missing_shown(raster, frame):
+        drawn.append("Gray cells have no data")
+    if raster.inside is not None:
+        drawn.append("Areas outside the basin are white")
+    drawn.append(overlay_sentence(overlay))
+    return map_caption(lead, drawn, source=layer.attrs.get("source"))
 
 
 def _unit_break(label):
@@ -988,15 +994,16 @@ def plot_elevation_basin(spatial_dir, plot_dir=None, annotation="none"):
     norm = BoundaryNorm(scale.boundaries, cmap.N, clip=True)
     south, north = context["frame"].extent[2:]
     relief = classes._shaded_relief(elevation, cmap, norm, (south + north) / 2)
+    raster = RasterMap(
+        np.asarray(as_lat_lon(elevation).values, dtype=float),
+        *grid_edges(elevation),
+        inside=context["inside"],
+        cell_edges=False,
+        rgba=np.asarray(relief.values, dtype=float),
+    )
     with use_preset(CST_PRESET):
         fig = draw_raster_map(
-            RasterMap(
-                np.asarray(as_lat_lon(elevation).values, dtype=float),
-                *grid_edges(elevation),
-                inside=context["inside"],
-                cell_edges=False,
-                rgba=np.asarray(relief.values, dtype=float),
-            ),
+            raster,
             context["frame"],
             scale,
             context["overlay"],
@@ -1005,8 +1012,14 @@ def plot_elevation_basin(spatial_dir, plot_dir=None, annotation="none"):
         )
     record = {
         "title": "Basin elevation and drainage network",
-        "caption": "Elevation within the basin, with basin and subbasin boundaries, rivers and supplied observation locations. "
-        + (source_caveat(elevation) or ""),
+        "caption": _spatial_caption(
+            "Basin elevation (m a.s.l.)",
+            ["Elevation classes are drawn over a hillshade of the same grid"],
+            raster,
+            context["frame"],
+            context["overlay"],
+            elevation,
+        ),
     }
     return _export_map(fig, plot_dir, "elevation_basin", record, annotation)
 
@@ -1136,18 +1149,32 @@ def plot_spatial_maps(
             if isinstance(key, MapClasses) and not overview
             else []
         )
+        if overview:
+            encoding = [
+                "Colours separate the subbasins; neighbouring subbasins never share one"
+            ]
+        elif isinstance(key, MapClasses):
+            encoding = ["Colours follow the product's published class legend"]
+            if unkeyed:
+                encoding.append(
+                    f"Classes covering less than {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn "
+                    "but not listed: "
+                    + ", ".join(label.replace("\n", " ") for label in unkeyed)
+                )
+        else:
+            encoding = [
+                "Values beyond the outer class breaks are drawn in the end classes"
+            ]
         record = {
             "title": FIGURE_TITLES[figure.stem],
-            "caption": f"{FIGURE_TITLES[figure.stem]}. "
-            "Colors show the mapped values or classes; basin boundaries and supplied rivers and observation locations provide spatial context. "
-            + (
-                f"Classes covering less than {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn but not listed: "
-                + ", ".join(label.replace("\n", " ") for label in unkeyed)
-                + ". "
-                if unkeyed
-                else ""
-            )
-            + (source_caveat(layer) or ""),
+            "caption": _spatial_caption(
+                _caption_lead(FIGURE_TITLES[figure.stem], figure.style),
+                encoding,
+                raster,
+                context["frame"],
+                context["overlay"],
+                layer,
+            ),
         }
         written += _export_map(
             fig, plot_dir, figure.stem, record, annotation, formats, dpi

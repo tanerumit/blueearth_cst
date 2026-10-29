@@ -20,6 +20,7 @@ import pytest
 import xarray as xr
 
 from blueearth_cst.shared import plot_spatial_maps as family
+from blueearth_cst.shared.map_frames import map_caption, overlay_sentence
 from blueearth_cst.shared.raster_style import RasterStyle
 
 
@@ -201,36 +202,48 @@ def test_an_unknown_land_cover_source_is_drawn_unclassified_with_a_warning():
     assert [code for code, _, _ in table] == [-1]
 
 
-# --- the source footnote ------------------------------------------------------
+# --- the caption skeleton and source credit ------------------------------------
 
 
 def _layer(source):
     return xr.DataArray(np.zeros((2, 2)), dims=("y", "x"), attrs={"source": source})
 
 
-def test_the_footnote_credits_the_product_not_the_catalog_key():
+def test_the_caption_credits_the_product_not_the_catalog_key():
     """ "vito" is our plumbing; a figure credits Copernicus."""
-    assert (
-        family.source_caveat(_layer("soilgrids")) == "Source: SoilGrids (ISRIC, 2017)."
+    assert map_caption("Lead", source="soilgrids") == (
+        "Lead. Source: SoilGrids (ISRIC, 2017)."
     )
-    assert "Copernicus" in family.source_caveat(_layer("vito"))
+    assert "Copernicus" in map_caption("Lead", source="vito")
 
 
-def test_every_source_the_family_can_meet_has_a_credit():
+def test_every_source_the_maps_can_meet_has_a_credit():
     """A layer whose catalog key is unmapped falls back to the key itself."""
-    for key in ("merit_hydro_ihu", "vito", "modis_lai", "soilgrids"):
-        assert key not in family.source_caveat(_layer(key))
+    for key in (
+        "merit_hydro_ihu",
+        "vito",
+        "globcover",
+        "modis_lai",
+        "soilgrids",
+        "era5",
+        "chirps",
+    ):
+        assert f"Source: {key}." not in map_caption("Lead", source=key)
 
 
 def test_an_unmapped_source_still_gets_a_line():
     """Ugly and visible beats silently unattributed -- the first gets fixed."""
-    assert family.source_caveat(_layer("some_new_catalog_entry")) == (
-        "Source: some_new_catalog_entry."
+    assert map_caption("Lead", source="some_new_catalog_entry") == (
+        "Lead. Source: some_new_catalog_entry."
     )
 
 
-def test_a_layer_with_no_source_gets_no_footnote():
-    assert family.source_caveat(xr.DataArray(np.zeros((2, 2)), dims=("y", "x"))) is None
+def test_the_caption_orders_its_parts_and_skips_empty_ones():
+    assert map_caption("Lead", ["Colours.", ""], ["Caveat"]) == "Lead. Colours. Caveat."
+    assert overlay_sentence({"basins": [1], "rivers": [1]}) == (
+        "The basin boundary and rivers give spatial context"
+    )
+    assert overlay_sentence({}) == ""
 
 
 # --- layer preparation --------------------------------------------------------

@@ -35,6 +35,18 @@ def _wf1_forcing(args):
     return rerender_forcing(args.project, args.out, annotation=args.annotation)
 
 
+def _spatial(args):
+    from blueearth_cst.shared.plot_spatial_maps import plot_spatial_maps_from_project
+
+    if args.source:
+        raise ValueError("--source does not apply to spatial")
+    plot_dir = args.out / "spatial" / "plots"
+    plot_spatial_maps_from_project(
+        args.project, plot_dir=plot_dir, annotation=args.annotation
+    )
+    return {"spatial": plot_dir}
+
+
 #: Family name -> (what it renders, renderer). Add a family by pointing it at a
 #: re-render function that sits beside its rule adapter in ``blueearth_cst``.
 FAMILIES = {
@@ -45,6 +57,10 @@ FAMILIES = {
     "wf1-forcing": (
         "WF1 rule 1.12 forcing maps, annual series and monthly cycles (re-reduces forcing; minutes)",
         _wf1_forcing,
+    ),
+    "spatial": (
+        "WF1 rule 1.11 spatial maps: subbasins, land cover, LAI, soils (not elevation yet)",
+        _spatial,
     ),
 }
 

@@ -431,8 +431,10 @@ in this visual review.
 - Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
 - WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
 - Legacy cartographic/evaluation preset and runtime overrides: `blueearth_cst/shared/plot_style.py`.
-- Climatology maps (WF0 source, WF1 forcing): drawn by `blueearth_cst/plotting/prepared_maps.py`;
-  native-grid fields prepared by `climate_analysis/diagnostic_maps.py`.
+- Geographic raster maps (WF0 source, WF1 forcing, WF1 spatial set): drawn by
+  `blueearth_cst/plotting/prepared_maps.py`; frames, grid edges and overlay features prepared by
+  `shared/map_frames.py`; climate fields by `climate_analysis/diagnostic_maps.py`; spatial keys and the
+  locator basemap by `shared/plot_spatial_maps.py`.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
 - Re-rendering from a finished run: `scripts/render_figures.py`, dispatching to
   `climate_analysis/diagnostic_rerender.py` and `model/forcing_rerender.py`. Retained map references load

@@ -543,9 +543,14 @@ def _draw_locator(ax: Axes, locator: LocatorMap, frame: MapFrame, top: float) ->
             zorder=5,
         )
     )
-    inset.set_xlim(w0, e0)
+    # The box is square on the page, so the longitude span that fills it is the
+    # latitude span times the midpoint-latitude aspect.
+    aspect = 1 / math.cos(math.radians((s0 + n0) / 2))
+    half = (n0 - s0) * aspect / 2
+    centre = (w0 + e0) / 2
+    inset.set_xlim(centre - half, centre + half)
     inset.set_ylim(s0, n0)
-    inset.set_aspect(1 / math.cos(math.radians((s0 + n0) / 2)), adjustable="datalim")
+    inset.set_aspect(aspect, adjustable="box")
     inset.set_xticks([])
     inset.set_yticks([])
     for spine in inset.spines.values():

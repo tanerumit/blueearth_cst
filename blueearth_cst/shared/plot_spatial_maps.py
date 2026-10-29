@@ -732,6 +732,97 @@ def source_caveat(layer):
     return f"Source: {SOURCE_CREDITS.get(source, source)}."
 
 
+def _unit_break(label):
+    """The quantity on one line and its parenthesised unit on the next."""
+    head, sep, unit = label.rpartition(" (")
+    return f"{head}\n({unit}" if sep else label
+
+
+def _key_for(figure, layer):
+    """The template key for one figure: ``MapClasses`` or a classified ``MapScale``.
+
+    Classes come from the legacy classifier until it moves out of
+    ``cartographic_map``: the spatial profile's settings, the diverging
+    midpoint resolved per raster, values beyond the outer breaks clipped into
+    the end classes (no extensions).
+    """
+    from matplotlib.colors import to_hex
+
+    from blueearth_cst.plotting.prepared_maps import MapClasses, MapScale
+    from blueearth_cst.shared import cartographic_map as carto
+    from blueearth_cst.shared.plot_colors import MAP_FEATURE_COLORS
+
+    missing = MAP_FEATURE_COLORS["missing"]
+    if figure.classes is not None:
+        table = figure.classes(layer) if callable(figure.classes) else figure.classes
+        return MapClasses(
+            title=LEGEND_TITLES.get(figure.stem, figure.stem),
+            codes=[code for code, _, _ in table],
+            colors=[color for _, color, _ in table],
+            labels=[label or str(code) for code, _, label in table],
+            missing_color=missing,
+            unclassified_color=MAP_FEATURE_COLORS["unclassified"],
+            alpha=SUBBASIN_ALPHA if figure.stem == "subbasins" else 1.0,
+        )
+    with carto._Overrides(**carto.PROFILES["spatial"]):
+        style = carto.resolve_diverging_style(layer, figure.style)
+        levels = [float(level) for level in carto._class_levels(layer, style)]
+        cmap = carto._classified_colormap(style, levels, "neither")
+    colors = [to_hex(cmap(i)) for i in range(cmap.N)]
+    return MapScale(
+        units=_unit_break(style.label),
+        boundaries=levels,
+        ticks=levels,
+        colors=colors,
+        under_color=colors[0],
+        over_color=colors[-1],
+        missing_color=missing,
+        status="available",
+        extend="neither",
+    )
+
+
+def spatial_locator(extent):
+    """The overview locator from the vendored Natural Earth basemap, or ``None``.
+
+    Window and city selection follow the spatial profile. A city is kept only
+    when its label fits inside the window, largest first.
+    """
+    from blueearth_cst.plotting.prepared_maps import PANEL_LOCATOR_WIDTH, LocatorMap
+    from blueearth_cst.shared import cartographic_map as carto
+    from blueearth_cst.shared.map_frames import features
+
+    if not carto.BASEMAP_PATH.is_file():
+        print(f"note: locator inset skipped, no basemap at {carto.BASEMAP_PATH}")
+        return None
+    with carto._Overrides(**carto.PROFILES["spatial"]):
+        window = carto._locator_window(extent)
+        cities = carto._locator_cities(window)
+        limit = carto._LOCATOR_MAX_CITIES
+    west, east, south, north = window
+    # Label width in degrees at the inset's 4.5 pt text on a ~150 mm map frame.
+    deg_per_pt = (east - west) / (PANEL_LOCATOR_WIDTH * 150 / 25.4 * 72)
+    margin = 0.03 * (east - west)
+    places = []
+    for _, city in cities.iterrows():
+        x, y = city.geometry.x, city.geometry.y
+        label_deg = (2 + 0.6 * 4.5 * len(city["name"])) * deg_per_pt
+        if (
+            west + margin <= x
+            and x + label_deg <= east - margin
+            and south + margin <= y <= north - margin
+        ):
+            places.append((x, y, city["name"]))
+        if len(places) >= limit:
+            break
+    return LocatorMap(
+        tuple(window),
+        land=features(carto._read_basemap("land", window)),
+        borders=features(carto._read_basemap("borders", window)),
+        places=places,
+    )
+
+
 # ---------------------------------------------------------------------------
 # RENDERING
 # ---------------------------------------------------------------------------
@@ -760,8 +851,19 @@ def plot_spatial_maps(
     apart from an empty folder.
     """
     import matplotlib.pyplot as plt
+    import numpy as np
 
-    from blueearth_cst.shared.cartographic_map import plot_raster_map
+    from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared.cartographic_map import check_geographic_inputs
+    from blueearth_cst.shared.map_frames import (
+        as_lat_lon,
+        basin_frame,
+        features,
+        grid_edges,
+        overlay_features,
+    )
+    from blueearth_cst.shared.plot_preset import CST_PRESET
 
     spatial_dir = Path(spatial_dir)
     plot_dir = Path(plot_dir) if plot_dir is not None else spatial_dir / PLOTS_DIRNAME
@@ -786,6 +888,25 @@ def plot_spatial_maps(
     basin_mask = _basin_mask(maps)
     outline = _outer_boundary(layers["basins"])
     subbasins = layers.get("subbasins")
+    # Shared by every figure: the basin-zoom frame, the overlays and, for the
+    # overview, the locator.
+    frame = basin_frame(layers["basins"])
+    overlay = overlay_features(
+        {
+            "basins": features(outline),
+            "subbasins": features(subbasins),
+            "rivers": features(layers.get("rivers")),
+            "locations": features(layers.get("gauges")),
+        }
+    )
+    locator = spatial_locator(frame.extent)
+    inside = (
+        None
+        if basin_mask is None
+        else np.asarray(
+            as_lat_lon(maps[BASIN_MASK_VARIABLE].copy(data=basin_mask)).values
+        )
+    )
 
     written = []
     for figure in selected:
@@ -806,46 +927,34 @@ def plot_spatial_maps(
                 f"{figure.stem}: {figure.variable} within the basin: {reason}; rendering the map"
             )
 
-        style = figure.style
-        if figure.classes is not None:
-            classes = (
-                figure.classes(layer) if callable(figure.classes) else figure.classes
-            )
-            # The label is unused on a nominal figure — there is no colourbar to
-            # put it on — but it is what ``check_geographic_inputs`` names when
-            # the units disagree, so it stays the quantity rather than empty.
-            style = RasterStyle(
-                label=LEGEND_TITLES.get(figure.stem, figure.stem),
-                palette=None,
-                categories=classes,
-            )
-            if figure.stem == "subbasins":
-                style.alpha = SUBBASIN_ALPHA
-
-        fig, _ = plot_raster_map(
+        check_geographic_inputs(
             layer,
-            layers.get("rivers"),
-            outline,
-            subbasins=subbasins,
-            gauges=layers.get("gauges"),
-            style=style,
+            {"rivers": layers.get("rivers"), "basin": outline, "subbasins": subbasins},
+            value_label=(
+                figure.style.label
+                if figure.style is not None
+                else LEGEND_TITLES.get(figure.stem, figure.stem)
+            ),
             expected_units=figure.expected_units,
-            # The product credit, as a footnote under the axes. Read from the
-            # LAYER's own `source` attr rather than from the registry entry, so
-            # a catalog change cannot leave a figure crediting the wrong product.
-            caveat=source_caveat(layer),
-            # No title: the filename names the figure (see SpatialFigure.stem).
-            # No overlay key: the layers are still DRAWN, tying the set to one
-            # basin, and their styling reads without one.
-            vector_legend=False,
-            # The rule 1.11 style (cartographic_map.PROFILES["spatial"]). Every
-            # family map takes the full-width layout; subbasins show no key and
-            # keep the locator, the thematic maps carry their key in a corner.
-            profile="spatial",
-            key_on_map=True,
-            show_key=figure.stem != "subbasins",
-            locator=figure.stem == "subbasins",
         )
+        # The template (toolbox-plot-style.md, Spatial map template): no title,
+        # the source credited in the caption, the key in the side panel, and the
+        # locator only on the subbasin overview, which carries no key.
+        overview = figure.stem == "subbasins"
+        with use_preset(CST_PRESET):
+            fig = draw_raster_map(
+                RasterMap(
+                    np.asarray(as_lat_lon(layer).values, dtype=float),
+                    *grid_edges(layer),
+                    inside=inside,
+                    cell_edges=False,
+                ),
+                frame,
+                _key_for(figure, layer),
+                overlay,
+                locator=locator if overview else None,
+                show_key=not overview,
+            )
         record = {
             "title": FIGURE_TITLES[figure.stem],
             "caption": f"{FIGURE_TITLES[figure.stem]}. "
@@ -853,9 +962,10 @@ def plot_spatial_maps(
             + (source_caveat(layer) or ""),
         }
         from blueearth_cst.plotting.fundamentals import add_caption
-        from blueearth_cst.plotting.preset import use_preset
-        from blueearth_cst.shared.plot_preset import CST_PRESET
 
+        # Fixed-aspect maps leave unused canvas; trim to the drawn artists with a
+        # 2 mm border, as the climate maps export (diagnostic_render).
+        crop = {"bbox_inches": "tight", "pad_inches": 2 / 25.4}
         if annotation != "none":
             if annotation not in ("caption", "title"):
                 raise ValueError("annotation must be none, caption, or title")
@@ -863,7 +973,14 @@ def plot_spatial_maps(
                 use_preset(CST_PRESET, rcparams=False),
                 plt.rc_context({"savefig.dpi": dpi or RASTER_DPI}),
             ):
-                add_caption(fig, record[annotation], above=annotation == "title")
+                add_caption(
+                    fig,
+                    record[annotation],
+                    above=annotation == "title",
+                    crop=True,
+                    pad_inches=crop["pad_inches"],
+                )
+            crop = {}
         for extension in formats:
             path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")
             # PDF takes no dpi and needs its timestamp scrubbed; PNG takes dpi
@@ -874,7 +991,7 @@ def plot_spatial_maps(
                 if extension == "pdf"
                 else {"dpi": dpi or RASTER_DPI, "metadata": {"Software": None}}
             )
-            save_figure(path, fig=fig, **scrub)
+            save_figure(path, fig=fig, **scrub, **crop)
             written.append(Path(path))
             write_figure_captions(plot_dir, {f"{figure.stem}.{extension}": record})
         plt.close(fig)

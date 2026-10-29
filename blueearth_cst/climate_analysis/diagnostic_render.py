@@ -1,7 +1,6 @@
 """Render retained CSV/NetCDF products and one recoverable caption inventory."""
 
 import json
-import math
 import re
 from collections import Counter
 from pathlib import Path
@@ -22,14 +21,14 @@ from blueearth_cst.climate_analysis.diagnostics import (
 from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import new_fig
-from blueearth_cst.plotting.prepared_maps import MapFrame, RasterMap, draw_raster_map
+from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
 from blueearth_cst.plotting.preset import use_preset
+from blueearth_cst.shared.map_frames import basin_frame, overlay_features
 from blueearth_cst.shared.map_reference import (
     drawing_frame,
     drawing_scale,
     field_edges,
     frame_intersection,
-    geographic_ticks,
     load_reference,
     reference_arguments,
     validate_fields,
@@ -39,31 +38,14 @@ from blueearth_cst.shared.snake_utils import listed, log_row, plural
 
 
 def load_map_overlays(overlays):
-    """Load existing offline GeoJSON features in the adapter, never the core.
-
-    Subbasin polygons become one merged ``divides`` linework: drawing each ring
-    dashed lays every shared edge down twice, and the interleaved dashes render
-    those edges solid.
-    """
-    features = {
-        key: json.loads(Path(path).read_text(encoding="utf-8"))["features"]
-        for key, path in (overlays or {}).items()
-        if Path(path).is_file()
-    }
-    subbasins = features.pop("subbasins", [])
-    if subbasins:
-        from shapely import line_merge, union_all
-        from shapely.geometry import mapping, shape
-
-        rings = union_all([shape(f["geometry"]).boundary for f in subbasins])
-        features["divides"] = [
-            {
-                "type": "Feature",
-                "geometry": mapping(line_merge(rings)),
-                "properties": {},
-            }
-        ]
-    return features
+    """Load existing offline GeoJSON features in the adapter, never the core."""
+    return overlay_features(
+        {
+            key: json.loads(Path(path).read_text(encoding="utf-8"))["features"]
+            for key, path in (overlays or {}).items()
+            if Path(path).is_file()
+        }
+    )
 
 
 def prepared_map(
@@ -80,15 +62,8 @@ def prepared_map(
     if overlays.get("basins"):
         import geopandas as gpd
 
-        from blueearth_cst.shared.cartographic_map import extent_from_layer
-
-        basins = gpd.GeoDataFrame.from_features(overlays["basins"], crs="EPSG:4326")
-        west, east, south, north = extent_from_layer(basins)
-        frame = MapFrame(
-            (west, east, south, north),
-            geographic_ticks(west, east),
-            geographic_ticks(south, north),
-            1 / math.cos(math.radians((south + north) / 2)),
+        frame = basin_frame(
+            gpd.GeoDataFrame.from_features(overlays["basins"], crs="EPSG:4326")
         )
     support = frame_intersection(field, frame.extent)
     if mask is not None:

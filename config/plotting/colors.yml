@@ -82,6 +82,7 @@ map_features:
   marker_edge: "#ffffff"
   halo: "#ffffff"
   unclassified: "#bdbdbd"
+  missing: "#a0a0a0"     # cells with no data, keyed "No data" on every map
   locator_ocean: "#eef2f5"
   locator_land: "#dcdcd8"
   locator_coast: "0.55"

@@ -35,7 +35,7 @@ def frame_from_extent(extent: Sequence[float]) -> MapFrame:
 
 def basin_frame(basins) -> MapFrame:
     """The basin bounds with spatial-map padding, as every map zooms to them."""
-    from blueearth_cst.shared.cartographic_map import extent_from_layer
+    from blueearth_cst.shared.map_classes import extent_from_layer
 
     return frame_from_extent(extent_from_layer(basins))
 

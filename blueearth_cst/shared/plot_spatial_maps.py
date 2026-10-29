@@ -445,6 +445,20 @@ SOIL_DEPTH_STYLE = RasterStyle(
 )
 
 
+#: Elevation, the basin overview. LINEAR, deliberately, and the one style that
+#: is: elevation is the quantity a reader does arithmetic on (how far above that
+#: gauge, how much fall to the outlet), so it keeps a scale you can subtract on
+#: rather than equal-area classes. Owner's call, 2026-08-09. The ramp falls back
+#: to the monotonic-lightness elevation anchors; drawn over its own hillshade.
+ELEVATION_STYLE = RasterStyle(
+    label="Elevation (m a.s.l.)",
+    palette=None,
+    classification="equal_interval",
+    zero_baseline=True,
+    relief=True,
+)
+
+
 def _texture_style(fraction):
     """One particle-size fraction's style, on the shared texture ramp."""
     return RasterStyle(
@@ -632,6 +646,45 @@ def load_spatial_map_layers(spatial_dir):
     return maps, layers
 
 
+#: The elevation grid the basin overview draws, in the shared hydrography.
+HYDROGRAPHY_FILENAME = "hydrography.nc"
+SPATIAL_ELEVATION_VARIABLE = "elevation"
+
+
+def load_spatial_basin_layers(spatial_dir):
+    """The elevation grid from ``hydrography.nc`` and the vector layers.
+
+    Model-free: everything comes from ``data/spatial/``, so the overview can be
+    drawn before a model exists. Optional vector layers are read when present.
+    """
+    import geopandas as gpd
+    import xarray as xr
+
+    from blueearth_cst.shared.map_classes import _mask_nodata
+
+    spatial_dir = Path(spatial_dir)
+    hydrography = spatial_dir / HYDROGRAPHY_FILENAME
+    geoms_dir = spatial_dir / "geoms"
+    if not hydrography.is_file():
+        raise FileNotFoundError(f"no {HYDROGRAPHY_FILENAME} in {spatial_dir}")
+    with xr.open_dataset(hydrography) as dataset:
+        if SPATIAL_ELEVATION_VARIABLE not in dataset:
+            raise KeyError(
+                f"{hydrography} has no {SPATIAL_ELEVATION_VARIABLE!r}; it holds "
+                f"{sorted(dataset.data_vars)}"
+            )
+        elevation = _mask_nodata(dataset[SPATIAL_ELEVATION_VARIABLE].load())
+    layers = {}
+    for argument, stem in SPATIAL_MAP_LAYERS.items():
+        path = geoms_dir / f"{stem}.geojson"
+        if path.is_file():
+            layers[argument] = gpd.read_file(path)
+    missing = [name for name in ("basins", "rivers") if name not in layers]
+    if missing:
+        raise FileNotFoundError(f"{geoms_dir} is missing {missing}")
+    return elevation, layers
+
+
 def _outer_boundary(basins):
     """The basin's OUTER boundary, dissolved to a single polygon.
 
@@ -657,7 +710,7 @@ def _basin_mask(maps):
     """
     import numpy as np
 
-    from blueearth_cst.shared.cartographic_map import _mask_nodata
+    from blueearth_cst.shared.map_classes import _mask_nodata
 
     if BASIN_MASK_VARIABLE not in maps:
         return None
@@ -674,7 +727,7 @@ def prepare_layer(maps, figure, basin_mask=None):
     figure's title ("annual mean"), because a silently averaged seasonal cycle
     is the kind of thing a reader assumes did not happen.
     """
-    from blueearth_cst.shared.cartographic_map import _mask_nodata
+    from blueearth_cst.shared.map_classes import _mask_nodata
 
     layer = _mask_nodata(maps[figure.variable]).astype("float64")
     extra = [
@@ -754,7 +807,7 @@ def _key_for(figure, layer):
     from matplotlib.colors import to_hex
 
     from blueearth_cst.plotting.prepared_maps import MapClasses, MapScale
-    from blueearth_cst.shared import cartographic_map as carto
+    from blueearth_cst.shared import map_classes as classes
     from blueearth_cst.shared.plot_colors import MAP_FEATURE_COLORS
 
     missing = MAP_FEATURE_COLORS["missing"]
@@ -770,10 +823,9 @@ def _key_for(figure, layer):
             alpha=SUBBASIN_ALPHA if figure.stem == "subbasins" else 1.0,
             key_min_share=CLASS_KEY_MIN_SHARE,
         )
-    with carto._Overrides(**carto.PROFILES["spatial"]):
-        style = carto.resolve_diverging_style(layer, figure.style)
-        levels = [float(level) for level in carto._class_levels(layer, style)]
-        cmap = carto._classified_colormap(style, levels, "neither")
+    style = classes.resolve_diverging_style(layer, figure.style)
+    levels = [float(level) for level in classes._class_levels(layer, style)]
+    cmap = classes._classified_colormap(style, levels, "neither")
     colors = [to_hex(cmap(i)) for i in range(cmap.N)]
     return MapScale(
         units=_unit_break(style.label),
@@ -795,16 +847,15 @@ def spatial_locator(extent):
     when its label fits inside the window, largest first.
     """
     from blueearth_cst.plotting.prepared_maps import PANEL_LOCATOR_WIDTH, LocatorMap
-    from blueearth_cst.shared import cartographic_map as carto
+    from blueearth_cst.shared import map_classes as classes
     from blueearth_cst.shared.map_frames import features
 
-    if not carto.BASEMAP_PATH.is_file():
-        print(f"note: locator inset skipped, no basemap at {carto.BASEMAP_PATH}")
+    if not classes.BASEMAP_PATH.is_file():
+        print(f"note: locator inset skipped, no basemap at {classes.BASEMAP_PATH}")
         return None
-    with carto._Overrides(**carto.PROFILES["spatial"]):
-        window = carto._locator_window(extent)
-        cities = carto._locator_cities(window)
-        limit = carto._LOCATOR_MAX_CITIES
+    window = classes._locator_window(extent)
+    cities = classes._locator_cities(window)
+    limit = classes._LOCATOR_MAX_CITIES
     west, east, south, north = window
     # Label width in degrees at the inset's 4.5 pt text on a ~150 mm map frame.
     deg_per_pt = (east - west) / (PANEL_LOCATOR_WIDTH * 150 / 25.4 * 72)
@@ -823,8 +874,8 @@ def spatial_locator(extent):
             break
     return LocatorMap(
         tuple(window),
-        land=features(carto._read_basemap("land", window)),
-        borders=features(carto._read_basemap("borders", window)),
+        land=features(classes._read_basemap("land", window)),
+        borders=features(classes._read_basemap("borders", window)),
         places=places,
     )
 
@@ -922,9 +973,8 @@ def plot_elevation_basin(spatial_dir, plot_dir=None, annotation="none"):
 
     from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
     from blueearth_cst.plotting.preset import use_preset
-    from blueearth_cst.shared import cartographic_map as carto
+    from blueearth_cst.shared import map_classes as classes
     from blueearth_cst.shared.map_frames import as_lat_lon, grid_edges
-    from blueearth_cst.shared.plot_map import load_spatial_basin_layers
     from blueearth_cst.shared.plot_preset import CST_PRESET
 
     spatial_dir = Path(spatial_dir)
@@ -933,14 +983,12 @@ def plot_elevation_basin(spatial_dir, plot_dir=None, annotation="none"):
     maps, _ = load_spatial_map_layers(spatial_dir)
     context = _spatial_context(maps, layers, _basin_mask(maps))
     maps.close()
-    figure = SpatialFigure(
-        "elevation", "elevation_basin", carto.RASTER_STYLES["elevation"]
-    )
+    figure = SpatialFigure("elevation", "elevation_basin", ELEVATION_STYLE)
     scale = _key_for(figure, elevation)
     cmap = ListedColormap(scale.colors)
     norm = BoundaryNorm(scale.boundaries, cmap.N, clip=True)
     south, north = context["frame"].extent[2:]
-    relief = carto._shaded_relief(elevation, cmap, norm, (south + north) / 2)
+    relief = classes._shaded_relief(elevation, cmap, norm, (south + north) / 2)
     with use_preset(CST_PRESET):
         fig = draw_raster_map(
             RasterMap(
@@ -1000,7 +1048,7 @@ def plot_spatial_maps(
         unkeyed_classes,
     )
     from blueearth_cst.plotting.preset import use_preset
-    from blueearth_cst.shared.cartographic_map import check_geographic_inputs
+    from blueearth_cst.shared.map_classes import check_geographic_inputs
     from blueearth_cst.shared.map_frames import (
         as_lat_lon,
         grid_edges,
@@ -1133,9 +1181,7 @@ def plot_spatial_figure_set(spatial_dir, plot_dir=None, **kwargs):
     ``elevation_basin`` is drawn FIRST for the same reason it is listed first
     everywhere else: it is the sheet a reader meets before the thematic ones.
     """
-    from blueearth_cst.shared.plot_map import plot_basin_map_from_spatial
-
-    plot_basin_map_from_spatial(
+    plot_elevation_basin(
         spatial_dir, plot_dir=plot_dir, annotation=kwargs.get("annotation", "none")
     )
     return plot_spatial_maps(spatial_dir, plot_dir=plot_dir, **kwargs)

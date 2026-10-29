@@ -206,8 +206,8 @@ model-grid basin masks retain their scientific support. Common colors do not est
 eligibility policies or PET methods; captions state those differences.
 
 Every available reference colorbar shows both rectangular extensions. Captions report strict under/over
-counts only when nonzero; the map metadata always records them. The final class includes its upper boundary. Missing cells are gray, outside-model and
-uncovered areas white. With no finite historical scale, finite cells use an unscaled neutral hatch and
+counts only when nonzero; the map metadata always records them. The final class includes its upper
+boundary. Missing cells are gray, outside-model and uncovered areas white. With no finite historical scale, finite cells use an unscaled neutral hatch and
 there is no numerical colorbar. Never infer a scale from model forcing or invent a default 0–1 scale.
 Suppress individual model-cell outlines on the fine forcing grid so they do not obscure the field.
 Show cells outside the model basin in white and unavailable summaries inside it in gray.

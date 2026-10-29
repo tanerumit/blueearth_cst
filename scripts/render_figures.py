@@ -50,6 +50,14 @@ def _spatial(args):
     return {"spatial": plot_dir}
 
 
+def _wf2(args):
+    from blueearth_cst.projections.projection_rerender import rerender_projections
+
+    if args.source:
+        raise ValueError("--source does not apply to wf2")
+    return rerender_projections(args.project, args.out, annotation=args.annotation)
+
+
 #: Family name -> (what it renders, renderer). Add a family by pointing it at a
 #: re-render function that sits beside its rule adapter in ``blueearth_cst``.
 FAMILIES = {
@@ -64,6 +72,10 @@ FAMILIES = {
     "spatial": (
         "WF1 rule 1.11 spatial maps: elevation, subbasins, land cover, LAI, soils",
         _spatial,
+    ),
+    "wf2": (
+        "WF2 rule 2.06 projection suite from the retained analysis tables (minutes)",
+        _wf2,
     ),
 }
 

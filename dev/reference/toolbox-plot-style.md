@@ -440,7 +440,8 @@ in this visual review.
   locator basemap by `shared/plot_spatial_maps.py`.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
 - Re-rendering from a finished run: `scripts/render_figures.py`, dispatching to
-  `climate_analysis/diagnostic_rerender.py` and `model/forcing_rerender.py`. Retained map references load
+  `climate_analysis/diagnostic_rerender.py`, `model/forcing_rerender.py` and
+  `projections/projection_rerender.py`. Retained map references load
   through `shared/retained_reference.py`, which checks integrity but not current-code drift.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.
 

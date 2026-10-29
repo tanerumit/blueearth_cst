@@ -32,6 +32,12 @@ NEUTRAL_MAPS: Mapping[str, Any] = {
     "marker_edge": "#ffffff",
     "halo": "#ffffff",
     "scale_bar_segments": 4,
+    "locator_ocean": "#eef2f5",
+    "locator_land": "#dcdcd8",
+    "locator_coast": "#8c8c8c",
+    "locator_border": "#b3b3b3",
+    "locator_city": "#595959",
+    "locator_mark": "#c0392b",
 }
 
 

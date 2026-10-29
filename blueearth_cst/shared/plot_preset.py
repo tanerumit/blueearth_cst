@@ -105,6 +105,11 @@ MAPS = {
     "marker_edge": MAP_FEATURE_COLORS["marker_edge"],
     "halo": MAP_FEATURE_COLORS["halo"],
     "scale_bar_segments": int(_MAP_STYLE["scale_bar_segments"]),
+    **{
+        f"locator_{name}": MAP_FEATURE_COLORS[f"locator_{name}"]
+        for name in ("ocean", "land", "coast", "border", "city")
+    },
+    "locator_mark": MAP_FEATURE_COLORS["locator_basin"],
 }
 
 

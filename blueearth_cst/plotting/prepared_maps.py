@@ -8,6 +8,7 @@ active preset's ``maps`` tokens.
 """
 
 import math
+import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -17,7 +18,8 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.colors import BoundaryNorm, ListedColormap, to_rgba
 from matplotlib.figure import Figure
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Patch, PathPatch, Rectangle
+from matplotlib.path import Path
 from matplotlib.patheffects import Normal, Stroke
 from matplotlib.ticker import FuncFormatter
 from matplotlib.transforms import Bbox
@@ -32,6 +34,18 @@ RIVER_ORDER_KEYS = ("order", "strord")
 #: Kilometres per degree of latitude; longitude scales by cos(latitude).
 KM_PER_DEGREE = 111.32
 
+# Side panel geometry, in map-axes fractions (>1 lies right of the frame).
+PANEL_LEFT = 1.03
+PANEL_GAP = 0.04
+#: Locator inset width; its height keeps it square on the page.
+PANEL_LOCATOR_WIDTH = 0.22
+#: Colourbar length, its floor when the locator and title crowd it, and the
+#: room its two-line title takes above it.
+COLORBAR_HEIGHT, COLORBAR_MIN, COLORBAR_TITLE_ROOM = 0.7, 0.25, 0.12
+#: Smallest key text a class legend shrinks to before warning (pt).
+MIN_KEY_FONT = 4.0
+MISSING_LABEL = "No data"
+
 
 @dataclass(frozen=True)
 class MapFrame:
@@ -45,7 +59,12 @@ class MapFrame:
 
 @dataclass(frozen=True)
 class MapScale:
-    """Resolved reference classes; unavailable scales have no boundaries/ticks."""
+    """Resolved continuous classes; unavailable scales have no boundaries/ticks.
+
+    ``extend`` names the colourbar's rectangular extensions (``both``, ``min``,
+    ``max`` or ``neither``); with ``neither`` values beyond the outer
+    boundaries fall into the end classes.
+    """
 
     units: str
     boundaries: Sequence[float]
@@ -55,6 +74,40 @@ class MapScale:
     over_color: Any
     missing_color: Any
     status: str
+    extend: str = "both"
+
+
+@dataclass(frozen=True)
+class MapClasses:
+    """Nominal classes: raster values are ``codes``, keyed by ``labels``.
+
+    Only classes present in the drawn area enter the key. Codes the table does
+    not declare draw in ``unclassified_color`` and are keyed as such.
+    """
+
+    title: str
+    codes: Sequence[float]
+    colors: Sequence[Any]
+    labels: Sequence[str]
+    missing_color: Any
+    unclassified_color: Any = "#bdbdbd"
+    unclassified_label: str = "Unclassified"
+    alpha: float = 1.0
+
+
+@dataclass(frozen=True)
+class LocatorMap:
+    """A "where is this" inset from supplied basemap features.
+
+    ``window`` is west/east/south/north; ``land`` holds polygon features,
+    ``borders`` line features and ``places`` ``(x, y, name)`` tuples. The main
+    map's frame is outlined on it.
+    """
+
+    window: tuple[float, float, float, float]
+    land: Sequence[Mapping[str, Any]] = ()
+    borders: Sequence[Mapping[str, Any]] = ()
+    places: Sequence[tuple[float, float, str]] = ()
 
 
 @dataclass(frozen=True)
@@ -92,7 +145,9 @@ def _numeric_vector(value: Any, name: str) -> NDArray[np.number]:
     return array
 
 
-def _validate(raster: RasterMap, frame: MapFrame, scale: MapScale) -> None:
+def _validate(
+    raster: RasterMap, frame: MapFrame, scale: "MapScale | MapClasses"
+) -> None:
     values = np.asanyarray(raster.values)
     if (
         values.ndim != 2
@@ -143,8 +198,21 @@ def _validate(raster: RasterMap, frame: MapFrame, scale: MapScale) -> None:
         array = _numeric_vector(ticks, name)
         if not np.all(np.diff(array) > 0) or np.any((array < low) | (array > high)):
             raise ValueError(f"{name} must increase within the closed frame")
-    if scale.units not in {"degC", "mm/year"}:
-        raise ValueError("Map scale units must be degC or mm/year")
+    if isinstance(scale, MapClasses):
+        codes = _numeric_vector(scale.codes, "class codes")
+        if (
+            len(set(codes.tolist())) != len(codes)
+            or len(scale.colors) != len(codes)
+            or len(scale.labels) != len(codes)
+        ):
+            raise ValueError("Classes need distinct codes, one colour and label each")
+        for color in (*scale.colors, scale.missing_color, scale.unclassified_color):
+            to_rgba(color)
+        return
+    if not isinstance(scale.units, str) or not scale.units:
+        raise ValueError("Map scale units must be a nonempty string")
+    if scale.extend not in {"both", "min", "max", "neither"}:
+        raise ValueError("Map scale extend must be both, min, max or neither")
     if scale.status not in {"available", "unavailable"}:
         raise ValueError("Map scale status must be available or unavailable")
     boundaries = _numeric_vector(scale.boundaries, "scale boundaries")
@@ -163,10 +231,12 @@ def _validate(raster: RasterMap, frame: MapFrame, scale: MapScale) -> None:
         len(boundaries) < 2
         or not np.all(np.diff(boundaries) > 0)
         or len(scale.colors) != len(boundaries) - 1
-        or not np.array_equal(ticks, boundaries)
+        or not np.all(np.diff(ticks) > 0)
+        or np.any((ticks < boundaries[0]) | (ticks > boundaries[-1]))
     ):
         raise ValueError(
-            "Available scale needs increasing boundaries, colors and ticks"
+            "Available scale needs increasing boundaries, one colour per class "
+            "and increasing ticks within the boundaries"
         )
 
 
@@ -405,19 +475,165 @@ def _place_point_labels(
         occupied.append(box)
 
 
+def _polygon_paths(geometry: Mapping[str, Any]) -> list[Path]:
+    """Compound paths (exterior plus holes) for a Polygon or MultiPolygon."""
+    kind, coordinates = geometry["type"], geometry["coordinates"]
+    polygons = [coordinates] if kind == "Polygon" else coordinates
+    if kind not in {"Polygon", "MultiPolygon"}:
+        return []
+    paths = []
+    for rings in polygons:
+        vertices, codes = [], []
+        for ring in rings:
+            ring = np.asarray(ring, dtype=float)[:, :2]
+            vertices.extend(ring.tolist())
+            codes.extend(
+                [Path.MOVETO, *[Path.LINETO] * (len(ring) - 2), Path.CLOSEPOLY]
+            )
+        paths.append(Path(vertices, codes))
+    return paths
+
+
+def _draw_locator(ax: Axes, locator: LocatorMap, frame: MapFrame, top: float) -> float:
+    """The locator inset at the top of the side panel; returns its height fraction."""
+    maps = active().maps
+    west, east, south, north = frame.extent
+    axes_ratio = frame.aspect * (north - south) / (east - west)
+    width = PANEL_LOCATOR_WIDTH
+    height = min(width / axes_ratio, top)
+    inset = ax.inset_axes((PANEL_LEFT, top - height, width, height))
+    w0, e0, s0, n0 = locator.window
+    inset.set_facecolor(maps["locator_ocean"])
+    for feature in locator.land:
+        for path in _polygon_paths(feature["geometry"]):
+            inset.add_patch(
+                PathPatch(
+                    path,
+                    facecolor=maps["locator_land"],
+                    edgecolor=maps["locator_coast"],
+                    linewidth=0.35,
+                )
+            )
+    for feature in locator.borders:
+        for coordinates in _geometry_lines(feature["geometry"]):
+            points = np.asarray(coordinates)
+            inset.plot(points[:, 0], points[:, 1], color=maps["locator_border"], lw=0.3)
+    halo = [Stroke(linewidth=1.6, foreground=maps["halo"]), Normal()]
+    for x, y, name in locator.places:
+        inset.plot(x, y, "o", ms=1.8, color=maps["locator_city"])
+        inset.annotate(
+            name,
+            (x, y),
+            xytext=(2, 0),
+            textcoords="offset points",
+            fontsize=4.5,
+            color=maps["locator_city"],
+            va="center",
+            path_effects=halo,
+            annotation_clip=True,
+        )
+    inset.add_patch(
+        Rectangle(
+            (west, south),
+            east - west,
+            north - south,
+            fill=False,
+            edgecolor=maps["locator_mark"],
+            linewidth=0.9,
+            zorder=5,
+        )
+    )
+    inset.set_xlim(w0, e0)
+    inset.set_ylim(s0, n0)
+    inset.set_aspect(1 / math.cos(math.radians((s0 + n0) / 2)), adjustable="datalim")
+    inset.set_xticks([])
+    inset.set_yticks([])
+    for spine in inset.spines.values():
+        spine.set_linewidth(0.6)
+        spine.set_edgecolor(active().colors["ink"])
+    return height
+
+
+def _side_legend(ax: Axes, handles: list, title: str | None, fontsize: float) -> Any:
+    """A key in the side panel, its lower-left corner on the frame's bottom."""
+    preset = active()
+    return ax.legend(
+        handles=handles,
+        title=title,
+        loc="lower left",
+        bbox_to_anchor=(PANEL_LEFT, 0.0),
+        bbox_transform=ax.transAxes,
+        borderaxespad=0.0,
+        borderpad=0.0,
+        frameon=False,
+        fontsize=fontsize,
+        title_fontsize=preset.fonts["tick"],
+        alignment="left",
+        handlelength=1.4,
+        handleheight=1.0,
+        labelcolor=preset.colors["ink"],
+    )
+
+
+def _fit_legend(fig: Figure, ax: Axes, handles, title, available: float) -> Any:
+    """Shrink a side legend's text until it fits ``available`` of the frame height.
+
+    Warns when it still does not fit at the smallest permitted size.
+    """
+    fontsize = active().fonts["tick"]
+    legend = _side_legend(ax, handles, title, fontsize)
+    for _ in range(6):
+        fig.canvas.draw()
+        height = legend.get_window_extent().height / ax.bbox.height
+        if height <= available:
+            return legend
+        fontsize *= 0.97 * available / height
+        if fontsize < MIN_KEY_FONT:
+            break
+        legend = _side_legend(ax, handles, title, fontsize)
+    warnings.warn(
+        f"Map key ({len(handles)} entries) exceeds the frame height", stacklevel=3
+    )
+    return legend
+
+
+def _swatch(color: Any, label: str, alpha: float = 1.0) -> Patch:
+    return Patch(
+        facecolor=color,
+        edgecolor=active().colors["axis"],
+        linewidth=0.4,
+        alpha=alpha,
+        label=label,
+    )
+
+
+def _in_frame(raster: RasterMap, frame: MapFrame) -> NDArray[np.bool_]:
+    """Cells whose footprint intersects the frame."""
+    west, east, south, north = frame.extent
+    x, y = np.asarray(raster.longitude_edges), np.asarray(raster.latitude_edges)
+    xs = (np.maximum(x[:-1], x[1:]) > west) & (np.minimum(x[:-1], x[1:]) < east)
+    ys = (np.maximum(y[:-1], y[1:]) > south) & (np.minimum(y[:-1], y[1:]) < north)
+    return ys[:, None] & xs[None, :]
+
+
 def draw_raster_map(
     raster: RasterMap,
     frame: MapFrame,
-    scale: MapScale,
+    scale: MapScale | MapClasses,
     overlays: Mapping[str, Sequence[Mapping[str, Any]]],
     colorbar_title: str | None = None,
+    locator: LocatorMap | None = None,
+    show_key: bool = True,
 ) -> Figure:
     """Draw supplied classes or honest unscaled hatching; never change input arrays.
 
-    Available scales always show both rectangular colorbar extensions. Finite
-    unscaled cells receive neutral hatching; missing cells stay gray and cells
-    outside ``inside`` stay white. Geographic grids use the supplied ticks/aspect.
-    ``colorbar_title`` defaults to the scale's units.
+    A ``MapScale`` draws a classified ramp with its colourbar; ``MapClasses`` a
+    nominal raster with a class legend. Finite unscaled cells receive neutral
+    hatching; missing cells take the missing colour and are keyed "No data" when
+    any are drawn; cells outside ``inside`` stay white. The side panel stacks
+    the optional ``locator`` at the top and the key at the bottom. Geographic
+    grids use the supplied ticks/aspect. ``colorbar_title`` defaults to the
+    scale's units; ``show_key=False`` omits the key.
     """
     _validate(raster, frame, scale)
     fig, ax = plt.subplots(figsize=(180 / 25.4, 113 / 25.4), layout="constrained")
@@ -427,12 +643,28 @@ def draw_raster_map(
         if raster.inside is None
         else np.asarray(raster.inside)
     )
-    if scale.status == "available":
+    shown = inside & _in_frame(raster, frame)
+    missing = bool((shown & np.ma.getmaskarray(values)).any())
+    classes = scale if isinstance(scale, MapClasses) else None
+    present: list[int] = []
+    if classes is not None:
+        codes = np.asarray(classes.codes, dtype=float)
+        index = np.full(values.shape, len(codes), dtype=float)
+        for position, code in enumerate(codes):
+            index[np.ma.filled(values, np.nan) == code] = position
+        index = np.ma.array(index, mask=np.ma.getmaskarray(values))
+        present = sorted(np.unique(index[shown & ~index.mask]).astype(int).tolist())
+        cmap = ListedColormap([*classes.colors, classes.unclassified_color])
+        cmap.set_bad(classes.missing_color)
+        norm = BoundaryNorm(np.arange(len(codes) + 2) - 0.5, cmap.N)
+        displayed = index
+    elif scale.status == "available":
         cmap = ListedColormap(scale.colors)
         cmap.set_under(scale.under_color)
         cmap.set_over(scale.over_color)
         cmap.set_bad(scale.missing_color)
-        norm = _ClosedUpperBoundaryNorm(scale.boundaries, cmap.N, clip=False)
+        clip = scale.extend == "neither"
+        norm = _ClosedUpperBoundaryNorm(scale.boundaries, cmap.N, clip=clip)
         displayed = values
     else:
         cmap = ListedColormap(["#eeeeee"])
@@ -448,8 +680,9 @@ def draw_raster_map(
         shading="flat",
         edgecolors=(0.25, 0.25, 0.25, 0.12) if raster.cell_edges else "none",
         linewidth=0.25 if raster.cell_edges else 0,
+        alpha=classes.alpha if classes is not None else None,
     )
-    if scale.status == "unavailable":
+    if classes is None and scale.status == "unavailable":
         xedges, yedges = raster.longitude_edges, raster.latitude_edges
         for i, j in np.argwhere(inside & ~np.ma.getmaskarray(values)):
             ax.add_patch(
@@ -487,23 +720,62 @@ def draw_raster_map(
     ax.yaxis.set_major_formatter(formatter)
     ax.grid(color="#777777", alpha=0.15, linewidth=0.4)
     _draw_scale_bar(ax, frame)
-    if scale.status == "available":
+
+    # --- side panel: locator on top, key on the frame's bottom ---------------
+    top = 1.0
+    if locator is not None:
+        top -= _draw_locator(ax, locator, frame, top) + PANEL_GAP
+    missing_color = scale.missing_color
+    if show_key and classes is not None:
+        handles = [
+            _swatch(
+                classes.colors[i]
+                if i < len(classes.codes)
+                else classes.unclassified_color,
+                classes.labels[i]
+                if i < len(classes.codes)
+                else classes.unclassified_label,
+                classes.alpha,
+            )
+            for i in present
+        ]
+        if missing:
+            handles.append(_swatch(missing_color, MISSING_LABEL))
+        _fit_legend(fig, ax, handles, classes.title, top)
+    elif show_key and scale.status == "available":
+        bottom = 0.0
+        if missing:
+            swatch = _side_legend(
+                ax,
+                [_swatch(missing_color, MISSING_LABEL)],
+                None,
+                active().fonts["tick"],
+            )
+            fig.canvas.draw()
+            bottom = swatch.get_window_extent().height / ax.bbox.height + PANEL_GAP
         # Placed in the map axes' own fractions rather than through
         # ``fig.colorbar(ax=ax)``: the locked aspect leaves the axes shorter than
         # its layout cell, so a cell-anchored bar overhangs the frame bottom.
-        # Width keeps matplotlib's default 20:1 bar in physical units.
-        height = 0.7
+        # Width keeps matplotlib's default 20:1 bar in physical units; the bar
+        # gives way to the locator and its own title.
+        height = max(
+            min(COLORBAR_HEIGHT, top - bottom - COLORBAR_TITLE_ROOM), COLORBAR_MIN
+        )
         axes_ratio = frame.aspect * (north - south) / (east - west)
-        cax = ax.inset_axes((1.03, 0.0, height / 20 * axes_ratio, height))
+        cax = ax.inset_axes((PANEL_LEFT, bottom, height / 20 * axes_ratio, height))
         colorbar = fig.colorbar(
             mesh,
             cax=cax,
             ticks=scale.ticks,
-            extend="both",
+            extend=scale.extend,
             extendrect=True,
         )
-        if colorbar_title is None:
-            colorbar_title = "(°C)" if scale.units == "degC" else "(mm yr⁻¹)"
-        style_colourbar(colorbar, colorbar_title)
+        style_colourbar(
+            colorbar, scale.units if colorbar_title is None else colorbar_title
+        )
+    elif show_key and missing:
+        _side_legend(
+            ax, [_swatch(missing_color, MISSING_LABEL)], None, active().fonts["tick"]
+        )
     _place_point_labels(fig, ax, labels)
     return fig

@@ -102,10 +102,19 @@ def prepared_map(
     eligible = [int(positive.min()), int(positive.max())] if positive.size else None
     x, y = field_edges(field)
     label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
+    drawn_scale = drawing_scale(reference, variable)
+    # Climate display rules (toolbox-plot-style.md): reference units, a tick on
+    # every class boundary and both rectangular extensions.
+    if (
+        drawn_scale.units not in {"degC", "mm/year"}
+        or drawn_scale.extend != "both"
+        or list(drawn_scale.ticks) != list(drawn_scale.boundaries)
+    ):
+        raise ValueError(f"{variable}: historical reference scale breaks climate rules")
     fig = draw_raster_map(
         RasterMap(field.values, x, y, inside=mask, cell_edges=cell_edges),
         frame,
-        drawing_scale(reference, variable),
+        drawn_scale,
         overlays,
         colorbar_title=f"{label}\n{'(°C)' if variable == 'temp' else '(mm yr⁻¹)'}",
     )

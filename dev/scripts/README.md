@@ -95,8 +95,6 @@ with a nonzero exit status and diagnostics. Staged prerequisites may remain in t
 | Script | What it does |
 |---|---|
 | [`capture_page.py`](capture_page.py) | Headless screenshots of a figure-review page at chosen widths; fails on console, HTTP or image errors. |
-| [`preview_basin_map.py`](preview_basin_map.py) | Render rule 1.12's basin map from a model on disk, with tunables overridden or swept. |
-| [`preview_spatial_maps.py`](preview_spatial_maps.py) | Render the spatial-map family from a project on disk. |
 | [`preview_plots.py`](preview_plots.py) | Render the toolbox's figure families from a project tree without running a workflow. Being superseded by `scripts/render_figures.py`, which already owns WF0 and WF1 forcing figures. |
 | [`plotting_standalone_demo.py`](plotting_standalone_demo.py) | Prove the plotting core's portable boundary: render WF0 results under `python -I` from a copy of `blueearth_cst/plotting/` with only numpy and matplotlib. |
 | [`export_svg.py`](export_svg.py) | Lift an inline `<svg>` out of an HTML page into a standalone file. |

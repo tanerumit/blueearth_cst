@@ -199,7 +199,7 @@ exclude = ["*.md", "dev/scripts/console.py"]
 # missing annotations, implicit Any, and unknown member types across the whole
 # untyped stack). Stating it explicitly makes both report the same thing, and
 # keeps the signal to real errors rather than absent-typing noise. Measured on
-# blueearth_cst/shared/plot_map.py: "recommended" 75 errors + 287 warnings,
+# the former blueearth_cst/shared/plot_map.py: "recommended" 75 errors + 287 warnings,
 # "standard" 75 errors + 0 warnings.
 typeCheckingMode = "standard"
 

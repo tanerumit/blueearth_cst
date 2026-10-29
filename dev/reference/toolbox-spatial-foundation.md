@@ -48,7 +48,7 @@ copy of the geometry. Physical waterbody layers are clipped from catalog sources
 `spatial.products.clip_waterbodies`; the hydrological model keeps its own filtering and setup behavior.
 Empty layers and missing-source warnings follow that producer's implementation.
 
-`blueearth_cst/shared/plot_map.py` owns the map reader. Figure layout and export conventions belong in
+`blueearth_cst/shared/plot_spatial_maps.py` owns the map reader. Figure layout and export conventions belong in
 [plot style](toolbox-plot-style.md), rather than being repeated here.
 
 ## Verification entry points

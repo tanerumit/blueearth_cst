@@ -10,15 +10,15 @@ one visual family rather than ten unrelated pictures.
 the two halves are one deliverable rather than two that happen to share a
 folder. See its docstring.
 
-Three things live here and deliberately not in ``shared.cartographic_map``:
+Three things live here and deliberately not in the drawing code
+(``plotting/prepared_maps.py``) or the classifier (``shared/map_classes.py``):
 
 * the **layer registry** (:data:`SPATIAL_MAP_FIGURES`) — which variables get a
   figure, in what order, under what filename;
 * the **styles**, because they name data sources. The template's docstring says
   nothing in it knows what wflow is; by the same rule nothing in it should know
-  what SoilGrids or Copernicus are. ``RASTER_STYLES`` holds the source-neutral
-  quantities (elevation, precipitation, temperature, PET); a family tied to
-  specific products holds its own;
+  what SoilGrids or Copernicus are, so this family declares every style it
+  draws, elevation included;
 * the **class tables** for the nominal layers, taken from the source product's
   published legend where one exists.
 
@@ -85,7 +85,7 @@ from blueearth_cst.plotting.figure_captions import write_figure_captions
 #   * `raster_style` is pure Python -- it exists so the five module-level
 #     `RasterStyle` constants below cost nothing to declare;
 #   * `plot_style` is the page/typography contract, stdlib-only, and owns
-#     `RASTER_DPI` directly (`cartographic_map` merely re-exports it).
+#     `RASTER_DPI` directly.
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared.plot_style import RASTER_DPI
 from blueearth_cst.shared.raster_style import RasterStyle
@@ -799,10 +799,9 @@ def _unit_break(label):
 def _key_for(figure, layer):
     """The template key for one figure: ``MapClasses`` or a classified ``MapScale``.
 
-    Classes come from the legacy classifier until it moves out of
-    ``cartographic_map``: the spatial profile's settings, the diverging
-    midpoint resolved per raster, values beyond the outer breaks clipped into
-    the end classes (no extensions).
+    Classes come from ``shared/map_classes``: the diverging midpoint resolved
+    per raster, values beyond the outer breaks clipped into the end classes
+    (no extensions).
     """
     from matplotlib.colors import to_hex
 

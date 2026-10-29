@@ -56,10 +56,6 @@ def test_shared_contexts_apply_cycle_without_changing_process_defaults():
 
 def test_scientific_presets_are_preserved():
     from blueearth_cst.projections.projection_figures import SCENARIO_COLORS
-    from blueearth_cst.shared.cartographic_map import (
-        RASTER_STYLES,
-        TEMPERATURE_DIVERGING_PALETTE,
-    )
 
     assert SCENARIO_COLORS == {
         "ssp119": "#00a9cf",
@@ -72,12 +68,6 @@ def test_scientific_presets_are_preserved():
         "ssp370-lowNTCF": "#e61d25",
         "ssp585": "#980002",
     }
-    assert {key: RASTER_STYLES[key].palette for key in ("precip", "temp", "pet")} == {
-        "precip": "Blues",
-        "temp": "YlOrRd",
-        "pet": "Oranges",
-    }
-    assert TEMPERATURE_DIVERGING_PALETTE == "RdBu_r"
     assert colors.PRECIP_ANOMALY_COLORMAP == "BrBG"
     assert colors.HISTORICAL_MAP_COLORS == {
         "temp": {

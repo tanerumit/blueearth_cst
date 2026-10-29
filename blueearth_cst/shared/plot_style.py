@@ -11,45 +11,22 @@ and 600 dpi beside 300. This adapter exposes the defaults in
 **Scope: the page, not the picture.** What belongs here is anything that would
 be the same whether the figure is a map, a time series or a scatter — width,
 resolution, type sizes, font family, the rcParams every figure is drawn under.
-What does NOT belong here is anything a single figure family owns: the basin
-map's scale bar, north arrow and gauge labels stay in
-``shared/cartographic_map.py`` beside the code that draws them. The test is
-whether a second family would ever read the value, not whether it happens to
-be a font size.
+Anything a single figure family owns stays with that family: map feature
+geometry is ``Preset.maps`` (``config/plotting/style.yml`` ``maps``), drawn by
+``plotting/prepared_maps.py``. Move a constant here when a second family reads
+it, not in anticipation.
 
-**Moved by evidence, not by family.** The constants here are the ones a second
-consumer already imported (``RASTER_DPI``, ``FONT_SIZE_CAVEAT``,
-``COLOR_CAVEAT`` — all three were reached for by ``climate_figures.py`` during
-the 2026-08 map sweep) plus the page-level ones that are shared by nature.
-``FONT_SIZE_COLORBAR_LABEL`` / ``FONT_SIZE_COLORBAR_TICK`` were deliberately
-LEFT in ``cartographic_map``: both map families draw colourbars, but no
-non-map figure does, so promoting them would assert a sharing that does not
-exist yet. Move a constant here when a second family reads it, not in
-anticipation.
-
-Overriding
-----------
-``dev/scripts/preview_basin_map.py`` drives the basin map by rebinding names in
-``cartographic_map``'s module globals (``setattr``), so a value imported there
-from this module stays overridable: the drawing code looks the name up in its
-OWN globals and finds the rebound one.
-
-That property is why :func:`rcparams` takes every setting as an explicit
-argument defaulting to ``None`` rather than reading this module's globals
-directly. A function living here would read *this* module's copy, which no
-override touches — the value would appear to change and the figure would not,
-which is the exact failure mode a tuning knob must never have. Callers pass
-their own (rebindable) names in; see ``cartographic_map._publication_rc``.
-
-For the same reason, nothing here is assembled into a module-level constant.
-A constant snapshots its inputs at import.
+:func:`rcparams` resolves every argument against this module's constants inside
+its body rather than in its signature, so a value is read at call time, not
+frozen at import. For the same reason nothing here is assembled into a
+module-level constant.
 """
 
 from __future__ import annotations
 
 from cycler import cycler
 
-from blueearth_cst.shared.plot_colors import DEFAULT_COLOR_CYCLE, NEUTRAL_COLORS
+from blueearth_cst.shared.plot_colors import DEFAULT_COLOR_CYCLE
 from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
 
 # ===========================================================================
@@ -121,57 +98,6 @@ FONT_SIZE_CAVEAT = STYLE_SETTINGS["typography"]["caveat"]
 #: falls back SILENTLY.
 FONT_FAMILY = STYLE_SETTINGS["typography"]["family"]
 
-# ===========================================================================
-# COLOUR
-# ===========================================================================
-
-#: The caveat footnote's ink. Grey rather than black so it sits below the
-#: figure's own content in the reading order.
-COLOR_CAVEAT = NEUTRAL_COLORS["caveat"]
-
-#: Fallback x for a caveat footnote, in figure fractions.
-#:
-#: Used only when the plotting area cannot be measured — see
-#: :func:`align_caveat_to_plot_area`, which is what normally places it.
-CAVEAT_X = 0.012
-
-
-def align_caveat_to_plot_area(fig, ax) -> None:
-    """Flush the figure's footnote to the PLOTTING AREA's left edge.
-
-    LEFT-ALIGNED everywhere (owner ruling 2026-08-17), and aligned to the AXES
-    rather than to the sheet (refined the same day). ``supxlabel``'s default
-    centring puts the line under the axes midpoint — not an edge the reader can
-    see, and one that MOVES with the caveat's own length, so a one-line and a
-    two-line footnote sit differently on two figures of the same family.
-
-    The sheet's left edge was the first correction and it was still wrong: it
-    put the footnote under the y-axis LABEL and the tick numbers, so the text
-    started left of everything else on the figure and read as belonging to the
-    page rather than to the plot. The axes' left spine is the edge the data
-    already starts at, so the footnote lines up with the plot's own left margin.
-
-    Measured AFTER a settle pass, because constrained layout is still moving the
-    axes until then. It rewrites a ``supxlabel``'s Y on every subsequent draw
-    but carries the X through, so this survives the saves that follow.
-
-    Lives here rather than in either plotting module because BOTH families use
-    it: the series figures (``climate_analysis.climate_figures``) and the
-    cartographic template (``shared.cartographic_map``).
-    """
-    footnote = getattr(fig, "_supxlabel", None)
-    if footnote is None:
-        return
-    x = CAVEAT_X
-    if ax is not None:
-        try:
-            fig.draw_without_rendering()
-            x = float(ax.get_position().x0)
-        except Exception:  # noqa: BLE001 -- never break a figure over a footnote
-            x = CAVEAT_X
-    footnote.set_x(x)
-    footnote.set_horizontalalignment("left")
-
 
 # ===========================================================================
 # PDF TEXT ENCODING
@@ -217,10 +143,7 @@ def rcparams(
 
     Every argument defaults to ``None`` and is resolved against this module's
     constants inside the body — NOT in the signature, where the default would be
-    evaluated once at import and freeze the value. Callers whose own globals can
-    be rebound at runtime (``cartographic_map``, driven by
-    ``dev/scripts/preview_basin_map.py``) pass their names in explicitly so an
-    override actually reaches the figure.
+    evaluated once at import and freeze the value.
 
     ``axes_linewidth`` is left to the caller with no fallback of its own beyond
     matplotlib's, because line weight is picture-level rather than page-level:

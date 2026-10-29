@@ -841,7 +841,7 @@ def check_geographic_inputs(raster, layers, value_label=None, expected_units=Non
     }
     if wrong_crs:
         raise ValueError(
-            f"plot_basin_map needs every layer in EPSG:{REQUIRED_CRS_EPSG}; got "
+            f"Maps need every layer in EPSG:{REQUIRED_CRS_EPSG}; got "
             f"{wrong_crs}. Reproject with .to_crs(epsg={REQUIRED_CRS_EPSG}) first "
             "— the scale bar and the hillshade both convert degrees to metres."
         )

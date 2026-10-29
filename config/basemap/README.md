@@ -1,13 +1,13 @@
 # config/basemap/
 
 `natural_earth_50m.gpkg` — the only geographic data committed to this
-repository. It exists so the basin map's **locator inset** can say where in the
+repository. It exists so the overview maps' **locator inset** can say where in the
 world a basin is without a network call.
 
 ## Why it is here and not fetched
 
 The basin figure used to pull live satellite tiles at render time. That was
-removed (see `blueearth_cst/shared/plot_map.py`) because a network dependency
+removed because a network dependency
 inside WF1 is a licence question, a reproducibility question, and a failure
 mode on an offline machine. Cartopy's own `cartopy.feature.COASTLINE` has the
 same problem: it downloads Natural Earth on first use and caches it per user,
@@ -36,7 +36,7 @@ exception to the rule that real basin data lives outside the repository.
 | `places` | Point | 1251 | `name`, `pop_max`, `scalerank` |
 
 `scalerank` is Natural Earth's own prominence ranking, 0 being most prominent;
-`plot_map.py` filters on it so a locator does not fill with town names.
+`shared/map_classes.py` filters on it so a locator does not fill with town names.
 
 ## Rebuilding it
 

@@ -19,8 +19,9 @@ run already left behind, and calls the same plotting function the rule calls.
 
 Renders land in ``--out-dir`` (a gitignored scratch tree by default) and NEVER
 in a project's own ``plots/``: a preview must not be able to take the place of a
-run product that the baseline fingerprints. Same rule as
-``preview_basin_map.py``, which owns the basin map and is not duplicated here.
+run product that the baseline fingerprints. Map figures (WF0/WF1 climate maps
+and the rule 1.11 spatial set) are re-rendered by ``scripts/render_figures.py``
+and are not duplicated here.
 
 **Coverage is deliberately partial.** A family appears below only when its
 inputs can be rebuilt HONESTLY from a finished run. Three are excluded for
@@ -30,11 +31,8 @@ stated reasons rather than forgotten:
   repository by design (``config/templates/observations/`` holds header-only
   schemas). Passing simulated discharge as if it were observed would render a
   figure that looks right and means nothing.
-* the ``source_*`` / ``forcing_*`` climate maps come from
-  ``plot_climate_figures``, which wants a dataset assembled by its own rule
-  rather than a file on disk. Rebuilding that assembly here would duplicate the
-  rule's logic, and a preview that drifts from the rule is worse than no
-  preview.
+* the WF0 source and WF1 forcing climate figures, which
+  ``scripts/render_figures.py`` re-renders through their rules' own functions.
 * ``clim-year`` / ``clim-month`` were the per-subcatchment climate signatures.
   The consolidation retired that family along with its producer
   (``climate_analysis/subcatchment_climate.py``) and ``plot_clim``, so there is
@@ -151,7 +149,7 @@ def main(argv=None) -> int:
             print(f"  {status}  {name:<12} {desc}")
             if not path.exists():
                 print(f"{'':>13}needs {path.relative_to(project_dir)}")
-        print("\nBasin map has its own driver: dev/scripts/preview_basin_map.py")
+        print("\nMap figures: scripts/render_figures.py (wf0, wf1-forcing, spatial)")
         return 0
 
     unknown = [n for n in args.names if n not in RENDERERS]

@@ -168,7 +168,8 @@ Unknown experiments retain their literal labels and muted fallback color.
 Every geographic raster map (WF0 source and WF1 forcing climatologies, the WF1 spatial set, the basin
 map) follows one template, `blueearth_cst/plotting/prepared_maps.py`, adopted on 2026-10-29. The core
 draws supplied arrays and features with `Preset.maps` tokens; adapters prepare fields, classes, overlay
-linework and basemap features. `shared/cartographic_map.py` is legacy and is retired family by family.
+linework and basemap features; `shared/map_classes.py` classifies rasters and prepares relief and the locator.
+The legacy `shared/cartographic_map.py` was retired on 2026-10-29.
 
 | Element | Treatment |
 |---|---|

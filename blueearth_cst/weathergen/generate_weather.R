@@ -110,6 +110,18 @@ log_row("Generating ", historical_realizations_num,
 # defaulted TRUE. Setting evaluate.model: FALSE therefore did not stop the
 # plots, which is what the key claimed to do. It now governs BOTH the generation
 # figures and the evaluation ones, since the wrapper forwards it to each.
+# Read presentation tokens in this R process, after identity resolution.
+source("./blueearth_cst/weathergen/plot_style.R")
+if (!all(c("export_weather_plot", "style_weather_plot", "arrange_weather_panels") %in%
+         getNamespaceExports("weathergenr"))) {
+  stop("WF3 shared styling requires the weathergenr plotting interface ",
+       "(t2610241523c).")
+}
+save_weather_plots <- isTRUE(gw$save_plots)
+gw$return_plots <- save_weather_plots
+gw$save_plots <- FALSE
+gw$plot_style <- read_cst_weather_style()
+
 weathergen_run <- weathergenr::run_weather_generator(
     # The BASIN subset: this call decides WHICH DAYS get resampled, and that
     # decision should reflect the basin's climate, not the buffer's. The full
@@ -127,27 +139,9 @@ weathergen_run <- weathergenr::run_weather_generator(
 # directly before the swap.
 stochastic_weather <- weathergen_run$gen_output
 
-# Step 2b) Move the diagnostic figures into plots/. weathergenr writes figures
-# and products into ONE out_dir; the R07 layout separates them, so the split is
-# done here rather than by asking upstream for two output directories.
-#
-# Globbed by EXTENSION, not by a name list. The four generation figures were
-# named literally until the run_weather_generator swap (2026-08-12); the
-# evaluation pass that swap added builds its filenames dynamically, so there is
-# no list to extend -- and a name list silently leaves behind anything upstream
-# adds or renames. Everything that is not an image stays put: the two date CSVs
-# (sim_dates.csv, resampled_dates.csv) and the realization .nc files are
-# generator PRODUCTS and belong in output/.
-dir.create(weathergen_plots_path, recursive = TRUE, showWarnings = FALSE)
-weathergen_figures <- list.files(
-  weathergen_output_path, pattern = "[.](png|pdf)$", ignore.case = TRUE,
-  full.names = FALSE
-)
-log_row("Moving ", length(weathergen_figures),
-        " figure(s) to ", weathergen_plots_path)
-for (fig in weathergen_figures) {
-  file.rename(file.path(weathergen_output_path, fig),
-              file.path(weathergen_plots_path, fig))
+# Export diagnostics directly into the figure directory.
+if (save_weather_plots) {
+  export_cst_weather_plots(weathergen_run, weathergen_plots_path)
 }
 
 # STEP 3) Save each stochastic realization back to a netcdf file

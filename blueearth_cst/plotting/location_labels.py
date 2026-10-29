@@ -29,6 +29,28 @@ def _missing(value: Any) -> bool:
     return False
 
 
+#: Characters a long label may break after; a space is dropped at the break.
+_BREAKS = (" ", "_", "-")
+
+
+def wrap_label(text: str, width: int) -> str:
+    """Break a label longer than ``width`` characters onto two lines.
+
+    Breaks at the separator closest to the middle, keeping ``_``/``-`` at the end
+    of the first line so the name stays recoverable. A label without a separator
+    stays on one line rather than being split mid-word.
+    """
+    if len(text) <= width:
+        return text
+    middle = len(text) / 2
+    positions = [i for i, char in enumerate(text[1:-1], 1) if char in _BREAKS]
+    if not positions:
+        return text
+    cut = min(positions, key=lambda i: abs(i + 0.5 - middle))
+    first = text[:cut] if text[cut] == " " else text[: cut + 1]
+    return f"{first}\n{text[cut + 1 :]}"
+
+
 def location_label(properties: Mapping[str, Any], column="station_name") -> str:
     """Prefer the selected label, falling back to the Wflow ID for station names."""
     columns = (

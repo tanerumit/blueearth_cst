@@ -69,6 +69,8 @@ def load_style(path: Path | None = None) -> dict[str, Any]:
 #: The closed ``maps`` block: scalar pt sizes, pt lists, and the rest by name.
 _MAP_NUMBERS = (
     "river_width",
+    "river_halo_width",
+    "location_label_wrap",
     "basin_outline_width",
     "divide_width",
     "location_size",

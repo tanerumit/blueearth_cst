@@ -1031,7 +1031,7 @@ def test_climate_and_spatial_locations_prefer_names_with_id_fallback(name):
     try:
         carto._draw_points(ax, gauges, "red", "o", carto.GAUGE_LABEL_COLUMN)
         assert [text.get_text() for text in ax.texts] == [expected]
-        labels = _draw_overlays(ax, {"locations": list(gauges.iterfeatures())}, "mm")
+        labels = _draw_overlays(ax, {"locations": list(gauges.iterfeatures())})
         assert [label for _, _, label in labels] == [expected]
     finally:
         plt.close(fig)

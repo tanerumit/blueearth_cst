@@ -39,12 +39,31 @@ from blueearth_cst.shared.snake_utils import listed, log_row, plural
 
 
 def load_map_overlays(overlays):
-    """Load existing offline GeoJSON features in the adapter, never the core."""
-    return {
+    """Load existing offline GeoJSON features in the adapter, never the core.
+
+    Subbasin polygons become one merged ``divides`` linework: drawing each ring
+    dashed lays every shared edge down twice, and the interleaved dashes render
+    those edges solid.
+    """
+    features = {
         key: json.loads(Path(path).read_text(encoding="utf-8"))["features"]
         for key, path in (overlays or {}).items()
         if Path(path).is_file()
     }
+    subbasins = features.pop("subbasins", [])
+    if subbasins:
+        from shapely import line_merge, union_all
+        from shapely.geometry import mapping, shape
+
+        rings = union_all([shape(f["geometry"]).boundary for f in subbasins])
+        features["divides"] = [
+            {
+                "type": "Feature",
+                "geometry": mapping(line_merge(rings)),
+                "properties": {},
+            }
+        ]
+    return features
 
 
 def prepared_map(

@@ -1,9 +1,13 @@
 """Draw prepared geographic rasters without workflow IO or scientific preparation.
 
+The map template (``dev/reference/toolbox-plot-style.md``, Spatial map template).
 The caller supplies common frame, ticks, resolved colors and loaded GeoJSON
-features, and owns style context, captions, backend selection and export.
+features (``basins``, ``divides``, ``rivers``, ``locations``), and owns style
+context, captions, backend selection and export. Feature styling comes from the
+active preset's ``maps`` tokens.
 """
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -19,7 +23,14 @@ from matplotlib.ticker import FuncFormatter
 from matplotlib.transforms import Bbox
 from numpy.typing import NDArray
 
-from blueearth_cst.plotting.location_labels import location_label
+from blueearth_cst.plotting.fundamentals import style_colourbar
+from blueearth_cst.plotting.location_labels import location_label, wrap_label
+from blueearth_cst.plotting.preset import active
+
+#: Stream-order attribute names, in lookup order (hydromt spells it ``strord``).
+RIVER_ORDER_KEYS = ("order", "strord")
+#: Kilometres per degree of latitude; longitude scales by cos(latitude).
+KM_PER_DEGREE = 111.32
 
 
 @dataclass(frozen=True)
@@ -170,57 +181,156 @@ def _geometry_lines(geometry: Mapping[str, Any]) -> Sequence[Any]:
     return coordinates if kind == "MultiLineString" else []
 
 
+def _river_order(properties: Mapping[str, Any]) -> float | None:
+    for key in RIVER_ORDER_KEYS:
+        value = properties.get(key)
+        if isinstance(value, (int, float)) and math.isfinite(value):
+            return float(value)
+    return None
+
+
+def _draw_rivers(ax: Axes, rivers: Sequence[Mapping[str, Any]]) -> None:
+    """Blue reaches stepped by stream order; thin reaches first, round joins.
+
+    The layer's lowest order takes the first step and orders past the last
+    step reuse it. A layer without an order attribute draws one uniform weight.
+    """
+    maps = active().maps
+    orders = [_river_order(f.get("properties") or {}) for f in rivers]
+    known = [order for order in orders if order is not None]
+    lowest = min(known) if known else 0.0
+    steps = maps["river_order"]
+    styled = []
+    for feature, order in zip(rivers, orders):
+        if order is None:
+            width, color = maps["river_width"], maps["river"]
+        else:
+            width, color = steps[min(max(int(order - lowest), 0), len(steps) - 1)]
+        styled.append((width, color, feature))
+    # A thin white halo keeps reaches legible over any ramp, blue ones included.
+    halo = maps["halo"]
+    for width, color, feature in sorted(styled, key=lambda item: item[0]):
+        for coordinates in _geometry_lines(feature["geometry"]):
+            points = np.asarray(coordinates)
+            ax.plot(
+                points[:, 0],
+                points[:, 1],
+                color=color,
+                lw=width,
+                solid_capstyle="round",
+                solid_joinstyle="round",
+                zorder=3,
+                path_effects=[
+                    Stroke(
+                        linewidth=width + maps["river_halo_width"],
+                        foreground=halo,
+                        capstyle="round",
+                        joinstyle="round",
+                    ),
+                    Normal(),
+                ],
+            )
+
+
 def _draw_overlays(
-    ax: Axes,
-    overlays: Mapping[str, Sequence[Mapping[str, Any]]],
-    units: str,
+    ax: Axes, overlays: Mapping[str, Sequence[Mapping[str, Any]]]
 ) -> list[tuple[float, float, str]]:
-    labels = []
-    marker_color = "#007c83" if units == "degC" else "#c51b7d"
-    for key in ("subbasins", "rivers", "basins", "locations"):
+    """Draw rivers, divides, the basin outline and locations; return labels."""
+    maps = active().maps
+    halo = maps["halo"]
+    _draw_rivers(ax, overlays.get("rivers", []))
+    for key, color, width, dashes, zorder in (
+        ("divides", maps["divide"], maps["divide_width"], maps["divide_dash"], 4),
+        ("basins", maps["basin_outline"], maps["basin_outline_width"], None, 4.5),
+    ):
         for feature in overlays.get(key, []):
-            geometry = feature["geometry"]
-            if geometry["type"] == "Point":
-                x, y = geometry["coordinates"][:2]
-                ax.plot(
-                    x,
-                    y,
-                    "o",
-                    color=marker_color,
-                    mec="white",
-                    mew=0.9,
-                    ms=5.5,
-                    zorder=5,
-                )
-                properties = feature["properties"]
-                label = location_label(properties)
-                if label:
-                    labels.append((x, y, label))
-            for coordinates in _geometry_lines(geometry):
+            for coordinates in _geometry_lines(feature["geometry"]):
                 points = np.asarray(coordinates)
                 (artist,) = ax.plot(
-                    points[:, 0],
-                    points[:, 1],
-                    color="black",
-                    lw=1.3 if key == "basins" else 0.65,
-                    ls="--" if key == "subbasins" else "-",
+                    points[:, 0], points[:, 1], color=color, lw=width, zorder=zorder
                 )
+                if dashes is not None:
+                    artist.set_dashes(dashes)
                 artist.set_path_effects(
-                    [
-                        Stroke(
-                            linewidth=2.1 if key == "basins" else 1.2,
-                            foreground="white",
-                        ),
-                        Normal(),
-                    ]
+                    [Stroke(linewidth=width + 1.0, foreground=halo), Normal()]
                 )
+    labels = []
+    for feature in overlays.get("locations", []):
+        geometry = feature["geometry"]
+        if geometry["type"] != "Point":
+            continue
+        x, y = geometry["coordinates"][:2]
+        ax.plot(
+            x,
+            y,
+            maps["location_marker"],
+            color=maps["location"],
+            mec=maps["marker_edge"],
+            mew=0.6,
+            ms=maps["location_size"],
+            zorder=5,
+        )
+        label = location_label(feature.get("properties") or {})
+        if label:
+            labels.append((x, y, label))
     return labels
+
+
+def _nice_length(target_km: float) -> float:
+    """The largest 1/2/2.5/5 x 10^k kilometres not above ``target_km``."""
+    exponent = math.floor(math.log10(target_km))
+    for step in (5, 2.5, 2, 1):
+        if step * 10**exponent <= target_km:
+            return step * 10**exponent
+    return 10 ** (exponent - 1) * 5
+
+
+def _draw_scale_bar(ax: Axes, frame: MapFrame) -> None:
+    """Alternating kilometre segments in the lower left, latitude-corrected."""
+    maps = active().maps
+    preset = active()
+    west, east, south, north = frame.extent
+    km_per_degree = KM_PER_DEGREE * math.cos(math.radians((south + north) / 2))
+    length_km = _nice_length(0.25 * (east - west) * km_per_degree)
+    segments = maps["scale_bar_segments"]
+    length = length_km / km_per_degree
+    x0 = west + 0.04 * (east - west)
+    y0 = south + 0.05 * (north - south)
+    height = 0.012 * (north - south)
+    ink = preset.colors["ink"]
+    for index in range(segments):
+        ax.add_patch(
+            Rectangle(
+                (x0 + index * length / segments, y0),
+                length / segments,
+                height,
+                facecolor=ink if index % 2 == 0 else "white",
+                edgecolor=ink,
+                linewidth=0.5,
+                zorder=6,
+            )
+        )
+    halo = [Stroke(linewidth=2.0, foreground=maps["halo"]), Normal()]
+    for step in (0, segments // 2, segments):
+        value = length_km * step / segments
+        ax.text(
+            x0 + length * step / segments,
+            y0 + height + 0.01 * (north - south),
+            f"{value:g} km" if step == segments else f"{value:g}",
+            ha="center",
+            va="bottom",
+            fontsize=preset.fonts["tick"],
+            color=ink,
+            zorder=6,
+            path_effects=halo,
+        )
 
 
 def _place_point_labels(
     fig: Figure, ax: Axes, labels: Sequence[tuple[float, float, str]]
 ) -> None:
-    """Preserve existing in-frame offset placement without changing map layout."""
+    """Haloed, optionally two-line labels at the clearest in-frame offset."""
+    maps = active().maps
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     radius = 4 * fig.dpi / 72
@@ -250,37 +360,37 @@ def _place_point_labels(
         ):
             continue
         text = ax.annotate(
-            label,
+            wrap_label(label, maps["location_label_wrap"]),
             (x, y),
             xytext=(8, 8),
             textcoords="offset points",
-            fontsize=7,
+            fontsize=maps["location_label_size"],
             fontweight="bold",
-            color="#222222",
+            color=active().colors["ink"],
             zorder=6,
-            bbox={
-                "boxstyle": "round,pad=0.18",
-                "fc": "white",
-                "ec": "#777777",
-                "lw": 0.35,
-                "alpha": 0.95,
-            },
+            path_effects=[Stroke(linewidth=2.2, foreground=maps["halo"]), Normal()],
             arrowprops={
                 "arrowstyle": "-",
-                "color": "#444444",
-                "lw": 0.55,
+                "color": active().colors["muted"],
+                "lw": 0.5,
+                "shrinkA": 1.5,
                 "shrinkB": 4,
+                "path_effects": [
+                    Stroke(linewidth=1.5, foreground=maps["halo"]),
+                    Normal(),
+                ],
             },
         )
         text.set_in_layout(False)
         options = []
         for dx, dy in candidates:
             text.set_position((dx, dy))
-            text.set_ha("left" if dx > 0 else "right" if dx < 0 else "center")
+            align = "left" if dx > 0 else "right" if dx < 0 else "center"
+            text.set_ha(align)
+            text.set_multialignment(align)
             text.set_va("bottom" if dy > 0 else "top" if dy < 0 else "center")
             text.update_positions(renderer)
-            text.update_bbox_position_size(renderer)
-            box = text.get_bbox_patch().get_window_extent(renderer).expanded(1.08, 1.15)
+            box = text.get_window_extent(renderer).expanded(1.08, 1.15)
             outside = not (
                 ax.bbox.contains(box.x0, box.y0) and ax.bbox.contains(box.x1, box.y1)
             )
@@ -288,7 +398,9 @@ def _place_point_labels(
             options.append((score, dx, dy, box))
         _, dx, dy, box = min(options, key=lambda option: option[0])
         text.set_position((dx, dy))
-        text.set_ha("left" if dx > 0 else "right" if dx < 0 else "center")
+        align = "left" if dx > 0 else "right" if dx < 0 else "center"
+        text.set_ha(align)
+        text.set_multialignment(align)
         text.set_va("bottom" if dy > 0 else "top" if dy < 0 else "center")
         occupied.append(box)
 
@@ -361,7 +473,7 @@ def draw_raster_map(
             edgecolors="none",
             linewidth=0,
         )
-    labels = _draw_overlays(ax, overlays, scale.units)
+    labels = _draw_overlays(ax, overlays)
     west, east, south, north = frame.extent
     ax.set_xlim(west, east)
     ax.set_ylim(south, north)
@@ -374,6 +486,7 @@ def draw_raster_map(
     ax.xaxis.set_major_formatter(formatter)
     ax.yaxis.set_major_formatter(formatter)
     ax.grid(color="#777777", alpha=0.15, linewidth=0.4)
+    _draw_scale_bar(ax, frame)
     if scale.status == "available":
         # Placed in the map axes' own fractions rather than through
         # ``fig.colorbar(ax=ax)``: the locked aspect leaves the axes shorter than
@@ -391,6 +504,6 @@ def draw_raster_map(
         )
         if colorbar_title is None:
             colorbar_title = "(°C)" if scale.units == "degC" else "(mm yr⁻¹)"
-        colorbar.ax.set_title(colorbar_title, fontsize=6, pad=10)
+        style_colourbar(colorbar, colorbar_title)
     _place_point_labels(fig, ax, labels)
     return fig

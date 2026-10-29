@@ -173,9 +173,10 @@ linework and basemap features. `shared/cartographic_map.py` is legacy and is ret
 | Element | Treatment |
 |---|---|
 | Coordinates | Plain axes, aspect `1/cos(mid-latitude)`; numeric signed ticks; `Longitude (°)` / `Latitude (°)`. |
-| Rivers | Blue, width and shade stepped by stream order, lowest order first, thin reaches drawn first. |
+| Rivers | Blue, width and shade stepped by stream order, thin reaches first, thin white halo. |
 | Basin and divides | Black basin outline over dashed divides; divides merged so shared edges draw once. |
-| Locations | Purple diamonds with boxed station-name labels, placed to avoid overlaps and the frame. |
+| Locations | Purple diamonds; bold station names with a white halo, no box, placed clear of overlaps and the frame. |
+| Long names | Wrap to two lines at the separator nearest the middle (`maps.location_label_wrap` characters). |
 | Furniture | Scale bar (km, latitude-corrected) on every map; no north arrow; locator only on overview maps. |
 | Keys | Side panel, bottom-aligned with the frame: colourbar or class legend, title above, never on the map. |
 | Source credit | In the caption, never a footnote on the figure. |

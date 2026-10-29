@@ -12,7 +12,6 @@ from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis import diagnostics as dg
 from blueearth_cst.climate_analysis.diagnostic_render import (
     MAP_QUANTITIES,
-    eligible_years,
     load_map_overlays,
     prepared_map,
 )
@@ -211,7 +210,7 @@ def render_forcing_figures(
             with use_preset(CST_PRESET):
                 if kind == "map":
                     field = fields[variable]
-                    fig, map_info, map_encoding = prepared_map(
+                    fig, map_info, map_notes = prepared_map(
                         field,
                         fields[f"{variable}_valid_years"],
                         reference,
@@ -227,14 +226,9 @@ def render_forcing_figures(
                         "max_missing_days_year": max_year,
                     }
                     map_text = map_caption(
-                        f"{MAP_QUANTITIES[variable]} in the Wflow model forcing on the model grid, "
-                        f"reporting years {years[0]}–{years[-1]}"
-                        + eligible_years(map_info["eligible_year_counts"]),
-                        map_encoding,
-                        [
-                            "The forcing includes the model build's regridding, temperature "
-                            "correction and PET derivation"
-                        ],
+                        f"{MAP_QUANTITIES[variable]} in the Wflow model forcing, after the "
+                        f"model build's regridding and corrections, {years[0]}–{years[-1]}",
+                        notes=map_notes,
                     )
                     available = bool(map_info["finite_cells"])
                 elif kind == "annual":

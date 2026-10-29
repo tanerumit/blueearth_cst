@@ -27,7 +27,6 @@ from blueearth_cst.shared.map_frames import (
     basin_frame,
     map_caption,
     overlay_features,
-    overlay_sentence,
 )
 from blueearth_cst.shared.map_reference import (
     drawing_frame,
@@ -59,14 +58,6 @@ MAP_QUANTITIES = {
     "temp": "Mean annual temperature (°C)",
     "pet": "Mean annual potential evapotranspiration (PET, mm yr⁻¹)",
 }
-
-
-def eligible_years(counts) -> str:
-    """``"; N eligible years per cell"`` from a ``[min, max]`` pair, or ``""``."""
-    if not counts:
-        return ""
-    low, high = counts
-    return f"; {low if low == high else f'{low}–{high}'} eligible years per cell"
 
 
 def prepared_map(
@@ -138,30 +129,19 @@ def prepared_map(
         "strict_over_cells": above,
         "scale_status": scale["status"],
     }
-    # Caption encoding sentences (map_frames.map_caption); support counts,
-    # periods and thresholds stay in ``info``.
-    if boundaries:
-        encoding = [
-            "Colour classes are shared across the historical climate maps and do not imply "
-            "equal periods or methods"
-        ]
-        if below or above:
-            encoding.append(
-                f"{below} cells fall below and {above} above the colour scale"
-            )
-    else:
-        encoding = [
+    # Caption notes (map_frames.map_caption), only when they apply; support
+    # counts, periods and thresholds stay in ``info``.
+    notes = []
+    if not boundaries:
+        notes.append(
             f"No historical colour scale is available ({scale['reason']}); "
             "cells with values are hatched"
-        ]
+        )
+    elif below or above:
+        notes.append(f"{below} cells fall below and {above} above the colour scale")
     if not info["displayed_cells"]:
-        encoding.append("No source cells intersect the map")
-    if info["unavailable_cells"]:
-        encoding.append("Gray cells have no valid annual climatology")
-    if mask is not None:
-        encoding.append("Areas outside the model basin are white")
-    encoding.append(overlay_sentence(overlays))
-    return fig, info, encoding
+        notes.append("No source cells intersect the map")
+    return fig, info, notes
 
 
 def load_result(root, source):
@@ -351,7 +331,7 @@ def render(
                 variable = form.removeprefix("map-")
                 field = retained[variable]
                 counts = retained[f"{variable}_valid_years"]
-                fig, map_info, encoding = prepared_map(
+                fig, map_info, notes = prepared_map(
                     field, counts, reference, variable, features
                 )
                 map_info["preparation_id"] = retained.attrs["map_preparation_id"]
@@ -364,28 +344,23 @@ def render(
                 map_info["source_role"] = reference["identity"]["source_preparations"][
                     sources[0]
                 ]["preparation_identity"]["role"]
-                caveats = []
                 if (
                     variable == "pet"
                     and map_info["source_role"] == "temperature-carrier"
                 ):
-                    caveats.append(
+                    notes.append(
                         "PET is derived on the source grid (de Bruin) and can differ from model PET"
                     )
                 elif (
                     variable in {"temp", "pet"}
                     and map_info["source_role"] == "precipitation-only"
                 ):
-                    caveats.append(
-                        "This auxiliary field does not set the colour classes"
-                    )
+                    notes.append("This auxiliary field does not set the colour classes")
                 text = map_caption(
                     f"{MAP_QUANTITIES[variable]} on the {view.labels[sources[0]]} native grid, "
-                    f"reporting years {period[0]}–{period[1]}"
-                    + eligible_years(map_info["eligible_year_counts"]),
-                    encoding,
-                    caveats,
+                    f"{period[0]}–{period[1]},",
                     sources[0],
+                    notes,
                 )
                 if not map_info["displayed_cells"]:
                     availability = "not displayed: native support does not intersect the displayed frame"

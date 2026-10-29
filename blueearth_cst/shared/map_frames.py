@@ -35,43 +35,21 @@ SOURCE_CREDITS = {
     "chirps_global": "CHIRPS v2.0 (Funk et al., 2015)",
 }
 
-#: Overlay keys in the order the context sentence names them.
-_OVERLAY_NAMES = (
-    ("basins", "basin boundary"),
-    ("divides", "subbasin divides"),
-    ("rivers", "rivers"),
-    ("locations", "gauges"),
-)
 
+def map_caption(lead: str, source: str | None = None, notes: Sequence[str] = ()) -> str:
+    """Every map caption: one sentence, plus one per ``note`` that is needed.
 
-def map_caption(
-    lead: str,
-    encoding: Sequence[str] = (),
-    caveats: Sequence[str] = (),
-    source: str | None = None,
-) -> str:
-    """The one map caption skeleton: what is shown, how it is drawn, caveats, credit.
-
-    ``lead`` names the quantity, units, grid and period; ``encoding`` explains
-    colours, gray and white cells and overlays; ``caveats`` hold material
-    differences only. Support counts and thresholds stay in the metadata.
+    ``lead`` names the quantity with units (and grid and period where they
+    apply); the product credit follows as "from <product>". ``notes`` carry
+    only material, map-specific facts; the key and overlays explain the rest,
+    and support counts and thresholds stay in the metadata. An unmapped source
+    falls back to its catalog key: "from vito" reads badly, but a figure that
+    silently loses its attribution is worse.
     """
-    parts = [lead, *encoding, *caveats]
-    if source:
-        parts.append(f"Source: {SOURCE_CREDITS.get(source, source)}")
+    text = f"{lead} from {SOURCE_CREDITS.get(source, source)}" if source else lead
     return " ".join(
-        part if part.endswith(".") else f"{part}." for part in parts if part
+        part if part.endswith(".") else f"{part}." for part in (text, *notes) if part
     )
-
-
-def overlay_sentence(overlays: Mapping[str, Sequence[Any]]) -> str:
-    """Name the drawn context layers, or ``""`` when none are drawn."""
-    names = [name for key, name in _OVERLAY_NAMES if overlays.get(key)]
-    if not names:
-        return ""
-    if len(names) == 1:
-        return f"The {names[0]} gives spatial context"
-    return f"The {', '.join(names[:-1])} and {names[-1]} give spatial context"
 
 
 def frame_from_extent(extent: Sequence[float]) -> MapFrame:

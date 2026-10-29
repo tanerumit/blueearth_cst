@@ -779,17 +779,10 @@ def _caption_lead(title, style):
 
 
 def _spatial_caption(lead, layer, note=None):
-    """One sentence: the quantity, its product credit and an optional ``note``.
+    """The shared one-sentence map caption for a spatial layer."""
+    from blueearth_cst.shared.map_frames import map_caption
 
-    The key and the drawn overlays explain themselves on these maps. The credit
-    falls back to the catalog key when unmapped: "from vito" reads badly, but a
-    figure that silently loses its attribution is worse.
-    """
-    from blueearth_cst.shared.map_frames import SOURCE_CREDITS
-
-    source = layer.attrs.get("source")
-    text = f"{lead} from {SOURCE_CREDITS.get(source, source)}" if source else lead
-    return f"{text}; {note}." if note else f"{text}."
+    return map_caption(lead, layer.attrs.get("source"), [note] if note else [])
 
 
 def _unit_break(label):
@@ -1141,7 +1134,7 @@ def plot_spatial_maps(
             else []
         )
         note = (
-            f"classes under {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn but not listed ("
+            f"Classes under {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn but not listed ("
             + ", ".join(label.replace("\n", " ") for label in unkeyed)
             + ")"
             if unkeyed

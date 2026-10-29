@@ -20,7 +20,7 @@ import pytest
 import xarray as xr
 
 from blueearth_cst.shared import plot_spatial_maps as family
-from blueearth_cst.shared.map_frames import map_caption, overlay_sentence
+from blueearth_cst.shared.map_frames import map_caption
 from blueearth_cst.shared.raster_style import RasterStyle
 
 
@@ -211,10 +211,8 @@ def _layer(source):
 
 def test_the_caption_credits_the_product_not_the_catalog_key():
     """ "vito" is our plumbing; a figure credits Copernicus."""
-    assert map_caption("Lead", source="soilgrids") == (
-        "Lead. Source: SoilGrids (ISRIC, 2017)."
-    )
-    assert "Copernicus" in map_caption("Lead", source="vito")
+    assert map_caption("Lead", "soilgrids") == "Lead from SoilGrids (ISRIC, 2017)."
+    assert "Copernicus" in map_caption("Lead", "vito")
 
 
 def test_every_source_the_maps_can_meet_has_a_credit():
@@ -228,33 +226,23 @@ def test_every_source_the_maps_can_meet_has_a_credit():
         "era5",
         "chirps",
     ):
-        assert f"Source: {key}." not in map_caption("Lead", source=key)
+        assert f"from {key}." not in map_caption("Lead", key)
 
 
 def test_an_unmapped_source_still_gets_a_line():
     """Ugly and visible beats silently unattributed -- the first gets fixed."""
-    assert map_caption("Lead", source="some_new_catalog_entry") == (
-        "Lead. Source: some_new_catalog_entry."
+    assert map_caption("Lead", "some_new_catalog_entry") == (
+        "Lead from some_new_catalog_entry."
     )
 
 
-def test_a_spatial_caption_is_one_sentence_with_its_credit():
+def test_a_map_caption_is_one_sentence_plus_needed_notes():
     assert family._spatial_caption("Basin topsoil pH (H₂O)", _layer("soilgrids")) == (
         "Basin topsoil pH (H₂O) from SoilGrids (ISRIC, 2017)."
     )
-    assert family._spatial_caption("Land cover", _layer("vito"), "note").endswith(
-        "; note."
-    )
     unsourced = xr.DataArray(np.zeros((2, 2)), dims=("y", "x"))
-    assert family._spatial_caption("Lead", unsourced) == "Lead."
-
-
-def test_the_caption_orders_its_parts_and_skips_empty_ones():
-    assert map_caption("Lead", ["Colours.", ""], ["Caveat"]) == "Lead. Colours. Caveat."
-    assert overlay_sentence({"basins": [1], "rivers": [1]}) == (
-        "The basin boundary and rivers give spatial context"
-    )
-    assert overlay_sentence({}) == ""
+    assert family._spatial_caption("Lead", unsourced, "A note") == "Lead. A note."
+    assert map_caption("Lead", notes=["", "Caveat."]) == "Lead. Caveat."
 
 
 # --- layer preparation --------------------------------------------------------

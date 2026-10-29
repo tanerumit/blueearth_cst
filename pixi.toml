@@ -9,10 +9,8 @@ platforms = ["win-64", "linux-64"]
 [dependencies]
 python = ">=3.12,<3.13"
 pip = "*"
-cartopy = "*"
 dask = "*"          # used directly via dask.diagnostics in extract/get_stats scripts
 dvc = "*"
-descartes = "*"
 gcsfs = ">=2023.12.1"
 gdal = ">=3.1"
 geopandas = ">=0.10"

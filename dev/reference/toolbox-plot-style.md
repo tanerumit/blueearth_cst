@@ -433,7 +433,7 @@ in this visual review.
 - Explicit-figure export without workflow logging: `blueearth_cst/plotting/export.py`.
 - Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
 - WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
-- Legacy cartographic/evaluation preset and runtime overrides: `blueearth_cst/shared/plot_style.py`.
+- Page, typography and export constants for the evaluation sheets: `blueearth_cst/shared/plot_style.py`.
 - Geographic raster maps (WF0 source, WF1 forcing, WF1 spatial set): drawn by
   `blueearth_cst/plotting/prepared_maps.py`; frames, grid edges and overlay features prepared by
   `shared/map_frames.py`; climate fields by `climate_analysis/diagnostic_maps.py`; spatial keys and the

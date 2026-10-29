@@ -33,15 +33,27 @@ def overlay_paths(project_dir: str | Path) -> dict[str, str]:
     return {key: str(geoms / f"{key}.geojson") for key in OVERLAY_LAYERS}
 
 
-def source_stores(project_dir: str | Path) -> dict[str, Path]:
-    """``{source: store_dir}`` for every source with retained WF0 diagnostics."""
+def source_stores(project_dir: str | Path, reference: dict) -> dict[str, Path]:
+    """``{source: store_dir}`` for the run's candidate sources, in reference order.
+
+    Candidates come from the reference, not from whatever folders exist: an
+    orphaned store from an earlier period would otherwise join the pooled
+    anomaly bounds silently. Two stores claiming one source is an error.
+    """
     historical = Path(project_dir) / "data" / "climate" / "historical"
+    candidates = [entry["source"] for entry in reference["identity"]["sources"]]
     stores = {}
     for metadata in sorted(historical.glob("*/_engine/diagnostics.json")):
         sources = json.loads(metadata.read_text(encoding="utf-8"))["sources"]
-        if len(sources) == 1:  # the comparison folder lists several
-            stores[sources[0]] = metadata.parents[1]
-    return stores
+        if len(sources) != 1 or sources[0] not in candidates:
+            continue  # the comparison folder, or a store this run did not use
+        if sources[0] in stores:
+            raise ValueError(
+                f"Two stores hold {sources[0]} diagnostics: {stores[sources[0]]} "
+                f"and {metadata.parents[1]}; remove the orphan or re-run WF0"
+            )
+        stores[sources[0]] = metadata.parents[1]
+    return {source: stores[source] for source in candidates if source in stores}
 
 
 def rerender_sources(
@@ -56,7 +68,8 @@ def rerender_sources(
     retained diagnostics, rather than rendering a partial set silently.
     """
     project_dir, out_dir = Path(project_dir), Path(out_dir)
-    stores = source_stores(project_dir)
+    reference = load_retained_reference(project_dir)
+    stores = source_stores(project_dir, reference)
     if not stores:
         raise FileNotFoundError(f"{project_dir}: no retained WF0 source diagnostics")
     missing = sorted(set(sources or ()) - set(stores))
@@ -64,7 +77,6 @@ def rerender_sources(
         raise ValueError(
             f"No retained WF0 diagnostics for {missing}; available: {sorted(stores)}"
         )
-    reference = load_retained_reference(project_dir)
     pooled_roots = [str(store) for store in stores.values()]
     written = {}
     for source in sources or list(stores):

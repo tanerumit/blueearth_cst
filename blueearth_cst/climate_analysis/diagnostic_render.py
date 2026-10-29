@@ -82,19 +82,14 @@ def prepared_map(
     positive = counts.values[finite]
     eligible = [int(positive.min()), int(positive.max())] if positive.size else None
     x, y = field_edges(field)
+    label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
     fig = draw_raster_map(
         RasterMap(field.values, x, y, inside=mask, cell_edges=cell_edges),
         frame,
         drawing_scale(reference, variable),
         overlays,
+        colorbar_title=f"{label}\n{'(°C)' if variable == 'temp' else '(mm yr⁻¹)'}",
     )
-    if scale["status"] == "available":
-        label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
-        fig.axes[-1].set_title(
-            f"{label}\n{'(°C)' if variable == 'temp' else '(mm yr⁻¹)'}",
-            fontsize=6,
-            pad=10,
-        )
     info = {
         "reference_id": reference["reference_id"],
         "reference_path": "data/climate/historical/_engine/map_reference.json",

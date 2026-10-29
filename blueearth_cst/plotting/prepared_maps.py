@@ -298,12 +298,14 @@ def draw_raster_map(
     frame: MapFrame,
     scale: MapScale,
     overlays: Mapping[str, Sequence[Mapping[str, Any]]],
+    colorbar_title: str | None = None,
 ) -> Figure:
     """Draw supplied classes or honest unscaled hatching; never change input arrays.
 
     Available scales always show both rectangular colorbar extensions. Finite
     unscaled cells receive neutral hatching; missing cells stay gray and cells
     outside ``inside`` stay white. Geographic grids use the supplied ticks/aspect.
+    ``colorbar_title`` defaults to the scale's units.
     """
     _validate(raster, frame, scale)
     fig, ax = plt.subplots(figsize=(180 / 25.4, 113 / 25.4), layout="constrained")
@@ -373,18 +375,22 @@ def draw_raster_map(
     ax.yaxis.set_major_formatter(formatter)
     ax.grid(color="#777777", alpha=0.15, linewidth=0.4)
     if scale.status == "available":
+        # Placed in the map axes' own fractions rather than through
+        # ``fig.colorbar(ax=ax)``: the locked aspect leaves the axes shorter than
+        # its layout cell, so a cell-anchored bar overhangs the frame bottom.
+        # Width keeps matplotlib's default 20:1 bar in physical units.
+        height = 0.7
+        axes_ratio = frame.aspect * (north - south) / (east - west)
+        cax = ax.inset_axes((1.03, 0.0, height / 20 * axes_ratio, height))
         colorbar = fig.colorbar(
             mesh,
-            ax=ax,
-            shrink=0.48,
-            pad=0.03,
-            anchor=(0, 0),
+            cax=cax,
             ticks=scale.ticks,
             extend="both",
             extendrect=True,
         )
-        colorbar.ax.set_title(
-            "(°C)" if scale.units == "degC" else "(mm yr⁻¹)", fontsize=6, pad=10
-        )
+        if colorbar_title is None:
+            colorbar_title = "(°C)" if scale.units == "degC" else "(mm yr⁻¹)"
+        colorbar.ax.set_title(colorbar_title, fontsize=6, pad=10)
     _place_point_labels(fig, ax, labels)
     return fig

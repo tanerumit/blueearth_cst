@@ -8,7 +8,12 @@ comparison page when the interactive browser tool is unavailable:
         --out .tmp/tasks/<id>/figure-review/captures
 
 Writes one PNG per ``--width`` and exits non-zero when the page logs an error or
-an image fails to load.
+an image fails to load. ``--select SELECTOR=VALUE`` and ``--click SELECTOR``
+(both repeatable, applied selects first, then clicks in order) put the page in a
+state before capture, for example a figure with captions shown:
+
+    ... --select "#choice=3" --click "#view-options summary" --click "#captions" \
+        --click h1 --name chirps-captions
 """
 
 from __future__ import annotations
@@ -30,6 +35,13 @@ def main() -> int:
     parser.add_argument(
         "--wait-ms", type=int, default=1500, help="settle time after load"
     )
+    parser.add_argument(
+        "--select", action="append", default=[], help="SELECTOR=VALUE to choose"
+    )
+    parser.add_argument(
+        "--click", action="append", default=[], help="SELECTOR to click, in order"
+    )
+    parser.add_argument("--name", default="page", help="capture file-name prefix")
     args = parser.parse_args()
 
     args.out.mkdir(parents=True, exist_ok=True)
@@ -64,12 +76,20 @@ def main() -> int:
             )
             page.goto(args.url, wait_until="networkidle")
             page.wait_for_timeout(args.wait_ms)
+            if args.select or args.click:
+                for choice in args.select:
+                    selector, _, value = choice.partition("=")
+                    page.select_option(selector, value)
+                for selector in args.click:
+                    page.click(selector)
+                page.wait_for_load_state("networkidle")
+                page.wait_for_timeout(args.wait_ms)
             broken = page.evaluate(
                 "[...document.images].filter(i => i.src && !i.naturalWidth)"
                 ".map(i => i.src)"
             )
             problems += [f"image not loaded: {src}" for src in broken]
-            target = args.out / f"page-{width}px.png"
+            target = args.out / f"{args.name}-{width}px.png"
             page.screenshot(path=target, full_page=True)
             print(target)
             page.close()

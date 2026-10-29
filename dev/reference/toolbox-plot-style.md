@@ -383,11 +383,16 @@ in this visual review.
 - Below the figures, display `Path:` followed on a new line by the original figure's parent directory.
   Keep the full selected file path in the page data so the source remains identifiable. Compact keyboard
   hints and collapsible control help may follow the path.
-- Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
-  applicable plots, and render all affected callers when a shared figure helper changes.
-- Keep figure-specific tests and plotting-only probes temporary under `.tmp/tasks/<id>/`, outside the
-  persistent test suite. Verify figure changes by rendering and visual inspection. Retain tests for
-  exported numerical indicators and workflow contracts separately from figure review checks.
+- Render from retained inputs with `scripts/render_figures.py <family> --project <run> --out <dir>`
+  (`--list` shows families) and inspect the actual exported figures. Each family calls the rule's own
+  rendering function from a re-render adapter beside the rule adapter; do not write ad-hoc render
+  drivers. A family missing from the CLI is added there, not scripted in scratch.
+  Apply reusable decisions to other applicable plots, and render all affected callers when a shared
+  figure helper changes.
+- Keep review outputs under `.tmp/tasks/<id>/`, outside the persistent test suite. Verify figure changes
+  by rendering and visual inspection; `dev/scripts/capture_page.py` screenshots a review page headlessly
+  when the browser tool is unavailable. Retain tests for exported numerical indicators and workflow
+  contracts separately from figure review checks.
 - During an explicitly deferred-check visual session, do not run tests or gates at each revision. Run
   appropriate checks at the end of the session. Commit once the user approves a figure style/type, rather
   than after each incremental revision. Do not land or push without separate authorization.
@@ -402,8 +407,12 @@ in this visual review.
 - Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
 - WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
 - Legacy cartographic/evaluation preset and runtime overrides: `blueearth_cst/shared/plot_style.py`.
-- WF0 maps: `blueearth_cst/climate_analysis/diagnostic_maps.py`.
+- Climatology maps (WF0 source, WF1 forcing): drawn by `blueearth_cst/plotting/prepared_maps.py`;
+  native-grid fields prepared by `climate_analysis/diagnostic_maps.py`.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
+- Re-rendering from a finished run: `scripts/render_figures.py`, dispatching to
+  `climate_analysis/diagnostic_rerender.py` and `model/forcing_rerender.py`. Retained map references load
+  through `shared/retained_reference.py`, which checks integrity but not current-code drift.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.
 
 For export without workflow logging, pass the figure explicitly and retain the caller's save options:

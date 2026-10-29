@@ -27,6 +27,7 @@ def plot_forcing(
     map_reference: Optional[Union[str, Path]] = None,
     map_reference_params: Optional[dict] = None,
     annotation: str = "none",
+    reference_record: Optional[dict] = None,
 ):
     """Write the canonical climate figure set for the wflow forcing.
 
@@ -54,15 +55,24 @@ def plot_forcing(
         Declared historical reference JSON, required before figure publication.
     map_reference_params : dict
         Executable params from the shared historical reference rule factory.
+    reference_record : dict, optional
+        Replaces the two arguments above for a re-render of retained products
+        (``forcing_rerender``); the caller has checked its integrity.
     """
-    if map_reference is None or map_reference_params is None:
+    if reference_record is None and (
+        map_reference is None or map_reference_params is None
+    ):
         raise ValueError(
             "Forcing figures require the declared historical map reference"
         )
-    arguments = reference_arguments(map_reference_params)
+    arguments = (
+        reference_arguments(map_reference_params) if reference_record is None else None
+    )
     reference = None
 
     def validate_current():
+        if reference_record is not None:
+            return reference_record
         current = load_reference(map_reference, **arguments)
         if (
             reference is not None

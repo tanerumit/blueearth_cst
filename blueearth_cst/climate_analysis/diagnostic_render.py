@@ -141,7 +141,11 @@ def load_result(root, source):
     folder = Path(root) / "tables"
 
     def read(name):
-        frame = pd.read_csv(folder / f"{name}.csv")
+        # Tables written before 4faf0580 name the trend column "metric" under the
+        # same schema version; accepting it lets retained runs re-render.
+        frame = pd.read_csv(folder / f"{name}.csv").rename(
+            columns={"metric": "indicator"}
+        )
         return frame[frame.source == source].drop(
             columns=["source", "period_start", "period_end"]
         )
@@ -223,9 +227,17 @@ def render(
     map_reference=None,
     map_reference_params=None,
     annotation="none",
+    reference_record=None,
 ):
-    """Export selected PNG annotations and independent JSON/Markdown inventories."""
+    """Export selected PNG annotations and independent JSON/Markdown inventories.
+
+    ``reference_record`` replaces ``map_reference``/``map_reference_params`` for a
+    re-render of retained products (``diagnostic_rerender``): the caller has
+    checked its integrity, and current-byte identity drift is expected there.
+    Figures and inventories go under ``paths["render_root"]`` when present.
+    """
     root = Path(paths["root"])
+    out_root = Path(paths.get("render_root", root))
     has_maps = any(form.startswith("map-") for form in paths["figures"])
     arguments = (
         reference_arguments(map_reference_params)
@@ -237,7 +249,10 @@ def render(
 
     # Check the inputs once, then render the loaded snapshot. Exporting another
     # PNG does not require rereading climate inputs or qualifying the environment.
-    if arguments is not None:
+    if reference_record is not None:
+        reference = reference_record
+        arguments = {"completeness": reference["identity"]["completeness"]}
+    elif arguments is not None:
         reference = load_reference(map_reference, **arguments)
     elif has_maps:
         raise ValueError("Source maps require the declared historical reference")
@@ -455,7 +470,7 @@ def render(
                 **map_export,
             )
             plt.close(fig)
-            relative = str(Path(filename).relative_to(root)).replace("\\", "/")
+            relative = str(Path(filename).relative_to(out_root)).replace("\\", "/")
             records[relative] = {
                 "title": title(
                     form, [view.labels[s] for s in contributing], period, support
@@ -506,7 +521,7 @@ def render(
         + "\n",
         encoding="utf-8",
     )
-    write_figure_titles(root / "plots", records)
+    write_figure_titles(out_root / "plots", records)
     unavailable = Counter(
         item["availability"]
         for item in records.values()

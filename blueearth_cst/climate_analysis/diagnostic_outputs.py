@@ -88,6 +88,25 @@ def inventory(root, sources, settings, comparison=False):
     return {"root": str(root), "compute": compute, "render": render, "figures": figures}
 
 
+def retarget_render(paths, render_root):
+    """The same inventory with figures and caption/title files under ``render_root``.
+
+    Compute paths keep pointing at the retained run, so a re-render reads exactly
+    what the rule read and never overwrites the run's own plots.
+    """
+    root, render_root = Path(paths["root"]), Path(render_root)
+
+    def move(path):
+        return str(render_root / Path(path).relative_to(root))
+
+    return {
+        **paths,
+        "render_root": str(render_root),
+        "figures": {k: move(v) for k, v in paths["figures"].items()},
+        "render": {k: move(v) for k, v in paths["render"].items()},
+    }
+
+
 def diagnostic_source_outputs(store_dir, source, settings):
     return inventory(store_dir, [source], settings)
 

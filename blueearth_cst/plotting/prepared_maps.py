@@ -83,8 +83,11 @@ class MapScale:
 class MapClasses:
     """Nominal classes: raster values are ``codes``, keyed by ``labels``.
 
-    Only classes present in the drawn area enter the key. Codes the table does
-    not declare draw in ``unclassified_color`` and are keyed as such.
+    Only classes present in the drawn area enter the key, and of those only
+    classes covering at least ``key_min_share`` of the drawn classified cells
+    (smaller ones are still drawn; ``unkeyed_classes`` names them for the
+    caption). Codes the table does not declare draw in ``unclassified_color``
+    and are keyed as such.
     """
 
     title: str
@@ -95,6 +98,7 @@ class MapClasses:
     unclassified_color: Any = "#bdbdbd"
     unclassified_label: str = "Unclassified"
     alpha: float = 1.0
+    key_min_share: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -704,6 +708,38 @@ def _swatch(color: Any, label: str, alpha: float = 1.0) -> Patch:
     )
 
 
+def _class_shares(
+    raster: RasterMap, frame: MapFrame, classes: MapClasses
+) -> tuple[np.ma.MaskedArray, dict[int, float]]:
+    """Class-index raster and each drawn class's share of drawn classified cells.
+
+    Index ``len(codes)`` stands for undeclared codes.
+    """
+    values = np.ma.masked_invalid(raster.values)
+    codes = np.asarray(classes.codes, dtype=float)
+    index = np.full(values.shape, len(codes), dtype=float)
+    for position, code in enumerate(codes):
+        index[np.ma.filled(values, np.nan) == code] = position
+    index = np.ma.array(index, mask=np.ma.getmaskarray(values))
+    inside = np.ones(values.shape, bool) if raster.inside is None else raster.inside
+    drawn = index[inside & _in_frame(raster, frame) & ~index.mask].astype(int)
+    found, counts = np.unique(drawn, return_counts=True)
+    total = max(int(counts.sum()), 1)
+    return index, {int(i): c / total for i, c in zip(found, counts)}
+
+
+def unkeyed_classes(
+    raster: RasterMap, frame: MapFrame, classes: MapClasses
+) -> list[str]:
+    """Labels of drawn classes left out of the key for covering too little area."""
+    _, shares = _class_shares(raster, frame, classes)
+    return [
+        classes.labels[i] if i < len(classes.codes) else classes.unclassified_label
+        for i, share in sorted(shares.items())
+        if share < classes.key_min_share
+    ]
+
+
 def _in_frame(raster: RasterMap, frame: MapFrame) -> NDArray[np.bool_]:
     """Cells whose footprint intersects the frame."""
     west, east, south, north = frame.extent
@@ -749,11 +785,10 @@ def draw_raster_map(
     present: list[int] = []
     if classes is not None:
         codes = np.asarray(classes.codes, dtype=float)
-        index = np.full(values.shape, len(codes), dtype=float)
-        for position, code in enumerate(codes):
-            index[np.ma.filled(values, np.nan) == code] = position
-        index = np.ma.array(index, mask=np.ma.getmaskarray(values))
-        present = sorted(np.unique(index[shown & ~index.mask]).astype(int).tolist())
+        index, shares = _class_shares(raster, frame, classes)
+        present = sorted(
+            i for i, share in shares.items() if share >= classes.key_min_share
+        )
         cmap = ListedColormap([*classes.colors, classes.unclassified_color])
         cmap.set_bad(classes.missing_color)
         norm = BoundaryNorm(np.arange(len(codes) + 2) - 0.5, cmap.N)

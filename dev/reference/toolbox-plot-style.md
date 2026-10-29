@@ -182,7 +182,8 @@ linework and basemap features. `shared/cartographic_map.py` is legacy and is ret
 | Keys | Side panel, bottom-aligned with the frame: colourbar or class legend, title above, never on the map. |
 | Source credit | In the caption, never a footnote on the figure. |
 
-Class legends list only classes present in the drawn area. A legend taller than the frame is fitted by
+Class legends list only classes present in the drawn area, and only those covering at least 0.1% of the
+basin; smaller classes are still drawn and are named in the caption. A legend taller than the frame is fitted by
 reducing its text, with a warning if it still does not fit. Colourbar titles break the unit onto its
 own line. Map colourbars use `fundamentals.style_colourbar`, the same appearance as heatmap colourbars.
 

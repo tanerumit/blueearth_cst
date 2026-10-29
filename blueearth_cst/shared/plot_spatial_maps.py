@@ -244,6 +244,11 @@ def land_cover_classes(layer):
     return ((-1, "#000000", None),)
 
 
+#: Classes covering less of the basin than this are drawn but left out of the
+#: key, and named in the caption: a handful of cells (six snow-and-ice cells in
+#: a desert delta) is product noise a reader cannot find on the map.
+CLASS_KEY_MIN_SHARE = 0.001
+
 #: Legend titles for the nominal figures, by figure stem.
 LEGEND_TITLES = {"land_cover_basin": "Land cover", "subbasins": "Subbasins"}
 FIGURE_TITLES = {
@@ -763,6 +768,7 @@ def _key_for(figure, layer):
             missing_color=missing,
             unclassified_color=MAP_FEATURE_COLORS["unclassified"],
             alpha=SUBBASIN_ALPHA if figure.stem == "subbasins" else 1.0,
+            key_min_share=CLASS_KEY_MIN_SHARE,
         )
     with carto._Overrides(**carto.PROFILES["spatial"]):
         style = carto.resolve_diverging_style(layer, figure.style)
@@ -987,7 +993,12 @@ def plot_spatial_maps(
     """
     import numpy as np
 
-    from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
+    from blueearth_cst.plotting.prepared_maps import (
+        MapClasses,
+        RasterMap,
+        draw_raster_map,
+        unkeyed_classes,
+    )
     from blueearth_cst.plotting.preset import use_preset
     from blueearth_cst.shared.cartographic_map import check_geographic_inputs
     from blueearth_cst.shared.map_frames import (
@@ -1056,25 +1067,39 @@ def plot_spatial_maps(
         # the source credited in the caption, the key in the side panel. The
         # subbasin overview carries no key and its locator sits inside the map.
         overview = figure.stem == "subbasins"
+        raster = RasterMap(
+            np.asarray(as_lat_lon(layer).values, dtype=float),
+            *grid_edges(layer),
+            inside=context["inside"],
+            cell_edges=False,
+        )
+        key = _key_for(figure, layer)
         with use_preset(CST_PRESET):
             fig = draw_raster_map(
-                RasterMap(
-                    np.asarray(as_lat_lon(layer).values, dtype=float),
-                    *grid_edges(layer),
-                    inside=context["inside"],
-                    cell_edges=False,
-                ),
+                raster,
                 context["frame"],
-                _key_for(figure, layer),
+                key,
                 context["overlay"],
                 locator=context["locator"] if overview else None,
                 show_key=not overview,
                 locator_in_map=overview,
             )
+        unkeyed = (
+            unkeyed_classes(raster, context["frame"], key)
+            if isinstance(key, MapClasses) and not overview
+            else []
+        )
         record = {
             "title": FIGURE_TITLES[figure.stem],
             "caption": f"{FIGURE_TITLES[figure.stem]}. "
             "Colors show the mapped values or classes; basin boundaries and supplied rivers and observation locations provide spatial context. "
+            + (
+                f"Classes covering less than {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn but not listed: "
+                + ", ".join(label.replace("\n", " ") for label in unkeyed)
+                + ". "
+                if unkeyed
+                else ""
+            )
             + (source_caveat(layer) or ""),
         }
         written += _export_map(

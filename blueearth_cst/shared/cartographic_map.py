@@ -64,6 +64,7 @@ from blueearth_cst.shared.plot_colors import (
     MAP_FEATURE_COLORS,
 )
 from blueearth_cst.shared.plot_colors import WATERBODY_COLORS as WATERBODY_COLORS
+from blueearth_cst.shared.plot_preset import MAPS
 
 # The toolbox-wide page/typography settings. Bound HERE, in this module's
 # globals, so the drawing code below reads them by bare name and
@@ -386,9 +387,8 @@ LABEL_GAUGE = "Points of interest"
 
 # --- colours ---------------------------------------------------------------
 
-#: One place for every hue on the figure. The blue is used for BOTH the rivers
-#: and the user's gauges, which is deliberate: it ties a gauge to the network it
-#: sits on and separates it from the model's own outlets, which stay black.
+#: One place for every hue on the figure, read from config/plotting/colors.yml.
+#: The model's own outlets stay black.
 COLOR_RIVER = MAP_FEATURE_COLORS["river"]
 #: Points of interest: purple, so they never read as part of the blue river
 #: network (taken from the Egypt QGIS map's location style).
@@ -434,19 +434,11 @@ RIVER_WIDTH_MAX = 1.4
 #: "linear" (one colour, width scaled between the bounds above) or
 #: "order_steps" (width AND colour stepped by order, ``RIVER_ORDER_STEPS``).
 RIVER_STYLE = "linear"
-#: Per-order river steps, lowest order first: (width in points, colour). Taken
-#: from the Egypt QGIS map's Strahler ramp (0.2-1.6 mm, ~x1.4 per order, light
-#: to dark blue), converted from millimetres to points. The basin's lowest
-#: order takes the first step; orders beyond the last step reuse it.
-RIVER_ORDER_STEPS = (
-    (0.57, "#a6cee3"),
-    (0.85, "#74add1"),
-    (1.19, "#4f94cd"),
-    (1.70, "#2c7bb6"),
-    (2.41, "#1f5fa3"),
-    (3.26, "#0f4c8a"),
-    (4.54, "#08306b"),
-)
+#: Per-order river steps, lowest order first: (width in points, colour), from
+#: config/plotting (the Egypt QGIS map's Strahler ramp), shared with the
+#: ``plotting.prepared_maps`` template. The basin's lowest order takes the first
+#: step; orders beyond the last step reuse it.
+RIVER_ORDER_STEPS = MAPS["river_order"]
 
 WIDTH_BASIN_OUTLINE = 0.9  #: the dissolved outer boundary — the map's key line
 #: Internal divides. Still lighter than the basin outline — that hierarchy is
@@ -3523,7 +3515,6 @@ PROFILES = {
         "_LEGEND_WRAP": 22,
         "RIVER_STYLE": "order_steps",
         "RIVER_ORDER_COLUMN": ("strord", "order"),
-        "COLOR_GAUGE": "#6a3d9a",
         "MARKER_SHAPE_GAUGE": "D",
     },
 }

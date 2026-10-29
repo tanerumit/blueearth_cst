@@ -41,7 +41,9 @@ file relative to the toolbox, validates its structure and hex colours, and reads
 Restart an interactive Python session after editing it. Matplotlib resolves colormap names when drawing.
 
 `config/plotting/style.yml` owns page/export defaults, typography, shared chart dimensions, lines,
-markers, bands, label backgrounds and evaluation-sheet appearance. `shared.plot_setup` loads these
+markers, bands, label backgrounds, map feature geometry (`maps`) and evaluation-sheet appearance.
+Map feature colours (`map_features`, `river_order`) stay in `colors.yml`; both reach the drawing code as
+`Preset.maps` tokens (see [Spatial map template](#spatial-map-template)). `shared.plot_setup` loads these
 preferences; `shared.plot_preset` turns them into the CST chart preset, and `shared.plot_style` keeps
 the cartographic/evaluation interface. See [Presets](#presets) for how the preset reaches drawing code.
 Figure-specific geometry stays with its renderer. Keep shared appearance preferences in this setup
@@ -160,6 +162,27 @@ Unknown experiments retain their literal labels and muted fallback color.
 - Remove missing/unavailable legend rows from anomaly plots and explain missing-value handling in captions.
 - The reviewed SPI heatmaps use boundaries `-3, -2, -1, 1, 2, 3`, without a zero tick, and a colorbar
   height of 80% of the plotting area. Their final figure height is 56% of the original height.
+
+## Spatial map template
+
+Every geographic raster map (WF0 source and WF1 forcing climatologies, the WF1 spatial set, the basin
+map) follows one template, `blueearth_cst/plotting/prepared_maps.py`, adopted on 2026-10-29. The core
+draws supplied arrays and features with `Preset.maps` tokens; adapters prepare fields, classes, overlay
+linework and basemap features. `shared/cartographic_map.py` is legacy and is retired family by family.
+
+| Element | Treatment |
+|---|---|
+| Coordinates | Plain axes, aspect `1/cos(mid-latitude)`; numeric signed ticks; `Longitude (°)` / `Latitude (°)`. |
+| Rivers | Blue, width and shade stepped by stream order, lowest order first, thin reaches drawn first. |
+| Basin and divides | Black basin outline over dashed divides; divides merged so shared edges draw once. |
+| Locations | Purple diamonds with boxed station-name labels, placed to avoid overlaps and the frame. |
+| Furniture | Scale bar (km, latitude-corrected) on every map; no north arrow; locator only on overview maps. |
+| Keys | Side panel, bottom-aligned with the frame: colourbar or class legend, title above, never on the map. |
+| Source credit | In the caption, never a footnote on the figure. |
+
+Class legends list only classes present in the drawn area. A legend taller than the frame is fitted by
+reducing its text, with a warning if it still does not fit. Colourbar titles break the unit onto its
+own line. Map colourbars use `fundamentals.style_colourbar`, the same appearance as heatmap colourbars.
 
 ## Figure-specific decisions
 

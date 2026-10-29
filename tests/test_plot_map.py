@@ -255,10 +255,12 @@ def test_the_inset_takes_a_clear_upper_corner(spatial_profile):
 
 
 def test_the_profile_is_scoped_to_one_call():
-    before = carto.COLOR_GAUGE
+    before = carto.MARKER_SHAPE_GAUGE
     with carto._Overrides(**carto.PROFILES["spatial"]):
-        assert carto.COLOR_GAUGE == carto.PROFILES["spatial"]["COLOR_GAUGE"]
-    assert carto.COLOR_GAUGE == before
+        assert (
+            carto.MARKER_SHAPE_GAUGE == carto.PROFILES["spatial"]["MARKER_SHAPE_GAUGE"]
+        )
+    assert carto.MARKER_SHAPE_GAUGE == before
 
 
 # --- locator inset ------------------------------------------------------------

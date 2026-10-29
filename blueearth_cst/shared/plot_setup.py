@@ -19,7 +19,7 @@ def load_style(path: Path | None = None) -> dict[str, Any]:
         style = yaml.safe_load(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise ValueError(f"Cannot read plot style {path}: {exc}") from exc
-    expected = {"page", "typography", "charts", "evaluation"}
+    expected = {"page", "typography", "charts", "maps", "evaluation"}
     if not isinstance(style, dict) or set(style) != expected:
         raise ValueError(f"{path}: style requires exactly {sorted(expected)}")
     for name, block in style.items():
@@ -62,7 +62,39 @@ def load_style(path: Path | None = None) -> dict[str, Any]:
         raise ValueError(
             f"{path}: charts.fallback_markers must be a nonempty list of marker strings"
         )
+    _check_maps(style["maps"], path)
     return style
+
+
+#: The closed ``maps`` block: scalar pt sizes, pt lists, and the rest by name.
+_MAP_NUMBERS = (
+    "river_width",
+    "basin_outline_width",
+    "divide_width",
+    "location_size",
+    "location_label_size",
+    "scale_bar_segments",
+)
+_MAP_LISTS = ("river_order_widths", "divide_dash")
+
+
+def _check_maps(maps: dict[str, Any], path: Path) -> None:
+    expected = {*_MAP_NUMBERS, *_MAP_LISTS, "location_marker"}
+    if set(maps) != expected:
+        raise ValueError(f"{path}: maps requires exactly {sorted(expected)}")
+
+    def positive(value: Any) -> bool:
+        return type(value) in (int, float) and math.isfinite(value) and value > 0
+
+    for name in _MAP_NUMBERS:
+        if not positive(maps[name]):
+            raise ValueError(f"{path}: maps.{name} must be a positive finite number")
+    for name in _MAP_LISTS:
+        values = maps[name]
+        if not isinstance(values, list) or not values or not all(map(positive, values)):
+            raise ValueError(f"{path}: maps.{name} must be a list of positive numbers")
+    if not isinstance(maps["location_marker"], str) or not maps["location_marker"]:
+        raise ValueError(f"{path}: maps.location_marker must be a marker string")
 
 
 def setup_digest() -> str:

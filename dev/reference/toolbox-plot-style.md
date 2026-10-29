@@ -376,10 +376,13 @@ in this visual review.
   support, missing values and material caveats. Do not describe internal rules, review logic or gates.
 - Move footer information from the plot into its caption. Keep captions left-aligned to the plotting
   area, slightly smaller than axis text, in gray.
-- Every geographic map caption uses one skeleton, `shared/map_frames.map_caption`, of about 40–70
-  words: quantity with units, grid and period; colour encoding, gray and white cells (each only when
-  drawn) and the context layers; material caveats; then `Source:` with the product credit from
-  `map_frames.SOURCE_CREDITS`. Support counts, thresholds and reference provenance stay in metadata.
+- Climate map captions (WF0 sources, WF1 forcing) use one skeleton, `shared/map_frames.map_caption`,
+  of about 40–70 words: quantity with units, grid and period; colour encoding, gray and white cells
+  (each only when drawn) and the context layers; material caveats; then `Source:` with the product
+  credit. Support counts, thresholds and reference provenance stay in metadata.
+- Spatial map captions are one sentence: the quantity with units "from" the product credit, plus the
+  sub-0.1% class note when classes are left out of the key. Both families take credits from
+  `map_frames.SOURCE_CREDITS`.
 - Include captions inside the preview canvas when enabled. Add space below the image without resizing
   the plotting area or changing its proportions. Keep caption-to-axis font proportions consistent.
 - `plotting.fundamentals.add_caption(fig, text)` finalizes an already drawn figure for its captioned

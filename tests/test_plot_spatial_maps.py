@@ -238,6 +238,17 @@ def test_an_unmapped_source_still_gets_a_line():
     )
 
 
+def test_a_spatial_caption_is_one_sentence_with_its_credit():
+    assert family._spatial_caption("Basin topsoil pH (H₂O)", _layer("soilgrids")) == (
+        "Basin topsoil pH (H₂O) from SoilGrids (ISRIC, 2017)."
+    )
+    assert family._spatial_caption("Land cover", _layer("vito"), "note").endswith(
+        "; note."
+    )
+    unsourced = xr.DataArray(np.zeros((2, 2)), dims=("y", "x"))
+    assert family._spatial_caption("Lead", unsourced) == "Lead."
+
+
 def test_the_caption_orders_its_parts_and_skips_empty_ones():
     assert map_caption("Lead", ["Colours.", ""], ["Caveat"]) == "Lead. Colours. Caveat."
     assert overlay_sentence({"basins": [1], "rivers": [1]}) == (

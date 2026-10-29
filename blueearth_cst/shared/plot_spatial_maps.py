@@ -778,22 +778,18 @@ def _caption_lead(title, style):
     return f"{title} ({unit})"
 
 
-def _spatial_caption(lead, encoding, raster, frame, overlay, layer):
-    """A spatial map caption on the shared skeleton (``map_frames.map_caption``).
+def _spatial_caption(lead, layer, note=None):
+    """One sentence: the quantity, its product credit and an optional ``note``.
 
-    The credit falls back to the catalog key when unmapped: "Source: vito." reads
-    badly, but a figure that silently loses its attribution is worse.
+    The key and the drawn overlays explain themselves on these maps. The credit
+    falls back to the catalog key when unmapped: "from vito" reads badly, but a
+    figure that silently loses its attribution is worse.
     """
-    from blueearth_cst.plotting.prepared_maps import missing_shown
-    from blueearth_cst.shared.map_frames import map_caption, overlay_sentence
+    from blueearth_cst.shared.map_frames import SOURCE_CREDITS
 
-    drawn = list(encoding)
-    if missing_shown(raster, frame):
-        drawn.append("Gray cells have no data")
-    if raster.inside is not None:
-        drawn.append("Areas outside the basin are white")
-    drawn.append(overlay_sentence(overlay))
-    return map_caption(lead, drawn, source=layer.attrs.get("source"))
+    source = layer.attrs.get("source")
+    text = f"{lead} from {SOURCE_CREDITS.get(source, source)}" if source else lead
+    return f"{text}; {note}." if note else f"{text}."
 
 
 def _unit_break(label):
@@ -1013,12 +1009,7 @@ def plot_elevation_basin(spatial_dir, plot_dir=None, annotation="none"):
     record = {
         "title": "Basin elevation and drainage network",
         "caption": _spatial_caption(
-            "Basin elevation (m a.s.l.)",
-            ["Elevation classes are drawn over a hillshade of the same grid"],
-            raster,
-            context["frame"],
-            context["overlay"],
-            elevation,
+            "Basin elevation (m a.s.l.) over hillshaded relief", elevation
         ),
     }
     return _export_map(fig, plot_dir, "elevation_basin", record, annotation)
@@ -1149,31 +1140,17 @@ def plot_spatial_maps(
             if isinstance(key, MapClasses) and not overview
             else []
         )
-        if overview:
-            encoding = [
-                "Colours separate the subbasins; neighbouring subbasins never share one"
-            ]
-        elif isinstance(key, MapClasses):
-            encoding = ["Colours follow the product's published class legend"]
-            if unkeyed:
-                encoding.append(
-                    f"Classes covering less than {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn "
-                    "but not listed: "
-                    + ", ".join(label.replace("\n", " ") for label in unkeyed)
-                )
-        else:
-            encoding = [
-                "Values beyond the outer class breaks are drawn in the end classes"
-            ]
+        note = (
+            f"classes under {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn but not listed ("
+            + ", ".join(label.replace("\n", " ") for label in unkeyed)
+            + ")"
+            if unkeyed
+            else None
+        )
         record = {
             "title": FIGURE_TITLES[figure.stem],
             "caption": _spatial_caption(
-                _caption_lead(FIGURE_TITLES[figure.stem], figure.style),
-                encoding,
-                raster,
-                context["frame"],
-                context["overlay"],
-                layer,
+                _caption_lead(FIGURE_TITLES[figure.stem], figure.style), layer, note
             ),
         }
         written += _export_map(

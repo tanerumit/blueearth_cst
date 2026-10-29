@@ -14,7 +14,7 @@ import xarray as xr
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis.diagnostic_captions import caption, title
 from blueearth_cst.climate_analysis.diagnostic_settings import carries_temp
-from blueearth_cst.climate_analysis.diagnostic_tables import write_json
+from blueearth_cst.climate_analysis.diagnostic_tables import table_renames, write_json
 from blueearth_cst.climate_analysis.diagnostics import (
     monthly_reference_diagnostics,
     sen_trend,
@@ -158,13 +158,13 @@ def prepared_map(
 def load_result(root, source):
     """Restore artist inputs from explicit plot-ready tables, never raw climate."""
     folder = Path(root) / "tables"
+    metadata = json.loads(
+        (Path(root) / "_engine" / "diagnostics.json").read_text(encoding="utf-8")
+    )
+    renames = table_renames(metadata["schema_version"])
 
     def read(name):
-        # Tables written before 4faf0580 name the trend column "metric" under the
-        # same schema version; accepting it lets retained runs re-render.
-        frame = pd.read_csv(folder / f"{name}.csv").rename(
-            columns={"metric": "indicator"}
-        )
+        frame = pd.read_csv(folder / f"{name}.csv").rename(columns=renames)
         return frame[frame.source == source].drop(
             columns=["source", "period_start", "period_end"]
         )
@@ -189,9 +189,6 @@ def load_result(root, source):
     pt = read("pt_anomalies")
     spells = read("dry_spell_exceedance")
     valid = read("valid_years")
-    metadata = json.loads(
-        (Path(root) / "_engine" / "diagnostics.json").read_text(encoding="utf-8")
-    )
     reference = tuple(
         metadata["settings"]["reference_period"][k] for k in ("start", "end")
     )

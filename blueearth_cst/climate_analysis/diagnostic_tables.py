@@ -11,6 +11,30 @@ import xarray as xr
 from blueearth_cst.climate_analysis import diagnostics as dg
 from blueearth_cst.shared.grid_cells import LAT, LON, cells_csv_mask
 
+#: Version of the retained WF0 tables and ``_engine/diagnostics.json``. Bump it
+#: with any change to a retained table's columns, and add the upgrade below.
+#: 2: the trend column "metric" became "indicator" (4faf0580).
+SCHEMA_VERSION = 2
+
+#: Column renames that read tables written under an older schema version.
+_COLUMN_UPGRADES = {1: {"metric": "indicator"}}
+
+
+def table_renames(schema_version):
+    """Column renames for reading retained tables of ``schema_version``.
+
+    Raises for a version this code neither writes nor knows how to upgrade, so
+    a renderer never draws from tables whose columns it misreads.
+    """
+    if schema_version == SCHEMA_VERSION:
+        return {}
+    if schema_version in _COLUMN_UPGRADES:
+        return _COLUMN_UPGRADES[schema_version]
+    raise ValueError(
+        f"Unsupported WF0 diagnostics schema {schema_version!r} "
+        f"(this toolbox writes {SCHEMA_VERSION}); re-run WF0 compute"
+    )
+
 
 def write_json(path, value):
     """Write strict JSON: unavailable numerical values are null."""
@@ -469,7 +493,7 @@ def write_tables(paths, tables_by_source, settings, m0, period, lineage):
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         frame.to_csv(path, index=False)
     metadata = {
-        "schema_version": 1,
+        "schema_version": SCHEMA_VERSION,
         "settings": settings,
         "water_year_start": m0,
         "period": list(period),

@@ -178,6 +178,7 @@ linework and basemap features. `shared/cartographic_map.py` is legacy and is ret
 | Locations | Purple diamonds; bold station names with a white halo, no box, placed clear of overlaps and the frame. |
 | Long names | Wrap to two lines at the separator nearest the middle (`maps.location_label_wrap` characters). |
 | Furniture | Scale bar (km, latitude-corrected) on every map; no north arrow; locator only on overview maps. |
+| Locator | Elevation and subbasin overviews only: small, square, inside the map in its clearest corner (≤40% of frame height). |
 | Keys | Side panel, bottom-aligned with the frame: colourbar or class legend, title above, never on the map. |
 | Source credit | In the caption, never a footnote on the figure. |
 

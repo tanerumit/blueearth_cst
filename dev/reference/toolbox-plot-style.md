@@ -399,18 +399,12 @@ in this visual review.
 - Keep the disposable HTML review in `.tmp/tasks/<id>/`; follow `dev-repository-layout.md` for closure cleanup.
 - Show only the plot group currently under review, with existing and revised versions side by side.
   Preserve a baseline before revising the group.
-- Keep the original page header. Put the selected figure name in each comparison heading, for example
-  `CHIRPS – Spell (existing)` and `CHIRPS – Spell (revised)`.
-- Put selectors, buttons, sliders and checkboxes on the second row. Remove descriptive header prose and
-  repeated figure-name text beneath the plots.
-- Include caption and canvas-boundary toggles, plus the overlay comparison control. Preserve consistent
-  physical image scaling so fonts do not grow when the canvas gets smaller and both figures fit together.
-- Use the explicit side-by-side/wipe modes and linked zoom/pan controls. Unequal canvases require opting
-  into top-left-aligned wipe; pad at a common scale without stretching either image. The overview uses
-  the pair's declared export dpi (600 by default); both images must use that dpi.
-- Below the figures, display `Path:` followed on a new line by the original figure's parent directory.
-  Keep the full selected file path in the page data so the source remains identifiable. Compact keyboard
-  hints and collapsible control help may follow the path.
+- Keep the template's header, toolbar and card layout; fill only its project context, provenance and
+  records. Each card heading names the figure and version, for example `CHIRPS – Spell (before)` and
+  `CHIRPS – Spell (revised)`, and the card shows the file name with a link to its source folder.
+- Keep consistent physical image scaling so fonts do not grow when the canvas gets smaller. The overview
+  uses the pair's declared export dpi (600 by default); both images must use that dpi.
+- Keep the full selected file path in the page data so the source remains identifiable.
 - Render from retained inputs with `scripts/render_figures.py <family> --project <run> --out <dir>`
   (`--list` shows families) and inspect the actual exported figures. Each family calls the rule's own
   rendering function from a re-render adapter beside the rule adapter; do not write ad-hoc render

@@ -33,11 +33,22 @@ def frame_from_extent(extent: Sequence[float]) -> MapFrame:
     )
 
 
-def basin_frame(basins) -> MapFrame:
-    """The basin bounds with spatial-map padding, as every map zooms to them."""
+def basin_frame(basins, within: Sequence[float] | None = None) -> MapFrame:
+    """The basin bounds with spatial-map padding, as every map zooms to them.
+
+    ``within`` (west, east, south, north) clips the padded view to a raster's
+    outer cell edges, so a grid stored close to the basin fills the frame
+    instead of leaving blank padding.
+    """
     from blueearth_cst.shared.map_classes import extent_from_layer
 
-    return frame_from_extent(extent_from_layer(basins))
+    west, east, south, north = extent_from_layer(basins)
+    if within is not None:
+        w, e, s, n = (float(value) for value in within)
+        clipped = (max(west, w), min(east, e), max(south, s), min(north, n))
+        if clipped[0] < clipped[1] and clipped[2] < clipped[3]:
+            west, east, south, north = clipped
+    return frame_from_extent((west, east, south, north))
 
 
 def grid_edges(field) -> tuple[np.ndarray, np.ndarray]:

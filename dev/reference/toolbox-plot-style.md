@@ -199,8 +199,9 @@ spatial overlays and gauge labels. WF0 source and WF1 forcing maps share the his
 `data/climate/historical/_engine/map_reference.json`. The selected source's outer cell edges determine
 the scale-reference frame. Historical candidate cells intersecting this frame determine pooled classes;
 borrowed CHIRPS temperature/PET do not contribute. Displayed maps zoom to the basin bounds with the same
-padding as spatial maps, with ticks and midpoint-latitude aspect derived from that viewport. Without basin
-geometry, they retain the reference frame. Native source fields and
+padding as spatial maps, clipped to a native source grid's outer cell edges so no blank padding shows;
+masked model-grid maps keep the full padding. Ticks and midpoint-latitude aspect derive from that
+viewport. Without basin geometry, they retain the reference frame. Native source fields and
 model-grid basin masks retain their scientific support. Common colors do not establish equal periods,
 eligibility policies or PET methods; captions state those differences.
 

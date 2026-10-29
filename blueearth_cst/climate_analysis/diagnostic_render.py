@@ -58,12 +58,16 @@ def prepared_map(
     if inside is not None:
         field, inside = xr.align(field, inside, join="exact")
         mask = inside.transpose("latitude", "longitude").values
+    x, y = field_edges(field)
     frame = drawing_frame(reference)
     if overlays.get("basins"):
         import geopandas as gpd
 
         frame = basin_frame(
-            gpd.GeoDataFrame.from_features(overlays["basins"], crs="EPSG:4326")
+            gpd.GeoDataFrame.from_features(overlays["basins"], crs="EPSG:4326"),
+            # Native source grids fill the view; masked model grids keep the
+            # padding, which reads as outside the model.
+            within=(x.min(), x.max(), y.min(), y.max()) if mask is None else None,
         )
     support = frame_intersection(field, frame.extent)
     if mask is not None:
@@ -75,7 +79,6 @@ def prepared_map(
     above = int((finite & (field.values > boundaries[-1])).sum()) if boundaries else 0
     positive = counts.values[finite]
     eligible = [int(positive.min()), int(positive.max())] if positive.size else None
-    x, y = field_edges(field)
     label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
     drawn_scale = drawing_scale(reference, variable)
     # Climate display rules (toolbox-plot-style.md): reference units, a tick on

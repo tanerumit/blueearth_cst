@@ -70,7 +70,8 @@ Historical maps share `climate.map_reference` from the project file (default 3/1
 match the diagnostic settings above; monthly values above 27 are refused for shared maps. Temporal
 diagnostic methods remain unchanged. The selected source supplies the common cell-edge frame; native
 cells intersecting it across the configured candidates supply pooled color classes. Displayed maps zoom
-to the basin bounds with spatial-map padding; without basin geometry, they retain the reference frame.
+to the basin bounds with spatial-map padding, clipped to each source grid's outer cell edges; without
+basin geometry, they retain the reference frame.
 Auxiliary CHIRPS
 temperature and PET remain retained where present but do not contribute to historical scales.
 

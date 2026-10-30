@@ -771,52 +771,110 @@ SEASON_MONTHS = {
 MONTH_DAYS = dict(zip(MONTHS, (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)))
 
 
-def seasonal_totals(climatology):
-    """Each model's mean seasonal precipitation total (mm) per window.
+def _seasons_with_historical(per, variable, statistic, units):
+    """Scenario rows plus one ``historical`` row per model, window and season.
 
-    Sums the model's monthly reference and future mean rates times the days
-    in each month. Scenario rows carry the future window; one ``historical``
-    row per model and window carries the reference, averaged over the
-    model's scenarios (they share its historical run).
+    ``per`` holds one row per model, scenario, window and season with
+    ``reference`` and ``future`` values; the historical value averages the
+    model's reference over its scenarios, which share its historical run.
     """
-    columns = [*MODEL_KEY, *CELL, "value", "n_members"]
-    data = climatology.loc[
-        (climatology.variable == "precip") & climatology.period.isin(MONTHS)
-    ]
-    if data.empty:
-        return pd.DataFrame(columns=columns)
-    data = data.assign(
-        days=data.period.map(MONTH_DAYS),
-        season=data.period.map(
-            {m: s for s, months in SEASON_MONTHS.items() for m in months}
-        ),
-    )
-    keys = [*MODEL_KEY, "scenario", *WINDOW_KEY, "season"]
-    full = data.groupby(keys, dropna=False).filter(lambda g: len(g) == 3)
-    per = (
-        full.assign(
-            reference=full.reference * full.days, future=full.future * full.days
-        )
-        .groupby(keys, dropna=False)
-        .agg(
-            reference=("reference", "sum"),
-            future=("future", "sum"),
-            n_members=("n_members", "min"),
-        )
-        .reset_index()
-        .rename(columns={"season": "period"})
-    )
     historical = (
         per.groupby([*MODEL_KEY, *WINDOW_KEY, "period"], dropna=False)
         .agg(value=("reference", "mean"), n_members=("n_members", "max"))
         .reset_index()
         .assign(scenario="historical")
     )
-    rows = pd.concat(
+    return pd.concat(
         [per.rename(columns={"future": "value"}).drop(columns="reference"), historical],
         ignore_index=True,
-    ).assign(variable="precip", statistic="total", quantity="value", units="mm")
-    return rows.reindex(columns=columns)
+    ).assign(variable=variable, statistic=statistic, quantity="value", units=units)
+
+
+def seasonal_values(climatology, changes):
+    """Each model's seasonal climate per window, for the seasonal-values grids.
+
+    Statistics: ``total`` precipitation (mm) and ``mean`` temperature (degC)
+    from the monthly climatology (rates times days per month); ``sd`` of the
+    detrended interannual series (precipitation as a season total in mm,
+    temperature in degC) and precipitation ``cv`` (%) from the per-member
+    changes, averaged over each model's variability-eligible members (NaN
+    where none is eligible, so exclusions stay counted). Scenario rows hold
+    the future window and ``historical`` rows the reference.
+    """
+    columns = [*MODEL_KEY, *CELL, "value", "n_members"]
+    keys = [*MODEL_KEY, "scenario", *WINDOW_KEY, "period"]
+    season_of = {m: s for s, months in SEASON_MONTHS.items() for m in months}
+    season_days = {s: sum(MONTH_DAYS[m] for m in ms) for s, ms in SEASON_MONTHS.items()}
+    parts = []
+    monthly = climatology.loc[climatology.period.isin(MONTHS)]
+    for variable, statistic, units in (
+        ("precip", "total", "mm"),
+        ("temp", "mean", "degC"),
+    ):
+        data = monthly.loc[monthly.variable == variable]
+        if data.empty:
+            continue
+        data = data.assign(
+            days=data.period.map(MONTH_DAYS), period=data.period.map(season_of)
+        )
+        weighted = data.assign(
+            reference=data.reference * data.days, future=data.future * data.days
+        ).groupby(keys, dropna=False)
+        # min_count: a season missing any month's value is NaN, not a
+        # partial (or zero) sum.
+        per = (
+            weighted[["reference", "future", "days"]]
+            .sum(min_count=3)
+            .join(weighted.n_members.min())
+            .reset_index()
+        )
+        if statistic == "mean":
+            per["reference"] /= per.days
+            per["future"] /= per.days
+        parts.append(
+            _seasons_with_historical(
+                per.drop(columns="days"), variable, statistic, units
+            )
+        )
+    rows = changes.loc[
+        (changes.quantity == "change")
+        & changes.statistic.isin(["std_detrended", "cv_detrended"])
+        & changes.period.isin(SEASON_MONTHS)
+    ]
+    for (variable, raw), statistic, units in (
+        (("precip", "std_detrended"), "sd", "mm"),
+        (("temp", "std_detrended"), "sd", "degC"),
+        (("precip", "cv_detrended"), "cv", "%"),
+    ):
+        data = rows.loc[(rows.variable == variable) & (rows.statistic == raw)].copy()
+        if data.empty:
+            continue
+        eligible = data.variability_eligible.astype(bool)
+        for side in ("reference", "future"):
+            data[side] = data[f"{side}_value"].astype(float).where(eligible)
+        scale = (
+            data.period.map(season_days)
+            if (variable, statistic) == ("precip", "sd")
+            else 100.0
+            if statistic == "cv"
+            else 1.0
+        )
+        data["reference"] *= scale
+        data["future"] *= scale
+        per = (
+            data.assign(member_ok=eligible)
+            .groupby(keys, dropna=False)
+            .agg(
+                reference=("reference", "mean"),
+                future=("future", "mean"),
+                n_members=("member_ok", "sum"),
+            )
+            .reset_index()
+        )
+        parts.append(_seasons_with_historical(per, variable, statistic, units))
+    if not parts:
+        return pd.DataFrame(columns=columns)
+    return pd.concat(parts, ignore_index=True).reindex(columns=columns)
 
 
 def member_ratios(table):
@@ -1302,14 +1360,13 @@ def product_availability(tables, windows=None):
                 complete,
                 "no model with twelve reference and future months",
             )
-            if variable == "precip":
-                add(
-                    "totals-precipitation.png",
-                    period_folder(window_id),
-                    window_id,
-                    complete,
-                    "no model with twelve reference and future months",
-                )
+            add(
+                f"values-{label}-{'total' if variable == 'precip' else 'mean'}.png",
+                period_folder(window_id),
+                window_id,
+                complete,
+                "no model with twelve reference and future months",
+            )
             monthly = mean.loc[
                 (mean.variable == variable)
                 & (
@@ -1337,11 +1394,11 @@ def product_availability(tables, windows=None):
                 & ratios.period.isin(PERIODS[:5])
             ]
             add(
-                f"variability-ratio-{label}.png",
+                f"values-{label}.png",
                 period_folder(window_id),
                 window_id,
                 (np.isfinite(sub.value.astype(float)) & sub.value.gt(0)).any(),
-                "no eligible model ratio",
+                "no variability-eligible model",
             )
         members = data["member_ratios"].loc[
             data["member_ratios"].window_id == window_id
@@ -1391,7 +1448,7 @@ def product_availability(tables, windows=None):
             "no paired annual temperature and precipitation model changes",
         )
         agreement_cells = mean.loc[
-            mean.period.isin(("annual", *MONTHS))
+            mean.period.isin(PERIODS[:5])  # annual and the seasons, as plotted
             & (
                 (mean.variable.eq("temp") & mean.quantity.eq("change"))
                 | (

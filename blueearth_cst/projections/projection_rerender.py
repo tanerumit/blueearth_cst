@@ -26,7 +26,7 @@ def rerender_projections(
     from blueearth_cst.projections.projection_analysis import (
         ensemble_summary,
         product_availability,
-        seasonal_totals,
+        seasonal_values,
         with_variability_band,
     )
     from blueearth_cst.projections.projection_figures import FIGURE_KEYS
@@ -66,10 +66,12 @@ def rerender_projections(
         for name in ("change_summary", "monthly_change_summary"):
             if "noise_halfwidth" not in tables[name]:
                 tables[name] = with_variability_band(tables[name], tables["changes"])
-        if "seasonal_totals" not in tables:
-            tables["seasonal_totals"] = seasonal_totals(tables["climatology"])
-            tables["seasonal_totals_summary"] = ensemble_summary(
-                tables["seasonal_totals"]
+        if "seasonal_values" not in tables:
+            tables["seasonal_values"] = seasonal_values(
+                tables["climatology"], tables["changes"]
+            )
+            tables["seasonal_values_summary"] = ensemble_summary(
+                tables["seasonal_values"]
             )
         plot_dir = Path(out_dir) / "projections" / ensemble_dir.name / "plots"
         render_suite(

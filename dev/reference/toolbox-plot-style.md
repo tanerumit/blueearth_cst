@@ -315,13 +315,16 @@ on round 1-2-5 ticks (at most 8 labels) one step past the data. Change grids sha
 seasons; the seasonal-totals grid (mm, season total) gives each season its own axis and adds a gray
 Historical group (each model's reference-period total) left of a divider. Precipitation panel titles give
 the reference amount (ensemble-median monthly climatology summed over the season, "b) MAM · ref. ≈16 mm").
-The variability-ratio strips keep the annual-plus-seasons row with two-line labels and per-group counts.
+The interannual-variability grids (temperature SD, precipitation SD as season totals, precipitation CV in %)
+show each model's detrended values with a Historical group, like the seasonal-values grids; the per-model
+future/reference ratios stay in the analysis tables. The sign-agreement matrix shows Annual and the four
+seasons, not months.
 
 WF2 change strips and monthly-change figures draw a flat gray band around zero: the 90% range of mean
 change that year-to-year variability alone gives in the models' historical runs (`noise_halfwidth`,
 computed in the analysis step from each member's detrended reference SD; median across models). One band
-per season panel and one per month; none in mostly-dry periods or on the variability-ratio strips, where
-sampling benchmarks stay undisplayed.
+per season panel and one per month; none in mostly-dry periods or on the seasonal-values and variability
+grids.
 
 WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
 horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median
@@ -356,7 +359,7 @@ neither probability nor significance.
 WF2 ensemble coverage uses a compact one-line-per-model table (model, family, institution and country), a
 historical-reference column and pale alternating rows. A filled tile marks loaded members, with a count
 only where there is more than one; empty cells mean none. Historical counts deduplicate loaded reference
-series. Models with no loaded member are named in a footnote rather than as rows of zeros; a
+series. Models with no loaded member are left out, with their number in the caption; a
 dash marks an unknown family. The caption cites the family mapping and its provisional/unknown marks.
 
 ## Scientific interpretation and methodological review
@@ -402,13 +405,13 @@ in this visual review.
   sentence only for a material, map-specific fact: values beyond the colour scale, no scale or no
   drawn cells, a source-grid PET method, an auxiliary field, or classes left out of the key. The key
   and overlays explain the rest; support counts, thresholds and reference provenance stay in metadata.
-- WF2 captions (`projections/projection_captions.py`) follow the same skeleton: one sentence with the
-  quantity, units, period, model support and any encoding the figure has no key for. Add a sentence
-  only for a shifted or joined analysis window, the CV dry-mean exclusion, nonzero exclusion counts, or
-  hatched mostly-dry periods (marked, never dropped, since the dry-reference rule leaves too few models),
-  or the historical-variability band.
-  Caveats shared by every WF2 figure (spread is not a confidence interval, model dependence,
-  availability is not eligibility) are stated once, in `SUITE_NOTE` at the head of `figure_captions.md`.
+- WF2 captions (`projections/projection_captions.py`) are self-contained journal-style legends: the
+  quantity and units, periods, encoding where no key gives it, the method where it changes the reading
+  (detrending, day-weighting, dry exclusion) and the interpretive caveat (inter-model spread is not a
+  confidence interval; sign agreement is not significance). Report model counts, omitted scenarios or
+  models, shifted or joined windows, hatched dry periods and the variability band where they apply.
+  Keep table- and matrix-type figures (coverage, sign agreement) to two or three short sentences.
+  Suite-wide caveats are also stated once, in `SUITE_NOTE` at the head of `figure_captions.md`.
 - Captions span the full plotting area: from the leftmost axes' left edge to the rightmost axes' right
   edge, across every column of a multi-panel figure, both in captioned exports and on review pages.
 - Include captions inside the preview canvas when enabled. Add space below the image without resizing

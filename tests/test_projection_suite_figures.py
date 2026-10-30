@@ -89,9 +89,9 @@ def suite():
             trajectories.model_trajectories(anomalies)
         ),
     }
-    tables["seasonal_totals"] = analysis.seasonal_totals(tables["climatology"])
-    tables["seasonal_totals_summary"] = analysis.ensemble_summary(
-        tables["seasonal_totals"]
+    tables["seasonal_values"] = analysis.seasonal_values(tables["climatology"], changes)
+    tables["seasonal_values_summary"] = analysis.ensemble_summary(
+        tables["seasonal_values"]
     )
     tables["availability"] = analysis.product_availability(
         {
@@ -204,11 +204,11 @@ def test_manifest_bijection_unavailable_and_annotation_mode(
     )
     plots = tmp_path / "plots"
     manifest, skipped = render_suite(tables, record, plots, annotation=annotation)
-    assert len(manifest) == 1 and len(skipped) == 18
+    assert len(manifest) == 1 and len(skipped) == 19
     console = capsys.readouterr().out
     assert "projection_plots - Rendering windows:" in console
     assert "; reference: " in console
-    assert "Wrote 1 figure; 18 skipped; reasons → figure_captions.md" in console
+    assert "Wrote 1 figure; 19 skipped; reasons → figure_captions.md" in console
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }
@@ -244,7 +244,7 @@ def test_captions_and_distinct_folder_contract(suite):
     for phrase in (
         "2036–2065",
         "1985–2014",
-        "precipitation SD",
+        "precipitation (standard deviation, b)",
         "3 degenerate ratios are excluded.",
     ):
         assert phrase in text
@@ -256,7 +256,7 @@ def test_captions_and_distinct_folder_contract(suite):
         "period_2071_2100",
         "period_2081_2100",
     ]
-    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 19
+    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 20
 
 
 def test_unplotted_statistics_do_not_enable_mean_figures(suite):
@@ -428,11 +428,12 @@ def test_caption_counts_exclude_unplotted_variability_and_monthly_strips():
         "variability_model_ratios": rows,
         "model_changes": rows.assign(statistic="mean"),
     }
-    for filename in (
-        "cmip6_temp_annual_seasonal_sd_ratio_box_basin_avg.png",
-        "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
-    ):
-        assert figure_counts(filename, tables, "2036-2065")["n_models"] == 0
+    assert (
+        figure_counts(
+            "cmip6_temp_annual_seasonal_change_box_basin_avg.png", tables, "2036-2065"
+        )["n_models"]
+        == 0
+    )
     assert (
         figure_counts(
             "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png",
@@ -455,7 +456,7 @@ def test_caption_counts_exclude_unplotted_variability_and_monthly_strips():
 @pytest.mark.parametrize(
     "period,variable,quantity",
     [
-        ("DJF", "temp", "change"),
+        ("Jan", "temp", "change"),
         ("annual", "kin", "change"),
         ("annual", "temp", "change_pct"),
     ],
@@ -521,7 +522,7 @@ def test_mostly_dry_periods_are_shaded_and_captioned():
     window = {"window_id": "2036-2065", "used": [2036, 2065], "reference": [1985, 2014]}
     record["windows"] = [window]
     text = caption(pct, record, "2036-2065", {"n_models": 10, "mostly_dry": True})
-    assert "Hatched panels mark periods" in text
+    assert "Hatched panels mark seasons" in text
     assert "Gray" not in caption(pct, record, "2036-2065", {"n_models": 10})
 
 

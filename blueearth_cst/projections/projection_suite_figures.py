@@ -3,7 +3,6 @@
 import matplotlib
 
 matplotlib.use("Agg")
-import textwrap
 import zlib
 
 import numpy as np
@@ -110,20 +109,11 @@ def _legend(fig, scenarios):
     )
 
 
-def _ratio_limits(axes, values):
-    values = np.asarray(values, dtype=float)
-    values = np.r_[1.0, values[np.isfinite(values) & (values > 0)]]
-    low, high = np.log(values.min()), np.log(values.max())
-    pad = max(0.08, 0.15 * (high - low))
-    for ax in axes:
-        ax.set_ylim(np.exp(low - pad), np.exp(high + pad))
-
-
 #: The historical-variability band: the mean change the models' own
 #: year-to-year variability gives on its own (``noise_halfwidth``).
 NOISE_FILL = "#dfe4e7"
 
-#: The Historical group of the seasonal-totals grid.
+#: The Historical group of the seasonal-values grids.
 HISTORICAL_COLOR = "#5b6770"
 
 
@@ -175,28 +165,39 @@ def dry_shading(filename, tables, record, window_id=""):
         ]
         support = data.groupby("scenario").n.transform("max")
         return bool((data.n <= 0.5 * support).any())
-    if key.startswith("variability-ratio-"):
-        data = pd.DataFrame(record.get("variability_model_summary", []))
-        statistic = "cv_detrended" if key.endswith("-cv.png") else "std_detrended"
-        periods, by = STRIP_PERIODS, ["period"]
-    elif key.startswith(("change-", "monthly-change-")):
+    if key in GRID_PRODUCTS:
+        name, variable, quantity, statistic = GRID_PRODUCTS[key]
+        if variable != "precip" or not (
+            quantity == "change_pct" or statistic in ("sd", "cv")
+        ):
+            return False
+        data = tables.get(SUMMARIES[name], pd.DataFrame())
+        periods, by = SEASONS, ["period"]
+    elif key.startswith("monthly-change-"):
         data = tables.get("change_summary", pd.DataFrame())
-        statistic = "mean"
-        monthly = key.startswith("monthly-")
-        periods = MONTHS if monthly else SEASONS
-        by = ["period", "scenario"] if monthly else ["period"]
+        quantity, statistic, periods, by = (
+            "change_pct",
+            "mean",
+            MONTHS,
+            ["period", "scenario"],
+        )
     else:
         return False
     if data.empty:
         return False
-    if "quantity" in data and not key.startswith("variability-"):
-        data = data.loc[data.quantity == "change_pct"]
     data = data.loc[
         (data.window_id == window_id)
         & (data.variable == "precip")
+        & (data.quantity == quantity)
         & (data.statistic == statistic)
         & data.period.isin(periods)
     ]
+    if key in GRID_PRODUCTS and GRID_PRODUCTS[key][0] in tables:  # as drawn
+        data = data.loc[
+            data.scenario.isin(
+                grid_support(filename, tables, window_id).get("models", {})
+            )
+        ]
     return any(_mostly_dry(rows) for _, rows in data.groupby(by))
 
 
@@ -248,6 +249,33 @@ def shown_scenarios(table, scenarios=None):
     return shown, {s: int(support.get(s, 0)) for s in order if s not in shown}
 
 
+#: Seasonal-grid products: (model table, variable, quantity, statistic). The
+#: summary table is the model table's summary twin.
+GRID_PRODUCTS = {
+    "change-temperature.png": ("model_changes", "temp", "change", "mean"),
+    "change-precipitation-pct.png": ("model_changes", "precip", "change_pct", "mean"),
+    "values-precipitation-total.png": ("seasonal_values", "precip", "value", "total"),
+    "values-temperature-mean.png": ("seasonal_values", "temp", "value", "mean"),
+    "values-precipitation-sd.png": ("seasonal_values", "precip", "value", "sd"),
+    "values-temperature-sd.png": ("seasonal_values", "temp", "value", "sd"),
+    "values-precipitation-cv.png": ("seasonal_values", "precip", "value", "cv"),
+}
+SUMMARIES = {
+    "model_changes": "change_summary",
+    "seasonal_values": "seasonal_values_summary",
+}
+#: Y-axis unit per (variable, quantity, statistic); the title says the rest.
+GRID_UNITS = {
+    ("temp", "change", "mean"): "°C",
+    ("precip", "change_pct", "mean"): "%",
+    ("precip", "value", "total"): "mm (season total)",
+    ("temp", "value", "mean"): "°C",
+    ("precip", "value", "sd"): "mm (season total)",
+    ("temp", "value", "sd"): "°C",
+    ("precip", "value", "cv"): "%",
+}
+
+
 def grid_support(filename, tables, window_id="", scenarios=None):
     """Models per shown group (min and max over seasons) and dropped scenarios.
 
@@ -255,14 +283,10 @@ def grid_support(filename, tables, window_id="", scenarios=None):
     printing them in the panels. Empty for other products.
     """
     key = figure_key(filename)
-    if key == "totals-precipitation.png":
-        data, quantity, statistic = tables["seasonal_totals"], "value", "total"
-    elif key.startswith("change-") and "cloud" not in key:
-        data, statistic = tables["model_changes"], "mean"
-        quantity = "change_pct" if key.endswith("-pct.png") else "change"
-    else:
+    if key not in GRID_PRODUCTS:
         return {}
-    variable = "temp" if "temperature" in key else "precip"
+    name, variable, quantity, statistic = GRID_PRODUCTS[key]
+    data = tables[name]
     data = data.loc[
         (data.variable == variable)
         & (data.quantity == quantity)
@@ -342,26 +366,38 @@ def _group(ax, x, values, color, row, seed):
         )
 
 
-def season_grid(models, summary, *, variable, quantity, scenarios=None, amounts=None):
+def season_grid(
+    models,
+    summary,
+    *,
+    variable,
+    quantity,
+    statistic="mean",
+    scenarios=None,
+    amounts=None,
+):
     """Seasonal 2x2 grid of model points, median and IQR per scenario.
 
-    ``quantity`` "change"/"change_pct" share one y-axis across seasons, with
-    the historical-variability band and, for precipitation %, mostly-dry
-    seasons hatched. ``"value"`` (seasonal totals) adds a Historical group
-    and gives each season its own axis, so dry seasons are not squeezed.
-    The y-axis shows the unit only; periods go in the title and caption.
+    Changes (``quantity`` "change"/"change_pct") share one y-axis across
+    seasons, with the historical-variability band. Seasonal values
+    (``"value"``: total, mean, sd, cv) add a Historical group and give each
+    season its own axis, so dry seasons are not squeezed. Precipitation %
+    changes, SD and CV hatch mostly-dry seasons. The y-axis shows the unit
+    only; periods go in the title and caption.
     """
     pick = lambda t: t.loc[  # noqa: E731
         (t.variable == variable)
         & (t.quantity == quantity)
         & t.period.isin(SEASONS)
-        & (t.statistic == ("total" if quantity == "value" else "mean"))
+        & (t.statistic == statistic)
     ]
     models, sums = pick(models), pick(summary)
     scen, _ = shown_scenarios(models, scenarios)
     totals = quantity == "value"
     groups = (["historical"] if totals else []) + scen
-    unit = "°C" if variable == "temp" else "mm (season total)" if totals else "%"
+    unit = GRID_UNITS[(variable, quantity, statistic)]
+    # Amounts, spreads and CV start at zero; mean temperature does not.
+    floor = 0 if totals and statistic != "mean" else None
     fig, grid = new_fig(2 * 65, nrows=2, ncols=2, width_mm=W_FULL, sharey=not totals)
     values = models.loc[models.scenario.isin(groups), "value"].to_numpy(float)
     values = np.r_[0, values[np.isfinite(values)]]
@@ -371,8 +407,8 @@ def season_grid(models, summary, *, variable, quantity, scenarios=None, amounts=
         if amounts and np.isfinite(amounts.get(season, np.nan)):
             title += f" · ref. ≈{amounts[season]:.0f} mm"
         dry = (
-            quantity == "change_pct"
-            and variable == "precip"
+            variable == "precip"
+            and (quantity == "change_pct" or statistic in ("sd", "cv"))
             and _mostly_dry(panel.loc[panel.scenario.isin(scen)])
         )
         if dry:
@@ -398,7 +434,11 @@ def season_grid(models, summary, *, variable, quantity, scenarios=None, amounts=
             local = models.loc[
                 (models.period == season) & models.scenario.isin(groups), "value"
             ].to_numpy(float)
-            _round_axis(ax, 0, np.nanmax(local) if len(local) else 1, floor=0)
+            local = local[np.isfinite(local)]
+            if not len(local):
+                local = np.array([0.0, 1.0])
+            low = 0 if floor is not None else local.min()
+            _round_axis(ax, low, local.max(), floor=floor)
         else:
             _round_axis(ax, values.min(), values.max())
             if not dry and "noise_halfwidth" in panel:
@@ -406,7 +446,8 @@ def season_grid(models, summary, *, variable, quantity, scenarios=None, amounts=
                 if np.isfinite(half):
                     ax.axhspan(-half, half, color=NOISE_FILL, lw=0, zorder=0.5)
         ygrid(ax)
-        ax.axhline(0, color=MUTED, lw=LW_REF)
+        if floor is not None or not totals:
+            ax.axhline(0, color=MUTED, lw=LW_REF)
         # The Historical group sits left of a divider, set back from the
         # scenarios so its label does not crowd theirs.
         first = int(totals)
@@ -432,147 +473,6 @@ def season_grid(models, summary, *, variable, quantity, scenarios=None, amounts=
         ax.set_xlim(xs[0] - 0.65, xs[-1] + 0.6)
         if i % 2 == 0:
             ax.set_ylabel(unit)
-    return fig
-
-
-def dot_strip(
-    models,
-    summary,
-    *,
-    variable,
-    quantity,
-    statistic="mean",
-    scenarios=None,
-    reference=(1985, 2014),
-    baseline=0.0,
-    ylabel=None,
-):
-    """Model points, median tick and IQR band per scenario; annual and seasons.
-
-    Scenarios are labelled on the x-axis and each group states its model
-    count. The band is the prepared IQR, drawn only where the analysis shows
-    it (at least ``iqr_min_models``); no whiskers, so one outlying model does
-    not read as typical spread.
-    """
-    selected = models.loc[
-        (models.variable == variable)
-        & (models.quantity == quantity)
-        & (models.statistic == statistic)
-    ]
-    sums = summary.loc[
-        (summary.variable == variable)
-        & (summary.quantity == quantity)
-        & (summary.statistic == statistic)
-    ]
-    unit = "%" if quantity == "change_pct" else "°C" if variable == "temp" else "mm d⁻¹"
-    fig, grid = new_fig(
-        H_SINGLE, ncols=len(STRIP_PERIODS), width_mm=W_FULL, sharey=True
-    )
-    axes = list(grid.flat)
-    axes[0].set_ylabel(ylabel or f"Relative to {reference[0]}–{reference[1]} ({unit})")
-    scen = _scenarios(selected, scenarios)
-    values = selected.loc[selected.period.isin(STRIP_PERIODS), "value"].to_numpy(float)
-    values = np.r_[baseline, values[np.isfinite(values)]]
-    low, high = values.min(), values.max()
-    pad = 0.06 * (high - low or 1)
-    for i, (ax, period) in enumerate(zip(axes, STRIP_PERIODS, strict=True)):
-        title = f"{chr(97 + i)}) {'Annual' if period == 'annual' else period}"
-        panel_sums = sums.loc[sums.period == period]
-        dry = variable == "precip" and _mostly_dry(panel_sums)
-        if dry:
-            # The model counts along the bottom show how few remain.
-            ax.add_patch(_dry_cell((0, 0), 1, 1, transform=ax.transAxes, zorder=0))
-            title += " · dry"
-        ax.set_title(title, loc="left")
-        ax.set_ylim(low - 2.5 * pad, high + pad)  # room for the model counts
-        ax.tick_params(axis="both", length=3)
-        ygrid(ax)
-        ax.axhline(baseline, color=MUTED, lw=LW_REF)
-        if not dry and "noise_halfwidth" in panel_sums:
-            # One band per panel: the scenarios' model sets give nearly the
-            # same historical noise, and per-group bands would crowd the strip.
-            half = panel_sums.noise_halfwidth.astype(float).median()
-            if np.isfinite(half):
-                ax.axhspan(
-                    baseline - half, baseline + half, color=NOISE_FILL, lw=0, zorder=0.5
-                )
-        panel_values = selected.loc[selected.period == period, "value"].to_numpy(float)
-        if not np.isfinite(panel_values).any():
-            ax.text(
-                0.5,
-                0.5,
-                "No eligible\nmodel estimates",
-                transform=ax.transAxes,
-                ha="center",
-                va="center",
-                color=MUTED,
-                fontsize=FS_NOTE,
-                bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.88},
-            )
-        for j, s in enumerate(scen):
-            values = (
-                selected.loc[
-                    (selected.period == period) & (selected.scenario == s), "value"
-                ]
-                .dropna()
-                .to_numpy(float)
-            )
-            values = np.sort(values)
-            rng = np.random.default_rng(zlib.crc32(f"{period}:{s}".encode()))
-            jitter = rng.uniform(-0.16, 0.16, len(values))
-            color = _color(s)
-            rows = sums.loc[(sums.period == period) & (sums.scenario == s)]
-            row = rows.iloc[0] if not rows.empty else None
-            if row is not None and row.iqr_shown:
-                ax.add_patch(
-                    Rectangle(
-                        (j - 0.3, row.q25),
-                        0.6,
-                        row.q75 - row.q25,
-                        facecolor=color,
-                        alpha=0.22,
-                        lw=0,
-                        zorder=2,
-                    )
-                )
-            ax.scatter(
-                j + jitter,
-                values,
-                color=tuple(0.8 * c for c in to_rgb(color)),
-                edgecolors="white",
-                linewidths=0.3,
-                s=9,
-                alpha=0.7,
-                zorder=4,
-            )
-            if row is not None and np.isfinite(row["median"]):
-                ax.plot(
-                    [j - 0.3, j + 0.3],
-                    [row["median"]] * 2,
-                    color=color,
-                    lw=1.8,
-                    solid_capstyle="butt",
-                    zorder=5,
-                )
-            ax.text(
-                j,
-                0.015,
-                str(len(values)),
-                transform=ax.get_xaxis_transform(),
-                ha="center",
-                va="bottom",
-                fontsize=FS_NOTE - 1,
-                color=MUTED,
-            )
-        ax.set_xticks(
-            range(len(scen)),
-            [_label(s).replace("-", "\n", 1) for s in scen],
-            fontsize=FS_NOTE - 1,
-            linespacing=1.0,
-        )
-        ax.tick_params(axis="x", length=0, pad=2)
-        ax.set_xlim(-0.6, len(scen) - 0.4)
-    fig.get_layout_engine().set(w_pad=1.8 / 25.4, h_pad=1.8 / 25.4, wspace=0, hspace=0)
     return fig
 
 
@@ -919,49 +819,6 @@ def annual_overview(
     return fig
 
 
-def ratio_strip(models, *, variable, statistic, bands=(), summary=None, scenarios=None):
-    """Prepared model ratios with the reviewed outline boxes and model points.
-
-    Retained benchmark tables remain available separately; this descriptive
-    ensemble figure displays model spread without sampling bands.
-    """
-    data = models.loc[
-        (models.variable == variable) & (models.statistic == statistic)
-    ].copy()
-    data["quantity"] = "ratio"
-    if summary is None:
-        summary = pd.DataFrame(
-            columns=[
-                "variable",
-                "statistic",
-                "quantity",
-                "period",
-                "scenario",
-                "min",
-                "max",
-                "median",
-                "q25",
-                "q75",
-                "iqr_shown",
-            ]
-        )
-    else:
-        summary = summary.copy()
-        summary["quantity"] = "ratio"
-    name = "Temperature" if variable == "temp" else "Precipitation"
-    indicator = "SD" if statistic == "std_detrended" else "CV"
-    return dot_strip(
-        data,
-        summary,
-        variable=variable,
-        quantity="ratio",
-        statistic=statistic,
-        scenarios=scenarios,
-        baseline=1.0,
-        ylabel=f"{name} {indicator} ratio",
-    )
-
-
 def pooled_ratio_figure(members, summary, scenarios=None):
     """Member points with prepared geometric-member, equal-model summaries."""
     indicators = (
@@ -1150,15 +1007,15 @@ def agreement_matrix(agreement, scenarios=None):
         ("temp", "change", "Temperature"),
         ("precip", "change_pct", "Precipitation"),
     )
-    periods = [p for p in ("annual", *MONTHS) if p in set(data.period)]
+    periods = [p for p in STRIP_PERIODS if p in set(data.period)]
     positive = ("#eef3f8", "#c6d6e8", "#8fb0d3", "#3d6fa5")
     negative = ("#f8eeee", "#ecc9c9", "#d98f8f", "#a8403f")
     # Compact cells (about 7 x 3.6 mm) carry only the median sign, under
-    # two-line scenario labels ("SSP1" / "2.6") and one-letter months. Text is
+    # two-line scenario labels ("SSP1" / "2.6"), annual then seasons. Text is
     # one point below the preset so it stays in proportion to the cells.
     small = FS_NOTE - 1
     fig, axes = new_fig(
-        15 + 3.6 * len(periods),
+        24 + 3.6 * len(periods),
         ncols=2,
         width_mm=max(64, 24 + 2 * 7 * len(scen)),  # at least the legend
     )
@@ -1239,7 +1096,7 @@ def agreement_matrix(agreement, scenarios=None):
         ax.tick_params(axis="x", bottom=False, labelbottom=False)
         ax.set_yticks(
             np.array(ys) + 0.5,
-            ["Annual" if p == "annual" else p[0] for p in periods] if b == 0 else [],
+            ["Annual" if p == "annual" else p for p in periods] if b == 0 else [],
         )
         ax.tick_params(axis="both", labelsize=small, pad=1.5)
         ax.tick_params(axis="x", length=2, width=0.6)
@@ -1298,31 +1155,20 @@ def availability_matrix(coverage, scenarios=None):
         ]
 
     counts_by_model = {model: counts_of(model) for model in identities.model}
-    # Models with nothing loaded are named in a footnote instead of filling
-    # rows with zeros; repeated source ids there name their institutions.
+    # Models with nothing loaded are left out instead of filling
+    # rows with zeros; the caption gives their number and coverage.csv
+    # names them.
     empty = identities.loc[[not any(counts_by_model[m]) for m in identities.model]]
     identities = identities.loc[~identities.model.isin(empty.model)]
     # One line per model (x in mm): model, family, institution, then a 9 mm
     # column per run whose filled tile marks loaded members.
     xs = [0, 25, 38, *[68 + 9 * j for j in range(len(runs))]]
     total = 68 + 9 * len(runs)
-    note = ""
-    if len(empty):
-        names = [
-            f"{source} ({', '.join(group.institution)})" if len(group) > 1 else source
-            for source, group in empty.groupby("source_id", sort=False)
-        ]
-        note = textwrap.fill(
-            "No member loaded in this ensemble: " + ", ".join(names) + ".",
-            width=int(total * 0.75),  # characters at FS_NOTE across the table
-            break_on_hyphens=False,
-        )
     n = len(identities)
-    note_rows = note.count("\n") + 1 if note else 0
-    fig, axes = new_fig(12 + 4.2 * n + 3.2 * note_rows, width_mm=total + 4)
+    fig, axes = new_fig(12 + 4.2 * n, width_mm=total + 4)
     ax = axes[0, 0]
     ax.set_axis_off()
-    ax.set(xlim=(0, total), ylim=(n + 0.5 + 0.8 * note_rows, -1.0))
+    ax.set(xlim=(0, total), ylim=(n + 0.5, -1.0))
     titles = ["Model", "Family", "Institution", "Hist.", *[_label(s) for s in scen]]
     for j, (x, title) in enumerate(zip(xs, titles, strict=True)):
         ax.text(
@@ -1371,8 +1217,6 @@ def availability_matrix(coverage, scenarios=None):
                     color=INK,
                 )
     ax.axhline(n + 0.5, color=INK, lw=0.8)
-    if note:
-        ax.text(0, n + 0.8, note, ha="left", va="top", fontsize=FS_NOTE, color=INK)
     return fig
 
 
@@ -1429,30 +1273,6 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                     if w["window_id"] == window_id
                 ),
             )
-        if filename.startswith("variability-ratio-"):
-            bands = [
-                b
-                for b in record.get("display_null_bands", [])
-                if b["window_id"] == window_id
-            ]
-            return ratio_strip(
-                table("variability_model_ratios"),
-                variable=variable,
-                statistic="std_detrended"
-                if filename.endswith("-sd.png")
-                else "cv_detrended",
-                bands=bands,
-                summary=pd.DataFrame(
-                    [
-                        r
-                        for r in record.get("variability_model_summary", [])
-                        if r["window_id"] == window_id
-                    ]
-                )
-                if record.get("variability_model_summary")
-                else None,
-                scenarios=scenarios,
-            )
         if filename == "variability-member-ratios.png":
             return pooled_ratio_figure(
                 table("variability_member_ratios"),
@@ -1473,27 +1293,21 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 combined="combined" in filename,
                 scenarios=scenarios,
             )
-        amounts = (
-            reference_amounts(table("climatology_summary"), scenarios)
-            if variable == "precip"
-            else None
-        )
-        if filename == "totals-precipitation.png":
-            return season_grid(
-                table("seasonal_totals"),
-                table("seasonal_totals_summary"),
-                variable="precip",
-                quantity="value",
-                scenarios=scenarios,
-                amounts=amounts,
+        if filename in GRID_PRODUCTS:
+            name, variable, quantity, statistic = GRID_PRODUCTS[filename]
+            with_amounts = (quantity, statistic) in (
+                ("change_pct", "mean"),
+                ("value", "total"),
             )
-        if filename.startswith("change-"):
             return season_grid(
-                table("model_changes"),
-                table("change_summary"),
+                table(name),
+                table(SUMMARIES[name]),
                 variable=variable,
-                quantity="change_pct" if filename.endswith("-pct.png") else "change",
+                quantity=quantity,
+                statistic=statistic,
                 scenarios=scenarios,
-                amounts=amounts,
+                amounts=reference_amounts(table("climatology_summary"), scenarios)
+                if with_amounts
+                else None,
             )
     raise ValueError(f"unknown suite product: {filename}")

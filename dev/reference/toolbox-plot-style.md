@@ -287,7 +287,7 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | WF2 handover line | Dashed line at the CMIP6 historical–scenario handover (2014.5), never the current year. |
 | WF2 change strips | Retain the newer original scenario legend, unlabeled x-axis, box and point styling. |
 | WF2 seasonal cycle | Median lines; shade historical range only; one-row legend above the axes. |
-| WF2 dry periods | Precipitation %/ratio panels, months or sign cells keeping at most half the models: gray. |
+| WF2 dry periods | Precipitation %/ratio panels or months keeping at most half the models: gray. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |
@@ -330,9 +330,11 @@ corner. Use “Mean precipitation change (%)” and “Mean temperature change (
 reference and future periods in the caption.
 
 WF2 sign-agreement matrices use temperature and precipitation percentage-change panels, four discrete
-agreement classes with paired blue/red swatches, and visible scenario and period ticks. Cell signs show
-the median direction and k/n shows model agreement; choose text color by fill luminance. The caption
-states that directional agreement is neither probability nor significance.
+agreement classes with paired blue/red swatches, and compact cells (about 7 x 3.6 mm) under vertical
+scenario labels. Cells show only the median sign, with text color chosen by fill luminance; k/n counts
+stay in `sign_agreement.csv`. Precipitation cells keeping at most half the scenario's models are hatched
+with no sign and labelled "Excluded (too few models)". The caption states that directional agreement is
+neither probability nor significance.
 
 WF2 ensemble coverage uses a compact table with consistent numeric member counts, a historical-reference
 column, family and institution metadata, and pale alternating rows. Historical counts deduplicate loaded

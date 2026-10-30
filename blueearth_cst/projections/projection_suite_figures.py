@@ -117,6 +117,13 @@ def _ratio_limits(axes, values):
 DRY_FILL = "#e9ecee"
 
 
+def _dry_cell(xy, width, height):
+    """A hatched, excluded sign-agreement cell (also its legend swatch)."""
+    return Rectangle(
+        xy, width, height, facecolor="white", edgecolor="#cfd6da", hatch="///", lw=0
+    )
+
+
 def _mostly_dry(rows):
     """Whether at most half the models in prepared summary ``rows`` remain.
 
@@ -876,10 +883,12 @@ def agreement_matrix(agreement, scenarios=None):
     periods = [p for p in ("annual", *MONTHS) if p in set(data.period)]
     positive = ("#eef3f8", "#c6d6e8", "#8fb0d3", "#3d6fa5")
     negative = ("#f8eeee", "#ecc9c9", "#d98f8f", "#a8403f")
+    # Compact cells (about 7 x 3.6 mm) carry only the median sign; scenario
+    # labels stand vertically so columns need not fit their width.
     fig, axes = new_fig(
-        34 + 4.2 * len(periods),
+        20 + 3.6 * len(periods),
         ncols=2,
-        width_mm=max(90, 20 + 2 * (13 * len(scen) + 5)),
+        width_mm=max(72, 24 + 2 * 7 * len(scen)),  # at least the legend
     )
     ys = [
         i + (0.45 if i and periods[0] == "annual" else 0) for i in range(len(periods))
@@ -916,7 +925,7 @@ def agreement_matrix(agreement, scenarios=None):
                 sparse = variable == "precip" and row.n <= 0.5 * support[s]
                 any_dry |= sparse
                 fill = (
-                    DRY_FILL
+                    "white"
                     if sparse
                     else (positive if sign == "+" else negative)[k]
                     if sign and np.isfinite(row.fraction)
@@ -925,6 +934,12 @@ def agreement_matrix(agreement, scenarios=None):
                 ax.add_patch(
                     Rectangle((j, y), 1, 1, facecolor=fill, edgecolor="white", lw=1)
                 )
+                if sparse:
+                    # Excluded: hatched with no sign, so no direction is read
+                    # into it, and not flat gray, which reads like the palest
+                    # agreement class.
+                    ax.add_patch(_dry_cell((j + 0.04, y + 0.06), 0.92, 0.88))
+                    continue
                 rgb = to_rgb(fill)
                 linear = [
                     c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
@@ -936,7 +951,7 @@ def agreement_matrix(agreement, scenarios=None):
                 ax.text(
                     j + 0.5,
                     y + 0.5,
-                    f"{sign} {int(row.k)}/{int(row.n)}".strip(),
+                    sign,
                     ha="center",
                     va="center",
                     fontsize=FS_NOTE,
@@ -945,6 +960,7 @@ def agreement_matrix(agreement, scenarios=None):
         ax.set(xlim=(0, len(scen)), ylim=(ys[-1] + 1, 0))
         ax.set_xticks(np.arange(len(scen)) + 0.5, [_label(s) for s in scen])
         ax.xaxis.tick_top()
+        ax.tick_params(axis="x", labelrotation=90, bottom=False, labelbottom=False)
         ax.set_yticks(
             np.array(ys) + 0.5,
             ["Annual" if p == "annual" else p for p in periods] if b == 0 else [],
@@ -964,18 +980,25 @@ def agreement_matrix(agreement, scenarios=None):
     ]
     labels = ["<60%", "60–80%", "80–90%", "≥90%"]
     if any_dry:
-        handles.append(Patch(facecolor=DRY_FILL, edgecolor="none"))
-        labels.append("Mostly dry")
-    fig.legend(
+        handles.append(_dry_cell((0, 0), 1, 1))
+        labels.append("Excluded (too few models)")
+    legend = fig.legend(
         handles,
         labels,
         handler_map={tuple: HandlerTuple(ndivide=None, pad=0.3)},
-        loc="outside upper left",
-        ncols=len(labels),
+        loc="upper left",
+        bbox_to_anchor=(0.01, 0.995),
+        ncols=3,
         frameon=False,
         alignment="left",
-        title="Models sharing median sign · blue: increase; red: decrease",
+        title="Models sharing the median sign (+ blue, − red)",
     )
+    # Reserve exactly the legend's height: the "outside" legend slot leaves a
+    # wide band above titles that sit over vertical, top-side tick labels.
+    legend.set_in_layout(False)
+    fig.canvas.draw()
+    top = legend.get_window_extent().y0 / fig.bbox.height - 0.01
+    fig.get_layout_engine().set(rect=(0, 0, 1, top))
     return fig
 
 

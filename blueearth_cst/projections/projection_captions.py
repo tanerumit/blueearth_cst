@@ -145,7 +145,7 @@ def caption(filename, record, window_id="", counts=None):
             )
     elif filename == "sign-agreement.png":
         lead = (
-            f"Number of CMIP6 models (k/n) sharing the sign of the median annual and monthly change, "
+            f"Share of CMIP6 models sharing the sign (+ or −) of the median annual and monthly change, "
             f"{_period(window)}; this measures agreement in direction, not probability or significance"
         )
     elif filename.startswith("seasonal-cycle-"):
@@ -183,15 +183,15 @@ def caption(filename, record, window_id="", counts=None):
         )
         notes += _exclusions(counts)
     if counts.get("mostly_dry"):
-        shaded = (
-            "months"
-            if filename.startswith("monthly-")
-            else "cells"
-            if filename == "sign-agreement.png"
-            else "panels"
-        )
-        notes.append(
-            f"Gray {shaded} mark periods where half or more of the models fall below the dry-reference threshold "
-            "and are excluded; the models left are too few to be representative."
-        )
+        if filename == "sign-agreement.png":
+            notes.append(
+                "Hatched cells are excluded: half or more of the models fall below the dry-reference "
+                "threshold, leaving too few to judge agreement."
+            )
+        else:
+            shaded = "Gray months" if filename.startswith("monthly-") else "Gray panels"
+            notes.append(
+                f"{shaded} mark periods where half or more of the models fall below the dry-reference "
+                "threshold and are excluded; the models left are too few to be representative."
+            )
     return " ".join([f"{lead}.", *notes])

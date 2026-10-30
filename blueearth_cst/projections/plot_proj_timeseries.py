@@ -211,6 +211,11 @@ def render_suite(
         window_id = row.get("window_id") or ""
         counts = figure_counts(row["filename"], tables, window_id)
         counts["mostly_dry"] = dry_shading(row["filename"], tables, record, window_id)
+        counts["variability_band"] = bool(
+            figure_key(row["filename"]).startswith(("change-", "monthly-change-"))
+            and "cloud" not in row["filename"]
+            and "noise_halfwidth" in tables["change_summary"]
+        )
         text = caption(row["filename"], record, window_id, counts)
         with use_preset(CST_PRESET):
             fig = render_product(

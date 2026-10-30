@@ -191,6 +191,12 @@ def caption(filename, record, window_id="", counts=None):
             "models; 1 means no change"
         )
         notes += _exclusions(counts)
+    if counts.get("variability_band"):
+        notes.append(
+            "The gray band around zero is the 90% range of mean change that year-to-year variability "
+            "alone gives in the models' historical runs (median across models); it assumes "
+            "independent years, so autocorrelation would widen it."
+        )
     if counts.get("mostly_dry"):
         if filename == "sign-agreement.png":
             notes.append(
@@ -198,7 +204,11 @@ def caption(filename, record, window_id="", counts=None):
                 "threshold, leaving too few to judge agreement."
             )
         else:
-            shaded = "Gray months" if filename.startswith("monthly-") else "Gray panels"
+            shaded = (
+                "Hatched months"
+                if filename.startswith("monthly-")
+                else "Hatched panels"
+            )
             notes.append(
                 f"{shaded} mark periods where half or more of the models fall below the dry-reference "
                 "threshold and are excluded; the models left are too few to be representative."

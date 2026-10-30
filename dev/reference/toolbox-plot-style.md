@@ -287,7 +287,7 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | WF2 handover line | Dashed line at the CMIP6 historical–scenario handover (2014.5), never the current year. |
 | WF2 change strips | Model points, median tick, IQR band; scenarios labelled on the x-axis; no legend. |
 | WF2 seasonal cycle | Median lines; shade historical range only; one-row legend above the axes. |
-| WF2 dry periods | Precipitation %/ratio panels or months keeping at most half the models: gray. |
+| WF2 dry periods | Precipitation %/ratio panels or months keeping at most half the models: hatched. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |
@@ -312,6 +312,12 @@ lines (SSP1 over 2.6) and each group's model count sits at the bottom of the pan
 strip shows percentage change only, with each panel title giving the reference amount (the ensemble-median
 monthly climatology summed over the period, e.g. "b) DJF · ref. ≈48 mm"); the separate absolute-change
 figure is retired.
+
+WF2 change strips and monthly-change figures draw a flat gray band around zero: the 90% range of mean
+change that year-to-year variability alone gives in the models' historical runs (`noise_halfwidth`,
+computed in the analysis step from each member's detrended reference SD; median across models). One band
+per strip panel and one per month; none in mostly-dry periods or on the variability-ratio strips, where
+sampling benchmarks stay undisplayed.
 
 WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
 horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median
@@ -395,7 +401,8 @@ in this visual review.
 - WF2 captions (`projections/projection_captions.py`) follow the same skeleton: one sentence with the
   quantity, units, period, model support and any encoding the figure has no key for. Add a sentence
   only for a shifted or joined analysis window, the CV dry-mean exclusion, nonzero exclusion counts, or
-  gray mostly-dry periods (shaded, never dropped, since the dry-reference rule leaves too few models).
+  hatched mostly-dry periods (marked, never dropped, since the dry-reference rule leaves too few models),
+  or the historical-variability band.
   Caveats shared by every WF2 figure (spread is not a confidence interval, model dependence,
   availability is not eligibility) are stated once, in `SUITE_NOTE` at the head of `figure_captions.md`.
 - Captions span the full plotting area: from the leftmost axes' left edge to the rightmost axes' right

@@ -113,15 +113,26 @@ def _ratio_limits(axes, values):
         ax.set_ylim(np.exp(low - pad), np.exp(high + pad))
 
 
-#: Background of precipitation panels, months and cells where most models fall
-#: under the analysis dry-reference rule, so the few left are not representative.
-DRY_FILL = "#e9ecee"
+#: The historical-variability band: the mean change the models' own
+#: year-to-year variability gives on its own (``noise_halfwidth``).
+NOISE_FILL = "#dfe4e7"
 
 
-def _dry_cell(xy, width, height):
-    """A hatched, excluded sign-agreement cell (also its legend swatch)."""
+def _dry_cell(xy, width, height, **kw):
+    """A hatched mostly-dry area: excluded sign cells, dry panels and months.
+
+    Hatched rather than flat gray, which would read like the palest agreement
+    class or the historical-variability band.
+    """
     return Rectangle(
-        xy, width, height, facecolor="white", edgecolor="#cfd6da", hatch="///", lw=0
+        xy,
+        width,
+        height,
+        facecolor="white",
+        edgecolor="#cfd6da",
+        hatch="///",
+        lw=0,
+        **kw,
     )
 
 
@@ -262,15 +273,24 @@ def dot_strip(
         if amounts and np.isfinite(amounts.get(period, np.nan)):
             title += f" · ref. ≈{amounts[period]:.0f} mm"
         panel_sums = sums.loc[sums.period == period]
-        if variable == "precip" and _mostly_dry(panel_sums):
+        dry = variable == "precip" and _mostly_dry(panel_sums)
+        if dry:
             # The model counts along the bottom show how few remain.
-            ax.set_facecolor(DRY_FILL)
+            ax.add_patch(_dry_cell((0, 0), 1, 1, transform=ax.transAxes, zorder=0))
             title += " · dry"
         ax.set_title(title, loc="left")
         ax.set_ylim(low - 2.5 * pad, high + pad)  # room for the model counts
         ax.tick_params(axis="both", length=3)
         ygrid(ax)
         ax.axhline(baseline, color=MUTED, lw=LW_REF)
+        if not dry and "noise_halfwidth" in panel_sums:
+            # One band per panel: the scenarios' model sets give nearly the
+            # same historical noise, and per-group bands would crowd the strip.
+            half = panel_sums.noise_halfwidth.astype(float).median()
+            if np.isfinite(half):
+                ax.axhspan(
+                    baseline - half, baseline + half, color=NOISE_FILL, lw=0, zorder=0.5
+                )
         panel_values = selected.loc[selected.period == period, "value"].to_numpy(float)
         if not np.isfinite(panel_values).any():
             ax.text(
@@ -410,7 +430,22 @@ def monthly_change_figure(summary, *, variable, scenarios=None, reference=(1985,
         rows = data.loc[data.scenario == s].set_index("period").reindex(MONTHS)
         for x, (_, row) in enumerate(rows.iterrows()):
             if variable == "precip" and _mostly_dry(rows.iloc[[x]]):
-                ax.axvspan(x - 0.5, x + 0.5, color=DRY_FILL, lw=0, zorder=0)
+                ax.add_patch(
+                    _dry_cell(
+                        (x - 0.5, 0), 1, 1, transform=ax.get_xaxis_transform(), zorder=0
+                    )
+                )
+            elif np.isfinite(half := float(row.get("noise_halfwidth", np.nan))):
+                ax.add_patch(
+                    Rectangle(
+                        (x - 0.45, -half),
+                        0.9,
+                        2 * half,
+                        color=NOISE_FILL,
+                        lw=0,
+                        zorder=0.5,
+                    )
+                )
             if not np.isfinite(row["median"]):
                 continue
             ax.plot([x] * 2, [row["min"], row["max"]], color=color, lw=LW_RANGE)

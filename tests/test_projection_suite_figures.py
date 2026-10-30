@@ -505,5 +505,39 @@ def test_mostly_dry_periods_are_shaded_and_captioned():
     window = {"window_id": "2036-2065", "used": [2036, 2065], "reference": [1985, 2014]}
     record["windows"] = [window]
     text = caption(pct, record, "2036-2065", {"n_models": 10, "mostly_dry": True})
-    assert "Gray panels mark periods" in text
+    assert "Hatched panels mark periods" in text
     assert "Gray" not in caption(pct, record, "2036-2065", {"n_models": 10})
+
+
+def test_variability_band_scales_reference_noise_and_takes_model_medians():
+    base = dict(
+        scenario="ssp245",
+        window_id="2036-2065",
+        reference_start=1985,
+        reference_end=2014,
+        future_start=2036,
+        future_end=2065,
+        period="annual",
+        variable="precip",
+        statistic="mean",
+        n_reference=20,
+        n_future=21,
+        mean_change_eligible=True,
+    )
+    rows = []
+    for model, sd, mean in (("A/a", 0.1, 1.0), ("B/b", 0.2, 1.0), ("C/c", 0.3, 1.0)):
+        for quantity, units in (("change", "mm/day"), ("change_pct", "%")):
+            rows.append(
+                dict(
+                    base,
+                    model=model,
+                    quantity=quantity,
+                    units=units,
+                    null_reference_sd=sd,
+                    null_reference_mean=mean,
+                )
+            )
+    band = analysis.variability_band(pd.DataFrame(rows)).set_index("quantity")
+    expected = 1.6448536 * 0.2 * np.sqrt(1 / 20 + 1 / 21)  # median model, sd 0.2
+    assert band.loc["change", "noise_halfwidth"] == pytest.approx(expected)
+    assert band.loc["change_pct", "noise_halfwidth"] == pytest.approx(expected * 100)

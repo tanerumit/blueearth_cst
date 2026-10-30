@@ -23,6 +23,7 @@ def rerender_projections(
 ) -> dict[str, Path]:
     """Write each ensemble's suite into ``out_dir/projections/<ensemble>/plots``."""
     from blueearth_cst.projections.plot_proj_timeseries import render_suite
+    from blueearth_cst.projections.projection_analysis import with_variability_band
     from blueearth_cst.projections.projection_figures import FIGURE_KEYS
 
     records = sorted(
@@ -44,6 +45,11 @@ def rerender_projections(
         tables["availability"] = availability.loc[
             availability.filename.isin(FIGURE_KEYS)
         ]
+        # Runs from before the variability band get it from their own
+        # per-member changes, by the analysis step's function.
+        for name in ("change_summary", "monthly_change_summary"):
+            if "noise_halfwidth" not in tables[name]:
+                tables[name] = with_variability_band(tables[name], tables["changes"])
         plot_dir = Path(out_dir) / "projections" / ensemble_dir.name / "plots"
         render_suite(
             tables,

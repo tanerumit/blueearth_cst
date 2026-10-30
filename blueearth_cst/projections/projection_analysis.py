@@ -12,6 +12,7 @@ from __future__ import annotations
 import calendar as _calendar
 import json
 from functools import lru_cache
+from statistics import NormalDist
 
 import numpy as np
 import pandas as pd
@@ -715,6 +716,48 @@ def climatology_summary(table):
 def monthly_change(table):
     models = model_changes(table.loc[table.period.isin(MONTHS)])
     return models, ensemble_summary(models)
+
+
+def variability_band(changes, level=NULL_BAND_LEVEL):
+    """Half-width of the mean change that interannual variability alone gives.
+
+    Per member, z·σ·√(1/n_ref + 1/n_fut), with σ the detrended reference SD
+    the null bands use (``null_reference_sd``) and, for ``change_pct``, as a
+    percentage of the reference mean. Members average within their model and
+    each cell takes the median across models: the historical runs' own noise,
+    against which a projected mean change can be read. Independent years are
+    assumed, so autocorrelation widens the true range.
+    """
+    rows = changes.loc[
+        (changes.statistic == "mean")
+        & changes.quantity.isin(["change", "change_pct"])
+        & changes.mean_change_eligible.astype(bool)
+    ].copy()
+    if rows.empty:
+        return pd.DataFrame(columns=[*CELL, "noise_halfwidth"])
+    z = NormalDist().inv_cdf(0.5 + level / 2)
+    half = (
+        z
+        * rows.null_reference_sd.astype(float)
+        * np.sqrt(1 / rows.n_reference.astype(float) + 1 / rows.n_future.astype(float))
+    )
+    pct = rows.quantity == "change_pct"
+    half[pct] = half[pct] / rows.loc[pct, "null_reference_mean"].astype(float) * 100
+    rows["noise_halfwidth"] = half
+    per_model = (
+        rows.groupby(["model", *CELL], dropna=False)
+        .noise_halfwidth.mean()
+        .reset_index()
+    )
+    return per_model.groupby(CELL, dropna=False).noise_halfwidth.median().reset_index()
+
+
+def with_variability_band(summary, changes):
+    """``summary`` with each cell's ``noise_halfwidth`` (NaN where none)."""
+    band = variability_band(changes)
+    return summary.drop(columns="noise_halfwidth", errors="ignore").merge(
+        band, on=CELL, how="left"
+    )
 
 
 def member_ratios(table):

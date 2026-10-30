@@ -223,11 +223,15 @@ def prepare_tables(
         "coverage": coverage,
         "changes": changes,
         "model_changes": models,
-        "change_summary": analysis.ensemble_summary(models),
+        "change_summary": analysis.with_variability_band(
+            analysis.ensemble_summary(models), changes
+        ),
         "sign_agreement": analysis.sign_agreement(models),
         "climatology": climate,
         "climatology_summary": analysis.climatology_summary(climate),
-        "monthly_change_summary": analysis.monthly_change(changes)[1],
+        "monthly_change_summary": analysis.with_variability_band(
+            analysis.monthly_change(changes)[1], changes
+        ),
         "member_anomalies": anomalies,
         "trajectory_range": trajectories.trajectory_range(
             trajectories.model_trajectories(anomalies)

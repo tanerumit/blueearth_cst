@@ -41,10 +41,16 @@ SUITE_NOTE = (
     "recorded in _engine/analysis_record.json and _engine/figure_captions.json."
 )
 
-#: The box-and-whisker encoding shared by the change and ratio strips.
+#: The box-and-whisker encoding of the monthly-change and member-ratio figures.
 _BOXES = (
     "bars mark the median, boxes the interquartile range (where at least 10 models contribute) "
     "and capped lines the full range"
+)
+
+#: The point-and-band encoding of the annual/seasonal change and ratio strips.
+_STRIP = (
+    "points are individual models, thick ticks the median and shaded bands the interquartile "
+    "range (where at least 10 models contribute); numbers give the models per scenario"
 )
 
 
@@ -164,13 +170,13 @@ def caption(filename, record, window_id="", counts=None):
         )
         lead = (
             f"Annual and seasonal {variable} change ({unit}), {_period(window)}, across {models}: "
-            f"{_BOXES}; points are individual models"
+            f"{_STRIP}"
         )
     elif filename.startswith("variability-ratio-"):
         statistic = "CV" if filename.endswith("-cv.png") else "SD"
         lead = (
             f"Future-to-reference ratio of detrended interannual {variable} {statistic}, annual and "
-            f"seasonal, {_period(window)}, across {models} (geometric mean of members): {_BOXES}; "
+            f"seasonal, {_period(window)}, across {models} (geometric mean of members): {_STRIP}; "
             "1 means no change"
         )
         if statistic == "CV":

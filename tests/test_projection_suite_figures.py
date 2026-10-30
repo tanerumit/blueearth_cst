@@ -136,16 +136,17 @@ def test_seasonal_strip_explains_unavailable_panels(suite):
         "change_summary": analysis.ensemble_summary(models),
     }
     fig = render_product(
-        "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
+        "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
         tables,
         record,
         window_id="2036-2065",
     )
-    assert not fig.axes[0].texts
+    note = "No eligible\nmodel estimates"
+    assert note not in [text.get_text() for text in fig.axes[0].texts]
     for ax in fig.axes[1:]:
-        assert [text.get_text() for text in ax.texts] == [
-            "No eligible\nmodel estimates"
-        ]
+        texts = [text.get_text() for text in ax.texts]
+        # The note, plus a zero model count under each scenario.
+        assert texts[0] == note and set(texts[1:]) == {"0"}
     plt.close(fig)
 
 

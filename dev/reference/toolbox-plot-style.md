@@ -285,7 +285,7 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |
 | WF2 trajectories | Model median and range; distinct historical trace; stacked inside scenario legend. |
 | WF2 handover line | Dashed line at the CMIP6 historical–scenario handover (2014.5), never the current year. |
-| WF2 change strips | Retain the newer original scenario legend, unlabeled x-axis, box and point styling. |
+| WF2 change strips | Model points, median tick, IQR band; scenarios labelled on the x-axis; no legend. |
 | WF2 seasonal cycle | Median lines; shade historical range only; one-row legend above the axes. |
 | WF2 dry periods | Precipitation %/ratio panels or months keeping at most half the models: gray. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
@@ -305,8 +305,10 @@ Trend-sensitivity panels use sparse, calendar-aligned integer year labels with m
 eligible starting years. Share the start-year extent across panels and name the fixed end year in the
 x-axis title; retain every slope estimate and interval regardless of label density.
 
-For WF2 change strips, tighten the gap between the horizontal scenario legend and panel titles, add short
-caps to the full-range lines, and make median bars slightly thicker than the box outlines.
+WF2 annual/seasonal strips (change and variability ratio) show each model as a point, the median as a
+thick tick and the prepared IQR as a pale band where at least 10 models contribute. They draw no whiskers,
+so a single outlying model does not read as typical spread. Scenarios are labelled on the x-axis in two
+lines (SSP1 over 2.6) and each group's model count sits at the bottom of the panel.
 
 WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
 horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median
@@ -316,7 +318,7 @@ Keep WF2 scenario summaries subordinate to the data: reviewed annual-overview me
 trajectory median lines 1.5 pt. Retain annual values without smoothing and preserve gaps in missing years.
 
 WF2 interannual variability shows temperature SD, precipitation SD and precipitation CV in separate figures.
-Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
+Use the change-strip point, median and band style, with a reference line at ratio 1.
 Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
 them or significance fills in this figure.
 

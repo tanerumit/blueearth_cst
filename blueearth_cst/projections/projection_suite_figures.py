@@ -194,7 +194,13 @@ def dot_strip(
     baseline=0.0,
     ylabel=None,
 ):
-    """Prepared model points, model range/IQR/median, annual and seasons."""
+    """Model points, median tick and IQR band per scenario; annual and seasons.
+
+    Scenarios are labelled on the x-axis and each group states its model
+    count. The band is the prepared IQR, drawn only where the analysis shows
+    it (at least ``iqr_min_models``); no whiskers, so one outlying model does
+    not read as typical spread.
+    """
     selected = models.loc[
         (models.variable == variable)
         & (models.quantity == quantity)
@@ -220,13 +226,13 @@ def dot_strip(
         title = f"{chr(97 + i)}) {'Annual' if period == 'annual' else period}"
         panel_sums = sums.loc[sums.period == period]
         if variable == "precip" and _mostly_dry(panel_sums):
-            # The count goes in the title: inside the panel it collides with
-            # the long whiskers few-model dry seasons tend to have.
+            # The support goes in the title; the bottom of the panel holds
+            # the per-scenario model counts.
             ax.set_facecolor(DRY_FILL)
             total = (panel_sums.n_models + panel_sums.n_models_excluded).max()
             title += f" · dry, ≤{int(panel_sums.n_models.max())}/{int(total)}"
         ax.set_title(title, loc="left")
-        ax.set_ylim(low - pad, high + pad)
+        ax.set_ylim(low - 2.5 * pad, high + pad)  # room for the model counts
         ax.tick_params(axis="both", length=3)
         ygrid(ax)
         ax.axhline(baseline, color=MUTED, lw=LW_REF)
@@ -253,72 +259,60 @@ def dot_strip(
             )
             values = np.sort(values)
             rng = np.random.default_rng(zlib.crc32(f"{period}:{s}".encode()))
-            jitter = rng.choice([-1.0, 1.0], len(values)) * rng.uniform(
-                0.09, 0.2, len(values)
-            )
+            jitter = rng.uniform(-0.16, 0.16, len(values))
             color = _color(s)
+            rows = sums.loc[(sums.period == period) & (sums.scenario == s)]
+            row = rows.iloc[0] if not rows.empty else None
+            if row is not None and row.iqr_shown:
+                ax.add_patch(
+                    Rectangle(
+                        (j - 0.3, row.q25),
+                        0.6,
+                        row.q75 - row.q25,
+                        facecolor=color,
+                        alpha=0.22,
+                        lw=0,
+                        zorder=2,
+                    )
+                )
             ax.scatter(
                 j + jitter,
                 values,
-                color=tuple(0.65 * c for c in to_rgb(color)),
+                color=tuple(0.8 * c for c in to_rgb(color)),
                 edgecolors="white",
-                linewidths=0.4,
-                s=10,
-                alpha=0.4,
-                zorder=5,
+                linewidths=0.3,
+                s=9,
+                alpha=0.7,
+                zorder=4,
             )
-            rows = sums.loc[(sums.period == period) & (sums.scenario == s)]
-            if not rows.empty:
-                row = rows.iloc[0]
+            if row is not None and np.isfinite(row["median"]):
                 ax.plot(
-                    [j] * 2,
-                    [row["min"], row["max"]],
-                    color=_color(s),
-                    lw=LW_RANGE,
-                )
-                for endpoint in (row["min"], row["max"]):
-                    ax.plot(
-                        [j - 0.07, j + 0.07],
-                        [endpoint] * 2,
-                        color=color,
-                        lw=LW_RANGE,
-                        solid_capstyle="butt",
-                    )
-                if row.iqr_shown:
-                    ax.add_patch(
-                        Rectangle(
-                            (j - 0.25, row.q25),
-                            0.5,
-                            row.q75 - row.q25,
-                            facecolor="white",
-                            edgecolor=color,
-                            lw=0.9,
-                            zorder=3,
-                        )
-                    )
-                ax.plot(
-                    [j - 0.25, j + 0.25],
+                    [j - 0.3, j + 0.3],
                     [row["median"]] * 2,
                     color=color,
-                    lw=1.5,
-                    zorder=4,
+                    lw=1.8,
+                    solid_capstyle="butt",
+                    zorder=5,
                 )
-        ax.set_xticks(range(len(scen)), [])
+            ax.text(
+                j,
+                0.015,
+                str(len(values)),
+                transform=ax.get_xaxis_transform(),
+                ha="center",
+                va="bottom",
+                fontsize=FS_NOTE - 1,
+                color=MUTED,
+            )
+        ax.set_xticks(
+            range(len(scen)),
+            [_label(s).replace("-", "\n", 1) for s in scen],
+            fontsize=FS_NOTE - 1,
+            linespacing=1.0,
+        )
+        ax.tick_params(axis="x", length=0, pad=2)
         ax.set_xlim(-0.6, len(scen) - 0.4)
-    legend = fig.legend(
-        handles=[
-            Line2D([], [], color=_color(s), lw=1.4, label=_label(s)) for s in scen
-        ],
-        loc="upper right",
-        ncols=max(1, len(scen)),
-        frameon=False,
-        borderaxespad=0,
-        bbox_to_anchor=(0.98, 0.99),
-    )
-    legend.set_in_layout(False)
-    fig.get_layout_engine().set(
-        rect=(0, 0, 1, 0.94), w_pad=1.8 / 25.4, h_pad=1.8 / 25.4, wspace=0, hspace=0
-    )
+    fig.get_layout_engine().set(w_pad=1.8 / 25.4, h_pad=1.8 / 25.4, wspace=0, hspace=0)
     return fig
 
 

@@ -24,6 +24,7 @@ from blueearth_cst.projections.projection_figures import SCENARIO_COLORS, figure
 from blueearth_cst.shared.plot_preset import (
     CST_PRESET,
     FS_NOTE,
+    FS_TICK,
     H_SINGLE,
     H_STACK2,
     INK,
@@ -883,12 +884,14 @@ def agreement_matrix(agreement, scenarios=None):
     periods = [p for p in ("annual", *MONTHS) if p in set(data.period)]
     positive = ("#eef3f8", "#c6d6e8", "#8fb0d3", "#3d6fa5")
     negative = ("#f8eeee", "#ecc9c9", "#d98f8f", "#a8403f")
-    # Compact cells (about 7 x 3.6 mm) carry only the median sign; scenario
-    # labels stand vertically so columns need not fit their width.
+    # Compact cells (about 7 x 3.6 mm) carry only the median sign, under
+    # two-line scenario labels ("SSP1" / "2.6") and one-letter months. Text is
+    # one point below the preset so it stays in proportion to the cells.
+    small = FS_NOTE - 1
     fig, axes = new_fig(
-        20 + 3.6 * len(periods),
+        15 + 3.6 * len(periods),
         ncols=2,
-        width_mm=max(72, 24 + 2 * 7 * len(scen)),  # at least the legend
+        width_mm=max(64, 24 + 2 * 7 * len(scen)),  # at least the legend
     )
     ys = [
         i + (0.45 if i and periods[0] == "annual" else 0) for i in range(len(periods))
@@ -954,20 +957,25 @@ def agreement_matrix(agreement, scenarios=None):
                     sign,
                     ha="center",
                     va="center",
-                    fontsize=FS_NOTE,
+                    fontsize=small,
                     color="white" if luminance < 0.179 else "#173442",
                 )
         ax.set(xlim=(0, len(scen)), ylim=(ys[-1] + 1, 0))
-        ax.set_xticks(np.arange(len(scen)) + 0.5, [_label(s) for s in scen])
+        ax.set_xticks(
+            np.arange(len(scen)) + 0.5,
+            [_label(s).replace("-", "\n", 1) for s in scen],
+            linespacing=1.0,
+        )
         ax.xaxis.tick_top()
-        ax.tick_params(axis="x", labelrotation=90, bottom=False, labelbottom=False)
+        ax.tick_params(axis="x", bottom=False, labelbottom=False)
         ax.set_yticks(
             np.array(ys) + 0.5,
-            ["Annual" if p == "annual" else p for p in periods] if b == 0 else [],
+            ["Annual" if p == "annual" else p[0] for p in periods] if b == 0 else [],
         )
-        ax.tick_params(axis="x", length=3, width=0.6)
-        ax.tick_params(axis="y", length=3 if b == 0 else 0, width=0.6)
-        ax.set_title(f"{chr(97 + b)}) {title}", loc="left")
+        ax.tick_params(axis="both", labelsize=small, pad=1.5)
+        ax.tick_params(axis="x", length=2, width=0.6)
+        ax.tick_params(axis="y", length=2 if b == 0 else 0, width=0.6)
+        ax.set_title(f"{chr(97 + b)}) {title}", loc="left", fontsize=FS_TICK)
         ax.grid(False)
         for spine in ax.spines.values():
             spine.set_visible(False)
@@ -991,10 +999,12 @@ def agreement_matrix(agreement, scenarios=None):
         ncols=3,
         frameon=False,
         alignment="left",
+        fontsize=small,
+        title_fontsize=small,
         title="Models sharing the median sign (+ blue, − red)",
     )
     # Reserve exactly the legend's height: the "outside" legend slot leaves a
-    # wide band above titles that sit over vertical, top-side tick labels.
+    # wide band above titles that sit over top-side tick labels.
     legend.set_in_layout(False)
     fig.canvas.draw()
     top = legend.get_window_extent().y0 / fig.bbox.height - 0.01

@@ -330,8 +330,10 @@ corner. Use “Mean precipitation change (%)” and “Mean temperature change (
 reference and future periods in the caption.
 
 WF2 sign-agreement matrices use temperature and precipitation percentage-change panels, four discrete
-agreement classes with paired blue/red swatches, and compact cells (about 7 x 3.6 mm) under vertical
-scenario labels. Cells show only the median sign, with text color chosen by fill luminance; k/n counts
+agreement classes with paired blue/red swatches, and compact cells (about 7 x 3.6 mm) under horizontal
+two-line scenario labels (SSP1 over 2.6) with one-letter month labels. As an approved exception to the
+7/6 pt sizes, its panel titles use 6 pt and its ticks, cell signs and legend 5 pt, in proportion to the
+small cells. Cells show only the median sign, with text color chosen by fill luminance; k/n counts
 stay in `sign_agreement.csv`. Precipitation cells keeping at most half the scenario's models are hatched
 with no sign and labelled "Excluded (too few models)". The caption states that directional agreement is
 neither probability nor significance.

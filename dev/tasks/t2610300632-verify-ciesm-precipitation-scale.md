@@ -1,7 +1,7 @@
 ---
-title: Verify and correct WF2 CIESM precipitation scale
+title: Exclude CIESM from WF2 analysis (54736a2b; landing held)
 type: todo-item
-status: backlog
+status: active
 effort: 1
 area: wf2
 queue:
@@ -17,11 +17,11 @@ updated: 2026-10-30
 
 ## Progress
 
-Next: Implement full THU/CIESM exclusion in WF2 processing with explicit provenance and coverage counts.
+Next: Close at user request; implementation is verified on refactor/t2610241523c, with landing/push held.
 
 - [x] Verify original CIESM source units and sampled values - all four stores are already anomalously small.
-- [ ] Exclude THU/CIESM across all variables in WF2 processing and invalidate affected derived caches.
-- [ ] Regenerate affected analysis; verify all summaries omit CIESM and report its exclusion consistently.
+- [x] Exclude CIESM before acquisition; preserve coverage, provenance and report reasons - commit 54736a2b.
+- [x] Verify script-produced factors, analysis tables, both variables, cache invalidation and four DAG cases.
 
 ## Findings
 
@@ -42,3 +42,13 @@ Report the reason and coverage counts; preserve source data and provenance.
 The verified defect concerns precipitation; full-model exclusion is the user's ensemble-consistency
 choice. This supersedes precipitation-only handling and speculative rescaling. Reconsider inclusion
 only after review of a verified source correction. Implementation stays separate from plotting work.
+
+## Completion evidence
+
+Implementation: session-2 commit 54736a2b on refactor/t2610241523c; no landing or push.
+Focused evidence: 47 resolution/analysis tests, five coverage tests, 60 Stage-B/provenance/report tests,
+four DAG checks, scoped Ruff and compilation passed. Valid-model scientific tables remain unchanged.
+Independent retained Egypt check: 38 to 37 models; SSP245 2050 precipitation minimum 0.1377 to
+14.4578 mm/year. Production outputs and figures were preserved and need WF2 rerun after integration.
+Unique source evidence is retained in commit 54736a2b at
+dev/records/validation/ciesm-source-quality-2026-10-30.md. Close only this item at explicit user request.

@@ -12,7 +12,7 @@ from blueearth_cst.projections import projection_analysis as analysis
 from blueearth_cst.projections import projection_figures as contract
 from blueearth_cst.projections import projection_trajectories as trajectories
 from blueearth_cst.projections.plot_proj_timeseries import figure_counts, render_suite
-from blueearth_cst.projections.projection_captions import caption
+from blueearth_cst.projections.projection_captions import SUITE_NOTE, caption
 from blueearth_cst.projections.projection_suite_figures import render_product
 
 
@@ -228,12 +228,11 @@ def test_captions_and_distinct_folder_contract(suite):
         "2036–2065",
         "1985–2014",
         "precipitation SD",
-        "geometrically",
-        "equally weighted models",
-        "not a confidence interval",
-        "Excluded degenerate ratios: 3",
+        "3 degenerate ratios are excluded.",
     ):
         assert phrase in text
+    assert "zero future" not in text  # exclusion counts appear only when nonzero
+    assert "not a confidence interval" in SUITE_NOTE
     horizons = {"far": [2071, 2100], "later": [2081, 2100]}
     assert contract.suite_folders(horizons) == [
         "full_period",

@@ -284,8 +284,9 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | Annual series | Trend line and slope annotation on every applicable series; y-axis shows units only. |
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |
 | WF2 trajectories | Model median and range; distinct historical trace; stacked inside scenario legend. |
+| WF2 handover line | Dashed line at the CMIP6 historical–scenario handover (2014.5), never the current year. |
 | WF2 change strips | Retain the newer original scenario legend, unlabeled x-axis, box and point styling. |
-| WF2 seasonal cycle | Separate median climatology lines from monthly-change boxes; shade historical range only. |
+| WF2 seasonal cycle | Median lines; shade historical range only; one-row legend above the axes. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |
@@ -321,22 +322,21 @@ them or significance fills in this figure.
 The annual member-ratio comparison shows all three indicators together. Its boxes, medians and capped
 ranges summarize model ratios after geometric averaging of members within each model, with equal model
 weight. Faint points retain individual members; their density does not set the weight of the summary.
-Captions distinguish descriptive model spread from confidence intervals and note member dependence.
 
 WF2 change clouds retain square plotting areas and circular points for all scenarios, distinguished by
 color, with darker edges and slight transparency. Stack the inset legend in the less occupied upper
 corner. Use “Mean precipitation change (%)” and “Mean temperature change (°C)” as axis titles; state
-reference and future periods in the caption, alongside paired-model aggregation and spread semantics.
+reference and future periods in the caption.
 
 WF2 sign-agreement matrices use temperature and precipitation percentage-change panels, four discrete
 agreement classes with paired blue/red swatches, and visible scenario and period ticks. Cell signs show
-the median direction and k/n shows model agreement; choose text color by fill luminance. Captions explain
-that directional agreement is neither probability nor significance and note shared model ancestry.
+the median direction and k/n shows model agreement; choose text color by fill luminance. The caption
+states that directional agreement is neither probability nor significance.
 
 WF2 ensemble coverage uses a compact table with consistent numeric member counts, a historical-reference
 column, family and institution metadata, and pale alternating rows. Historical counts deduplicate loaded
-reference series. Distinguish availability from analysis eligibility in captions, explain family
-provenance and provisional/unknown assignments, and avoid implying family independence.
+reference series. Models with no loaded member are named in a footnote rather than as rows of zeros; a
+dash marks an unknown family. The caption cites the family mapping and its provisional/unknown marks.
 
 ## Scientific interpretation and methodological review
 
@@ -381,6 +381,13 @@ in this visual review.
   sentence only for a material, map-specific fact: values beyond the colour scale, no scale or no
   drawn cells, a source-grid PET method, an auxiliary field, or classes left out of the key. The key
   and overlays explain the rest; support counts, thresholds and reference provenance stay in metadata.
+- WF2 captions (`projections/projection_captions.py`) follow the same skeleton: one sentence with the
+  quantity, units, period, model support and any encoding the figure has no key for. Add a sentence
+  only for a shifted or joined analysis window, the CV dry-mean exclusion, or nonzero exclusion counts.
+  Caveats shared by every WF2 figure (spread is not a confidence interval, model dependence,
+  availability is not eligibility) are stated once, in `SUITE_NOTE` at the head of `figure_captions.md`.
+- Captions span the full plotting area: from the leftmost axes' left edge to the rightmost axes' right
+  edge, across every column of a multi-panel figure, both in captioned exports and on review pages.
 - Include captions inside the preview canvas when enabled. Add space below the image without resizing
   the plotting area or changing its proportions. Keep caption-to-axis font proportions consistent.
 - `plotting.fundamentals.add_caption(fig, text)` finalizes an already drawn figure for its captioned

@@ -17,7 +17,7 @@ import pandas as pd
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.preset import use_preset
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
-from blueearth_cst.projections.projection_captions import caption, title
+from blueearth_cst.projections.projection_captions import SUITE_NOTE, caption, title
 from blueearth_cst.projections.projection_figures import (
     SUITE_PRODUCTS,
     figure_key,
@@ -264,6 +264,8 @@ def render_suite(
         "# Projection figure captions",
         "",
         "Manifest keys identify the rendered figures.",
+        "",
+        SUITE_NOTE,
         "",
     ]
     for relative, item in manifest.items():

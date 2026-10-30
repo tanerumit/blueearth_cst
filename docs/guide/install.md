@@ -54,6 +54,8 @@ Input datasets are not installed with the software.
    ```
 
    This installs the pinned `weathergenr` and Wflow dependencies. Downloads can take time.
+   The weather-generator installer verifies both package version and source commit; after pulling
+   a toolbox update that changes this pin, rerun `pixi run install-rdeps` before WF3.
    If installation stops, inspect the error before retrying; use
    [troubleshooting](troubleshooting.md) for known symptoms.
 

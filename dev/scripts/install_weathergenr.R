@@ -1,4 +1,4 @@
-# Install weathergenr v2.0.1 from GitHub via remotes::install_github.
+# Install the verified weathergenr commit via remotes::install_github.
 #
 # Invoked at env-setup time by:
 #     pixi run install-rdeps
@@ -26,56 +26,59 @@
 #   ("Mingw-w64 ... 32 bit pseudo relocation out of range") we want to
 #   avoid. So we touch nothing but weathergenr itself.
 #
-# Idempotent: returns early if weathergenr at the right version is
-# already present anywhere visible to R.
+# Idempotent: returns early only when both version and GitHub commit match.
 #
-# The version is written ONCE, below, and the GitHub ref is derived from it.
-# It used to be spelled twice — here and in the `@v<x>` tag — which is one
-# edit away from installing a version the check then rejects on every run.
+# The v2.1.0 tag is not published. Pin the verified, published implementation
+# by immutable commit rather than depending on a moving branch or missing tag.
 
-required_version <- "2.0.1"
+required_version <- "2.1.0"
+required_sha <- "b023e65e5237f681cb96178754488bba84afb2ae"
 
-# Read from the library's DESCRIPTION rather than via packageVersion(), which
-# answers from the namespace loaded at the top of this script and would report
-# the version we just replaced.
-installed_version <- function() {
+# Read DESCRIPTION without loading the package, so post-install verification
+# cannot report metadata from a previously loaded namespace.
+installed_metadata <- function() {
   path <- tryCatch(
     find.package("weathergenr", quiet = TRUE),
     error = function(e) character()
   )
   if (!length(path)) {
-    return(NA_character_)
+    return(c(Version = NA_character_, RemoteSha = NA_character_))
   }
   desc <- file.path(path[[1]], "DESCRIPTION")
   if (!file.exists(desc)) {
-    return(NA_character_)
+    return(c(Version = NA_character_, RemoteSha = NA_character_))
   }
-  as.character(read.dcf(desc, fields = "Version")[1, 1])
+  read.dcf(desc, fields = c("Version", "RemoteSha"))[1, ]
 }
 
-if (requireNamespace("weathergenr", quietly = TRUE)) {
-  found_version <- as.character(packageVersion("weathergenr"))
-  if (found_version == required_version) {
-    cat("weathergenr ", found_version, " already installed at\n", sep = "")
-    cat("  ", find.package("weathergenr"), "\n", sep = "")
-    quit(save = "no", status = 0)
-  }
+found <- installed_metadata()
+if (identical(unname(found[["Version"]]), required_version) &&
+      identical(unname(found[["RemoteSha"]]), required_sha)) {
+  cat("weathergenr ", required_version, " at ", required_sha,
+      " already installed at\n", sep = "")
+  cat("  ", find.package("weathergenr"), "\n", sep = "")
+  quit(save = "no", status = 0)
+}
+if (!is.na(found[["Version"]])) {
   cat(
-    "weathergenr ", found_version, " present but ", required_version,
-    " required; reinstalling.\n", sep = ""
+    "weathergenr ", found[["Version"]], " present, but version ",
+    required_version, " at ", required_sha, " is required; reinstalling.\n",
+    sep = ""
   )
 }
 
 if (!requireNamespace("remotes", quietly = TRUE)) {
-  stop("r-remotes is missing from the env. Declare it in pixi.toml [dependencies].")
+  stop(
+    "r-remotes is missing from the env. Declare it in pixi.toml [dependencies]."
+  )
 }
 
 remotes::install_github(
-  paste0("Deltares-research/weathergenr@v", required_version),
+  paste0("Deltares-research/weathergenr@", required_sha),
   dependencies = FALSE,   # all Imports are already conda-managed in the env
   upgrade = "never",      # never shadow a conda binary with a CRAN source build
   build_vignettes = FALSE,
-  force = TRUE            # reached only when a wrong version is present (see above)
+  force = TRUE            # reached only when version or source differs
 )
 
 # Verify, because install_github does not always fail the script when it fails
@@ -83,11 +86,13 @@ remotes::install_github(
 # during the 1.2.0 -> 2.0.0 upgrade) printed a download error, left the OLD
 # version in place, and still exited 0 — so `pixi run install` reported success
 # and the next WF3 run would have used the superseded package.
-final_version <- installed_version()
-if (!identical(final_version, required_version)) {
+final <- installed_metadata()
+if (!identical(unname(final[["Version"]]), required_version) ||
+      !identical(unname(final[["RemoteSha"]]), required_sha)) {
   stop(
-    "weathergenr ", required_version, " was NOT installed (library holds: ",
-    if (is.na(final_version)) "nothing" else final_version,
+    "weathergenr ", required_version, " at ", required_sha,
+    " was NOT installed (library version: ", final[["Version"]],
+    "; commit: ", final[["RemoteSha"]],
     "). Check the download error above and re-run `pixi run install-rdeps`; ",
     "a GitHub outage is the usual cause and a retry is the usual fix.",
     call. = FALSE
@@ -95,5 +100,6 @@ if (!identical(final_version, required_version)) {
 }
 
 cat("--- weathergenr installed via remotes ---\n")
-cat("Version:    ", final_version, "\n", sep = "")
+cat("Version:    ", final[["Version"]], "\n", sep = "")
+cat("Commit:     ", final[["RemoteSha"]], "\n", sep = "")
 cat("Location:   ", find.package("weathergenr"), "\n", sep = "")

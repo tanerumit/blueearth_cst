@@ -43,11 +43,12 @@ All 15 original filenames remain unchanged; exports overwrite the matching PNGs.
 and non-facet canvas dimensions. Faceted diagnostics use measured stored dimensions. Captions in the
 comparison HTML identify colors and summary meanings; they remain outside the exported plot objects.
 
-The dependency update/release and production installation remain coordinator-owned. Until upstream
-delivery is authorized, use the explicitly configured task R library for verification. Session-3 owns
-the concurrent shared plotting reference/YAML edits; link this weather reference from that shared
-reference during coordinator integration rather than overwriting the concurrent map changes.
+CST installs `weathergenr` version 2.1.0 from published commit
+`b023e65e5237f681cb96178754488bba84afb2ae`. The planned `v2.1.0` tag is not published;
+the installer uses this immutable commit and verifies both `Version` and `RemoteSha` before
+accepting an existing installation. Run `pixi run install-rdeps` after updating the toolbox.
+The R package source pin is maintained by `dev/scripts/install_weathergenr.R`, outside `pixi.lock`.
 
-Verified upstream implementation: `weathergenr` commit
-`2b2f602cb3f6500fb69e014d7c6650be357f5370` on `feat/t2610241523c`.
-The implementation is cumulative with the original return/style/export interface; no release tag was created.
+The pinned commit contains the approved plotting implementation
+`2b2f602cb3f6500fb69e014d7c6650be357f5370`, including the return/style/export interface.
+The shared Python map-style work remains separate from this weather adapter.

@@ -24,7 +24,6 @@ cssclasses: [todo-board]
 | 15     | [t2608071221][]          | Docker and Linux end-to-end runs untested                    | platform   | backlog      |
 | 16     | [t2608071201][]          | WF1 rebuild always trips WF3 drift guard                     | wf1        | backlog      |
 |        | [t2610241658][]          | Runner dry-run plans a full WF1 rebuild after a complete run | wf1        | backlog      |
-|        | [t2610241523c][]         | Adopt the shared plotting style in R/WF3 figures                | plotting   | backlog      |
 |        | [t2610241523b][]         | Extract the plotting core as a package                       | plotting   | backlog      |
 |        | [t2610241523a][]         | Isolate Snakemake state between parallel test workers        | tests      | backlog      |
 |        | [t2610211349][]          | Improving repo-wide documentation and instructions           | docs       | active (6/7) |
@@ -47,7 +46,6 @@ cssclasses: [todo-board]
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
 [t2610241658]: tasks/t2610241658-runner-dry-run-plans-a-full-wf1-rebuild-after-a-complete-run.md
-[t2610241523c]: tasks/t2610241523c-adopt-the-shared-plotting-style-in-r-wf3-figures.md
 [t2610241523b]: tasks/t2610241523b-extract-the-plotting-core-as-a-package.md
 [t2610241523a]: tasks/t2610241523a-isolate-snakemake-state-between-parallel-test-workers.md
 [t2610211349]: tasks/t2610211349-improving-repo-wide-documentation-and-instructions.md

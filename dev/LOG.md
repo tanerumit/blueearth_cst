@@ -21,6 +21,7 @@ and its linked review-retirement and decision-history maps.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-30 | t2610241523c | Adopt the shared plotting style in R/WF3 figures | plotting |
 | 2026-10-30 | t2610300632 | Exclude CIESM from WF2 analysis (54736a2b; landing held) | wf2  |
 | 2026-10-25 | t2610241523 | Fix clipped colorbar titles on spatial soil-clay and LAI maps [dropped] | plotting |
 | 2026-10-24 | t2610241609 | Rebuild deleted WF1 plot folders with a cheap existence check | wf1  |

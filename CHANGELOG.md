@@ -9,6 +9,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Apply the reviewed shared style and physical panel layout to WF3 weather figures, preserving
+  their filenames and scientific results. Pin the required `weathergenr` 2.1.0 implementation by
+  published commit and verify its version and source during installation.
+
 - Bound and retry Windows socket-pair setup in the owned Snakemake launcher, preventing an
   indefinite scheduler wait when a local connection fails during job completion. Persistent
   timeouts report an error; completed outputs remain available for incomplete-job resume.

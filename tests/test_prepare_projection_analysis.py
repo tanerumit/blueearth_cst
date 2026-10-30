@@ -10,7 +10,7 @@ import xarray as xr
 
 from blueearth_cst.projections import prepare_projection_analysis as producer
 from blueearth_cst.projections import projection_analysis as analysis
-from blueearth_cst.projections import series_identity
+from blueearth_cst.projections import resolution, series_identity
 from blueearth_cst.projections.get_change_climate_proj import analysis_windows
 
 
@@ -87,6 +87,43 @@ def test_shared_windows_compute_once_with_identity_checks(tmp_path):
         {"far1": (2081, 2100), "far2": (2081, 2100)}, reference_window=(2000, 2014)
     )
     tables, record = producer.prepare_tables([point], windows, region_fp=region)
+    # Exercise the same resolver -> explicit input set -> producer path as WF2.
+    # A leftover CIESM cache must not rejoin either variable through a file glob.
+    stale = tmp_path / "cmip6_THU_CIESM_ssp245_r1.nc"
+    stale.write_bytes(b"excluded source cache: must never be opened")
+    catalog = {
+        resolution.entry_key("cmip6", "TEST/M1", experiment): {
+            "placeholders": {"member": ["r1"]}
+        }
+        for experiment in ["historical", "ssp245"]
+    }
+    combinations = resolution.resolve(
+        catalog,
+        clim_project="cmip6",
+        models=["TEST/M1", "THU/CIESM"],
+        scenarios=["ssp245"],
+        members=["r1"],
+    )
+    requested_points = {
+        "TEST/M1": point,
+        "THU/CIESM": {**point, "model": "THU/CIESM", "series_path": str(stale)},
+    }
+    filtered, _ = producer.prepare_tables(
+        [requested_points[c.dataset] for c in combinations if c.resolved],
+        windows,
+        region_fp=region,
+        combinations=[c._asdict() for c in combinations],
+    )
+    for name in tables.keys() - {"coverage"}:
+        pd.testing.assert_frame_equal(tables[name], filtered[name])
+    coverage = filtered["coverage"]
+    assert coverage.loc[coverage.model == "THU/CIESM", "status"].item() == (
+        "source_quality_excluded"
+    )
+    assert not coverage.loc[coverage.model == "THU/CIESM", "available"].item()
+    assert set(filtered["member_anomalies"].variable) == {"precip", "temp"}
+    assert set(filtered["member_anomalies"].model) == {"TEST/M1"}
+    assert stale.read_bytes() == b"excluded source cache: must never be opened"
     assert len(record["windows"]) == 1
     assert record["windows"][0]["horizons"] == ["far1", "far2"]
     assert (

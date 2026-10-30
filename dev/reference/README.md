@@ -39,6 +39,8 @@ before writing. Update that document for revisions; do not create a separate fil
 | When the change concerns | Update or consult |
 |---|---|
 | Scientific figure appearance, export or review practice | [toolbox-plot-style.md](toolbox-plot-style.md) |
+| Reviewed WF3 weather diagnostics and figure exceptions | [weather-diagnostic-style.md](weather-diagnostic-style.md) |
+| Measured R/Python diagnostic-grid geometry | [panel-layout-contract.md](panel-layout-contract.md) |
 | WF0 diagnostic figure filename grammar | [wf0-figure-naming.md](wf0-figure-naming.md) |
 | A reusable report or comparison interface | [templates/README.md](../templates/README.md) |
 

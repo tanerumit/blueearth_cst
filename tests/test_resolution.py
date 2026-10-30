@@ -46,6 +46,81 @@ FULL = _catalog(
 )
 
 
+@pytest.mark.parametrize("selection", res.MEMBER_SELECTION_POLICIES)
+def test_ciesm_quality_exclusion_applies_to_all_members_and_scenarios(selection):
+    from blueearth_cst.projections.derive_change_factors import composition_rows
+    from blueearth_cst.projections.projection_coverage import coverage_table
+
+    scenarios = ["ssp126", "ssp245", "ssp585"]
+    members = ["r1i1p1f1", "r2i1p1f1"]
+    catalog = _catalog(
+        {
+            (model, experiment): members
+            for model in ["THU/CIESM", "AAA/M1"]
+            for experiment in ["historical", *scenarios]
+        }
+    )
+    combos = res.resolve(
+        catalog,
+        clim_project=CP,
+        models=["THU/CIESM", "AAA/M1"],
+        scenarios=scenarios,
+        members=members,
+        selection=selection,
+        overrides={"THU/CIESM": members},
+    )
+    excluded = [c for c in combos if c.dataset == "THU/CIESM"]
+    assert len(excluded) == 6
+    assert all(
+        not c.resolved and c.status == "source_quality_excluded" for c in excluded
+    )
+    assert all(
+        "precipitation" in c.detail and "all variables" in c.detail for c in excluded
+    )
+    assert res.unresolved_overrides(combos, {"THU/CIESM": members}) == []
+    assert all(model == "AAA/M1" for model, _ in res.references(combos))
+    assert "source_quality_excluded" in res.format_status_report(combos)
+    table = coverage_table([], combinations=[c._asdict() for c in excluded])
+    assert len(table) == 6
+    assert not table.available.any()
+    assert set(table.status) == {"source_quality_excluded"}
+    rows = composition_rows(
+        [c._asdict() for c in excluded],
+        {},
+        catalog_crawled_on="2026-07-29",
+        window_nominal="1985-2004",
+    )
+    assert len(rows) == 6
+    assert all(row["status"] == "source_quality_excluded" for row in rows)
+    assert all("all variables" in row["reason"] for row in rows)
+
+
+def test_ciesm_exclusion_is_scoped_to_cmip6_and_exact_model_identity():
+    catalog = _catalog(
+        {
+            (model, experiment): ["r1i1p1f1"]
+            for model in ["OTHER/CIESM", "THU/CIESM2"]
+            for experiment in ["historical", "ssp245"]
+        }
+    )
+    combos = res.resolve(
+        catalog,
+        clim_project=CP,
+        models=["OTHER/CIESM", "THU/CIESM2"],
+        scenarios=["ssp245"],
+        members=["r1i1p1f1"],
+    )
+    assert all(c.resolved for c in combos)
+    legacy = res.resolve(
+        {},
+        clim_project="cmip5",
+        models=["THU/CIESM"],
+        scenarios=["ssp245"],
+        members=["r1i1p1f1"],
+    )
+    assert legacy[0].status == res.MODEL_NOT_IN_CATALOG
+
+
 def _statuses(combos):
     return {(c.dataset, c.scenario, c.member): c.status for c in combos}
 

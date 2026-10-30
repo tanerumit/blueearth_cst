@@ -123,7 +123,7 @@ model:
 
 # Configure shared Python figure presentation. Input: mapping.
 plotting:
-  # Python workflow figures only; R/weathergenr figures retain their own style.
+  # Annotation modes apply to Python figures; R figures use the shared style without annotations.
   # Place explanatory annotations on figures. Options: none | caption | title.
   annotation: none
 

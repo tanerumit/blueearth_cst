@@ -19,6 +19,7 @@ import pytest
 import xarray as xr
 
 from blueearth_cst.projections import derive_change_factors as derive_module
+from blueearth_cst.projections import resolution
 from blueearth_cst.projections import series_identity as si
 from blueearth_cst.projections.change_factor_table import tidy_rows
 from blueearth_cst.projections.derive_change_factors import (
@@ -288,6 +289,21 @@ def test_stage_b_writes_auditable_products_with_unavailable_horizons(
                     digest_components_fut=identity,
                 )
         points.append(point)
+    excluded = resolution.resolve(
+        {},
+        clim_project="cmip6",
+        models=["THU/CIESM"],
+        scenarios=["ssp245"],
+        members=["r1i1p1f1"],
+    )[0]
+    combinations.append(
+        {
+            **_combo(
+                excluded.dataset, excluded.scenario, excluded.member, excluded.status
+            ),
+            "detail": excluded.detail,
+        }
+    )
     output = SimpleNamespace(
         **{
             name: str(tmp_path / filename)
@@ -348,15 +364,29 @@ def test_stage_b_writes_auditable_products_with_unavailable_horizons(
     with open(output.composition_csv, encoding="utf-8", newline="") as fh:
         composition = {row["model"]: row for row in csv.DictReader(fh)}
     assert composition["E3SM-1-1"]["status"] == "unavailable"
+    assert composition["CIESM"]["status"] == "source_quality_excluded"
+    assert "all variables" in composition["CIESM"]["reason"]
     if include_usable:
         assert composition["Usable"]["status"] == "resolved"
         assert composition["UsableHigher"]["status"] == "resolved"
     document = json.loads(Path(output.provenance_json).read_text(encoding="utf-8"))
     assert document["composition"]["usable"] == 2 * int(include_usable)
+    assert (
+        document["composition"]["unresolved_by_status"]["source_quality_excluded"] == 1
+    )
+    assert document["source_quality_exclusions"] == [
+        {
+            "dataset": "THU/CIESM",
+            "scenario": "ssp245",
+            "member": "r1i1p1f1",
+            "reason": excluded.detail,
+        }
+    ]
     assert len(document["unavailable_windows"]) == 1
     assert document["unavailable_windows"][0]["available_end"] == "2024-12-01"
     report = Path(output.report_md).read_text(encoding="utf-8")
     assert "E3SM-1-1" in report and "2024-12-01" in report
+    assert "source_quality_excluded" in report and "CIESM" in report
 
 
 def test_flagged_months_uses_tidy_model_identity_and_counts_distinct_months():

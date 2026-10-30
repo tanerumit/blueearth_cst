@@ -324,6 +324,8 @@ def test_a_declared_rule_lists_even_when_its_banner_never_renders(rules, tmp_pat
 def test_defer_rows_queues_a_captured_warning_for_the_run_header(monkeypatch, capsys):
     """A parse-time warning row waits for the header instead of printing above it."""
     monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    # A header printed by an earlier test on this worker would drain the row.
+    monkeypatch.setattr(cs, "_HEADER_PRINTED", False)
     cs.defer_rows(
         "13:27:21 - responses - WARNING - Duplicate discharge columns: Q_1 as Q_2\n"
         "Traceback-free stray line\n"

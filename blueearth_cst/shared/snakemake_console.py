@@ -67,6 +67,13 @@ def main() -> None:
     # This entry point is also executed by filename, before a Snakefile can
     # put the repository on sys.path or create its terminal handlers.
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from blueearth_cst.shared.windows_socketpair import bounded_windows_socketpair
+
+    with bounded_windows_socketpair():
+        _main()
+
+
+def _main() -> None:
     from blueearth_cst.shared.console_terminal import restore_terminal_streams
 
     restore_terminal_streams()

@@ -23,6 +23,7 @@ def rerender_projections(
 ) -> dict[str, Path]:
     """Write each ensemble's suite into ``out_dir/projections/<ensemble>/plots``."""
     from blueearth_cst.projections.plot_proj_timeseries import render_suite
+    from blueearth_cst.projections.projection_figures import FIGURE_KEYS
 
     records = sorted(
         (Path(project_dir) / PROJECTIONS_DIR).glob("*/_engine/analysis_record.json")
@@ -36,9 +37,13 @@ def rerender_projections(
             path.stem: pd.read_csv(path)
             for path in (ensemble_dir / "analysis").glob("*.csv")
         }
-        tables["availability"]["window_id"] = tables["availability"].window_id.fillna(
-            ""
-        )
+        availability = tables["availability"]
+        availability["window_id"] = availability.window_id.fillna("")
+        # A run made before a product was retired still lists it; render the
+        # current contract rather than failing on the extra row.
+        tables["availability"] = availability.loc[
+            availability.filename.isin(FIGURE_KEYS)
+        ]
         plot_dir = Path(out_dir) / "projections" / ensemble_dir.name / "plots"
         render_suite(
             tables,

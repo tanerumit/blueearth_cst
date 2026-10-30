@@ -22,7 +22,6 @@ FIGURE_FILENAMES = {
     "annual-precipitation.png": "cmip6_precip_annual_overview_basin_avg.png",
     "change-temperature.png": "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
     "change-precipitation-pct.png": "cmip6_precip_annual_seasonal_change_pct_box_basin_avg.png",
-    "change-precipitation-abs.png": "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
     "seasonal-cycle-temperature.png": "cmip6_temp_monthly_clim_basin_avg.png",
     "seasonal-cycle-precipitation.png": "cmip6_precip_monthly_clim_basin_avg.png",
     "monthly-change-temperature.png": "cmip6_temp_monthly_change_box_basin_avg.png",
@@ -63,7 +62,6 @@ _SUITE_PRODUCT_KEYS = {
         "filenames": (
             "change-temperature.png",
             "change-precipitation-pct.png",
-            "change-precipitation-abs.png",
         ),
     },
     "F3.3": {

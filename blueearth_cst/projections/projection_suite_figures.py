@@ -141,9 +141,7 @@ def _mostly_dry(rows):
 def dry_shading(filename, tables, record, window_id=""):
     """Whether a product shades any mostly-dry period (the artists' own rules)."""
     key = figure_key(filename)
-    if key.endswith("-abs.png") or not (
-        "precipitation" in key or key == "sign-agreement.png"
-    ):
+    if "precipitation" not in key and key != "sign-agreement.png":
         return False
     if key == "sign-agreement.png":
         data = tables.get("sign_agreement", pd.DataFrame())
@@ -182,6 +180,42 @@ def dry_shading(filename, tables, record, window_id=""):
     return any(_mostly_dry(rows) for _, rows in data.groupby(by))
 
 
+#: Mean days per calendar month, for turning daily-rate climatologies into
+#: period amounts (February averaged over leap years).
+MONTH_DAYS = dict(zip(MONTHS, (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)))
+SEASON_MONTHS = {
+    "annual": MONTHS,
+    "DJF": ("Dec", "Jan", "Feb"),
+    "MAM": ("Mar", "Apr", "May"),
+    "JJA": ("Jun", "Jul", "Aug"),
+    "SON": ("Sep", "Oct", "Nov"),
+}
+
+
+def reference_amounts(climatology, scenarios=None):
+    """Reference precipitation per period (mm), from the prepared climatology.
+
+    The ensemble-median monthly reference rate times each month's days, summed
+    over the period: the seasonal-cycle figure's historical line as an amount,
+    so a percentage change can be read against how much falls. Uses the first
+    displayed scenario's models, as the seasonal-cycle figure does.
+    """
+    data = climatology.loc[
+        (climatology.variable == "precip") & (climatology.side == "reference")
+    ]
+    if data.empty:
+        return {}
+    rates = (
+        data.loc[data.scenario == _scenarios(data, scenarios)[0]]
+        .set_index("period")["median"]
+        .reindex(MONTHS)
+    )
+    return {
+        period: sum(rates[m] * MONTH_DAYS[m] for m in months)
+        for period, months in SEASON_MONTHS.items()
+    }
+
+
 def dot_strip(
     models,
     summary,
@@ -193,6 +227,7 @@ def dot_strip(
     reference=(1985, 2014),
     baseline=0.0,
     ylabel=None,
+    amounts=None,
 ):
     """Model points, median tick and IQR band per scenario; annual and seasons.
 
@@ -224,13 +259,13 @@ def dot_strip(
     pad = 0.06 * (high - low or 1)
     for i, (ax, period) in enumerate(zip(axes, STRIP_PERIODS, strict=True)):
         title = f"{chr(97 + i)}) {'Annual' if period == 'annual' else period}"
+        if amounts and np.isfinite(amounts.get(period, np.nan)):
+            title += f" · ref. ≈{amounts[period]:.0f} mm"
         panel_sums = sums.loc[sums.period == period]
         if variable == "precip" and _mostly_dry(panel_sums):
-            # The support goes in the title; the bottom of the panel holds
-            # the per-scenario model counts.
+            # The model counts along the bottom show how few remain.
             ax.set_facecolor(DRY_FILL)
-            total = (panel_sums.n_models + panel_sums.n_models_excluded).max()
-            title += f" · dry, ≤{int(panel_sums.n_models.max())}/{int(total)}"
+            title += " · dry"
         ax.set_title(title, loc="left")
         ax.set_ylim(low - 2.5 * pad, high + pad)  # room for the model counts
         ax.tick_params(axis="both", length=3)
@@ -1205,6 +1240,9 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 variable=variable,
                 quantity="change_pct" if filename.endswith("-pct.png") else "change",
                 scenarios=scenarios,
+                amounts=reference_amounts(table("climatology_summary"), scenarios)
+                if variable == "precip"
+                else None,
                 reference=next(
                     (
                         w["reference"]

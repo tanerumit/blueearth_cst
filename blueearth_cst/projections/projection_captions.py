@@ -18,7 +18,6 @@ TITLES = {
     "annual-precipitation.png": "Annual precipitation projections",
     "change-temperature.png": "Annual and seasonal temperature changes",
     "change-precipitation-pct.png": "Annual and seasonal precipitation changes (%)",
-    "change-precipitation-abs.png": "Annual and seasonal precipitation changes (absolute)",
     "seasonal-cycle-temperature.png": "Monthly temperature climatology",
     "seasonal-cycle-precipitation.png": "Monthly precipitation climatology",
     "monthly-change-temperature.png": "Monthly temperature changes",
@@ -165,13 +164,16 @@ def caption(filename, record, window_id="", counts=None):
         unit = "°C" if temperature else "%"
         lead = f"Monthly {variable} change ({unit}), {_period(window)}, across {models} by scenario: {_BOXES}"
     elif filename.startswith("change-"):
-        unit = (
-            "°C" if temperature else "%" if filename.endswith("-pct.png") else "mm d⁻¹"
-        )
+        unit = "°C" if temperature else "%"
         lead = (
             f"Annual and seasonal {variable} change ({unit}), {_period(window)}, across {models}: "
             f"{_STRIP}"
         )
+        if not temperature:
+            notes.append(
+                "Panel titles give the reference amount: the ensemble-median monthly climatology "
+                "summed over the period."
+            )
     elif filename.startswith("variability-ratio-"):
         statistic = "CV" if filename.endswith("-cv.png") else "SD"
         lead = (

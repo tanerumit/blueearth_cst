@@ -188,11 +188,11 @@ def test_manifest_bijection_unavailable_and_annotation_mode(
     )
     plots = tmp_path / "plots"
     manifest, skipped = render_suite(tables, record, plots, annotation=annotation)
-    assert len(manifest) == 1 and len(skipped) == 18
+    assert len(manifest) == 1 and len(skipped) == 17
     console = capsys.readouterr().out
     assert "projection_plots - Rendering windows:" in console
     assert "; reference: " in console
-    assert "Wrote 1 figure; 18 skipped; reasons → figure_captions.md" in console
+    assert "Wrote 1 figure; 17 skipped; reasons → figure_captions.md" in console
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }
@@ -240,7 +240,7 @@ def test_captions_and_distinct_folder_contract(suite):
         "period_2071_2100",
         "period_2081_2100",
     ]
-    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 19
+    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 18
 
 
 def test_unplotted_statistics_do_not_enable_mean_figures(suite):
@@ -252,7 +252,6 @@ def test_unplotted_statistics_do_not_enable_mean_figures(suite):
             [
                 "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
                 "cmip6_precip_annual_seasonal_change_pct_box_basin_avg.png",
-                "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
                 "cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png",
                 "cmip6_precip_temp_annual_change_cloud_basin_avg.png",
             ]
@@ -499,9 +498,9 @@ def test_mostly_dry_periods_are_shaded_and_captioned():
     record = {"reference": [1985, 2014], "windows": []}
     assert dry_shading(pct, {"change_summary": summary(5, 5)}, record, "2036-2065")
     assert not dry_shading(pct, {"change_summary": summary(6, 4)}, record, "2036-2065")
-    abs_change = pct.replace("_pct_", "_abs_")
+    temperature = "cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     assert not dry_shading(
-        abs_change, {"change_summary": summary(1, 9)}, record, "2036-2065"
+        temperature, {"change_summary": summary(1, 9)}, record, "2036-2065"
     )
     window = {"window_id": "2036-2065", "used": [2036, 2065], "reference": [1985, 2014]}
     record["windows"] = [window]

@@ -1168,7 +1168,6 @@ def product_availability(tables, windows=None):
         for variable, quantity, label in (
             ("temp", "change", "temperature"),
             ("precip", "change_pct", "precipitation-pct"),
-            ("precip", "change", "precipitation-abs"),
         ):
             sub = mean.loc[
                 (mean.variable == variable)

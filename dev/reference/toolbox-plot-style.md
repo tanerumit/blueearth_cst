@@ -308,7 +308,10 @@ x-axis title; retain every slope estimate and interval regardless of label densi
 WF2 annual/seasonal strips (change and variability ratio) show each model as a point, the median as a
 thick tick and the prepared IQR as a pale band where at least 10 models contribute. They draw no whiskers,
 so a single outlying model does not read as typical spread. Scenarios are labelled on the x-axis in two
-lines (SSP1 over 2.6) and each group's model count sits at the bottom of the panel.
+lines (SSP1 over 2.6) and each group's model count sits at the bottom of the panel. The precipitation
+strip shows percentage change only, with each panel title giving the reference amount (the ensemble-median
+monthly climatology summed over the period, e.g. "b) DJF · ref. ≈48 mm"); the separate absolute-change
+figure is retired.
 
 WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
 horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median

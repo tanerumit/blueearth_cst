@@ -331,7 +331,6 @@ def skipped_product_messages(availability):
             "annual-precipitation.png": "Annual precipitation overview",
             "change-temperature.png": "Temperature changes",
             "change-precipitation-pct.png": "Percentage precipitation changes",
-            "change-precipitation-abs.png": "Absolute precipitation changes",
             "seasonal-cycle-temperature.png": "Temperature seasonal cycle",
             "seasonal-cycle-precipitation.png": "Precipitation seasonal cycle",
             "monthly-change-temperature.png": "Monthly temperature changes",

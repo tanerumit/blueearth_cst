@@ -472,3 +472,38 @@ def test_agreement_requires_a_plotted_cell(period, variable, quantity):
         )["n_models"]
         == 0
     )
+
+
+def test_mostly_dry_periods_are_shaded_and_captioned():
+    from blueearth_cst.projections.projection_suite_figures import dry_shading
+
+    def summary(kept, excluded):
+        return pd.DataFrame(
+            [
+                dict(
+                    window_id="2036-2065",
+                    variable="precip",
+                    statistic="mean",
+                    quantity="change_pct",
+                    period=period,
+                    scenario="ssp245",
+                    n_models=kept if period == "JJA" else 10,
+                    n_models_excluded=excluded if period == "JJA" else 0,
+                )
+                for period in ("annual", "DJF", "MAM", "JJA", "SON")
+            ]
+        )
+
+    pct = "cmip6_precip_annual_seasonal_change_pct_box_basin_avg.png"
+    record = {"reference": [1985, 2014], "windows": []}
+    assert dry_shading(pct, {"change_summary": summary(5, 5)}, record, "2036-2065")
+    assert not dry_shading(pct, {"change_summary": summary(6, 4)}, record, "2036-2065")
+    abs_change = pct.replace("_pct_", "_abs_")
+    assert not dry_shading(
+        abs_change, {"change_summary": summary(1, 9)}, record, "2036-2065"
+    )
+    window = {"window_id": "2036-2065", "used": [2036, 2065], "reference": [1985, 2014]}
+    record["windows"] = [window]
+    text = caption(pct, record, "2036-2065", {"n_models": 10, "mostly_dry": True})
+    assert "Gray panels mark periods" in text
+    assert "Gray" not in caption(pct, record, "2036-2065", {"n_models": 10})

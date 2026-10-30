@@ -103,7 +103,9 @@ def caption(filename, record, window_id="", counts=None):
     window = next(
         (w for w in record.get("windows", []) if w["window_id"] == window_id), None
     )
-    models = plural(counts.get("n_models", len(record.get("models", []))), "CMIP6 model")
+    models = plural(
+        counts.get("n_models", len(record.get("models", []))), "CMIP6 model"
+    )
     reference = f"{record['reference'][0]}–{record['reference'][1]}"
     temperature = "temperature" in filename
     variable = "temperature" if temperature else "precipitation"
@@ -180,4 +182,16 @@ def caption(filename, record, window_id="", counts=None):
             "models; 1 means no change"
         )
         notes += _exclusions(counts)
+    if counts.get("mostly_dry"):
+        shaded = (
+            "months"
+            if filename.startswith("monthly-")
+            else "cells"
+            if filename == "sign-agreement.png"
+            else "panels"
+        )
+        notes.append(
+            f"Gray {shaded} mark periods where half or more of the models fall below the dry-reference threshold "
+            "and are excluded; the models left are too few to be representative."
+        )
     return " ".join([f"{lead}.", *notes])

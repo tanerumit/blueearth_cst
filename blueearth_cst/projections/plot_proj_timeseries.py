@@ -23,7 +23,10 @@ from blueearth_cst.projections.projection_figures import (
     figure_key,
     period_folder,
 )
-from blueearth_cst.projections.projection_suite_figures import render_product
+from blueearth_cst.projections.projection_suite_figures import (
+    dry_shading,
+    render_product,
+)
 from blueearth_cst.shared.plot_preset import CST_PRESET
 from blueearth_cst.shared.snake_utils import (
     listed,
@@ -207,6 +210,7 @@ def render_suite(
             continue
         window_id = row.get("window_id") or ""
         counts = figure_counts(row["filename"], tables, window_id)
+        counts["mostly_dry"] = dry_shading(row["filename"], tables, record, window_id)
         text = caption(row["filename"], record, window_id, counts)
         with use_preset(CST_PRESET):
             fig = render_product(

@@ -112,6 +112,68 @@ def _ratio_limits(axes, values):
         ax.set_ylim(np.exp(low - pad), np.exp(high + pad))
 
 
+#: Background of precipitation panels, months and cells where most models fall
+#: under the analysis dry-reference rule, so the few left are not representative.
+DRY_FILL = "#e9ecee"
+
+
+def _mostly_dry(rows):
+    """Whether at most half the models in prepared summary ``rows`` remain.
+
+    For precipitation the exclusions are the analysis dry-reference rule in
+    practice; the figures shade rather than drop these periods.
+    """
+    if rows.empty or "n_models_excluded" not in rows:
+        return False
+    kept = pd.to_numeric(rows.n_models, errors="coerce").sum()
+    excluded = pd.to_numeric(rows.n_models_excluded, errors="coerce").sum()
+    return excluded > 0 and kept <= excluded
+
+
+def dry_shading(filename, tables, record, window_id=""):
+    """Whether a product shades any mostly-dry period (the artists' own rules)."""
+    key = figure_key(filename)
+    if key.endswith("-abs.png") or not (
+        "precipitation" in key or key == "sign-agreement.png"
+    ):
+        return False
+    if key == "sign-agreement.png":
+        data = tables.get("sign_agreement", pd.DataFrame())
+        if data.empty:
+            return False
+        data = data.loc[
+            (data.window_id == window_id)
+            & (data.statistic == "mean")
+            & (data.variable == "precip")
+            & (data.quantity == "change_pct")
+        ]
+        support = data.groupby("scenario").n.transform("max")
+        return bool((data.n <= 0.5 * support).any())
+    if key.startswith("variability-ratio-"):
+        data = pd.DataFrame(record.get("variability_model_summary", []))
+        statistic = "cv_detrended" if key.endswith("-cv.png") else "std_detrended"
+        periods, by = STRIP_PERIODS, ["period"]
+    elif key.startswith(("change-", "monthly-change-")):
+        data = tables.get("change_summary", pd.DataFrame())
+        statistic = "mean"
+        monthly = key.startswith("monthly-")
+        periods = MONTHS if monthly else STRIP_PERIODS
+        by = ["period", "scenario"] if monthly else ["period"]
+    else:
+        return False
+    if data.empty:
+        return False
+    if "quantity" in data and not key.startswith("variability-"):
+        data = data.loc[data.quantity == "change_pct"]
+    data = data.loc[
+        (data.window_id == window_id)
+        & (data.variable == "precip")
+        & (data.statistic == statistic)
+        & data.period.isin(periods)
+    ]
+    return any(_mostly_dry(rows) for _, rows in data.groupby(by))
+
+
 def dot_strip(
     models,
     summary,
@@ -147,9 +209,15 @@ def dot_strip(
     low, high = values.min(), values.max()
     pad = 0.06 * (high - low or 1)
     for i, (ax, period) in enumerate(zip(axes, STRIP_PERIODS, strict=True)):
-        ax.set_title(
-            f"{chr(97 + i)}) {'Annual' if period == 'annual' else period}", loc="left"
-        )
+        title = f"{chr(97 + i)}) {'Annual' if period == 'annual' else period}"
+        panel_sums = sums.loc[sums.period == period]
+        if variable == "precip" and _mostly_dry(panel_sums):
+            # The count goes in the title: inside the panel it collides with
+            # the long whiskers few-model dry seasons tend to have.
+            ax.set_facecolor(DRY_FILL)
+            total = (panel_sums.n_models + panel_sums.n_models_excluded).max()
+            title += f" · dry, ≤{int(panel_sums.n_models.max())}/{int(total)}"
+        ax.set_title(title, loc="left")
         ax.set_ylim(low - pad, high + pad)
         ax.tick_params(axis="both", length=3)
         ygrid(ax)
@@ -304,6 +372,8 @@ def monthly_change_figure(summary, *, variable, scenarios=None, reference=(1985,
         color = _color(s)
         rows = data.loc[data.scenario == s].set_index("period").reindex(MONTHS)
         for x, (_, row) in enumerate(rows.iterrows()):
+            if variable == "precip" and _mostly_dry(rows.iloc[[x]]):
+                ax.axvspan(x - 0.5, x + 0.5, color=DRY_FILL, lw=0, zorder=0)
             if not np.isfinite(row["median"]):
                 continue
             ax.plot([x] * 2, [row["min"], row["max"]], color=color, lw=LW_RANGE)
@@ -814,9 +884,15 @@ def agreement_matrix(agreement, scenarios=None):
     ys = [
         i + (0.45 if i and periods[0] == "annual" else 0) for i in range(len(periods))
     ]
+    any_dry = False
     for b, (ax, (variable, quantity, title)) in enumerate(
         zip(axes.flat, quantities, strict=True)
     ):
+        support = (
+            data.loc[(data.variable == variable) & (data.quantity == quantity)]
+            .groupby("scenario")
+            .n.max()
+        )
         for period, y in zip(periods, ys, strict=True):
             for j, s in enumerate(scen):
                 rows = data.loc[
@@ -835,8 +911,14 @@ def agreement_matrix(agreement, scenarios=None):
                         np.digitize(row.fraction, [0, 0.6, 0.8, 0.9, 1.0001]) - 1, 0, 3
                     )
                 )
+                # At most half the scenario's largest support: the dry rule left
+                # too few precipitation models for agreement to mean much.
+                sparse = variable == "precip" and row.n <= 0.5 * support[s]
+                any_dry |= sparse
                 fill = (
-                    (positive if sign == "+" else negative)[k]
+                    DRY_FILL
+                    if sparse
+                    else (positive if sign == "+" else negative)[k]
                     if sign and np.isfinite(row.fraction)
                     else "#eeeeee"
                 )
@@ -880,12 +962,16 @@ def agreement_matrix(agreement, scenarios=None):
         )
         for k in range(4)
     ]
+    labels = ["<60%", "60–80%", "80–90%", "≥90%"]
+    if any_dry:
+        handles.append(Patch(facecolor=DRY_FILL, edgecolor="none"))
+        labels.append("Mostly dry")
     fig.legend(
         handles,
-        ["<60%", "60–80%", "80–90%", "≥90%"],
+        labels,
         handler_map={tuple: HandlerTuple(ndivide=None, pad=0.3)},
         loc="outside upper left",
-        ncols=4,
+        ncols=len(labels),
         frameon=False,
         alignment="left",
         title="Models sharing median sign · blue: increase; red: decrease",

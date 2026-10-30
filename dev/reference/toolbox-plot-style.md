@@ -287,6 +287,7 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | WF2 handover line | Dashed line at the CMIP6 historical–scenario handover (2014.5), never the current year. |
 | WF2 change strips | Retain the newer original scenario legend, unlabeled x-axis, box and point styling. |
 | WF2 seasonal cycle | Median lines; shade historical range only; one-row legend above the axes. |
+| WF2 dry periods | Precipitation %/ratio panels, months or sign cells keeping at most half the models: gray. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |
@@ -383,7 +384,8 @@ in this visual review.
   and overlays explain the rest; support counts, thresholds and reference provenance stay in metadata.
 - WF2 captions (`projections/projection_captions.py`) follow the same skeleton: one sentence with the
   quantity, units, period, model support and any encoding the figure has no key for. Add a sentence
-  only for a shifted or joined analysis window, the CV dry-mean exclusion, or nonzero exclusion counts.
+  only for a shifted or joined analysis window, the CV dry-mean exclusion, nonzero exclusion counts, or
+  gray mostly-dry periods (shaded, never dropped, since the dry-reference rule leaves too few models).
   Caveats shared by every WF2 figure (spread is not a confidence interval, model dependence,
   availability is not eligibility) are stated once, in `SUITE_NOTE` at the head of `figure_captions.md`.
 - Captions span the full plotting area: from the leftmost axes' left edge to the rightmost axes' right

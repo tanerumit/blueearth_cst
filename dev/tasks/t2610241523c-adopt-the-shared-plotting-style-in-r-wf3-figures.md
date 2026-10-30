@@ -7,7 +7,7 @@ area: plotting
 origin: t2610082103
 queue:
 created: 2026-10-24
-updated: 2026-10-24
+updated: 2026-10-30
 ---
 
 > [!note] Overview
@@ -20,8 +20,22 @@ updated: 2026-10-24
 
 ## Progress
 
-- [ ] Inventory WF3 figures and their current style sources.
-- [ ] Choose the adoption route with the owner.
-- [ ] Implement and inspect the rendered figures.
+- [x] Inventory the 15 maintained WF3 figures and their style sources.
+- [x] Adopt the R adapter with shared YAML tokens and measured R/Python panel geometry.
+- [x] Inspect and approve the figures; verify scientific equivalence and install the pinned API privately.
 
-Next: inventory the WF3 figures.
+Implementation landed on main at `41af17de`, including the published immutable upstream source pin.
+The former local implementation branch was deleted after ancestry and tree-equivalence checks.
+
+## Evidence and operation
+
+- [Retained integration evidence](../records/validation/weather-style-integration-2026-10-30.md).
+- [Weather style](../reference/weather-diagnostic-style.md) and
+  [panel contract](../reference/panel-layout-contract.md).
+- Final checks: 120 affected Python tests, four WF2 DAG cases, private R installation/idempotence,
+  same-version wrong-commit repair, API/source checks and scoped lint/format checks passed.
+- Runtime owners should run `pixi run install-rdeps` before WF3 after updating; shared runtimes were
+  preserved during private verification.
+- Retain the approved figures/styled R objects while the comparison gallery needs them, and the private
+  install library/logs until the runtime owner confirms installation.
+- Reserved in session-2 on 2026-10-28; completed and landed 2026-10-30. No push performed.

@@ -12,6 +12,7 @@ from __future__ import annotations
 import calendar as _calendar
 import json
 from functools import lru_cache
+from statistics import NormalDist
 
 import numpy as np
 import pandas as pd
@@ -717,6 +718,165 @@ def monthly_change(table):
     return models, ensemble_summary(models)
 
 
+def variability_band(changes, level=NULL_BAND_LEVEL):
+    """Half-width of the mean change that interannual variability alone gives.
+
+    Per member, z·σ·√(1/n_ref + 1/n_fut), with σ the detrended reference SD
+    the null bands use (``null_reference_sd``) and, for ``change_pct``, as a
+    percentage of the reference mean. Members average within their model and
+    each cell takes the median across models: the historical runs' own noise,
+    against which a projected mean change can be read. Independent years are
+    assumed, so autocorrelation widens the true range.
+    """
+    rows = changes.loc[
+        (changes.statistic == "mean")
+        & changes.quantity.isin(["change", "change_pct"])
+        & changes.mean_change_eligible.astype(bool)
+    ].copy()
+    if rows.empty:
+        return pd.DataFrame(columns=[*CELL, "noise_halfwidth"])
+    z = NormalDist().inv_cdf(0.5 + level / 2)
+    half = (
+        z
+        * rows.null_reference_sd.astype(float)
+        * np.sqrt(1 / rows.n_reference.astype(float) + 1 / rows.n_future.astype(float))
+    )
+    pct = rows.quantity == "change_pct"
+    half[pct] = half[pct] / rows.loc[pct, "null_reference_mean"].astype(float) * 100
+    rows["noise_halfwidth"] = half
+    per_model = (
+        rows.groupby(["model", *CELL], dropna=False)
+        .noise_halfwidth.mean()
+        .reset_index()
+    )
+    return per_model.groupby(CELL, dropna=False).noise_halfwidth.median().reset_index()
+
+
+def with_variability_band(summary, changes):
+    """``summary`` with each cell's ``noise_halfwidth`` (NaN where none)."""
+    band = variability_band(changes)
+    return summary.drop(columns="noise_halfwidth", errors="ignore").merge(
+        band, on=CELL, how="left"
+    )
+
+
+#: Calendar months of each season, and mean days per month (February
+#: averaged over leap years), for turning monthly mean rates into totals.
+SEASON_MONTHS = {
+    "DJF": ("Dec", "Jan", "Feb"),
+    "MAM": ("Mar", "Apr", "May"),
+    "JJA": ("Jun", "Jul", "Aug"),
+    "SON": ("Sep", "Oct", "Nov"),
+}
+MONTH_DAYS = dict(zip(MONTHS, (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)))
+
+
+def _seasons_with_historical(per, variable, statistic, units):
+    """Scenario rows plus one ``historical`` row per model, window and season.
+
+    ``per`` holds one row per model, scenario, window and season with
+    ``reference`` and ``future`` values; the historical value averages the
+    model's reference over its scenarios, which share its historical run.
+    """
+    historical = (
+        per.groupby([*MODEL_KEY, *WINDOW_KEY, "period"], dropna=False)
+        .agg(value=("reference", "mean"), n_members=("n_members", "max"))
+        .reset_index()
+        .assign(scenario="historical")
+    )
+    return pd.concat(
+        [per.rename(columns={"future": "value"}).drop(columns="reference"), historical],
+        ignore_index=True,
+    ).assign(variable=variable, statistic=statistic, quantity="value", units=units)
+
+
+def seasonal_values(climatology, changes):
+    """Each model's seasonal climate per window, for the seasonal-values grids.
+
+    Statistics: ``total`` precipitation (mm) and ``mean`` temperature (degC)
+    from the monthly climatology (rates times days per month); ``sd`` of the
+    detrended interannual series (precipitation as a season total in mm,
+    temperature in degC) and precipitation ``cv`` (%) from the per-member
+    changes, averaged over each model's variability-eligible members (NaN
+    where none is eligible, so exclusions stay counted). Scenario rows hold
+    the future window and ``historical`` rows the reference.
+    """
+    columns = [*MODEL_KEY, *CELL, "value", "n_members"]
+    keys = [*MODEL_KEY, "scenario", *WINDOW_KEY, "period"]
+    season_of = {m: s for s, months in SEASON_MONTHS.items() for m in months}
+    season_days = {s: sum(MONTH_DAYS[m] for m in ms) for s, ms in SEASON_MONTHS.items()}
+    parts = []
+    monthly = climatology.loc[climatology.period.isin(MONTHS)]
+    for variable, statistic, units in (
+        ("precip", "total", "mm"),
+        ("temp", "mean", "degC"),
+    ):
+        data = monthly.loc[monthly.variable == variable]
+        if data.empty:
+            continue
+        data = data.assign(
+            days=data.period.map(MONTH_DAYS), period=data.period.map(season_of)
+        )
+        weighted = data.assign(
+            reference=data.reference * data.days, future=data.future * data.days
+        ).groupby(keys, dropna=False)
+        # min_count: a season missing any month's value is NaN, not a
+        # partial (or zero) sum.
+        per = (
+            weighted[["reference", "future", "days"]]
+            .sum(min_count=3)
+            .join(weighted.n_members.min())
+            .reset_index()
+        )
+        if statistic == "mean":
+            per["reference"] /= per.days
+            per["future"] /= per.days
+        parts.append(
+            _seasons_with_historical(
+                per.drop(columns="days"), variable, statistic, units
+            )
+        )
+    rows = changes.loc[
+        (changes.quantity == "change")
+        & changes.statistic.isin(["std_detrended", "cv_detrended"])
+        & changes.period.isin(SEASON_MONTHS)
+    ]
+    for (variable, raw), statistic, units in (
+        (("precip", "std_detrended"), "sd", "mm"),
+        (("temp", "std_detrended"), "sd", "degC"),
+        (("precip", "cv_detrended"), "cv", "%"),
+    ):
+        data = rows.loc[(rows.variable == variable) & (rows.statistic == raw)].copy()
+        if data.empty:
+            continue
+        eligible = data.variability_eligible.astype(bool)
+        for side in ("reference", "future"):
+            data[side] = data[f"{side}_value"].astype(float).where(eligible)
+        scale = (
+            data.period.map(season_days)
+            if (variable, statistic) == ("precip", "sd")
+            else 100.0
+            if statistic == "cv"
+            else 1.0
+        )
+        data["reference"] *= scale
+        data["future"] *= scale
+        per = (
+            data.assign(member_ok=eligible)
+            .groupby(keys, dropna=False)
+            .agg(
+                reference=("reference", "mean"),
+                future=("future", "mean"),
+                n_members=("member_ok", "sum"),
+            )
+            .reset_index()
+        )
+        parts.append(_seasons_with_historical(per, variable, statistic, units))
+    if not parts:
+        return pd.DataFrame(columns=columns)
+    return pd.concat(parts, ignore_index=True).reindex(columns=columns)
+
+
 def member_ratios(table):
     """Retain all variability rows, including zero future and excluded ratios."""
     sub = table.loc[
@@ -1168,7 +1328,6 @@ def product_availability(tables, windows=None):
         for variable, quantity, label in (
             ("temp", "change", "temperature"),
             ("precip", "change_pct", "precipitation-pct"),
-            ("precip", "change", "precipitation-abs"),
         ):
             sub = mean.loc[
                 (mean.variable == variable)
@@ -1201,6 +1360,13 @@ def product_availability(tables, windows=None):
                 complete,
                 "no model with twelve reference and future months",
             )
+            add(
+                f"values-{label}-{'total' if variable == 'precip' else 'mean'}.png",
+                period_folder(window_id),
+                window_id,
+                complete,
+                "no model with twelve reference and future months",
+            )
             monthly = mean.loc[
                 (mean.variable == variable)
                 & (
@@ -1228,11 +1394,11 @@ def product_availability(tables, windows=None):
                 & ratios.period.isin(PERIODS[:5])
             ]
             add(
-                f"variability-ratio-{label}.png",
+                f"values-{label}.png",
                 period_folder(window_id),
                 window_id,
                 (np.isfinite(sub.value.astype(float)) & sub.value.gt(0)).any(),
-                "no eligible model ratio",
+                "no variability-eligible model",
             )
         members = data["member_ratios"].loc[
             data["member_ratios"].window_id == window_id
@@ -1282,7 +1448,7 @@ def product_availability(tables, windows=None):
             "no paired annual temperature and precipitation model changes",
         )
         agreement_cells = mean.loc[
-            mean.period.isin(("annual", *MONTHS))
+            mean.period.isin(PERIODS[:5])  # annual and the seasons, as plotted
             & (
                 (mean.variable.eq("temp") & mean.quantity.eq("change"))
                 | (

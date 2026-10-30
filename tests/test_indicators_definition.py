@@ -161,12 +161,12 @@ def test_every_module_sees_ONE_anchor():
 
     They held separate literals until 2026-08-13. Same object, one source.
     """
-    from blueearth_cst.climate_analysis import climate_figures
+    from blueearth_cst.model import plot_map_forcing
     from blueearth_cst.shared import snake_utils as su
 
     assert (
         indicators_definition.DEFAULT_WATER_YEAR_ANCHOR
-        == climate_figures.DEFAULT_WATER_YEAR_ANCHOR
+        == plot_map_forcing.DEFAULT_WATER_YEAR_ANCHOR
         == su.DEFAULT_WATER_YEAR_ANCHOR
     )
 

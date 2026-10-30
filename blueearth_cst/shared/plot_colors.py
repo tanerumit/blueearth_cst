@@ -44,10 +44,11 @@ def load_palette(path: Path = PALETTE_PATH) -> dict[str, Any]:
         "elevation",
         "waterbodies",
         "map_features",
+        "river_order",
     }
     if not isinstance(palette, dict) or set(palette) != sections:
         fail(f"palette requires exactly these sections: {sorted(sections)}")
-    for section in sections - {"precip_anomaly", "elevation"}:
+    for section in sections - {"precip_anomaly", "elevation", "river_order"}:
         block = palette[section]
         if not isinstance(block, dict) or not block:
             fail(f"{section} must be a nonempty mapping")
@@ -104,6 +105,7 @@ def load_palette(path: Path = PALETTE_PATH) -> dict[str, Any]:
                 fail(f"historical_maps.{name} requires quoted six-digit hex colours")
     for name, values in {
         "elevation": palette["elevation"],
+        "river_order": palette["river_order"],
         **palette["waterbodies"],
     }.items():
         if not isinstance(values, list) or len(values) < 2:
@@ -127,6 +129,7 @@ HISTORICAL_MAP_COLORS: dict[str, dict[str, Any]] = _PALETTE["historical_maps"]
 NEUTRAL_COLORS: dict[str, str] = _PALETTE["neutral"]
 MAP_FEATURE_COLORS: dict[str, str] = _PALETTE["map_features"]
 ELEVATION_COLORS: tuple[str, ...] = tuple(_PALETTE["elevation"])
+RIVER_ORDER_COLORS: tuple[str, ...] = tuple(_PALETTE["river_order"])
 WATERBODY_COLORS: dict[str, tuple[str, ...]] = {
     name: tuple(values) for name, values in _PALETTE["waterbodies"].items()
 }

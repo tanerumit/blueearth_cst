@@ -135,6 +135,9 @@ def colourbar(
     stack_mm: float,
     shrink: float = 0.68,
 ) -> None:
+    # Placed against the layout cell: right for heatmap axes, which fill their
+    # cell. Aspect-locked map axes do not, so maps place their own bar
+    # (``prepared_maps``) and share only ``style_colourbar``.
     cb = fig.colorbar(
         mesh,
         ax=axes,
@@ -146,6 +149,11 @@ def colourbar(
         anchor=(0.0, 0.0),
         aspect=max(stack_mm / 3.0, 8),
     )
+    style_colourbar(cb, label)
+
+
+def style_colourbar(cb, label: str) -> None:
+    """The one colourbar appearance: title above the bar, preset ticks and outline."""
     preset = active()
     colors, tick, edge = preset.colors, preset.fonts["tick"], preset.lines["edge"]
     cb.ax.set_title(label, color=colors["ink"], fontsize=tick, pad=10)

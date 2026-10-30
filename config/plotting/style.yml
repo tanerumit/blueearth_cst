@@ -35,6 +35,19 @@ charts:
     legend.handlelength: 2.0
     figure.facecolor: white
     savefig.facecolor: white
+maps:
+  # Stream-order steps, lowest order first; colours are colors.yml river_order.
+  river_order_widths: [0.57, 0.85, 1.19, 1.70, 2.41, 3.26, 4.54]
+  river_width: 0.6           # rivers without an order attribute
+  river_halo_width: 0.8      # white halo added to each river's width
+  basin_outline_width: 0.9
+  divide_width: 0.7
+  divide_dash: [6, 2.5]
+  location_marker: D
+  location_size: 6.0         # marker size in pt
+  location_label_size: 5.5
+  location_label_wrap: 14    # labels longer than this many characters wrap to two lines
+  scale_bar_segments: 4
 evaluation:
   observed_dash: [0, [3, 1.6]]
   line_width: 0.7

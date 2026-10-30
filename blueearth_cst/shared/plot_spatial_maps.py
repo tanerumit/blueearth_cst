@@ -10,15 +10,15 @@ one visual family rather than ten unrelated pictures.
 the two halves are one deliverable rather than two that happen to share a
 folder. See its docstring.
 
-Three things live here and deliberately not in ``shared.cartographic_map``:
+Three things live here and deliberately not in the drawing code
+(``plotting/prepared_maps.py``) or the classifier (``shared/map_classes.py``):
 
 * the **layer registry** (:data:`SPATIAL_MAP_FIGURES`) — which variables get a
   figure, in what order, under what filename;
 * the **styles**, because they name data sources. The template's docstring says
   nothing in it knows what wflow is; by the same rule nothing in it should know
-  what SoilGrids or Copernicus are. ``RASTER_STYLES`` holds the source-neutral
-  quantities (elevation, precipitation, temperature, PET); a family tied to
-  specific products holds its own;
+  what SoilGrids or Copernicus are, so this family declares every style it
+  draws, elevation included;
 * the **class tables** for the nominal layers, taken from the source product's
   published legend where one exists.
 
@@ -29,7 +29,7 @@ Two things every figure here does NOT have, and both are deliberate:
   FILENAME is what names the figure, which is why the stems read as the
   quantity (``soil_ph_basin``) rather than as a position in a set. The one
   thing the title did carry and a filename cannot — the product credit — moved
-  to a footnote under the axes; see :data:`SOURCE_CREDITS`.
+  to the caption; see ``map_frames.SOURCE_CREDITS``.
 * **no overlay key.** Rivers, the basin outline, the divides and the points of
   interest are still DRAWN — that is what ties ten rasters to one basin — but
   they get no legend entries. The styling reads without one (black outline,
@@ -85,7 +85,7 @@ from blueearth_cst.plotting.figure_captions import write_figure_captions
 #   * `raster_style` is pure Python -- it exists so the five module-level
 #     `RasterStyle` constants below cost nothing to declare;
 #   * `plot_style` is the page/typography contract, stdlib-only, and owns
-#     `RASTER_DPI` directly (`cartographic_map` merely re-exports it).
+#     `RASTER_DPI` directly.
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.shared.plot_style import RASTER_DPI
 from blueearth_cst.shared.raster_style import RasterStyle
@@ -118,22 +118,6 @@ BASIN_MASK_VARIABLE = "subbasin_id"
 #: folder ``elevation_basin`` uses — this family is the rest of that figure's set.
 PLOTS_DIRNAME = "plots"
 
-#: Product credits, keyed by the catalog entry name each layer records in its
-#: own ``source`` attribute. The attr is OUR plumbing ("vito"); a figure credits
-#: the PRODUCT, with the reference the catalog already carries
-#: (``metadata.paper_ref`` / ``source_version``), so the footnote and the
-#: catalog cannot say different things about the same layer.
-#:
-#: This is the one piece of provenance the figures still show. It used to ride
-#: on the title; dropping titles took it with them, and a filename cannot carry
-#: it, so it moved to a footnote under the axes — smaller, out of the way, and
-#: still on the sheet when the sheet is the only thing a reader has.
-SOURCE_CREDITS = {
-    "merit_hydro_ihu": "MERIT Hydro IHU (Eilander et al., 2020)",
-    "vito": "Copernicus Global Land Cover v2.0.2 (Buchhorn et al., 2020)",
-    "modis_lai": "MODIS MCD15A3H V006 (Myneni et al., 2015)",
-    "soilgrids": "SoilGrids (ISRIC, 2017)",
-}
 
 # ---------------------------------------------------------------------------
 # CLASS TABLES FOR THE NOMINAL LAYERS
@@ -243,6 +227,11 @@ def land_cover_classes(layer):
     # ``category_entries`` sends every real code to its unclassified entry.
     return ((-1, "#000000", None),)
 
+
+#: Classes covering less of the basin than this are drawn but left out of the
+#: key, and named in the caption: a handful of cells (six snow-and-ice cells in
+#: a desert delta) is product noise a reader cannot find on the map.
+CLASS_KEY_MIN_SHARE = 0.001
 
 #: Legend titles for the nominal figures, by figure stem.
 LEGEND_TITLES = {"land_cover_basin": "Land cover", "subbasins": "Subbasins"}
@@ -440,6 +429,20 @@ SOIL_DEPTH_STYLE = RasterStyle(
 )
 
 
+#: Elevation, the basin overview. LINEAR, deliberately, and the one style that
+#: is: elevation is the quantity a reader does arithmetic on (how far above that
+#: gauge, how much fall to the outlet), so it keeps a scale you can subtract on
+#: rather than equal-area classes. Owner's call, 2026-08-09. The ramp falls back
+#: to the monotonic-lightness elevation anchors; drawn over its own hillshade.
+ELEVATION_STYLE = RasterStyle(
+    label="Elevation (m a.s.l.)",
+    palette=None,
+    classification="equal_interval",
+    zero_baseline=True,
+    relief=True,
+)
+
+
 def _texture_style(fraction):
     """One particle-size fraction's style, on the shared texture ramp."""
     return RasterStyle(
@@ -627,6 +630,45 @@ def load_spatial_map_layers(spatial_dir):
     return maps, layers
 
 
+#: The elevation grid the basin overview draws, in the shared hydrography.
+HYDROGRAPHY_FILENAME = "hydrography.nc"
+SPATIAL_ELEVATION_VARIABLE = "elevation"
+
+
+def load_spatial_basin_layers(spatial_dir):
+    """The elevation grid from ``hydrography.nc`` and the vector layers.
+
+    Model-free: everything comes from ``data/spatial/``, so the overview can be
+    drawn before a model exists. Optional vector layers are read when present.
+    """
+    import geopandas as gpd
+    import xarray as xr
+
+    from blueearth_cst.shared.map_classes import _mask_nodata
+
+    spatial_dir = Path(spatial_dir)
+    hydrography = spatial_dir / HYDROGRAPHY_FILENAME
+    geoms_dir = spatial_dir / "geoms"
+    if not hydrography.is_file():
+        raise FileNotFoundError(f"no {HYDROGRAPHY_FILENAME} in {spatial_dir}")
+    with xr.open_dataset(hydrography) as dataset:
+        if SPATIAL_ELEVATION_VARIABLE not in dataset:
+            raise KeyError(
+                f"{hydrography} has no {SPATIAL_ELEVATION_VARIABLE!r}; it holds "
+                f"{sorted(dataset.data_vars)}"
+            )
+        elevation = _mask_nodata(dataset[SPATIAL_ELEVATION_VARIABLE].load())
+    layers = {}
+    for argument, stem in SPATIAL_MAP_LAYERS.items():
+        path = geoms_dir / f"{stem}.geojson"
+        if path.is_file():
+            layers[argument] = gpd.read_file(path)
+    missing = [name for name in ("basins", "rivers") if name not in layers]
+    if missing:
+        raise FileNotFoundError(f"{geoms_dir} is missing {missing}")
+    return elevation, layers
+
+
 def _outer_boundary(basins):
     """The basin's OUTER boundary, dissolved to a single polygon.
 
@@ -652,7 +694,7 @@ def _basin_mask(maps):
     """
     import numpy as np
 
-    from blueearth_cst.shared.cartographic_map import _mask_nodata
+    from blueearth_cst.shared.map_classes import _mask_nodata
 
     if BASIN_MASK_VARIABLE not in maps:
         return None
@@ -669,7 +711,7 @@ def prepare_layer(maps, figure, basin_mask=None):
     figure's title ("annual mean"), because a silently averaged seasonal cycle
     is the kind of thing a reader assumes did not happen.
     """
-    from blueearth_cst.shared.cartographic_map import _mask_nodata
+    from blueearth_cst.shared.map_classes import _mask_nodata
 
     layer = _mask_nodata(maps[figure.variable]).astype("float64")
     extra = [
@@ -717,19 +759,253 @@ def _is_degenerate(layer):
     return False, ""
 
 
-def source_caveat(layer):
-    """``"Source: <product>."`` for the footnote, or ``None`` if unattributed.
+#: Mathtext in style labels and its plain-text caption form.
+_PLAIN_UNITS = (
+    ("$^2$", "²"),
+    ("$^{-2}$", "⁻²"),
+    ("$^{-3}$", "⁻³"),
+    ("$_2$", "₂"),
+)
 
-    An UNMAPPED source falls back to the catalog key rather than dropping the
-    line. "Source: vito." is our plumbing showing through and reads badly, but a
-    figure that silently loses its attribution because a catalog gained an entry
-    is worse — the ugly version is visible and gets fixed, the missing one is
-    not. ``None`` is only for a layer that records no source at all.
+
+def _caption_lead(title, style):
+    """The figure title with the key's unit in plain text, e.g. ``(mass %)``."""
+    if style is None or " (" not in style.label:
+        return title
+    unit = style.label.rpartition(" (")[2].rstrip(")")
+    for math, plain in _PLAIN_UNITS:
+        unit = unit.replace(math, plain)
+    return f"{title} ({unit})"
+
+
+def _spatial_caption(lead, layer, note=None):
+    """The shared one-sentence map caption for a spatial layer."""
+    from blueearth_cst.shared.map_frames import map_caption
+
+    return map_caption(lead, layer.attrs.get("source"), [note] if note else [])
+
+
+def _unit_break(label):
+    """The quantity on one line and its parenthesised unit on the next."""
+    head, sep, unit = label.rpartition(" (")
+    return f"{head}\n({unit}" if sep else label
+
+
+def _key_for(figure, layer):
+    """The template key for one figure: ``MapClasses`` or a classified ``MapScale``.
+
+    Classes come from ``shared/map_classes``: the diverging midpoint resolved
+    per raster, values beyond the outer breaks clipped into the end classes
+    (no extensions).
     """
-    source = layer.attrs.get("source")
-    if not source:
+    from matplotlib.colors import to_hex
+
+    from blueearth_cst.plotting.prepared_maps import MapClasses, MapScale
+    from blueearth_cst.shared import map_classes as classes
+    from blueearth_cst.shared.plot_colors import MAP_FEATURE_COLORS
+
+    missing = MAP_FEATURE_COLORS["missing"]
+    if figure.classes is not None:
+        table = figure.classes(layer) if callable(figure.classes) else figure.classes
+        return MapClasses(
+            title=LEGEND_TITLES.get(figure.stem, figure.stem),
+            codes=[code for code, _, _ in table],
+            colors=[color for _, color, _ in table],
+            labels=[label or str(code) for code, _, label in table],
+            missing_color=missing,
+            unclassified_color=MAP_FEATURE_COLORS["unclassified"],
+            alpha=SUBBASIN_ALPHA if figure.stem == "subbasins" else 1.0,
+            key_min_share=CLASS_KEY_MIN_SHARE,
+        )
+    style = classes.resolve_diverging_style(layer, figure.style)
+    levels = [float(level) for level in classes._class_levels(layer, style)]
+    cmap = classes._classified_colormap(style, levels, "neither")
+    colors = [to_hex(cmap(i)) for i in range(cmap.N)]
+    return MapScale(
+        units=_unit_break(style.label),
+        boundaries=levels,
+        ticks=levels,
+        colors=colors,
+        under_color=colors[0],
+        over_color=colors[-1],
+        missing_color=missing,
+        status="available",
+        extend="neither",
+    )
+
+
+def spatial_locator(extent):
+    """The overview locator from the vendored Natural Earth basemap, or ``None``.
+
+    Window and city selection follow the spatial profile. A city is kept only
+    when its label fits inside the window, largest first.
+    """
+    from blueearth_cst.plotting.prepared_maps import PANEL_LOCATOR_WIDTH, LocatorMap
+    from blueearth_cst.shared import map_classes as classes
+    from blueearth_cst.shared.map_frames import features
+
+    if not classes.BASEMAP_PATH.is_file():
+        print(f"note: locator inset skipped, no basemap at {classes.BASEMAP_PATH}")
         return None
-    return f"Source: {SOURCE_CREDITS.get(source, source)}."
+    window = classes._locator_window(extent)
+    cities = classes._locator_cities(window)
+    limit = classes._LOCATOR_MAX_CITIES
+    west, east, south, north = window
+    # Label width in degrees at the inset's 4.5 pt text on a ~150 mm map frame.
+    deg_per_pt = (east - west) / (PANEL_LOCATOR_WIDTH * 150 / 25.4 * 72)
+    margin = 0.03 * (east - west)
+    places = []
+    for _, city in cities.iterrows():
+        x, y = city.geometry.x, city.geometry.y
+        label_deg = (2 + 0.6 * 4.5 * len(city["name"])) * deg_per_pt
+        if (
+            west + margin <= x
+            and x + label_deg <= east - margin
+            and south + margin <= y <= north - margin
+        ):
+            places.append((x, y, city["name"]))
+        if len(places) >= limit:
+            break
+    return LocatorMap(
+        tuple(window),
+        land=features(classes._read_basemap("land", window)),
+        borders=features(classes._read_basemap("borders", window)),
+        places=places,
+    )
+
+
+def _spatial_context(maps, layers, basin_mask):
+    """What every map of the set shares: frame, overlays, locator, basin mask."""
+    import numpy as np
+
+    from blueearth_cst.shared.map_frames import (
+        as_lat_lon,
+        basin_frame,
+        features,
+        overlay_features,
+    )
+
+    outline = _outer_boundary(layers["basins"])
+    frame = basin_frame(layers["basins"])
+    return {
+        "outline": outline,
+        "frame": frame,
+        "overlay": overlay_features(
+            {
+                "basins": features(outline),
+                "subbasins": features(layers.get("subbasins")),
+                "rivers": features(layers.get("rivers")),
+                "locations": features(layers.get("gauges")),
+            }
+        ),
+        "locator": spatial_locator(frame.extent),
+        "inside": (
+            None
+            if basin_mask is None
+            else np.asarray(
+                as_lat_lon(maps[BASIN_MASK_VARIABLE].copy(data=basin_mask)).values
+            )
+        ),
+    }
+
+
+def _export_map(fig, plot_dir, stem, record, annotation, formats=("png",), dpi=None):
+    """Save one map, tight-cropped with a 2 mm border, and record its caption.
+
+    The crop matches the climate maps' export (``diagnostic_render``); with an
+    embedded caption the crop happens inside ``add_caption`` instead.
+    """
+    import matplotlib.pyplot as plt
+
+    from blueearth_cst.plotting.fundamentals import add_caption
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared.plot_preset import CST_PRESET
+
+    crop = {"bbox_inches": "tight", "pad_inches": 2 / 25.4}
+    if annotation != "none":
+        if annotation not in ("caption", "title"):
+            raise ValueError("annotation must be none, caption, or title")
+        with (
+            use_preset(CST_PRESET, rcparams=False),
+            plt.rc_context({"savefig.dpi": dpi or RASTER_DPI}),
+        ):
+            add_caption(
+                fig,
+                record[annotation],
+                above=annotation == "title",
+                crop=True,
+                pad_inches=crop["pad_inches"],
+            )
+        crop = {}
+    written = []
+    for extension in formats:
+        path = os.path.join(str(plot_dir), f"{stem}.{extension}")
+        # PDF takes no dpi and needs its timestamp scrubbed; PNG takes dpi and
+        # needs the matplotlib version scrubbed, so identical runs give
+        # identical bytes.
+        scrub = (
+            {"metadata": {"CreationDate": None}}
+            if extension == "pdf"
+            else {"dpi": dpi or RASTER_DPI, "metadata": {"Software": None}}
+        )
+        save_figure(path, fig=fig, **scrub, **crop)
+        written.append(Path(path))
+        write_figure_captions(plot_dir, {f"{stem}.{extension}": record})
+    plt.close(fig)
+    return written
+
+
+def plot_elevation_basin(spatial_dir, plot_dir=None, annotation="none"):
+    """``elevation_basin.png`` on the map template: hillshaded elevation classes.
+
+    The basin overview: the elevation ramp (equal-interval, zero-based) draped
+    over a hillshade of the same grid, keyed by its colourbar, with the locator
+    inside the map. The relief is prepared here, the template only draws it.
+    """
+    import numpy as np
+    from matplotlib.colors import BoundaryNorm, ListedColormap
+
+    from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared import map_classes as classes
+    from blueearth_cst.shared.map_frames import as_lat_lon, grid_edges
+    from blueearth_cst.shared.plot_preset import CST_PRESET
+
+    spatial_dir = Path(spatial_dir)
+    plot_dir = Path(plot_dir) if plot_dir is not None else spatial_dir / PLOTS_DIRNAME
+    elevation, layers = load_spatial_basin_layers(spatial_dir)
+    maps, _ = load_spatial_map_layers(spatial_dir)
+    context = _spatial_context(maps, layers, _basin_mask(maps))
+    maps.close()
+    figure = SpatialFigure("elevation", "elevation_basin", ELEVATION_STYLE)
+    scale = _key_for(figure, elevation)
+    cmap = ListedColormap(scale.colors)
+    norm = BoundaryNorm(scale.boundaries, cmap.N, clip=True)
+    south, north = context["frame"].extent[2:]
+    relief = classes._shaded_relief(elevation, cmap, norm, (south + north) / 2)
+    raster = RasterMap(
+        np.asarray(as_lat_lon(elevation).values, dtype=float),
+        *grid_edges(elevation),
+        inside=context["inside"],
+        cell_edges=False,
+        rgba=np.asarray(relief.values, dtype=float),
+    )
+    with use_preset(CST_PRESET):
+        fig = draw_raster_map(
+            raster,
+            context["frame"],
+            scale,
+            context["overlay"],
+            locator=context["locator"],
+            locator_in_map=True,
+        )
+    record = {
+        "title": "Basin elevation and drainage network",
+        "caption": _spatial_caption(
+            "Basin elevation (m a.s.l.) over hillshaded relief", elevation
+        ),
+    }
+    return _export_map(fig, plot_dir, "elevation_basin", record, annotation)
 
 
 # ---------------------------------------------------------------------------
@@ -759,9 +1035,21 @@ def plot_spatial_maps(
     was not worth drawing" are different facts and a reader cannot tell them
     apart from an empty folder.
     """
-    import matplotlib.pyplot as plt
+    import numpy as np
 
-    from blueearth_cst.shared.cartographic_map import plot_raster_map
+    from blueearth_cst.plotting.prepared_maps import (
+        MapClasses,
+        RasterMap,
+        draw_raster_map,
+        unkeyed_classes,
+    )
+    from blueearth_cst.plotting.preset import use_preset
+    from blueearth_cst.shared.map_classes import check_geographic_inputs
+    from blueearth_cst.shared.map_frames import (
+        as_lat_lon,
+        grid_edges,
+    )
+    from blueearth_cst.shared.plot_preset import CST_PRESET
 
     spatial_dir = Path(spatial_dir)
     plot_dir = Path(plot_dir) if plot_dir is not None else spatial_dir / PLOTS_DIRNAME
@@ -784,8 +1072,7 @@ def plot_spatial_maps(
 
     maps, layers = load_spatial_map_layers(spatial_dir)
     basin_mask = _basin_mask(maps)
-    outline = _outer_boundary(layers["basins"])
-    subbasins = layers.get("subbasins")
+    context = _spatial_context(maps, layers, basin_mask)
 
     written = []
     for figure in selected:
@@ -806,78 +1093,62 @@ def plot_spatial_maps(
                 f"{figure.stem}: {figure.variable} within the basin: {reason}; rendering the map"
             )
 
-        style = figure.style
-        if figure.classes is not None:
-            classes = (
-                figure.classes(layer) if callable(figure.classes) else figure.classes
-            )
-            # The label is unused on a nominal figure — there is no colourbar to
-            # put it on — but it is what ``check_geographic_inputs`` names when
-            # the units disagree, so it stays the quantity rather than empty.
-            style = RasterStyle(
-                label=LEGEND_TITLES.get(figure.stem, figure.stem),
-                palette=None,
-                categories=classes,
-            )
-            if figure.stem == "subbasins":
-                style.alpha = SUBBASIN_ALPHA
-
-        fig, _ = plot_raster_map(
+        check_geographic_inputs(
             layer,
-            layers.get("rivers"),
-            outline,
-            subbasins=subbasins,
-            gauges=layers.get("gauges"),
-            style=style,
+            {
+                "rivers": layers.get("rivers"),
+                "basin": context["outline"],
+                "subbasins": layers.get("subbasins"),
+            },
+            value_label=(
+                figure.style.label
+                if figure.style is not None
+                else LEGEND_TITLES.get(figure.stem, figure.stem)
+            ),
             expected_units=figure.expected_units,
-            # The product credit, as a footnote under the axes. Read from the
-            # LAYER's own `source` attr rather than from the registry entry, so
-            # a catalog change cannot leave a figure crediting the wrong product.
-            caveat=source_caveat(layer),
-            # No title: the filename names the figure (see SpatialFigure.stem).
-            # No overlay key: the layers are still DRAWN, tying the set to one
-            # basin, and their styling reads without one.
-            vector_legend=False,
-            # The rule 1.11 style (cartographic_map.PROFILES["spatial"]). Every
-            # family map takes the full-width layout; subbasins show no key and
-            # keep the locator, the thematic maps carry their key in a corner.
-            profile="spatial",
-            key_on_map=True,
-            show_key=figure.stem != "subbasins",
-            locator=figure.stem == "subbasins",
+        )
+        # The template (toolbox-plot-style.md, Spatial map template): no title,
+        # the source credited in the caption, the key in the side panel. The
+        # subbasin overview carries no key and its locator sits inside the map.
+        overview = figure.stem == "subbasins"
+        raster = RasterMap(
+            np.asarray(as_lat_lon(layer).values, dtype=float),
+            *grid_edges(layer),
+            inside=context["inside"],
+            cell_edges=False,
+        )
+        key = _key_for(figure, layer)
+        with use_preset(CST_PRESET):
+            fig = draw_raster_map(
+                raster,
+                context["frame"],
+                key,
+                context["overlay"],
+                locator=context["locator"] if overview else None,
+                show_key=not overview,
+                locator_in_map=overview,
+            )
+        unkeyed = (
+            unkeyed_classes(raster, context["frame"], key)
+            if isinstance(key, MapClasses) and not overview
+            else []
+        )
+        note = (
+            f"Classes under {CLASS_KEY_MIN_SHARE:.1%} of the basin are drawn but not listed ("
+            + ", ".join(label.replace("\n", " ") for label in unkeyed)
+            + ")"
+            if unkeyed
+            else None
         )
         record = {
             "title": FIGURE_TITLES[figure.stem],
-            "caption": f"{FIGURE_TITLES[figure.stem]}. "
-            "Colors show the mapped values or classes; basin boundaries and supplied rivers and observation locations provide spatial context. "
-            + (source_caveat(layer) or ""),
+            "caption": _spatial_caption(
+                _caption_lead(FIGURE_TITLES[figure.stem], figure.style), layer, note
+            ),
         }
-        from blueearth_cst.plotting.fundamentals import add_caption
-        from blueearth_cst.plotting.preset import use_preset
-        from blueearth_cst.shared.plot_preset import CST_PRESET
-
-        if annotation != "none":
-            if annotation not in ("caption", "title"):
-                raise ValueError("annotation must be none, caption, or title")
-            with (
-                use_preset(CST_PRESET, rcparams=False),
-                plt.rc_context({"savefig.dpi": dpi or RASTER_DPI}),
-            ):
-                add_caption(fig, record[annotation], above=annotation == "title")
-        for extension in formats:
-            path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")
-            # PDF takes no dpi and needs its timestamp scrubbed; PNG takes dpi
-            # and needs the matplotlib version scrubbed. Either way the point is
-            # that two identical runs produce identical bytes.
-            scrub = (
-                {"metadata": {"CreationDate": None}}
-                if extension == "pdf"
-                else {"dpi": dpi or RASTER_DPI, "metadata": {"Software": None}}
-            )
-            save_figure(path, fig=fig, **scrub)
-            written.append(Path(path))
-            write_figure_captions(plot_dir, {f"{figure.stem}.{extension}": record})
-        plt.close(fig)
+        written += _export_map(
+            fig, plot_dir, figure.stem, record, annotation, formats, dpi
+        )
 
     maps.close()
     titles = {path.name: {"title": FIGURE_TITLES[path.stem]} for path in written}
@@ -906,9 +1177,7 @@ def plot_spatial_figure_set(spatial_dir, plot_dir=None, **kwargs):
     ``elevation_basin`` is drawn FIRST for the same reason it is listed first
     everywhere else: it is the sheet a reader meets before the thematic ones.
     """
-    from blueearth_cst.shared.plot_map import plot_basin_map_from_spatial
-
-    plot_basin_map_from_spatial(
+    plot_elevation_basin(
         spatial_dir, plot_dir=plot_dir, annotation=kwargs.get("annotation", "none")
     )
     return plot_spatial_maps(spatial_dir, plot_dir=plot_dir, **kwargs)

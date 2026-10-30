@@ -17,13 +17,18 @@ import pandas as pd
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.preset import use_preset
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
-from blueearth_cst.projections.projection_captions import caption, title
+from blueearth_cst.projections.projection_captions import SUITE_NOTE, caption, title
 from blueearth_cst.projections.projection_figures import (
     SUITE_PRODUCTS,
     figure_key,
     period_folder,
 )
-from blueearth_cst.projections.projection_suite_figures import render_product
+from blueearth_cst.projections.projection_suite_figures import (
+    GRID_PRODUCTS,
+    dry_shading,
+    grid_support,
+    render_product,
+)
 from blueearth_cst.shared.plot_preset import CST_PRESET
 from blueearth_cst.shared.snake_utils import (
     listed,
@@ -40,8 +45,8 @@ def figure_counts(filename, tables, window_id=""):
     name = "model_changes"
     if filename.startswith(("trajectory-", "annual-")):
         name = "member_anomalies"
-    elif filename.startswith("variability-ratio-"):
-        name = "variability_model_ratios"
+    elif filename.startswith("values-"):
+        name = "seasonal_values"
     elif filename == "variability-member-ratios.png":
         name = "variability_member_ratios"
     elif filename == "availability.png":
@@ -89,7 +94,7 @@ def figure_counts(filename, tables, window_id=""):
     elif filename == "sign-agreement.png":
         data = data.loc[
             (data.statistic == "mean")
-            & data.period.isin(("annual", *MONTHS))
+            & data.period.isin(PERIODS[:5])
             & (
                 (data.variable.eq("temp") & data.quantity.eq("change"))
                 | (
@@ -98,13 +103,10 @@ def figure_counts(filename, tables, window_id=""):
                 )
             )
         ]
-    elif filename.startswith("variability-ratio-"):
+    elif filename.startswith("values-"):
         data = data.loc[
-            (
-                data.statistic
-                == ("std_detrended" if filename.endswith("-sd.png") else "cv_detrended")
-            )
-            & data.period.isin(PERIODS[:5])
+            (data.statistic == GRID_PRODUCTS[filename][3])
+            & (data.scenario != "historical")
         ]
     elif filename == "variability-member-ratios.png":
         data = data.loc[
@@ -207,6 +209,17 @@ def render_suite(
             continue
         window_id = row.get("window_id") or ""
         counts = figure_counts(row["filename"], tables, window_id)
+        counts["mostly_dry"] = dry_shading(row["filename"], tables, record, window_id)
+        counts.update(grid_support(row["filename"], tables, window_id, scenarios))
+        if figure_key(row["filename"]) == "availability.png":
+            coverage = tables["coverage"]
+            loaded = coverage.loc[coverage.available.astype(bool), "model"].unique()
+            counts["n_unretrieved"] = int(coverage.model.nunique() - len(loaded))
+        counts["variability_band"] = bool(
+            figure_key(row["filename"]).startswith(("change-", "monthly-change-"))
+            and "cloud" not in row["filename"]
+            and "noise_halfwidth" in tables["change_summary"]
+        )
         text = caption(row["filename"], record, window_id, counts)
         with use_preset(CST_PRESET):
             fig = render_product(
@@ -264,6 +277,8 @@ def render_suite(
         "# Projection figure captions",
         "",
         "Manifest keys identify the rendered figures.",
+        "",
+        SUITE_NOTE,
         "",
     ]
     for relative, item in manifest.items():

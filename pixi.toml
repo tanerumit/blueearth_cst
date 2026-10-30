@@ -9,10 +9,8 @@ platforms = ["win-64", "linux-64"]
 [dependencies]
 python = ">=3.12,<3.13"
 pip = "*"
-cartopy = "*"
 dask = "*"          # used directly via dask.diagnostics in extract/get_stats scripts
 dvc = "*"
-descartes = "*"
 gcsfs = ">=2023.12.1"
 gdal = ">=3.1"
 geopandas = ">=0.10"
@@ -71,6 +69,9 @@ r-yaml = "*"
 hydroengine = "*"
 gwwapi = "*"
 snakemake = "*"
+# Headless review of figure-comparison pages. The wheel bundles its driver and
+# drives the installed Chrome/Edge (channel=...), so no browser download.
+playwright = "*"
 # GF15 return-level estimator (accepted adapter design D7). Pinned to the exact
 # wheel the qualification was run against: conda-forge ships a same-version
 # repack, which D7 does not qualify, so this must resolve from PyPI.

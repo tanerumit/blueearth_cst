@@ -51,7 +51,7 @@ from blueearth_cst.shared.map_preparation import (  # noqa: F401 -- compatible i
     validate_fields,
 )
 from blueearth_cst.shared.map_preparation import POLICIES as PREPARATION_POLICIES
-from blueearth_cst.shared.plot_colors import HISTORICAL_MAP_COLORS
+from blueearth_cst.shared.plot_colors import HISTORICAL_MAP_COLORS, MAP_FEATURE_COLORS
 from blueearth_cst.shared.wf3_science import (
     DEFAULT_BASIN_INDEX,
     DEFAULT_HYDROGRAPHY,
@@ -320,7 +320,7 @@ def scale_record(
         "colors": [],
         "under_color": palette["under"],
         "over_color": palette["over"],
-        "missing_color": "#a0a0a0",
+        "missing_color": MAP_FEATURE_COLORS["missing"],
     }
     if low is None:
         if high is not None:

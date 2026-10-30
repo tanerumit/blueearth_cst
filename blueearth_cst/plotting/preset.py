@@ -8,10 +8,37 @@ presets live with their workflows and are passed in, never loaded here.
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import matplotlib.pyplot as plt
+
+#: Neutral map tokens; see ``Preset.maps``. Rivers step lowest order first.
+NEUTRAL_MAPS: Mapping[str, Any] = {
+    "river_order": ((0.5, "#9ecae1"), (0.9, "#4292c6"), (1.5, "#08519c")),
+    "river": "#4292c6",
+    "river_width": 0.6,
+    "river_halo_width": 0.8,
+    "basin_outline": "#000000",
+    "basin_outline_width": 0.9,
+    "divide": "#262626",
+    "divide_width": 0.7,
+    "divide_dash": (6, 2.5),
+    "location": "#6a3d9a",
+    "location_marker": "D",
+    "location_size": 6.0,
+    "location_label_size": 5.5,
+    "location_label_wrap": 14,
+    "marker_edge": "#ffffff",
+    "halo": "#ffffff",
+    "scale_bar_segments": 4,
+    "locator_ocean": "#eef2f5",
+    "locator_land": "#dcdcd8",
+    "locator_coast": "#8c8c8c",
+    "locator_border": "#b3b3b3",
+    "locator_city": "#595959",
+    "locator_mark": "#c0392b",
+}
 
 
 @dataclass(frozen=True)
@@ -20,7 +47,9 @@ class Preset:
 
     Keys: widths ``col1/panel/mid/full``; heights ``single/stack2/side2/row3/grid4``;
     padding ``x/y``; fonts ``label/tick/note``; colors ``ink/muted/axis/grid/boundary``;
-    lines ``line/mean/ref/edge/range/iqr/stem/boundary``; markers ``line/point/scatter``.
+    lines ``line/mean/ref/edge/range/iqr/stem/boundary``; markers ``line/point/scatter``;
+    maps: the keys of ``NEUTRAL_MAPS``, where ``river_order`` is
+    ``((width_pt, colour), ...)`` lowest order first.
     """
 
     widths: Mapping[str, float]
@@ -33,6 +62,7 @@ class Preset:
     band_alpha: float
     label_box: Mapping[str, Any]
     rcparams: Mapping[str, Any]
+    maps: Mapping[str, Any] = field(default_factory=lambda: dict(NEUTRAL_MAPS))
 
 
 def chart_rcparams(

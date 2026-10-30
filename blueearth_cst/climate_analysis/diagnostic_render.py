@@ -1,7 +1,6 @@
 """Render retained CSV/NetCDF products and one recoverable caption inventory."""
 
 import json
-import math
 import re
 from collections import Counter
 from pathlib import Path
@@ -14,7 +13,7 @@ import xarray as xr
 from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis.diagnostic_captions import caption, title
 from blueearth_cst.climate_analysis.diagnostic_settings import carries_temp
-from blueearth_cst.climate_analysis.diagnostic_tables import write_json
+from blueearth_cst.climate_analysis.diagnostic_tables import table_renames, write_json
 from blueearth_cst.climate_analysis.diagnostics import (
     monthly_reference_diagnostics,
     sen_trend,
@@ -22,14 +21,18 @@ from blueearth_cst.climate_analysis.diagnostics import (
 from blueearth_cst.plotting.export import export_figure
 from blueearth_cst.plotting.figure_titles import write_figure_titles
 from blueearth_cst.plotting.fundamentals import new_fig
-from blueearth_cst.plotting.prepared_maps import MapFrame, RasterMap, draw_raster_map
+from blueearth_cst.plotting.prepared_maps import RasterMap, draw_raster_map
 from blueearth_cst.plotting.preset import use_preset
+from blueearth_cst.shared.map_frames import (
+    basin_frame,
+    map_caption,
+    overlay_features,
+)
 from blueearth_cst.shared.map_reference import (
     drawing_frame,
     drawing_scale,
     field_edges,
     frame_intersection,
-    geographic_ticks,
     load_reference,
     reference_arguments,
     validate_fields,
@@ -40,11 +43,21 @@ from blueearth_cst.shared.snake_utils import listed, log_row, plural
 
 def load_map_overlays(overlays):
     """Load existing offline GeoJSON features in the adapter, never the core."""
-    return {
-        key: json.loads(Path(path).read_text(encoding="utf-8"))["features"]
-        for key, path in (overlays or {}).items()
-        if Path(path).is_file()
-    }
+    return overlay_features(
+        {
+            key: json.loads(Path(path).read_text(encoding="utf-8"))["features"]
+            for key, path in (overlays or {}).items()
+            if Path(path).is_file()
+        }
+    )
+
+
+#: Caption leads of the historical climate maps, with their display units.
+MAP_QUANTITIES = {
+    "precip": "Mean annual precipitation (mm yr⁻¹)",
+    "temp": "Mean annual temperature (°C)",
+    "pet": "Mean annual potential evapotranspiration (PET, mm yr⁻¹)",
+}
 
 
 def prepared_map(
@@ -57,19 +70,16 @@ def prepared_map(
     if inside is not None:
         field, inside = xr.align(field, inside, join="exact")
         mask = inside.transpose("latitude", "longitude").values
+    x, y = field_edges(field)
     frame = drawing_frame(reference)
     if overlays.get("basins"):
         import geopandas as gpd
 
-        from blueearth_cst.shared.cartographic_map import extent_from_layer
-
-        basins = gpd.GeoDataFrame.from_features(overlays["basins"], crs="EPSG:4326")
-        west, east, south, north = extent_from_layer(basins)
-        frame = MapFrame(
-            (west, east, south, north),
-            geographic_ticks(west, east),
-            geographic_ticks(south, north),
-            1 / math.cos(math.radians((south + north) / 2)),
+        frame = basin_frame(
+            gpd.GeoDataFrame.from_features(overlays["basins"], crs="EPSG:4326"),
+            # Native source grids fill the view; masked model grids keep the
+            # padding, which reads as outside the model.
+            within=(x.min(), x.max(), y.min(), y.max()) if mask is None else None,
         )
     support = frame_intersection(field, frame.extent)
     if mask is not None:
@@ -81,20 +91,23 @@ def prepared_map(
     above = int((finite & (field.values > boundaries[-1])).sum()) if boundaries else 0
     positive = counts.values[finite]
     eligible = [int(positive.min()), int(positive.max())] if positive.size else None
-    x, y = field_edges(field)
+    label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
+    drawn_scale = drawing_scale(reference, variable)
+    # Climate display rules (toolbox-plot-style.md): reference units, a tick on
+    # every class boundary and both rectangular extensions.
+    if (
+        drawn_scale.units not in {"degC", "mm/year"}
+        or drawn_scale.extend != "both"
+        or list(drawn_scale.ticks) != list(drawn_scale.boundaries)
+    ):
+        raise ValueError(f"{variable}: historical reference scale breaks climate rules")
     fig = draw_raster_map(
         RasterMap(field.values, x, y, inside=mask, cell_edges=cell_edges),
         frame,
-        drawing_scale(reference, variable),
+        drawn_scale,
         overlays,
+        colorbar_title=f"{label}\n{'(°C)' if variable == 'temp' else '(mm yr⁻¹)'}",
     )
-    if scale["status"] == "available":
-        label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
-        fig.axes[-1].set_title(
-            f"{label}\n{'(°C)' if variable == 'temp' else '(mm yr⁻¹)'}",
-            fontsize=6,
-            pad=10,
-        )
     info = {
         "reference_id": reference["reference_id"],
         "reference_path": "data/climate/historical/_engine/map_reference.json",
@@ -116,37 +129,31 @@ def prepared_map(
         "strict_over_cells": above,
         "scale_status": scale["status"],
     }
-    periods = (
-        "; ".join(
-            f"{source['source']} ({source['role']}), {source['effective_dates'][0]}–{source['effective_dates'][1]}"
-            for source in scale["sources"]
+    # Caption notes (map_frames.map_caption), only when they apply; support
+    # counts, periods and thresholds stay in ``info``.
+    notes = []
+    if not boundaries:
+        notes.append(
+            f"No historical colour scale is available ({scale['reason']}); "
+            "cells with values are hatched"
         )
-        or "no contributing source"
-    )
-    policy = reference["identity"]["completeness"]
-    text = (
-        f"Historical display reference: {periods}; native cells touching the closed selected-source frame. "
-        "Maps zoom to the basin bounds with spatial-map padding when basin geometry is available. "
-        f"Reference eligibility permits at most {policy['max_missing_days_month']} missing days/month and "
-        f"{policy['max_missing_days_year']} days/year. Equal classes do not imply equal support, periods or PET methods. "
-        f"Displayed support: {info['finite_cells']} finite and {info['unavailable_cells']} unavailable cells. "
-    )
-    if boundaries:
-        text += f"Strictly below/above the reference class boundaries: {below}/{above} cells; the final upper endpoint is included. "
-    else:
-        text += f"Historical reference unavailable ({scale['reason']}): finite cells use neutral hatching without a numerical colorbar. "
+    elif below or above:
+        notes.append(f"{below} cells fall below and {above} above the colour scale")
     if not info["displayed_cells"]:
-        text += "No native support intersects the displayed frame. "
-    text += "Gray cells have no finite annual climatology; white cells are outside model support or raster coverage. No interpolation."
-    return fig, info, text
+        notes.append("No source cells intersect the map")
+    return fig, info, notes
 
 
 def load_result(root, source):
     """Restore artist inputs from explicit plot-ready tables, never raw climate."""
     folder = Path(root) / "tables"
+    metadata = json.loads(
+        (Path(root) / "_engine" / "diagnostics.json").read_text(encoding="utf-8")
+    )
+    renames = table_renames(metadata["schema_version"])
 
     def read(name):
-        frame = pd.read_csv(folder / f"{name}.csv")
+        frame = pd.read_csv(folder / f"{name}.csv").rename(columns=renames)
         return frame[frame.source == source].drop(
             columns=["source", "period_start", "period_end"]
         )
@@ -171,9 +178,6 @@ def load_result(root, source):
     pt = read("pt_anomalies")
     spells = read("dry_spell_exceedance")
     valid = read("valid_years")
-    metadata = json.loads(
-        (Path(root) / "_engine" / "diagnostics.json").read_text(encoding="utf-8")
-    )
     reference = tuple(
         metadata["settings"]["reference_period"][k] for k in ("start", "end")
     )
@@ -228,9 +232,17 @@ def render(
     map_reference=None,
     map_reference_params=None,
     annotation="none",
+    reference_record=None,
 ):
-    """Export selected PNG annotations and independent JSON/Markdown inventories."""
+    """Export selected PNG annotations and independent JSON/Markdown inventories.
+
+    ``reference_record`` replaces ``map_reference``/``map_reference_params`` for a
+    re-render of retained products (``diagnostic_rerender``): the caller has
+    checked its integrity, and current-byte identity drift is expected there.
+    Figures and inventories go under ``paths["render_root"]`` when present.
+    """
     root = Path(paths["root"])
+    out_root = Path(paths.get("render_root", root))
     has_maps = any(form.startswith("map-") for form in paths["figures"])
     arguments = (
         reference_arguments(map_reference_params)
@@ -242,7 +254,10 @@ def render(
 
     # Check the inputs once, then render the loaded snapshot. Exporting another
     # PNG does not require rereading climate inputs or qualifying the environment.
-    if arguments is not None:
+    if reference_record is not None:
+        reference = reference_record
+        arguments = {"completeness": reference["identity"]["completeness"]}
+    elif arguments is not None:
         reference = load_reference(map_reference, **arguments)
     elif has_maps:
         raise ValueError("Source maps require the declared historical reference")
@@ -316,7 +331,7 @@ def render(
                 variable = form.removeprefix("map-")
                 field = retained[variable]
                 counts = retained[f"{variable}_valid_years"]
-                fig, map_info, reference_text = prepared_map(
+                fig, map_info, notes = prepared_map(
                     field, counts, reference, variable, features
                 )
                 map_info["preparation_id"] = retained.attrs["map_preparation_id"]
@@ -329,22 +344,24 @@ def render(
                 map_info["source_role"] = reference["identity"]["source_preparations"][
                     sources[0]
                 ]["preparation_identity"]["role"]
-                text = (
-                    f"{sources[0].upper()} native-grid annual {variable} climatology, {period[0]}–{period[1]}. "
-                    f"Eligible reporting-year {'means' if variable == 'temp' else 'totals'}; "
-                    f"eligible years per finite displayed cell: {map_info['eligible_year_counts']}. "
-                    + reference_text
-                )
                 if (
                     variable == "pet"
                     and map_info["source_role"] == "temperature-carrier"
                 ):
-                    text += " PET is derived on the source grid with the existing de Bruin machinery and can differ from model PET."
+                    notes.append(
+                        "PET is derived on the source grid (de Bruin) and can differ from model PET"
+                    )
                 elif (
                     variable in {"temp", "pet"}
                     and map_info["source_role"] == "precipitation-only"
                 ):
-                    text += " This retained auxiliary field is excluded from the historical reference pool."
+                    notes.append("This auxiliary field does not set the colour classes")
+                text = map_caption(
+                    f"{MAP_QUANTITIES[variable]} on the {view.labels[sources[0]]} native grid, "
+                    f"{period[0]}–{period[1]},",
+                    sources[0],
+                    notes,
+                )
                 if not map_info["displayed_cells"]:
                     availability = "not displayed: native support does not intersect the displayed frame"
                 elif not map_info["finite_cells"]:
@@ -402,7 +419,7 @@ def render(
                         "annual values. Dataset positions are offset slightly for readability."
                     )
                 )
-            if form.startswith("map-") or form in {"spi-checks", "sensitivity"}:
+            if form in {"spi-checks", "sensitivity"}:
                 text += f" Sources: {', '.join(view.labels.values())}. {support}."
             if form == "spi-checks":
                 details = []
@@ -460,7 +477,7 @@ def render(
                 **map_export,
             )
             plt.close(fig)
-            relative = str(Path(filename).relative_to(root)).replace("\\", "/")
+            relative = str(Path(filename).relative_to(out_root)).replace("\\", "/")
             records[relative] = {
                 "title": title(
                     form, [view.labels[s] for s in contributing], period, support
@@ -511,7 +528,7 @@ def render(
         + "\n",
         encoding="utf-8",
     )
-    write_figure_titles(root / "plots", records)
+    write_figure_titles(out_root / "plots", records)
     unavailable = Counter(
         item["availability"]
         for item in records.values()

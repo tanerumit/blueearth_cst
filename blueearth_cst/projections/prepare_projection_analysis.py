@@ -223,11 +223,17 @@ def prepare_tables(
         "coverage": coverage,
         "changes": changes,
         "model_changes": models,
-        "change_summary": analysis.ensemble_summary(models),
+        "change_summary": analysis.with_variability_band(
+            analysis.ensemble_summary(models), changes
+        ),
         "sign_agreement": analysis.sign_agreement(models),
         "climatology": climate,
         "climatology_summary": analysis.climatology_summary(climate),
-        "monthly_change_summary": analysis.monthly_change(changes)[1],
+        "seasonal_values": (values := analysis.seasonal_values(climate, changes)),
+        "seasonal_values_summary": analysis.ensemble_summary(values),
+        "monthly_change_summary": analysis.with_variability_band(
+            analysis.monthly_change(changes)[1], changes
+        ),
         "member_anomalies": anomalies,
         "trajectory_range": trajectories.trajectory_range(
             trajectories.model_trajectories(anomalies)
@@ -331,14 +337,15 @@ def skipped_product_messages(availability):
             "annual-precipitation.png": "Annual precipitation overview",
             "change-temperature.png": "Temperature changes",
             "change-precipitation-pct.png": "Percentage precipitation changes",
-            "change-precipitation-abs.png": "Absolute precipitation changes",
+            "values-precipitation-total.png": "Seasonal precipitation totals",
+            "values-temperature-mean.png": "Seasonal mean temperature",
             "seasonal-cycle-temperature.png": "Temperature seasonal cycle",
             "seasonal-cycle-precipitation.png": "Precipitation seasonal cycle",
             "monthly-change-temperature.png": "Monthly temperature changes",
             "monthly-change-precipitation.png": "Monthly precipitation changes",
-            "variability-ratio-temperature-sd.png": "Temperature variability ratios",
-            "variability-ratio-precipitation-sd.png": "Precipitation standard-deviation ratios",
-            "variability-ratio-precipitation-cv.png": "Precipitation coefficient-of-variation ratios",
+            "values-temperature-sd.png": "Temperature interannual standard deviation",
+            "values-precipitation-sd.png": "Precipitation interannual standard deviation",
+            "values-precipitation-cv.png": "Precipitation coefficient of variation",
             "change-factor-cloud.png": "Annual temperature–precipitation change cloud",
             "sign-agreement.png": "Model sign agreement",
             "change-factor-cloud-combined.png": "Combined-window temperature–precipitation change cloud",

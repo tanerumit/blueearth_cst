@@ -12,7 +12,7 @@ from blueearth_cst.projections import projection_analysis as analysis
 from blueearth_cst.projections import projection_figures as contract
 from blueearth_cst.projections import projection_trajectories as trajectories
 from blueearth_cst.projections.plot_proj_timeseries import figure_counts, render_suite
-from blueearth_cst.projections.projection_captions import caption
+from blueearth_cst.projections.projection_captions import SUITE_NOTE, caption
 from blueearth_cst.projections.projection_suite_figures import render_product
 
 
@@ -89,6 +89,10 @@ def suite():
             trajectories.model_trajectories(anomalies)
         ),
     }
+    tables["seasonal_values"] = analysis.seasonal_values(tables["climatology"], changes)
+    tables["seasonal_values_summary"] = analysis.ensemble_summary(
+        tables["seasonal_values"]
+    )
     tables["availability"] = analysis.product_availability(
         {
             "coverage": tables["coverage"],
@@ -126,7 +130,7 @@ def suite():
     return tables, record
 
 
-def test_seasonal_strip_explains_unavailable_panels(suite):
+def test_seasonal_grid_explains_unavailable_seasons(suite):
     tables, record = suite
     models = tables["model_changes"].copy()
     models.loc[models.period.isin(["DJF", "MAM", "JJA", "SON"]), "value"] = np.nan
@@ -136,17 +140,30 @@ def test_seasonal_strip_explains_unavailable_panels(suite):
         "change_summary": analysis.ensemble_summary(models),
     }
     fig = render_product(
-        "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
+        "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
         tables,
         record,
         window_id="2036-2065",
     )
-    assert not fig.axes[0].texts
-    for ax in fig.axes[1:]:
+    assert len(fig.axes) == 4  # one panel per season, no annual panel
+    for ax in fig.axes:
         assert [text.get_text() for text in ax.texts] == [
             "No eligible\nmodel estimates"
         ]
     plt.close(fig)
+
+
+def test_seasonal_grid_drops_sparse_scenarios_beside_full_ones():
+    from blueearth_cst.projections.projection_suite_figures import shown_scenarios
+
+    rows = [
+        dict(model=f"M/{i}", scenario=s, value=1.0)
+        for s, n in (("ssp245", 12), ("ssp460", 4))
+        for i in range(n)
+    ]
+    assert shown_scenarios(pd.DataFrame(rows)) == (["ssp245"], {"ssp460": 4})
+    small = pd.DataFrame([r for r in rows if r["model"] in ("M/0", "M/1")])
+    assert shown_scenarios(small) == (["ssp245", "ssp460"], {})
 
 
 def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
@@ -187,11 +204,11 @@ def test_manifest_bijection_unavailable_and_annotation_mode(
     )
     plots = tmp_path / "plots"
     manifest, skipped = render_suite(tables, record, plots, annotation=annotation)
-    assert len(manifest) == 1 and len(skipped) == 18
+    assert len(manifest) == 1 and len(skipped) == 19
     console = capsys.readouterr().out
     assert "projection_plots - Rendering windows:" in console
     assert "; reference: " in console
-    assert "Wrote 1 figure; 18 skipped; reasons → figure_captions.md" in console
+    assert "Wrote 1 figure; 19 skipped; reasons → figure_captions.md" in console
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }
@@ -227,20 +244,19 @@ def test_captions_and_distinct_folder_contract(suite):
     for phrase in (
         "2036–2065",
         "1985–2014",
-        "precipitation SD",
-        "geometrically",
-        "equally weighted models",
-        "not a confidence interval",
-        "Excluded degenerate ratios: 3",
+        "precipitation (standard deviation, b)",
+        "3 degenerate ratios are excluded.",
     ):
         assert phrase in text
+    assert "zero future" not in text  # exclusion counts appear only when nonzero
+    assert "not a confidence interval" in SUITE_NOTE
     horizons = {"far": [2071, 2100], "later": [2081, 2100]}
     assert contract.suite_folders(horizons) == [
         "full_period",
         "period_2071_2100",
         "period_2081_2100",
     ]
-    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 19
+    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 20
 
 
 def test_unplotted_statistics_do_not_enable_mean_figures(suite):
@@ -252,7 +268,6 @@ def test_unplotted_statistics_do_not_enable_mean_figures(suite):
             [
                 "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
                 "cmip6_precip_annual_seasonal_change_pct_box_basin_avg.png",
-                "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
                 "cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png",
                 "cmip6_precip_temp_annual_change_cloud_basin_avg.png",
             ]
@@ -328,7 +343,7 @@ def test_precipitation_cycle_percentage_and_two_row_annual_content(suite):
     medians = [
         line.get_ydata()[0]
         for line in monthly.axes[0].lines
-        if len(line.get_xdata()) == 2 and np.isclose(np.ptp(line.get_xdata()), 0.55)
+        if len(line.get_xdata()) == 2 and np.isclose(np.ptp(line.get_xdata()), 0.6)
     ]
     np.testing.assert_allclose(medians, change.loc[list(analysis.MONTHS), "median"])
     plt.close(cycle)
@@ -413,11 +428,12 @@ def test_caption_counts_exclude_unplotted_variability_and_monthly_strips():
         "variability_model_ratios": rows,
         "model_changes": rows.assign(statistic="mean"),
     }
-    for filename in (
-        "cmip6_temp_annual_seasonal_sd_ratio_box_basin_avg.png",
-        "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
-    ):
-        assert figure_counts(filename, tables, "2036-2065")["n_models"] == 0
+    assert (
+        figure_counts(
+            "cmip6_temp_annual_seasonal_change_box_basin_avg.png", tables, "2036-2065"
+        )["n_models"]
+        == 0
+    )
     assert (
         figure_counts(
             "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png",
@@ -440,7 +456,7 @@ def test_caption_counts_exclude_unplotted_variability_and_monthly_strips():
 @pytest.mark.parametrize(
     "period,variable,quantity",
     [
-        ("DJF", "temp", "change"),
+        ("Jan", "temp", "change"),
         ("annual", "kin", "change"),
         ("annual", "temp", "change_pct"),
     ],
@@ -473,3 +489,72 @@ def test_agreement_requires_a_plotted_cell(period, variable, quantity):
         )["n_models"]
         == 0
     )
+
+
+def test_mostly_dry_periods_are_shaded_and_captioned():
+    from blueearth_cst.projections.projection_suite_figures import dry_shading
+
+    def summary(kept, excluded):
+        return pd.DataFrame(
+            [
+                dict(
+                    window_id="2036-2065",
+                    variable="precip",
+                    statistic="mean",
+                    quantity="change_pct",
+                    period=period,
+                    scenario="ssp245",
+                    n_models=kept if period == "JJA" else 10,
+                    n_models_excluded=excluded if period == "JJA" else 0,
+                )
+                for period in ("annual", "DJF", "MAM", "JJA", "SON")
+            ]
+        )
+
+    pct = "cmip6_precip_annual_seasonal_change_pct_box_basin_avg.png"
+    record = {"reference": [1985, 2014], "windows": []}
+    assert dry_shading(pct, {"change_summary": summary(5, 5)}, record, "2036-2065")
+    assert not dry_shading(pct, {"change_summary": summary(6, 4)}, record, "2036-2065")
+    temperature = "cmip6_temp_annual_seasonal_change_box_basin_avg.png"
+    assert not dry_shading(
+        temperature, {"change_summary": summary(1, 9)}, record, "2036-2065"
+    )
+    window = {"window_id": "2036-2065", "used": [2036, 2065], "reference": [1985, 2014]}
+    record["windows"] = [window]
+    text = caption(pct, record, "2036-2065", {"n_models": 10, "mostly_dry": True})
+    assert "Hatched panels mark seasons" in text
+    assert "Gray" not in caption(pct, record, "2036-2065", {"n_models": 10})
+
+
+def test_variability_band_scales_reference_noise_and_takes_model_medians():
+    base = dict(
+        scenario="ssp245",
+        window_id="2036-2065",
+        reference_start=1985,
+        reference_end=2014,
+        future_start=2036,
+        future_end=2065,
+        period="annual",
+        variable="precip",
+        statistic="mean",
+        n_reference=20,
+        n_future=21,
+        mean_change_eligible=True,
+    )
+    rows = []
+    for model, sd, mean in (("A/a", 0.1, 1.0), ("B/b", 0.2, 1.0), ("C/c", 0.3, 1.0)):
+        for quantity, units in (("change", "mm/day"), ("change_pct", "%")):
+            rows.append(
+                dict(
+                    base,
+                    model=model,
+                    quantity=quantity,
+                    units=units,
+                    null_reference_sd=sd,
+                    null_reference_mean=mean,
+                )
+            )
+    band = analysis.variability_band(pd.DataFrame(rows)).set_index("quantity")
+    expected = 1.6448536 * 0.2 * np.sqrt(1 / 20 + 1 / 21)  # median model, sd 0.2
+    assert band.loc["change", "noise_halfwidth"] == pytest.approx(expected)
+    assert band.loc["change_pct", "noise_halfwidth"] == pytest.approx(expected * 100)

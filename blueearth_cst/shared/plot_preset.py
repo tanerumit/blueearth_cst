@@ -7,7 +7,11 @@ artists; the YAML remains the single source for both.
 
 from blueearth_cst.plotting.preset import Preset, chart_rcparams
 from blueearth_cst.shared import plot_style
-from blueearth_cst.shared.plot_colors import NEUTRAL_COLORS
+from blueearth_cst.shared.plot_colors import (
+    MAP_FEATURE_COLORS,
+    NEUTRAL_COLORS,
+    RIVER_ORDER_COLORS,
+)
 from blueearth_cst.shared.plot_setup import STYLE_SETTINGS
 
 _CHARTS = STYLE_SETTINGS["charts"]
@@ -77,6 +81,38 @@ STYLE = {
 }
 
 
+_MAP_STYLE = STYLE_SETTINGS["maps"]
+if len(_MAP_STYLE["river_order_widths"]) != len(RIVER_ORDER_COLORS):
+    raise ValueError(
+        "style.yml maps.river_order_widths and colors.yml river_order need one "
+        "entry per stream-order step"
+    )
+MAPS = {
+    "river_order": tuple(zip(_MAP_STYLE["river_order_widths"], RIVER_ORDER_COLORS)),
+    "river": MAP_FEATURE_COLORS["river"],
+    "river_width": _MAP_STYLE["river_width"],
+    "river_halo_width": _MAP_STYLE["river_halo_width"],
+    "basin_outline": MAP_FEATURE_COLORS["basin_outline"],
+    "basin_outline_width": _MAP_STYLE["basin_outline_width"],
+    "divide": MAP_FEATURE_COLORS["subcatchment"],
+    "divide_width": _MAP_STYLE["divide_width"],
+    "divide_dash": tuple(_MAP_STYLE["divide_dash"]),
+    "location": MAP_FEATURE_COLORS["gauge"],
+    "location_marker": _MAP_STYLE["location_marker"],
+    "location_size": _MAP_STYLE["location_size"],
+    "location_label_size": _MAP_STYLE["location_label_size"],
+    "location_label_wrap": int(_MAP_STYLE["location_label_wrap"]),
+    "marker_edge": MAP_FEATURE_COLORS["marker_edge"],
+    "halo": MAP_FEATURE_COLORS["halo"],
+    "scale_bar_segments": int(_MAP_STYLE["scale_bar_segments"]),
+    **{
+        f"locator_{name}": MAP_FEATURE_COLORS[f"locator_{name}"]
+        for name in ("ocean", "land", "coast", "border", "city")
+    },
+    "locator_mark": MAP_FEATURE_COLORS["locator_basin"],
+}
+
+
 CST_PRESET = Preset(
     widths=dict(_CHARTS["widths"]),
     heights=dict(_CHARTS["heights"]),
@@ -88,4 +124,5 @@ CST_PRESET = Preset(
     band_alpha=BAND_ALPHA,
     label_box=LABEL_BOX,
     rcparams=STYLE,
+    maps=MAPS,
 )

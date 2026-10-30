@@ -1,14 +1,8 @@
 # -*- coding: utf-8 -*-
 """Unit tests for the spatial-map figure family and the categorical raster path.
 
-Two things are covered, and they are different in kind.
-
-The CATEGORICAL PATH in ``shared.cartographic_map`` is new template behaviour
-and is tested for the properties that make a nominal map honest rather than
-merely drawn: classes absent from the basin do not appear in the legend, classes
-present but undeclared are drawn and warned about instead of vanishing, and the
-codes are remapped onto contiguous indices so a legend's numeric gaps cannot
-become colour gaps.
+The categorical drawing these figures rely on (present-only keys, unclassified
+codes, nodata) is tested against the template in ``tests/test_prepared_maps.py``.
 
 The REGISTRY in ``shared.plot_spatial_maps`` is a table of decisions — which
 layer, which palette, which unit — and what is tested is the invariants that
@@ -26,14 +20,8 @@ import pytest
 import xarray as xr
 
 from blueearth_cst.shared import plot_spatial_maps as family
-from blueearth_cst.shared.cartographic_map import (
-    COLOR_UNCLASSIFIED,
-    LABEL_UNCLASSIFIED,
-    RasterStyle,
-    _categorical_overlay_contrast,
-    _category_handles,
-    category_entries,
-)
+from blueearth_cst.shared.map_frames import map_caption
+from blueearth_cst.shared.raster_style import RasterStyle
 
 
 def _codes(values, nx=4):
@@ -47,84 +35,6 @@ def _codes(values, nx=4):
             "longitude": np.arange(nx) * 0.01,
         },
     )
-
-
-_THREE_CLASSES = (
-    (10, "#ff0000", "ten"),
-    (20, "#00ff00", "twenty"),
-    (30, "#0000ff", "thirty"),
-)
-
-
-# --- the categorical path -----------------------------------------------------
-
-
-def test_only_the_classes_the_basin_carries_reach_the_legend():
-    """A global legend declares 23 land-cover classes; a basin has a handful.
-
-    Listing the absent ones would describe ground the map does not show.
-    """
-    style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    entries = category_entries(_codes([10, 10, 30, 30]), style)
-    assert [label for _, _, label in entries] == ["ten", "thirty"]
-
-
-def test_declared_order_is_kept_not_the_order_the_codes_appear_in():
-    """The legend reads in the product's order, not in raster-scan order."""
-    style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    entries = category_entries(_codes([30, 20, 10, 10]), style)
-    assert [codes[0] for codes, _, _ in entries] == [10, 20, 30]
-
-
-def test_an_undeclared_code_is_drawn_and_warned_about_never_dropped():
-    """Dropping it would render real ground transparent -- i.e. as nodata."""
-    style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    # The codes are named in the warning; the legend label stays short.
-    with pytest.warns(RuntimeWarning, match=r"does not declare: \[99\]"):
-        entries = category_entries(_codes([10, 10, 99, 99]), style)
-    codes, colour, label = entries[-1]
-    assert codes == (99,)
-    assert colour == COLOR_UNCLASSIFIED
-    assert label == LABEL_UNCLASSIFIED
-
-
-def test_several_undeclared_codes_collapse_into_one_legend_entry():
-    """Two greys that are the same grey are worse than one entry naming both."""
-    style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    with pytest.warns(RuntimeWarning):
-        entries = category_entries(_codes([10, 98, 99, 99]), style)
-    assert len([e for e in entries if e[1] == COLOR_UNCLASSIFIED]) == 1
-    assert entries[-1][0] == (98, 99)
-
-
-def test_nodata_does_not_become_a_class():
-    """NaN cells are absent, not a category -- they draw transparent."""
-    style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    entries = category_entries(_codes([10, np.nan, np.nan, 20]), style)
-    assert [codes[0] for codes, _, _ in entries] == [10, 20]
-
-
-def test_every_present_class_gets_exactly_one_legend_handle():
-    style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    entries = category_entries(_codes([10, 20, 30, 30]), style)
-    handles = _category_handles(entries)
-    assert len(handles) == 3
-    assert [handle.get_label() for handle in handles] == ["ten", "twenty", "thirty"]
-
-
-def test_divides_flip_to_a_pale_line_over_dark_classes():
-    """The contrast heuristic has to work off class colours, not off a ramp.
-
-    ``_overlay_contrast`` classifies the raster to answer this and would return
-    nonsense for codes; the categorical branch measures the painted colours.
-    """
-    raster = _codes([10, 10, 10, 10])
-
-    def contrast(colour):
-        style = RasterStyle(label="x", palette=None, categories=((10, colour, "c"),))
-        return _categorical_overlay_contrast(raster, category_entries(raster, style))
-
-    assert contrast("#000000") != contrast("#ffffff")
 
 
 # --- the registry -------------------------------------------------------------
@@ -210,11 +120,6 @@ def test_too_many_subbasins_drops_the_key_but_keeps_the_fill():
     classes = family.subbasin_classes(_codes(codes, nx=1))
     assert len(classes) == len(codes)
     assert all(label is None for _, _, label in classes)
-    entries = category_entries(
-        _codes(codes, nx=1),
-        RasterStyle(label="x", palette=None, categories=classes),
-    )
-    assert _category_handles(entries) == []
 
 
 def test_variables_are_unique():
@@ -230,7 +135,7 @@ def test_every_entry_is_either_continuous_or_nominal_never_both():
 
 def test_every_continuous_style_names_a_resolvable_palette():
     """A typo in a colormap name would surface as a KeyError mid-render."""
-    from blueearth_cst.shared.cartographic_map import _style_colormap
+    from blueearth_cst.shared.map_classes import _style_colormap
 
     for figure in family.SPATIAL_MAP_FIGURES:
         if figure.style is not None:
@@ -297,36 +202,47 @@ def test_an_unknown_land_cover_source_is_drawn_unclassified_with_a_warning():
     assert [code for code, _, _ in table] == [-1]
 
 
-# --- the source footnote ------------------------------------------------------
+# --- the caption skeleton and source credit ------------------------------------
 
 
 def _layer(source):
     return xr.DataArray(np.zeros((2, 2)), dims=("y", "x"), attrs={"source": source})
 
 
-def test_the_footnote_credits_the_product_not_the_catalog_key():
+def test_the_caption_credits_the_product_not_the_catalog_key():
     """ "vito" is our plumbing; a figure credits Copernicus."""
-    assert (
-        family.source_caveat(_layer("soilgrids")) == "Source: SoilGrids (ISRIC, 2017)."
-    )
-    assert "Copernicus" in family.source_caveat(_layer("vito"))
+    assert map_caption("Lead", "soilgrids") == "Lead from SoilGrids (ISRIC, 2017)."
+    assert "Copernicus" in map_caption("Lead", "vito")
 
 
-def test_every_source_the_family_can_meet_has_a_credit():
+def test_every_source_the_maps_can_meet_has_a_credit():
     """A layer whose catalog key is unmapped falls back to the key itself."""
-    for key in ("merit_hydro_ihu", "vito", "modis_lai", "soilgrids"):
-        assert key not in family.source_caveat(_layer(key))
+    for key in (
+        "merit_hydro_ihu",
+        "vito",
+        "globcover",
+        "modis_lai",
+        "soilgrids",
+        "era5",
+        "chirps",
+    ):
+        assert f"from {key}." not in map_caption("Lead", key)
 
 
 def test_an_unmapped_source_still_gets_a_line():
     """Ugly and visible beats silently unattributed -- the first gets fixed."""
-    assert family.source_caveat(_layer("some_new_catalog_entry")) == (
-        "Source: some_new_catalog_entry."
+    assert map_caption("Lead", "some_new_catalog_entry") == (
+        "Lead from some_new_catalog_entry."
     )
 
 
-def test_a_layer_with_no_source_gets_no_footnote():
-    assert family.source_caveat(xr.DataArray(np.zeros((2, 2)), dims=("y", "x"))) is None
+def test_a_map_caption_is_one_sentence_plus_needed_notes():
+    assert family._spatial_caption("Basin topsoil pH (H₂O)", _layer("soilgrids")) == (
+        "Basin topsoil pH (H₂O) from SoilGrids (ISRIC, 2017)."
+    )
+    unsourced = xr.DataArray(np.zeros((2, 2)), dims=("y", "x"))
+    assert family._spatial_caption("Lead", unsourced, "A note") == "Lead. A note."
+    assert map_caption("Lead", notes=["", "Caveat."]) == "Lead. Caveat."
 
 
 # --- layer preparation --------------------------------------------------------

@@ -76,10 +76,9 @@ def fast_figure_dpi(monkeypatch):
     the shipped artifact, not of the assertion.
 
     Patched at EVERY binding site, because the export default is imported into
-    four module namespaces rather than read through one: ``plot_evaluation``
-    reads ``plot_style.RASTER_DPI`` at call time, while ``plot_map``,
-    ``plot_spatial_maps`` and ``climate_figures`` bound their own copies at
-    import. Patching one of them leaves the others at 600 and the test looks
+    more than one module namespace rather than read through one:
+    ``plot_evaluation`` reads ``plot_style.RASTER_DPI`` at call time, while
+    ``plot_spatial_maps`` bound its own copy at import. Patching one of them leaves the others at 600 and the test looks
     like it got faster without having got faster. ``hasattr`` guards the loop so
     a module that stops importing the name does not turn this into an error.
 
@@ -89,14 +88,12 @@ def fast_figure_dpi(monkeypatch):
 
     Opt in only where it MEASURES faster. ``test_plot_climate_source`` was
     marked and then unmarked: its slow test costs 10 s in climate preparation,
-    not in rasterisation, and the marker bought nothing. ``climate_figures``
-    stays in the list below regardless — the list is what makes the patch
-    correct wherever it is used, not a record of who uses it.
+    not in rasterisation, and the marker bought nothing. The list below is what
+    makes the patch correct wherever it is used, not a record of who uses it.
     """
-    from blueearth_cst.climate_analysis import climate_figures
-    from blueearth_cst.shared import plot_map, plot_spatial_maps, plot_style
+    from blueearth_cst.shared import plot_spatial_maps, plot_style
 
-    for module in (plot_style, plot_map, plot_spatial_maps, climate_figures):
+    for module in (plot_style, plot_spatial_maps):
         if hasattr(module, "RASTER_DPI"):
             monkeypatch.setattr(module, "RASTER_DPI", TEST_FIGURE_DPI)
     return TEST_FIGURE_DPI

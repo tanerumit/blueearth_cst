@@ -64,6 +64,8 @@ neutral:
   evaluation_reference: "0.55"
 
 elevation: ["#f6f2ea", "#e3d5ba", "#c9aa7d", "#a07f52", "#6f5533", "#46351f"]
+# River colour per stream-order step, lowest order first; widths are style.yml maps.river_order_widths.
+river_order: ["#a6cee3", "#74add1", "#4f94cd", "#2c7bb6", "#1f5fa3", "#0f4c8a", "#08306b"]
 waterbodies:
   lakes: ["#a8d0e6", "#3d5a6c"]
   reservoirs: ["#2c6fad", "#173d5e"]
@@ -71,7 +73,8 @@ waterbodies:
 
 map_features:
   river: "#2c6fad"
-  gauge: "#2c6fad"
+  # Purple, so locations never read as part of the blue river network.
+  gauge: "#6a3d9a"
   outlet: "#000000"
   basin_outline: "#000000"
   subcatchment: "0.15"
@@ -79,6 +82,7 @@ map_features:
   marker_edge: "#ffffff"
   halo: "#ffffff"
   unclassified: "#bdbdbd"
+  missing: "#a0a0a0"     # cells with no data, keyed "No data" on every map
   locator_ocean: "#eef2f5"
   locator_land: "#dcdcd8"
   locator_coast: "0.55"

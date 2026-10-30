@@ -1,18 +1,15 @@
 # -*- coding: utf-8 -*-
 """``RasterStyle`` — how one quantity is drawn, with nothing needed to draw it.
 
-Split out of :mod:`blueearth_cst.shared.cartographic_map` so a module that only
-DECLARES styles need not import the module that RENDERS them. ``cartographic_map``
-imports cartopy at module scope; ``plot_spatial_maps`` builds five module-level
-``RasterStyle`` constants and is imported by ``build_model.smk`` at PARSE time
-for :func:`~blueearth_cst.shared.plot_spatial_maps.figure_paths` alone, so every
-WF1 dry-run paid for cartopy to obtain a plain data object (t2608210029).
+A module that only DECLARES styles must not import the modules that classify
+or draw them: ``plot_spatial_maps`` builds its ``RasterStyle`` constants at
+module scope and is imported by ``build_model.smk`` at PARSE time for
+:func:`~blueearth_cst.shared.plot_spatial_maps.figure_paths` alone, so a heavy
+import here would cost every WF1 dry-run (t2608210029).
 
 Nothing here draws, classifies or resolves anything — it is a declaration and
 its ``replace``. The classifier, the colormap builders and the diverging
-resolvers stay in ``cartographic_map``, which is where the rendering lives and
-where a style is interpreted. ``cartographic_map`` re-exports ``RasterStyle``,
-so no public name moved and every existing import still resolves.
+resolvers live in ``shared/map_classes.py``, where a style is interpreted.
 
 Keep this module free of third-party imports. That property is the whole point
 of the split, and it is not enforced by anything but this sentence.
@@ -25,7 +22,7 @@ class RasterStyle:
     Deliberately a plain object rather than a dataclass: the fields carry long
     explanatory comments a dataclass field list would push into ``field(...)``
     metadata, and this module states no type annotations, matching
-    ``cartographic_map``, which interprets these styles.
+    ``map_classes``, which interprets these styles.
     """
 
     def __init__(

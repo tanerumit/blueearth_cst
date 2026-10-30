@@ -41,7 +41,9 @@ file relative to the toolbox, validates its structure and hex colours, and reads
 Restart an interactive Python session after editing it. Matplotlib resolves colormap names when drawing.
 
 `config/plotting/style.yml` owns page/export defaults, typography, shared chart dimensions, lines,
-markers, bands, label backgrounds and evaluation-sheet appearance. `shared.plot_setup` loads these
+markers, bands, label backgrounds, map feature geometry (`maps`) and evaluation-sheet appearance.
+Map feature colours (`map_features`, `river_order`) stay in `colors.yml`; both reach the drawing code as
+`Preset.maps` tokens (see [Spatial map template](#spatial-map-template)). `shared.plot_setup` loads these
 preferences; `shared.plot_preset` turns them into the CST chart preset, and `shared.plot_style` keeps
 the cartographic/evaluation interface. See [Presets](#presets) for how the preset reaches drawing code.
 Figure-specific geometry stays with its renderer. Keep shared appearance preferences in this setup
@@ -161,6 +163,31 @@ Unknown experiments retain their literal labels and muted fallback color.
 - The reviewed SPI heatmaps use boundaries `-3, -2, -1, 1, 2, 3`, without a zero tick, and a colorbar
   height of 80% of the plotting area. Their final figure height is 56% of the original height.
 
+## Spatial map template
+
+Every geographic raster map (WF0 source and WF1 forcing climatologies, the WF1 spatial set, the basin
+map) follows one template, `blueearth_cst/plotting/prepared_maps.py`, adopted on 2026-10-29. The core
+draws supplied arrays and features with `Preset.maps` tokens; adapters prepare fields, classes, overlay
+linework and basemap features; `shared/map_classes.py` classifies rasters and prepares relief and the locator.
+The legacy `shared/cartographic_map.py` was retired on 2026-10-29.
+
+| Element | Treatment |
+|---|---|
+| Coordinates | Plain axes, aspect `1/cos(mid-latitude)`; numeric signed ticks; `Longitude (°)` / `Latitude (°)`. |
+| Rivers | Blue, width and shade stepped by stream order, thin reaches first, thin white halo. |
+| Basin and divides | Black basin outline over dashed divides; divides merged so shared edges draw once. |
+| Locations | Purple diamonds; bold station names with a white halo, no box, placed clear of overlaps and the frame. |
+| Long names | Wrap to two lines at the separator nearest the middle (`maps.location_label_wrap` characters). |
+| Furniture | Scale bar (km, latitude-corrected) on every map; no north arrow; locator only on overview maps. |
+| Locator | Elevation and subbasin overviews only: small, square, inside the map in its clearest corner (≤40% of frame height). |
+| Keys | Side panel, bottom-aligned with the frame: colourbar or class legend, title above, never on the map. |
+| Source credit | In the caption, never a footnote on the figure. |
+
+Class legends list only classes present in the drawn area, and only those covering at least 0.1% of the
+basin; smaller classes are still drawn and are named in the caption. A legend taller than the frame is fitted by
+reducing its text, with a warning if it still does not fit. Colourbar titles break the unit onto its
+own line. Map colourbars use `fundamentals.style_colourbar`, the same appearance as heatmap colourbars.
+
 ## Figure-specific decisions
 
 WF1 forcing QA uses the reviewed WF0 map, annual-series and monthly-climatology styles for precipitation,
@@ -172,14 +199,15 @@ spatial overlays and gauge labels. WF0 source and WF1 forcing maps share the his
 `data/climate/historical/_engine/map_reference.json`. The selected source's outer cell edges determine
 the scale-reference frame. Historical candidate cells intersecting this frame determine pooled classes;
 borrowed CHIRPS temperature/PET do not contribute. Displayed maps zoom to the basin bounds with the same
-padding as spatial maps, with ticks and midpoint-latitude aspect derived from that viewport. Without basin
-geometry, they retain the reference frame. Native source fields and
+padding as spatial maps, clipped to a native source grid's outer cell edges so no blank padding shows;
+masked model-grid maps keep the full padding. Ticks and midpoint-latitude aspect derive from that
+viewport. Without basin geometry, they retain the reference frame. Native source fields and
 model-grid basin masks retain their scientific support. Common colors do not establish equal periods,
 eligibility policies or PET methods; captions state those differences.
 
-Every available reference colorbar shows both rectangular extensions and reports strict under/over counts
-in captions. The final class includes its upper boundary. Missing cells are gray, outside-model and
-uncovered areas white. With no finite historical scale, finite cells use an unscaled neutral hatch and
+Every available reference colorbar shows both rectangular extensions. Captions report strict under/over
+counts only when nonzero; the map metadata always records them. The final class includes its upper
+boundary. Missing cells are gray, outside-model and uncovered areas white. With no finite historical scale, finite cells use an unscaled neutral hatch and
 there is no numerical colorbar. Never infer a scale from model forcing or invent a default 0–1 scale.
 Suppress individual model-cell outlines on the fine forcing grid so they do not obscure the field.
 Show cells outside the model basin in white and unavailable summaries inside it in gray.
@@ -256,8 +284,10 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | Annual series | Trend line and slope annotation on every applicable series; y-axis shows units only. |
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |
 | WF2 trajectories | Model median and range; distinct historical trace; stacked inside scenario legend. |
-| WF2 change strips | Retain the newer original scenario legend, unlabeled x-axis, box and point styling. |
-| WF2 seasonal cycle | Separate median climatology lines from monthly-change boxes; shade historical range only. |
+| WF2 handover line | Dashed line at the CMIP6 historical–scenario handover (2014.5), never the current year. |
+| WF2 seasonal grids | 2 × 2 seasons; model points, median tick, IQR band; unit-only y-axis; no legend. |
+| WF2 seasonal cycle | Median lines; shade historical range only; one-row legend above the axes. |
+| WF2 dry periods | Precipitation %/ratio panels or months keeping at most half the models: hatched. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |
@@ -275,40 +305,64 @@ Trend-sensitivity panels use sparse, calendar-aligned integer year labels with m
 eligible starting years. Share the start-year extent across panels and name the fixed end year in the
 x-axis title; retain every slope estimate and interval regardless of label density.
 
-For WF2 change strips, tighten the gap between the horizontal scenario legend and panel titles, add short
-caps to the full-range lines, and make median bars slightly thicker than the box outlines.
+WF2 seasonal grids (temperature change, precipitation % change, precipitation seasonal totals) are 2 × 2
+panels for DJF, MAM, JJA and SON, without an annual panel; the change cloud and sign agreement keep the
+annual view. Each model is a point, the median a thick tick and the prepared IQR a pale band where at least
+10 models contribute; no whiskers, so one outlying model does not read as typical spread. Scenarios carry
+single-line x-axis labels; scenarios with fewer than 10 models are left out when another reaches 10, and the
+caption names them. The y-axis title is the unit only; model counts and periods go in the caption. Axes end
+on round 1-2-5 ticks (at most 8 labels) one step past the data. Change grids share one y-axis across
+seasons; the seasonal-totals grid (mm, season total) gives each season its own axis and adds a gray
+Historical group (each model's reference-period total) left of a divider. Precipitation panel titles give
+the reference amount (ensemble-median monthly climatology summed over the season, "b) MAM · ref. ≈16 mm").
+The interannual-variability grids (temperature SD, precipitation SD as season totals, precipitation CV in %)
+show each model's detrended values with a Historical group, like the seasonal-values grids; the per-model
+future/reference ratios stay in the analysis tables. The sign-agreement matrix shows Annual and the four
+seasons, not months.
 
-WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
-horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median
-bars. Review climatology and monthly changes as separate groups in the HTML page.
+WF2 change strips and monthly-change figures draw a flat gray band around zero: the 90% range of mean
+change that year-to-year variability alone gives in the models' historical runs (`noise_halfwidth`,
+computed in the analysis step from each member's detrended reference SD; median across models). One band
+per season panel and one per month; none in mostly-dry periods or on the seasonal-values and variability
+grids.
+
+WF2 monthly-change figures stay box plots: tinted IQR boxes with a colour edge, a darker median bar and
+light uncapped whiskers to the inter-model range, over a stepped variability band (full-width month cells).
+Scenarios wrap in two columns with shared 1-2-5 y-limits, a unit-only axis title and horizontal month
+labels; scenarios under ten models are dropped as on the seasonal grids, and the caption names them and
+gives models per scenario. Review climatology and monthly changes as separate groups in the HTML page.
 
 Keep WF2 scenario summaries subordinate to the data: reviewed annual-overview median lines use 1.0 pt,
 trajectory median lines 1.5 pt. Retain annual values without smoothing and preserve gaps in missing years.
 
 WF2 interannual variability shows temperature SD, precipitation SD and precipitation CV in separate figures.
-Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
+Use the change-strip point, median and band style, with a reference line at ratio 1.
 Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
 them or significance fills in this figure.
 
 The annual member-ratio comparison shows all three indicators together. Its boxes, medians and capped
 ranges summarize model ratios after geometric averaging of members within each model, with equal model
 weight. Faint points retain individual members; their density does not set the weight of the summary.
-Captions distinguish descriptive model spread from confidence intervals and note member dependence.
 
 WF2 change clouds retain square plotting areas and circular points for all scenarios, distinguished by
 color, with darker edges and slight transparency. Stack the inset legend in the less occupied upper
 corner. Use “Mean precipitation change (%)” and “Mean temperature change (°C)” as axis titles; state
-reference and future periods in the caption, alongside paired-model aggregation and spread semantics.
+reference and future periods in the caption.
 
 WF2 sign-agreement matrices use temperature and precipitation percentage-change panels, four discrete
-agreement classes with paired blue/red swatches, and visible scenario and period ticks. Cell signs show
-the median direction and k/n shows model agreement; choose text color by fill luminance. Captions explain
-that directional agreement is neither probability nor significance and note shared model ancestry.
+agreement classes with paired blue/red swatches, and compact cells (about 7 x 3.6 mm) under horizontal
+two-line scenario labels (SSP1 over 2.6) with one-letter month labels. As an approved exception to the
+7/6 pt sizes, its panel titles use 6 pt and its ticks, cell signs and legend 5 pt, in proportion to the
+small cells. Cells show only the median sign, with text color chosen by fill luminance; k/n counts
+stay in `sign_agreement.csv`. Precipitation cells keeping at most half the scenario's models are hatched
+with no sign and labelled "Excluded (too few models)". The caption states that directional agreement is
+neither probability nor significance.
 
-WF2 ensemble coverage uses a compact table with consistent numeric member counts, a historical-reference
-column, family and institution metadata, and pale alternating rows. Historical counts deduplicate loaded
-reference series. Distinguish availability from analysis eligibility in captions, explain family
-provenance and provisional/unknown assignments, and avoid implying family independence.
+WF2 ensemble coverage uses a compact one-line-per-model table (model, family, institution and country), a
+historical-reference column and pale alternating rows. A filled tile marks loaded members, with a count
+only where there is more than one; empty cells mean none. Historical counts deduplicate loaded reference
+series. Models with no loaded member are left out, with their number in the caption; a
+dash marks an unknown family. The caption cites the family mapping and its provisional/unknown marks.
 
 ## Scientific interpretation and methodological review
 
@@ -348,6 +402,20 @@ in this visual review.
   support, missing values and material caveats. Do not describe internal rules, review logic or gates.
 - Move footer information from the plot into its caption. Keep captions left-aligned to the plotting
   area, slightly smaller than axis text, in gray.
+- Geographic map captions (`shared/map_frames.map_caption`) are one sentence: the quantity with units,
+  grid and period where they apply, "from" the product credit in `map_frames.SOURCE_CREDITS`. Add a
+  sentence only for a material, map-specific fact: values beyond the colour scale, no scale or no
+  drawn cells, a source-grid PET method, an auxiliary field, or classes left out of the key. The key
+  and overlays explain the rest; support counts, thresholds and reference provenance stay in metadata.
+- WF2 captions (`projections/projection_captions.py`) are self-contained journal-style legends: the
+  quantity and units, periods, encoding where no key gives it, the method where it changes the reading
+  (detrending, day-weighting, dry exclusion) and the interpretive caveat (inter-model spread is not a
+  confidence interval; sign agreement is not significance). Report model counts, omitted scenarios or
+  models, shifted or joined windows, hatched dry periods and the variability band where they apply.
+  Keep table- and matrix-type figures (coverage, sign agreement) to two or three short sentences.
+  Suite-wide caveats are also stated once, in `SUITE_NOTE` at the head of `figure_captions.md`.
+- Captions span the full plotting area: from the leftmost axes' left edge to the rightmost axes' right
+  edge, across every column of a multi-panel figure, both in captioned exports and on review pages.
 - Include captions inside the preview canvas when enabled. Add space below the image without resizing
   the plotting area or changing its proportions. Keep caption-to-axis font proportions consistent.
 - `plotting.fundamentals.add_caption(fig, text)` finalizes an already drawn figure for its captioned
@@ -371,23 +439,23 @@ in this visual review.
 - Keep the disposable HTML review in `.tmp/tasks/<id>/`; follow `dev-repository-layout.md` for closure cleanup.
 - Show only the plot group currently under review, with existing and revised versions side by side.
   Preserve a baseline before revising the group.
-- Keep the original page header. Put the selected figure name in each comparison heading, for example
-  `CHIRPS – Spell (existing)` and `CHIRPS – Spell (revised)`.
-- Put selectors, buttons, sliders and checkboxes on the second row. Remove descriptive header prose and
-  repeated figure-name text beneath the plots.
-- Include caption and canvas-boundary toggles, plus the overlay comparison control. Preserve consistent
-  physical image scaling so fonts do not grow when the canvas gets smaller and both figures fit together.
-- Use the explicit side-by-side/wipe modes and linked zoom/pan controls. Unequal canvases require opting
-  into top-left-aligned wipe; pad at a common scale without stretching either image. The overview uses
-  the pair's declared export dpi (600 by default); both images must use that dpi.
-- Below the figures, display `Path:` followed on a new line by the original figure's parent directory.
-  Keep the full selected file path in the page data so the source remains identifiable. Compact keyboard
-  hints and collapsible control help may follow the path.
-- Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
-  applicable plots, and render all affected callers when a shared figure helper changes.
-- Keep figure-specific tests and plotting-only probes temporary under `.tmp/tasks/<id>/`, outside the
-  persistent test suite. Verify figure changes by rendering and visual inspection. Retain tests for
-  exported numerical indicators and workflow contracts separately from figure review checks.
+- Keep the template's header, toolbar and card layout; fill only its project context, provenance and
+  records. Each card heading names the figure and version, for example `CHIRPS – Spell (before)` and
+  `CHIRPS – Spell (revised)`, and the card shows the file name with a link to its source folder.
+- Keep consistent physical image scaling so fonts do not grow when the canvas gets smaller. The overview
+  uses the pair's declared export dpi (600 by default); both images must use that dpi.
+- Keep the full selected file path in the page data so the source remains identifiable.
+- Render from retained inputs with `scripts/render_figures.py <family> --project <run> --out <dir>`
+  (`--list` shows families) and inspect the actual exported figures. Each family calls the rule's own
+  rendering function from a re-render adapter beside the rule adapter; do not write ad-hoc render
+  drivers. A family missing from the CLI is added there, not scripted in scratch. For a run whose
+  source config has since narrowed its SSPs, pass wf2 `--scenario` per kept SSP to preview the rerun.
+  Apply reusable decisions to other applicable plots, and render all affected callers when a shared
+  figure helper changes.
+- Keep review outputs under `.tmp/tasks/<id>/`, outside the persistent test suite. Verify figure changes
+  by rendering and visual inspection; `dev/scripts/capture_page.py` screenshots a review page headlessly
+  when the browser tool is unavailable. Retain tests for exported numerical indicators and workflow
+  contracts separately from figure review checks.
 - During an explicitly deferred-check visual session, do not run tests or gates at each revision. Run
   appropriate checks at the end of the session. Commit once the user approves a figure style/type, rather
   than after each incremental revision. Do not land or push without separate authorization.
@@ -401,9 +469,16 @@ in this visual review.
 - Explicit-figure export without workflow logging: `blueearth_cst/plotting/export.py`.
 - Workflow bundles and current-figure compatibility: `blueearth_cst/shared/snake_utils.py::save_figure`.
 - WF0 artists and compatibility aliases: `blueearth_cst/climate_analysis/diagnostic_figures.py`.
-- Legacy cartographic/evaluation preset and runtime overrides: `blueearth_cst/shared/plot_style.py`.
-- WF0 maps: `blueearth_cst/climate_analysis/diagnostic_maps.py`.
+- Page, typography and export constants for the evaluation sheets: `blueearth_cst/shared/plot_style.py`.
+- Geographic raster maps (WF0 source, WF1 forcing, WF1 spatial set): drawn by
+  `blueearth_cst/plotting/prepared_maps.py`; frames, grid edges and overlay features prepared by
+  `shared/map_frames.py`; climate fields by `climate_analysis/diagnostic_maps.py`; spatial keys and the
+  locator basemap by `shared/plot_spatial_maps.py`.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
+- Re-rendering from a finished run: `scripts/render_figures.py`, dispatching to
+  `climate_analysis/diagnostic_rerender.py`, `model/forcing_rerender.py` and
+  `projections/projection_rerender.py`. Retained map references load
+  through `shared/retained_reference.py`, which checks integrity but not current-code drift.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.
 
 For export without workflow logging, pass the figure explicitly and retain the caller's save options:

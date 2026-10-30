@@ -60,6 +60,26 @@ scientific input; review the source choice before reusing results.
 Use [experiment recovery](running.md#select-resume-or-create-an-experiment) for an interrupted reservation.
 Do not recycle allocated experiment numbers or delete locks while a run is active.
 
+## Windows stops advancing after successful WF2 writes
+
+If fetch logs report successful CMIP6 writes but Snakemake stops reporting completed jobs, retain
+the console log and process stacks before stopping the run. One observed failure is Python waiting
+in `socket._fallback_socketpair` → `accept` while Snakemake holds its scheduler lock. Successful
+downloads alone do not establish this diagnosis; other stalls need their own evidence.
+
+The toolbox's owned runners bound Windows fallback socket-pair setup to five seconds per attempt
+and retry timeouts up to three attempts. A transient failure prints a warning and retries; persistent
+failure reports `Windows socket-pair setup timed out after 3 attempts`. This protection applies to
+the Snakemake process launched by the toolbox, including dry runs and verbose mode. Direct `snakemake`
+invocations and separate job processes do not receive it. Network download timeouts are unchanged.
+
+After the old process has stopped, use the incomplete-job resume command above with the same
+configuration. Preserve the CMIP6 cache and completed outputs; do not use `--rebuild` for this symptom.
+If socket-pair timeouts persist, investigate local loopback filtering and socket-resource pressure.
+Reducing `--cores` may help diagnosis but is not an established fix. The workaround has been checked
+with injected failures and parallel job completion; confirmation on the originally affected machine
+is still needed.
+
 ## An experiment refuses changed inputs
 
 Review the changed model, collection and simulation settings.

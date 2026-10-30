@@ -9,6 +9,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+- Bound and retry Windows socket-pair setup in the owned Snakemake launcher, preventing an
+  indefinite scheduler wait when a local connection fails during job completion. Persistent
+  timeouts report an error; completed outputs remain available for incomplete-job resume.
+
 - Fix --unlock being rejected by the WF0–WF2 source-capture guard when forwarded through
   the all-workflow runner.
 

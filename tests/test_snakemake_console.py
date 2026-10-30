@@ -109,3 +109,65 @@ def test_diagnostic_modes_keep_native_streams(monkeypatch, flag):
     monkeypatch.setattr(cli, "main", lambda: calls.append(sys.stderr))
     console.main()
     assert calls == [stderr]
+
+
+@pytest.mark.workflow_contract
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows fallback workaround")
+@pytest.mark.parametrize("failure", ["once", "always"])
+def test_parallel_completion_timeout_and_resume_preserve_outputs(tmp_path, failure):
+    """Inject the recorded unconnected client while the scheduler holds its lock."""
+    (tmp_path / "Snakefile").write_text(
+        "import os, socket, sys\n"
+        "from pathlib import Path\n"
+        "from blueearth_cst.shared import windows_socketpair as bounded\n"
+        "onstart:\n"
+        "    bounded._SETUP_TIMEOUT = 0.02\n"
+        "    original_socket = socket.socket\n"
+        "    class FaultSocket(original_socket):\n"
+        "        def connect(self, address):\n"
+        "            frame = sys._getframe()\n"
+        "            while frame is not None:\n"
+        "                if frame.f_code.co_name == '_finish_jobs':\n"
+        "                    failure = os.environ.get('CST_TEST_PAIR_FAILURE')\n"
+        "                    marker = Path('injected')\n"
+        "                    if failure == 'always' or (failure == 'once' and not marker.exists()):\n"
+        "                        marker.write_text('injected', encoding='utf-8')\n"
+        "                        return None\n"
+        "                    break\n"
+        "                frame = frame.f_back\n"
+        "            return super().connect(address)\n"
+        "    socket.socket = FaultSocket\n"
+        "rule all:\n"
+        "    input: expand('out/{i}.txt', i=range(13))\n"
+        "rule produce:\n"
+        "    output: 'out/{i}.txt'\n"
+        "    shell: 'echo completed > {output}'\n",
+        encoding="utf-8",
+    )
+    retained = tmp_path / "out/0.txt"
+    retained.parent.mkdir()
+    retained.write_bytes(b"previous successful output\n")
+    retained_stat = retained.stat()
+    command = [sys.executable, console.__file__, "all", "--cores", "6"]
+    env = {**os.environ, "CST_TEST_PAIR_FAILURE": failure}
+    first = subprocess.run(
+        command, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=90
+    )
+    output = first.stdout + first.stderr
+    assert (tmp_path / "injected").exists(), output
+    assert "Windows socket-pair setup timed out" in output
+    assert (first.returncode != 0) == (failure == "always"), output
+    if failure == "always":
+        assert "after 3 attempts" in output
+    resumed = subprocess.run(
+        [*command, "--rerun-incomplete"],
+        cwd=tmp_path,
+        env={**env, "CST_TEST_PAIR_FAILURE": "off"},
+        capture_output=True,
+        text=True,
+        timeout=90,
+    )
+    assert resumed.returncode == 0, resumed.stdout + resumed.stderr
+    assert len(list((tmp_path / "out").glob("*.txt"))) == 13
+    assert retained.read_bytes() == b"previous successful output\n"
+    assert retained.stat().st_mtime_ns == retained_stat.st_mtime_ns

@@ -113,7 +113,8 @@ def caption(filename, record, window_id="", counts=None):
 
     if filename == "availability.png":
         lead = (
-            "Resolved CMIP6 members per model and scenario, with unique historical reference series; "
+            "Filled cells mark resolved CMIP6 members per model and scenario (historical: unique reference "
+            "series), with a count where there is more than one; "
             "families follow Kuma et al. (2023), with * marking a provisional family and – an unknown one"
         )
     elif filename.startswith("trajectory-"):

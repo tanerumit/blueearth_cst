@@ -1033,7 +1033,10 @@ def availability_matrix(coverage, scenarios=None):
     # rows with zeros; repeated source ids there name their institutions.
     empty = identities.loc[[not any(counts_by_model[m]) for m in identities.model]]
     identities = identities.loc[~identities.model.isin(empty.model)]
-    total = 25 + 23 + 14 * len(runs)
+    # One line per model (x in mm): model, family, institution, then a 9 mm
+    # column per run whose filled tile marks loaded members.
+    xs = [0, 25, 38, *[68 + 9 * j for j in range(len(runs))]]
+    total = 68 + 9 * len(runs)
     note = ""
     if len(empty):
         names = [
@@ -1047,72 +1050,60 @@ def availability_matrix(coverage, scenarios=None):
         )
     n = len(identities)
     note_rows = note.count("\n") + 1 if note else 0
-    fig, axes = new_fig(0.9 * (10 + 7 * (n + 1) + 4 * note_rows), width_mm=total + 8)
+    fig, axes = new_fig(12 + 4.2 * n + 3.2 * note_rows, width_mm=total + 4)
     ax = axes[0, 0]
     ax.set_axis_off()
-    ax.set(xlim=(0, total), ylim=(n + 0.5 + 0.6 * note_rows, -0.5))
-    xs = [0, 25, *[48 + 14 * j for j in range(len(runs))]]
-    for j, (x, title) in enumerate(
-        zip(
-            xs,
-            ["Model", "Family", "Historical", *[_label(s) for s in scen]],
-            strict=True,
-        )
-    ):
+    ax.set(xlim=(0, total), ylim=(n + 0.5 + 0.8 * note_rows, -1.0))
+    titles = ["Model", "Family", "Institution", "Hist.", *[_label(s) for s in scen]]
+    for j, (x, title) in enumerate(zip(xs, titles, strict=True)):
         ax.text(
-            x + (7 if j >= 2 else 0),
-            0,
-            title,
-            ha="center" if j >= 2 else "left",
+            x + (4.5 if j >= 3 else 0),
+            -0.25,
+            title.replace("-", "\n", 1) if j >= 3 else title,
+            ha="center" if j >= 3 else "left",
             va="center",
             fontsize=FS_NOTE,
             fontweight="bold",
             color=INK,
+            linespacing=1.0,
         )
     ax.axhline(0.5, color=INK, lw=0.8)
     for i, row in enumerate(identities.itertuples(index=False), start=1):
         if i % 2 == 0:
             ax.axhspan(i - 0.5, i + 0.5, color="#f1f5f6", lw=0, zorder=0)
-        ax.text(
-            0, i, row.source_id, ha="left", va="center", fontsize=FS_NOTE, color=INK
-        )
         family = (
             row.family
             if row.family_source == "listed"
             else (f"{row.family}*" if row.family_source == "provisional" else "–")
         )
-        ax.text(
-            25, i - 0.17, family, ha="left", va="center", fontsize=FS_NOTE, color=INK
-        )
         where = (
-            f"({row.institution}, {row.country})"
+            f"{row.institution}, {row.country}"
             if pd.notna(row.country) and row.country
-            else f"({row.institution})"
+            else row.institution
         )
-        ax.text(
-            25,
-            i + 0.2,
-            where,
-            ha="left",
-            va="center",
-            fontsize=FS_NOTE - 0.5,
-            color=INK,
-        )
+        for x, text in zip(xs[:3], (row.source_id, family, where), strict=True):
+            ax.text(x, i, text, ha="left", va="center", fontsize=FS_NOTE, color=INK)
         for j, count in enumerate(counts_by_model[row.model]):
-            ax.text(
-                xs[j + 2] + 7,
-                i,
-                str(count),
-                ha="center",
-                va="center",
-                fontsize=FS_NOTE,
-                color=INK if count else MUTED,
+            if not count:
+                continue
+            ax.add_patch(
+                Rectangle(
+                    (xs[j + 3] + 1.5, i - 0.32), 6, 0.64, facecolor="#c6d6e8", lw=0
+                )
             )
+            if count > 1:
+                ax.text(
+                    xs[j + 3] + 4.5,
+                    i,
+                    str(count),
+                    ha="center",
+                    va="center",
+                    fontsize=FS_NOTE,
+                    color=INK,
+                )
     ax.axhline(n + 0.5, color=INK, lw=0.8)
     if note:
-        ax.text(
-            0, n + 0.8, note, ha="left", va="top", fontsize=FS_NOTE - 0.5, color=INK
-        )
+        ax.text(0, n + 0.8, note, ha="left", va="top", fontsize=FS_NOTE, color=INK)
     return fig
 
 

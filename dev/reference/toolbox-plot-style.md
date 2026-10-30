@@ -338,9 +338,10 @@ stay in `sign_agreement.csv`. Precipitation cells keeping at most half the scena
 with no sign and labelled "Excluded (too few models)". The caption states that directional agreement is
 neither probability nor significance.
 
-WF2 ensemble coverage uses a compact table with consistent numeric member counts, a historical-reference
-column, family and institution metadata, and pale alternating rows. Historical counts deduplicate loaded
-reference series. Models with no loaded member are named in a footnote rather than as rows of zeros; a
+WF2 ensemble coverage uses a compact one-line-per-model table (model, family, institution and country), a
+historical-reference column and pale alternating rows. A filled tile marks loaded members, with a count
+only where there is more than one; empty cells mean none. Historical counts deduplicate loaded reference
+series. Models with no loaded member are named in a footnote rather than as rows of zeros; a
 dash marks an unknown family. The caption cites the family mapping and its provisional/unknown marks.
 
 ## Scientific interpretation and methodological review

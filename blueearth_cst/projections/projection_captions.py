@@ -57,11 +57,12 @@ def caption(filename, record, window_id="", counts=None):
             "CMIP6 ensemble availability. Numbers give resolved member counts for each model and "
             "scenario; historical counts give unique loaded reference series associated with resolved "
             "scenario members. Zero indicates no resolved or loaded member in this ensemble, not "
-            "necessarily absence from the CMIP6 archive. Availability does not guarantee eligibility "
+            "necessarily absence from the CMIP6 archive; models with no loaded member are listed "
+            "below the table. Availability does not guarantee eligibility "
             "for every variable, period, or analysis window. Families describe model code genealogy "
             "using the mapping attributed to Kuma et al. (2023, doi:10.1029/2022MS003588; Zenodo "
             "record 7920408). An asterisk marks a provisional family inferred from institution; "
-            "? marks an unknown family. Parentheses identify institution and country where known. "
+            "a dash marks an unknown family. Parentheses identify institution and country where known. "
             "Family labels do not imply statistical independence within or between families."
         )
     if filename == "sign-agreement.png":
@@ -203,7 +204,7 @@ def caption(filename, record, window_id="", counts=None):
             "runs; faint traces are individual members. Annual values are unsmoothed, so the range includes "
             "year-to-year variability and is not a confidence interval. Each member uses its own "
             f"{record['reference'][0]}–{record['reference'][1]} reference mean. Pale shading marks the future "
-            "analysis windows; the dashed line marks the current year."
+            "analysis windows; the dashed line marks the historical–scenario transition at 2014.5."
         )
     if filename.startswith("annual-"):
         text.append(

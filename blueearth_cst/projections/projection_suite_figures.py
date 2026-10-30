@@ -3,8 +3,8 @@
 import matplotlib
 
 matplotlib.use("Agg")
+import textwrap
 import zlib
-from datetime import date
 
 import numpy as np
 import pandas as pd
@@ -278,7 +278,9 @@ def seasonal_figure(climatology, changes, summary, *, variable, scenarios=None):
     if variable == "precip":
         ax.set_ylim(bottom=0)
     ygrid(ax)
-    inside_legend(fig, ax, handles, bands=ax.collections, lines=ax.lines)
+    # Above the axes: the historical range spans both top corners, so an
+    # inside legend would cover it.
+    fig.legend(handles=handles, loc="outside upper center", ncols=len(handles))
     return fig
 
 
@@ -339,7 +341,6 @@ def ipcc_trajectory(
     scenarios=None,
     members=None,
     windows=(),
-    current_year=None,
     reference=(1985, 2014),
 ):
     """Prepared annual model medians and ranges, with distinct historical traces."""
@@ -414,8 +415,7 @@ def ipcc_trajectory(
     for window in windows:
         a, b = window["used"]
         ax.axvspan(a - 0.5, b + 0.5, color="#d9d6d4", lw=0, zorder=0)
-    if current_year is not None:
-        ax.axvline(current_year, color=INK, lw=LW_REF, ls="--")
+    ax.axvline(2014.5, color=MUTED, lw=LW_REF, ls="--", gid="scenario-handover")
     ax.axhline(0, color=MUTED, lw=LW_REF)
     ax.set(
         xlabel="Year",
@@ -532,10 +532,14 @@ def annual_overview(
                     zorder=0,
                     gid=f"window:{window['window_id']}",
                 )
+            # Letters run in reading order over visible panels only, so a
+            # short last block does not skip the hidden slot's letters.
+            block, width = j // ncols, min(ncols, len(scen) - j // ncols * ncols)
+            letter = chr(97 + 2 * ncols * block + r * width + j % ncols)
             ax.text(
                 0.0,
                 1.02,
-                f"{chr(97 + 2 * (j // ncols) * ncols + r * ncols + j % ncols)}) {_label(s)} · {'Anomaly' if r else 'Annual'}",
+                f"{letter}) {_label(s)} · {'Anomaly' if r else 'Annual'}",
                 transform=ax.transAxes,
                 ha="left",
                 va="bottom",
@@ -897,12 +901,37 @@ def availability_matrix(coverage, scenarios=None):
     identities = identities.sort_values("source_id", key=lambda s: s.str.lower())
     scen = _scenarios(coverage, scenarios)
     runs = ["historical", *scen]
-    n = len(identities)
+
+    def counts_of(model):
+        available = coverage.loc[(coverage.model == model) & coverage.available]
+        return [
+            available.reference_series_key.replace("", np.nan).nunique(),
+            *(available.loc[available.scenario == s, "member"].nunique() for s in scen),
+        ]
+
+    counts_by_model = {model: counts_of(model) for model in identities.model}
+    # Models with nothing loaded are named in a footnote instead of filling
+    # rows with zeros; repeated source ids there name their institutions.
+    empty = identities.loc[[not any(counts_by_model[m]) for m in identities.model]]
+    identities = identities.loc[~identities.model.isin(empty.model)]
     total = 25 + 23 + 14 * len(runs)
-    fig, axes = new_fig(0.9 * (10 + 7 * (n + 1)), width_mm=total + 8)
+    note = ""
+    if len(empty):
+        names = [
+            f"{source} ({', '.join(group.institution)})" if len(group) > 1 else source
+            for source, group in empty.groupby("source_id", sort=False)
+        ]
+        note = textwrap.fill(
+            "No member loaded in this ensemble: " + ", ".join(names) + ".",
+            width=int(total * 0.75),  # characters at FS_NOTE across the table
+            break_on_hyphens=False,
+        )
+    n = len(identities)
+    note_rows = note.count("\n") + 1 if note else 0
+    fig, axes = new_fig(0.9 * (10 + 7 * (n + 1) + 4 * note_rows), width_mm=total + 8)
     ax = axes[0, 0]
     ax.set_axis_off()
-    ax.set(xlim=(0, total), ylim=(n + 0.5, -0.5))
+    ax.set(xlim=(0, total), ylim=(n + 0.5 + 0.6 * note_rows, -0.5))
     xs = [0, 25, *[48 + 14 * j for j in range(len(runs))]]
     for j, (x, title) in enumerate(
         zip(
@@ -931,14 +960,14 @@ def availability_matrix(coverage, scenarios=None):
         family = (
             row.family
             if row.family_source == "listed"
-            else (f"{row.family}*" if row.family_source == "provisional" else "?")
+            else (f"{row.family}*" if row.family_source == "provisional" else "–")
         )
         ax.text(
             25, i - 0.17, family, ha="left", va="center", fontsize=FS_NOTE, color=INK
         )
         where = (
             f"({row.institution}, {row.country})"
-            if row.country
+            if pd.notna(row.country) and row.country
             else f"({row.institution})"
         )
         ax.text(
@@ -950,12 +979,7 @@ def availability_matrix(coverage, scenarios=None):
             fontsize=FS_NOTE - 0.5,
             color=INK,
         )
-        available = coverage.loc[(coverage.model == row.model) & coverage.available]
-        counts = [available.reference_series_key.replace("", np.nan).nunique()]
-        counts.extend(
-            available.loc[available.scenario == s, "member"].nunique() for s in scen
-        )
-        for j, count in enumerate(counts):
+        for j, count in enumerate(counts_by_model[row.model]):
             ax.text(
                 xs[j + 2] + 7,
                 i,
@@ -966,6 +990,10 @@ def availability_matrix(coverage, scenarios=None):
                 color=INK if count else MUTED,
             )
     ax.axhline(n + 0.5, color=INK, lw=0.8)
+    if note:
+        ax.text(
+            0, n + 0.8, note, ha="left", va="top", fontsize=FS_NOTE - 0.5, color=INK
+        )
     return fig
 
 
@@ -993,7 +1021,6 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 scenarios=scenarios,
                 members=table("member_anomalies"),
                 windows=record["windows"],
-                current_year=date.today().year,
                 reference=record["reference"],
             )
         if filename.startswith("annual-"):

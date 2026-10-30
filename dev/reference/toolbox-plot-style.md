@@ -448,7 +448,8 @@ in this visual review.
 - Render from retained inputs with `scripts/render_figures.py <family> --project <run> --out <dir>`
   (`--list` shows families) and inspect the actual exported figures. Each family calls the rule's own
   rendering function from a re-render adapter beside the rule adapter; do not write ad-hoc render
-  drivers. A family missing from the CLI is added there, not scripted in scratch.
+  drivers. A family missing from the CLI is added there, not scripted in scratch. For a run whose
+  source config has since narrowed its SSPs, pass wf2 `--scenario` per kept SSP to preview the rerun.
   Apply reusable decisions to other applicable plots, and render all affected callers when a shared
   figure helper changes.
 - Keep review outputs under `.tmp/tasks/<id>/`, outside the persistent test suite. Verify figure changes

@@ -4,6 +4,8 @@ Calls ``plot_proj_timeseries.render_suite`` on the run's retained analysis
 tables and record, writing to a separate directory: a few minutes at 600 dpi,
 not a WF2 rerun.
 Scenario order falls back to the IPCC colour order rather than the run config.
+``scenarios`` drops the other SSPs' rows from every table first, previewing a
+run whose config has since narrowed its scenario list.
 Front end: ``scripts/render_figures.py``.
 """
 
@@ -19,7 +21,10 @@ PROJECTIONS_DIR = Path("data") / "climate" / "projections"
 
 
 def rerender_projections(
-    project_dir: str | Path, out_dir: str | Path, annotation: str = "none"
+    project_dir: str | Path,
+    out_dir: str | Path,
+    annotation: str = "none",
+    scenarios: list[str] | None = None,
 ) -> dict[str, Path]:
     """Write each ensemble's suite into ``out_dir/projections/<ensemble>/plots``."""
     from blueearth_cst.projections.plot_proj_timeseries import render_suite
@@ -43,6 +48,14 @@ def rerender_projections(
             path.stem: pd.read_csv(path)
             for path in (ensemble_dir / "analysis").glob("*.csv")
         }
+        if scenarios:
+            keep = {*scenarios, "historical"}
+            tables = {
+                name: table.loc[table.scenario.isna() | table.scenario.isin(keep)]
+                if "scenario" in table
+                else table
+                for name, table in tables.items()
+            }
         # A run made before the product list changed has a stale availability
         # table; rebuild it from the retained tables with the analysis step's
         # own function.
@@ -79,6 +92,7 @@ def rerender_projections(
             json.loads(record_path.read_text(encoding="utf-8")),
             plot_dir,
             annotation=annotation,
+            scenarios=scenarios,
             captions_json=plot_dir.parent / "_engine" / "figure_captions.json",
         )
         written[ensemble_dir.name] = plot_dir

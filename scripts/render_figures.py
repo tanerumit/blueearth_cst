@@ -6,6 +6,7 @@ without rerunning the workflow. Output goes to ``--out``, never into the run.
 
     pixi run python scripts/render_figures.py --list
     pixi run python scripts/render_figures.py wf0 --project <project_dir> --out <dir>
+    pixi run python scripts/render_figures.py wf2 --project <project_dir> --out <dir>         --scenario ssp126 --scenario ssp585
 """
 
 import argparse
@@ -55,7 +56,9 @@ def _wf2(args):
 
     if args.source:
         raise ValueError("--source does not apply to wf2")
-    return rerender_projections(args.project, args.out, annotation=args.annotation)
+    return rerender_projections(
+        args.project, args.out, annotation=args.annotation, scenarios=args.scenario
+    )
 
 
 #: Family name -> (what it renders, renderer). Add a family by pointing it at a
@@ -91,6 +94,11 @@ def main(argv=None):
         "--source", action="append", help="limit to a source (repeatable)"
     )
     parser.add_argument(
+        "--scenario",
+        action="append",
+        help="wf2: keep only this SSP, as a rerun with it configured would (repeatable)",
+    )
+    parser.add_argument(
         "--annotation", choices=("none", "caption", "title"), default="none"
     )
     parser.add_argument("--traceback", action="store_true")
@@ -103,6 +111,8 @@ def main(argv=None):
         parser.error("family, --project and --out are required unless --list is used")
     if args.out.resolve().is_relative_to(args.project.resolve()):
         parser.error("--out must lie outside the run so retained figures stay intact")
+    if args.scenario and args.family != "wf2":
+        parser.error("--scenario applies to wf2 only")
     try:
         written = FAMILIES[args.family][1](args)
     except (OSError, KeyError, ValueError) as exc:

@@ -192,7 +192,8 @@ def dry_shading(filename, tables, record, window_id=""):
         & (data.statistic == statistic)
         & data.period.isin(periods)
     ]
-    if key in GRID_PRODUCTS and GRID_PRODUCTS[key][0] in tables:  # as drawn
+    source = GRID_PRODUCTS[key][0] if key in GRID_PRODUCTS else "model_changes"
+    if source in tables:  # as drawn
         data = data.loc[
             data.scenario.isin(
                 grid_support(filename, tables, window_id).get("models", {})
@@ -260,6 +261,11 @@ GRID_PRODUCTS = {
     "values-temperature-sd.png": ("seasonal_values", "temp", "value", "sd"),
     "values-precipitation-cv.png": ("seasonal_values", "precip", "value", "cv"),
 }
+#: Monthly-change products: (variable, quantity) of the model changes.
+MONTHLY_PRODUCTS = {
+    "monthly-change-temperature.png": ("temp", "change"),
+    "monthly-change-precipitation.png": ("precip", "change_pct"),
+}
 SUMMARIES = {
     "model_changes": "change_summary",
     "seasonal_values": "seasonal_values_summary",
@@ -283,15 +289,20 @@ def grid_support(filename, tables, window_id="", scenarios=None):
     printing them in the panels. Empty for other products.
     """
     key = figure_key(filename)
-    if key not in GRID_PRODUCTS:
+    if key in GRID_PRODUCTS:
+        name, variable, quantity, statistic = GRID_PRODUCTS[key]
+        periods = SEASONS
+    elif key in MONTHLY_PRODUCTS:
+        variable, quantity = MONTHLY_PRODUCTS[key]
+        name, statistic, periods = "model_changes", "mean", MONTHS
+    else:
         return {}
-    name, variable, quantity, statistic = GRID_PRODUCTS[key]
     data = tables[name]
     data = data.loc[
         (data.variable == variable)
         & (data.quantity == quantity)
         & (data.statistic == statistic)
-        & data.period.isin(SEASONS)
+        & data.period.isin(periods)
     ]
     if window_id and "window_id" in data:
         data = data.loc[data.window_id == window_id]
@@ -514,21 +525,39 @@ def seasonal_figure(climatology, changes, summary, *, variable, scenarios=None):
     return fig
 
 
-def monthly_change_figure(summary, *, variable, scenarios=None, reference=(1985, 2014)):
-    """Monthly model-change ranges and outline boxes, with scenarios in column pairs."""
-    data = summary.loc[
-        (summary.variable == variable)
-        & (summary.statistic == "mean")
-        & (summary.quantity == ("change_pct" if variable == "precip" else "change"))
-        & summary.period.isin(MONTHS)
+def _tint(color, amount):
+    """``color`` mixed towards white by ``amount`` (0 keeps it, 1 is white)."""
+    return tuple(c + (1 - c) * amount for c in to_rgb(color))
+
+
+def monthly_change_figure(models, summary, *, variable, scenarios=None):
+    """Monthly box plots of model changes, one panel per scenario in two columns.
+
+    Tinted IQR boxes with a median bar and light whiskers to the inter-model
+    range, over a continuous historical-variability band. Scenarios with fewer
+    than ``MIN_MODELS_IQR`` models are left out, as on the seasonal grids.
+    """
+    quantity = "change_pct" if variable == "precip" else "change"
+    pick = lambda t: t.loc[  # noqa: E731
+        (t.variable == variable)
+        & (t.statistic == "mean")
+        & (t.quantity == quantity)
+        & t.period.isin(MONTHS)
     ]
-    scen = _scenarios(data, scenarios)
-    ncols = min(2, len(scen))
-    nrows = (len(scen) + ncols - 1) // ncols
+    data = pick(summary)
+    scen, _ = shown_scenarios(pick(models), scenarios)
+    ncols = min(2, max(1, len(scen)))
+    nrows = max(1, (len(scen) + ncols - 1) // ncols)
     fig, axes = new_fig(
-        H_SINGLE * nrows, nrows=nrows, ncols=ncols, width_mm=W_FULL, sharey=True
+        65 * nrows, nrows=nrows, ncols=ncols, width_mm=W_FULL, sharey=True
     )
-    unit = "%" if variable == "precip" else "°C"
+    shown = data.loc[data.scenario.isin(scen)]
+    bounds = np.r_[
+        0,
+        shown[["min", "max"]].to_numpy(float).ravel(),
+        shown.get("noise_halfwidth", pd.Series(dtype=float)).to_numpy(float),
+    ]
+    bounds = bounds[np.isfinite(bounds)]
     for j, s in enumerate(scen):
         ax = axes.flat[j]
         color = _color(s)
@@ -540,11 +569,12 @@ def monthly_change_figure(summary, *, variable, scenarios=None, reference=(1985,
                         (x - 0.5, 0), 1, 1, transform=ax.get_xaxis_transform(), zorder=0
                     )
                 )
+            # Full-width month cells join into one stepped band.
             elif np.isfinite(half := float(row.get("noise_halfwidth", np.nan))):
                 ax.add_patch(
                     Rectangle(
-                        (x - 0.45, -half),
-                        0.9,
+                        (x - 0.5, -half),
+                        1,
                         2 * half,
                         color=NOISE_FILL,
                         lw=0,
@@ -553,30 +583,56 @@ def monthly_change_figure(summary, *, variable, scenarios=None, reference=(1985,
                 )
             if not np.isfinite(row["median"]):
                 continue
-            ax.plot([x] * 2, [row["min"], row["max"]], color=color, lw=LW_RANGE)
-            for endpoint in (row["min"], row["max"]):
-                ax.plot([x - 0.08, x + 0.08], [endpoint] * 2, color=color, lw=LW_RANGE)
+            ax.plot(
+                [x] * 2,
+                [row["min"], row["max"]],
+                color=_tint(color, 0.35),
+                lw=LW_RANGE,
+                solid_capstyle="butt",
+                zorder=2,
+            )
             if row.iqr_shown:
                 ax.add_patch(
                     Rectangle(
-                        (x - 0.275, row.q25),
-                        0.55,
+                        (x - 0.3, row.q25),
+                        0.6,
                         row.q75 - row.q25,
-                        facecolor="white",
+                        facecolor=_tint(color, 0.7),
                         edgecolor=color,
-                        lw=0.8,
+                        lw=0.6,
+                        zorder=3,
                     )
                 )
-            ax.plot([x - 0.275, x + 0.275], [row["median"]] * 2, color=color, lw=1.5)
+            ax.plot(
+                [x - 0.3, x + 0.3],
+                [row["median"]] * 2,
+                color=tuple(0.8 * c for c in to_rgb(color)),
+                lw=1.6,
+                solid_capstyle="butt",
+                zorder=4,
+            )
         ax.set_title(f"{chr(97 + j)}) {_label(s)}", loc="left")
-        ax.set_xticks(range(12), MONTHS, rotation=0)
+        ax.set_xticks(range(12), MONTHS)
         ax.set_xlim(-0.6, 11.6)
-        ax.tick_params(axis="both", length=3)
-        ax.axhline(0, color=MUTED, lw=LW_REF)
+        ax.tick_params(axis="x", length=0, pad=2)
+        ax.axhline(0, color=MUTED, lw=LW_REF, zorder=1)
+        if len(bounds):
+            _round_axis(ax, bounds.min(), bounds.max())
         if j % ncols == 0:
-            ax.set_ylabel(f"Relative to {reference[0]}–{reference[1]} ({unit})")
+            ax.set_ylabel("%" if variable == "precip" else "°C")
         ygrid(ax)
-    for ax in list(axes.flat)[len(scen) :]:
+    if not scen:
+        axes.flat[0].text(
+            0.5,
+            0.5,
+            "No eligible\nmodel estimates",
+            transform=axes.flat[0].transAxes,
+            ha="center",
+            va="center",
+            color=MUTED,
+            fontsize=FS_NOTE,
+        )
+    for ax in list(axes.flat)[max(1, len(scen)) :]:
         ax.set_visible(False)
     return fig
 
@@ -1264,14 +1320,10 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
             )
         if filename.startswith("monthly-change-"):
             return monthly_change_figure(
+                table("model_changes"),
                 table("change_summary"),
                 variable=variable,
                 scenarios=scenarios,
-                reference=next(
-                    w["reference"]
-                    for w in record["windows"]
-                    if w["window_id"] == window_id
-                ),
             )
         if filename == "variability-member-ratios.png":
             return pooled_ratio_figure(

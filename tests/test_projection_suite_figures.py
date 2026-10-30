@@ -343,7 +343,7 @@ def test_precipitation_cycle_percentage_and_two_row_annual_content(suite):
     medians = [
         line.get_ydata()[0]
         for line in monthly.axes[0].lines
-        if len(line.get_xdata()) == 2 and np.isclose(np.ptp(line.get_xdata()), 0.55)
+        if len(line.get_xdata()) == 2 and np.isclose(np.ptp(line.get_xdata()), 0.6)
     ]
     np.testing.assert_allclose(medians, change.loc[list(analysis.MONTHS), "median"])
     plt.close(cycle)

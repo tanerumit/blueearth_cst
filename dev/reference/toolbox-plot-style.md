@@ -326,9 +326,11 @@ computed in the analysis step from each member's detrended reference SD; median 
 per season panel and one per month; none in mostly-dry periods or on the seasonal-values and variability
 grids.
 
-WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
-horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median
-bars. Review climatology and monthly changes as separate groups in the HTML page.
+WF2 monthly-change figures stay box plots: tinted IQR boxes with a colour edge, a darker median bar and
+light uncapped whiskers to the inter-model range, over a stepped variability band (full-width month cells).
+Scenarios wrap in two columns with shared 1-2-5 y-limits, a unit-only axis title and horizontal month
+labels; scenarios under ten models are dropped as on the seasonal grids, and the caption names them and
+gives models per scenario. Review climatology and monthly changes as separate groups in the HTML page.
 
 Keep WF2 scenario summaries subordinate to the data: reviewed annual-overview median lines use 1.0 pt,
 trajectory median lines 1.5 pt. Retain annual values without smoothing and preserve gaps in missing years.

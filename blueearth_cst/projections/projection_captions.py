@@ -148,7 +148,7 @@ def _dry(counts, cells="panels"):
     if not counts.get("mostly_dry"):
         return []
     return [
-        f"Hatched {cells} mark seasons in which at least half of the models fall below the "
+        f"Hatched {cells} {'are months' if cells == 'months' else 'mark seasons'} in which at least half of the models fall below the "
         "dry-precipitation threshold and are excluded; the remaining models are too few to be "
         "representative."
     ]
@@ -242,12 +242,13 @@ def caption(filename, record, window_id="", counts=None):
         unit = "°C" if temperature else "%"
         text = [
             f"Projected change in monthly basin-average {variable} ({unit}) for {_period(window)}, "
-            "by SSP scenario. Horizontal bars mark the multi-model median, boxes the interquartile "
-            "range (shown where at least ten models contribute) and whiskers the full inter-model "
-            "range; each model contributes the mean of its ensemble members. Based on "
-            f"{plural(n_models, 'model')}. {_SPREAD}",
+            "by SSP scenario. Bars mark the multi-model median, boxes the interquartile range (where at "
+            "least ten models contribute) and whiskers the full inter-model range; each model contributes the mean of its ensemble "
+            "members.",
             *_band(counts),
             *_dry(counts, "months"),
+            *_support(counts),
+            _SPREAD,
         ]
     elif filename == "change-temperature.png":
         text = [

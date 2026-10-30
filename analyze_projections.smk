@@ -851,6 +851,7 @@ GATHER_LOGS = RULES.banner_only("2.08", "gather_logs", summary="merge rule logs"
 ANALYSIS_WINDOWS = analysis_windows(future_horizons, water_year_start, time_horizon_hist)
 ANALYSIS_TABLE_NAMES = (
     "coverage", "availability", "changes", "model_changes", "change_summary",
+    "seasonal_totals", "seasonal_totals_summary",
     "sign_agreement", "climatology", "climatology_summary", "monthly_change_summary",
     "member_anomalies", "trajectory_range", "variability_member_ratios",
     "variability_model_ratios", "variability_summary",

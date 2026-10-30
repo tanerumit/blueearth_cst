@@ -89,6 +89,10 @@ def suite():
             trajectories.model_trajectories(anomalies)
         ),
     }
+    tables["seasonal_totals"] = analysis.seasonal_totals(tables["climatology"])
+    tables["seasonal_totals_summary"] = analysis.ensemble_summary(
+        tables["seasonal_totals"]
+    )
     tables["availability"] = analysis.product_availability(
         {
             "coverage": tables["coverage"],
@@ -126,7 +130,7 @@ def suite():
     return tables, record
 
 
-def test_seasonal_strip_explains_unavailable_panels(suite):
+def test_seasonal_grid_explains_unavailable_seasons(suite):
     tables, record = suite
     models = tables["model_changes"].copy()
     models.loc[models.period.isin(["DJF", "MAM", "JJA", "SON"]), "value"] = np.nan
@@ -141,13 +145,25 @@ def test_seasonal_strip_explains_unavailable_panels(suite):
         record,
         window_id="2036-2065",
     )
-    note = "No eligible\nmodel estimates"
-    assert note not in [text.get_text() for text in fig.axes[0].texts]
-    for ax in fig.axes[1:]:
-        texts = [text.get_text() for text in ax.texts]
-        # The note, plus a zero model count under each scenario.
-        assert texts[0] == note and set(texts[1:]) == {"0"}
+    assert len(fig.axes) == 4  # one panel per season, no annual panel
+    for ax in fig.axes:
+        assert [text.get_text() for text in ax.texts] == [
+            "No eligible\nmodel estimates"
+        ]
     plt.close(fig)
+
+
+def test_seasonal_grid_drops_sparse_scenarios_beside_full_ones():
+    from blueearth_cst.projections.projection_suite_figures import shown_scenarios
+
+    rows = [
+        dict(model=f"M/{i}", scenario=s, value=1.0)
+        for s, n in (("ssp245", 12), ("ssp460", 4))
+        for i in range(n)
+    ]
+    assert shown_scenarios(pd.DataFrame(rows)) == (["ssp245"], {"ssp460": 4})
+    small = pd.DataFrame([r for r in rows if r["model"] in ("M/0", "M/1")])
+    assert shown_scenarios(small) == (["ssp245", "ssp460"], {})
 
 
 def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
@@ -188,11 +204,11 @@ def test_manifest_bijection_unavailable_and_annotation_mode(
     )
     plots = tmp_path / "plots"
     manifest, skipped = render_suite(tables, record, plots, annotation=annotation)
-    assert len(manifest) == 1 and len(skipped) == 17
+    assert len(manifest) == 1 and len(skipped) == 18
     console = capsys.readouterr().out
     assert "projection_plots - Rendering windows:" in console
     assert "; reference: " in console
-    assert "Wrote 1 figure; 17 skipped; reasons → figure_captions.md" in console
+    assert "Wrote 1 figure; 18 skipped; reasons → figure_captions.md" in console
     assert set(manifest) == {
         "period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     }
@@ -240,7 +256,7 @@ def test_captions_and_distinct_folder_contract(suite):
         "period_2071_2100",
         "period_2081_2100",
     ]
-    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 18
+    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 19
 
 
 def test_unplotted_statistics_do_not_enable_mean_figures(suite):

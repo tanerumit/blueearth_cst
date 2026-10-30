@@ -23,7 +23,12 @@ def rerender_projections(
 ) -> dict[str, Path]:
     """Write each ensemble's suite into ``out_dir/projections/<ensemble>/plots``."""
     from blueearth_cst.projections.plot_proj_timeseries import render_suite
-    from blueearth_cst.projections.projection_analysis import with_variability_band
+    from blueearth_cst.projections.projection_analysis import (
+        ensemble_summary,
+        product_availability,
+        seasonal_totals,
+        with_variability_band,
+    )
     from blueearth_cst.projections.projection_figures import FIGURE_KEYS
 
     records = sorted(
@@ -38,18 +43,34 @@ def rerender_projections(
             path.stem: pd.read_csv(path)
             for path in (ensemble_dir / "analysis").glob("*.csv")
         }
+        # A run made before the product list changed has a stale availability
+        # table; rebuild it from the retained tables with the analysis step's
+        # own function.
         availability = tables["availability"]
+        if set(availability.filename) != set(FIGURE_KEYS):
+            availability = product_availability(
+                {
+                    "coverage": tables["coverage"],
+                    "trajectories": tables["member_anomalies"],
+                    "models": tables["model_changes"],
+                    "climatology": tables["climatology"],
+                    "member_ratios": tables["variability_member_ratios"],
+                    "model_ratios": tables["variability_model_ratios"],
+                },
+                sorted(availability.window_id.dropna().unique()),
+            )
         availability["window_id"] = availability.window_id.fillna("")
-        # A run made before a product was retired still lists it; render the
-        # current contract rather than failing on the extra row.
-        tables["availability"] = availability.loc[
-            availability.filename.isin(FIGURE_KEYS)
-        ]
+        tables["availability"] = availability
         # Runs from before the variability band get it from their own
         # per-member changes, by the analysis step's function.
         for name in ("change_summary", "monthly_change_summary"):
             if "noise_halfwidth" not in tables[name]:
                 tables[name] = with_variability_band(tables[name], tables["changes"])
+        if "seasonal_totals" not in tables:
+            tables["seasonal_totals"] = seasonal_totals(tables["climatology"])
+            tables["seasonal_totals_summary"] = ensemble_summary(
+                tables["seasonal_totals"]
+            )
         plot_dir = Path(out_dir) / "projections" / ensemble_dir.name / "plots"
         render_suite(
             tables,

@@ -16,8 +16,9 @@ TITLES = {
     "trajectory-precipitation.png": "Annual precipitation anomalies",
     "annual-temperature.png": "Annual temperature projections",
     "annual-precipitation.png": "Annual precipitation projections",
-    "change-temperature.png": "Annual and seasonal temperature changes",
-    "change-precipitation-pct.png": "Annual and seasonal precipitation changes (%)",
+    "change-temperature.png": "Seasonal temperature changes",
+    "change-precipitation-pct.png": "Seasonal precipitation changes (%)",
+    "totals-precipitation.png": "Seasonal precipitation totals",
     "seasonal-cycle-temperature.png": "Monthly temperature climatology",
     "seasonal-cycle-precipitation.png": "Monthly precipitation climatology",
     "monthly-change-temperature.png": "Monthly temperature changes",
@@ -46,7 +47,14 @@ _BOXES = (
     "and capped lines the full range"
 )
 
-#: The point-and-band encoding of the annual/seasonal change and ratio strips.
+#: The point-and-band encoding of the seasonal grids.
+_GRID = "points are individual models, thick ticks the median and shaded bands the interquartile range"
+_AMOUNTS = (
+    "Panel titles give the reference amount: the ensemble-median monthly climatology summed over "
+    "the season."
+)
+
+#: The point-and-band encoding of the annual/seasonal ratio strips.
 _STRIP = (
     "points are individual models, thick ticks the median and shaded bands the interquartile "
     "range (where at least 10 models contribute); numbers give the models per scenario"
@@ -83,6 +91,27 @@ def _window_notes(window):
             notes.append(
                 f"Historical and scenario series are joined to complete the window{label}."
             )
+    return notes
+
+
+def _support(counts):
+    """Models per group (a range where seasons differ) and dropped scenarios."""
+    from blueearth_cst.projections.projection_suite_figures import _label
+
+    models = counts.get("models", {})
+    notes = []
+    if models:
+        parts = [
+            f"{'Historical' if s == 'historical' else _label(s)} "
+            + (f"{lo}" if lo == hi else f"{lo}–{hi}")
+            for s, (lo, hi) in models.items()
+        ]
+        notes.append("Models per group: " + ", ".join(parts) + ".")
+    if dropped := counts.get("dropped"):
+        names = ", ".join(
+            f"{_label(s)} ({plural(n, 'model')})" for s, n in dropped.items()
+        )
+        notes.append(f"Not shown, with fewer than 10 models: {names}.")
     return notes
 
 
@@ -163,17 +192,20 @@ def caption(filename, record, window_id="", counts=None):
     elif filename.startswith("monthly-change-"):
         unit = "°C" if temperature else "%"
         lead = f"Monthly {variable} change ({unit}), {_period(window)}, across {models} by scenario: {_BOXES}"
+    elif filename == "totals-precipitation.png":
+        lead = (
+            "Mean seasonal precipitation total (mm) per CMIP6 model, Historical "
+            f"{window['reference'][0]}–{window['reference'][1]} and each scenario "
+            f"{window['used'][0]}–{window['used'][1]}: {_GRID}"
+        )
+        notes += _support(counts)
+        notes.append(_AMOUNTS)
     elif filename.startswith("change-"):
         unit = "°C" if temperature else "%"
-        lead = (
-            f"Annual and seasonal {variable} change ({unit}), {_period(window)}, across {models}: "
-            f"{_STRIP}"
-        )
+        lead = f"Seasonal {variable} change ({unit}), {_period(window)}, per CMIP6 model: {_GRID}"
+        notes += _support(counts)
         if not temperature:
-            notes.append(
-                "Panel titles give the reference amount: the ensemble-median monthly climatology "
-                "summed over the period."
-            )
+            notes.append(_AMOUNTS)
     elif filename.startswith("variability-ratio-"):
         statistic = "CV" if filename.endswith("-cv.png") else "SD"
         lead = (

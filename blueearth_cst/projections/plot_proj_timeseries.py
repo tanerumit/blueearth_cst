@@ -25,6 +25,7 @@ from blueearth_cst.projections.projection_figures import (
 )
 from blueearth_cst.projections.projection_suite_figures import (
     dry_shading,
+    grid_support,
     render_product,
 )
 from blueearth_cst.shared.plot_preset import CST_PRESET
@@ -211,6 +212,7 @@ def render_suite(
         window_id = row.get("window_id") or ""
         counts = figure_counts(row["filename"], tables, window_id)
         counts["mostly_dry"] = dry_shading(row["filename"], tables, record, window_id)
+        counts.update(grid_support(row["filename"], tables, window_id, scenarios))
         counts["variability_band"] = bool(
             figure_key(row["filename"]).startswith(("change-", "monthly-change-"))
             and "cloud" not in row["filename"]

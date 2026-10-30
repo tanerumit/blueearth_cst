@@ -760,6 +760,65 @@ def with_variability_band(summary, changes):
     )
 
 
+#: Calendar months of each season, and mean days per month (February
+#: averaged over leap years), for turning monthly mean rates into totals.
+SEASON_MONTHS = {
+    "DJF": ("Dec", "Jan", "Feb"),
+    "MAM": ("Mar", "Apr", "May"),
+    "JJA": ("Jun", "Jul", "Aug"),
+    "SON": ("Sep", "Oct", "Nov"),
+}
+MONTH_DAYS = dict(zip(MONTHS, (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)))
+
+
+def seasonal_totals(climatology):
+    """Each model's mean seasonal precipitation total (mm) per window.
+
+    Sums the model's monthly reference and future mean rates times the days
+    in each month. Scenario rows carry the future window; one ``historical``
+    row per model and window carries the reference, averaged over the
+    model's scenarios (they share its historical run).
+    """
+    columns = [*MODEL_KEY, *CELL, "value", "n_members"]
+    data = climatology.loc[
+        (climatology.variable == "precip") & climatology.period.isin(MONTHS)
+    ]
+    if data.empty:
+        return pd.DataFrame(columns=columns)
+    data = data.assign(
+        days=data.period.map(MONTH_DAYS),
+        season=data.period.map(
+            {m: s for s, months in SEASON_MONTHS.items() for m in months}
+        ),
+    )
+    keys = [*MODEL_KEY, "scenario", *WINDOW_KEY, "season"]
+    full = data.groupby(keys, dropna=False).filter(lambda g: len(g) == 3)
+    per = (
+        full.assign(
+            reference=full.reference * full.days, future=full.future * full.days
+        )
+        .groupby(keys, dropna=False)
+        .agg(
+            reference=("reference", "sum"),
+            future=("future", "sum"),
+            n_members=("n_members", "min"),
+        )
+        .reset_index()
+        .rename(columns={"season": "period"})
+    )
+    historical = (
+        per.groupby([*MODEL_KEY, *WINDOW_KEY, "period"], dropna=False)
+        .agg(value=("reference", "mean"), n_members=("n_members", "max"))
+        .reset_index()
+        .assign(scenario="historical")
+    )
+    rows = pd.concat(
+        [per.rename(columns={"future": "value"}).drop(columns="reference"), historical],
+        ignore_index=True,
+    ).assign(variable="precip", statistic="total", quantity="value", units="mm")
+    return rows.reindex(columns=columns)
+
+
 def member_ratios(table):
     """Retain all variability rows, including zero future and excluded ratios."""
     sub = table.loc[
@@ -1243,6 +1302,14 @@ def product_availability(tables, windows=None):
                 complete,
                 "no model with twelve reference and future months",
             )
+            if variable == "precip":
+                add(
+                    "totals-precipitation.png",
+                    period_folder(window_id),
+                    window_id,
+                    complete,
+                    "no model with twelve reference and future months",
+                )
             monthly = mean.loc[
                 (mean.variable == variable)
                 & (

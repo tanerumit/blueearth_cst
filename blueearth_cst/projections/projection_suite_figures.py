@@ -12,6 +12,7 @@ from matplotlib.colors import to_rgb
 from matplotlib.legend_handler import HandlerTuple
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
+from matplotlib.ticker import MaxNLocator, MultipleLocator
 
 from blueearth_cst.plotting.fundamentals import (
     inside_legend,
@@ -20,6 +21,11 @@ from blueearth_cst.plotting.fundamentals import (
     ygrid,
 )
 from blueearth_cst.plotting.preset import use_preset
+from blueearth_cst.projections.projection_analysis import (
+    MIN_MODELS_IQR,
+    MONTH_DAYS,
+    SEASON_MONTHS,
+)
 from blueearth_cst.projections.projection_figures import SCENARIO_COLORS, figure_key
 from blueearth_cst.shared.plot_preset import (
     CST_PRESET,
@@ -117,6 +123,9 @@ def _ratio_limits(axes, values):
 #: year-to-year variability gives on its own (``noise_halfwidth``).
 NOISE_FILL = "#dfe4e7"
 
+#: The Historical group of the seasonal-totals grid.
+HISTORICAL_COLOR = "#5b6770"
+
 
 def _dry_cell(xy, width, height, **kw):
     """A hatched mostly-dry area: excluded sign cells, dry panels and months.
@@ -174,7 +183,7 @@ def dry_shading(filename, tables, record, window_id=""):
         data = tables.get("change_summary", pd.DataFrame())
         statistic = "mean"
         monthly = key.startswith("monthly-")
-        periods = MONTHS if monthly else STRIP_PERIODS
+        periods = MONTHS if monthly else SEASONS
         by = ["period", "scenario"] if monthly else ["period"]
     else:
         return False
@@ -191,16 +200,7 @@ def dry_shading(filename, tables, record, window_id=""):
     return any(_mostly_dry(rows) for _, rows in data.groupby(by))
 
 
-#: Mean days per calendar month, for turning daily-rate climatologies into
-#: period amounts (February averaged over leap years).
-MONTH_DAYS = dict(zip(MONTHS, (31, 28.25, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)))
-SEASON_MONTHS = {
-    "annual": MONTHS,
-    "DJF": ("Dec", "Jan", "Feb"),
-    "MAM": ("Mar", "Apr", "May"),
-    "JJA": ("Jun", "Jul", "Aug"),
-    "SON": ("Sep", "Oct", "Nov"),
-}
+SEASONS = tuple(SEASON_MONTHS)
 
 
 def reference_amounts(climatology, scenarios=None):
@@ -223,8 +223,216 @@ def reference_amounts(climatology, scenarios=None):
     )
     return {
         period: sum(rates[m] * MONTH_DAYS[m] for m in months)
-        for period, months in SEASON_MONTHS.items()
+        for period, months in {"annual": MONTHS, **SEASON_MONTHS}.items()
     }
+
+
+def shown_scenarios(table, scenarios=None):
+    """Scenarios with at least ``MIN_MODELS_IQR`` models with a value, if any.
+
+    A handful of points reads as a distribution it is not, so sparser
+    scenarios are left out of the seasonal grids; captions name them.
+    Returns (shown, dropped) with dropped as {scenario: model count}.
+    """
+    support = (
+        table.loc[np.isfinite(table.value.astype(float))]
+        .groupby("scenario")
+        .model.nunique()
+    )
+    order = [s for s in _scenarios(table, scenarios) if s != "historical"]
+    shown = [s for s in order if support.get(s, 0) >= MIN_MODELS_IQR]
+    # A small ensemble where no scenario reaches the minimum keeps them all:
+    # the rule removes a sparse scenario beside fuller ones, not the figure.
+    if not shown:
+        shown = [s for s in order if support.get(s, 0)]
+    return shown, {s: int(support.get(s, 0)) for s in order if s not in shown}
+
+
+def grid_support(filename, tables, window_id="", scenarios=None):
+    """Models per shown group (min and max over seasons) and dropped scenarios.
+
+    For the seasonal-grid captions, which report model counts instead of
+    printing them in the panels. Empty for other products.
+    """
+    key = figure_key(filename)
+    if key == "totals-precipitation.png":
+        data, quantity, statistic = tables["seasonal_totals"], "value", "total"
+    elif key.startswith("change-") and "cloud" not in key:
+        data, statistic = tables["model_changes"], "mean"
+        quantity = "change_pct" if key.endswith("-pct.png") else "change"
+    else:
+        return {}
+    variable = "temp" if "temperature" in key else "precip"
+    data = data.loc[
+        (data.variable == variable)
+        & (data.quantity == quantity)
+        & (data.statistic == statistic)
+        & data.period.isin(SEASONS)
+    ]
+    if window_id and "window_id" in data:
+        data = data.loc[data.window_id == window_id]
+    shown, dropped = shown_scenarios(data, scenarios)
+    finite = data.loc[np.isfinite(data.value.astype(float))]
+    counts = finite.groupby(["scenario", "period"]).model.nunique()
+    groups = (["historical"] if quantity == "value" else []) + shown
+    return {
+        "models": {
+            s: [int(counts[s].min()), int(counts[s].max())]  # JSON-stable
+            for s in groups
+            if s in counts.index.get_level_values(0)
+        },
+        "dropped": dropped,
+    }
+
+
+def _round_axis(ax, low, high, floor=None):
+    """Y limits and ticks on 1-2-5 steps, at most 8 labels, with a margin.
+
+    A limit moves one step further out when the data sit within 3% of the
+    range from it, so points stay clear of the frame; ``floor`` pins the lower
+    end (0 for amounts) with a sliver below it.
+    """
+    ticks = MaxNLocator(nbins=7, steps=[1, 2, 5, 10]).tick_values(low, high)
+    step = ticks[1] - ticks[0]
+    top, bottom = ticks[ticks >= high].min(), ticks[ticks <= low].max()
+    if top - high < 0.03 * (top - bottom):
+        top += step
+    if floor is not None:
+        bottom = floor - 0.03 * (top - floor)
+    elif low - bottom < 0.03 * (top - bottom):
+        bottom -= step
+    ax.yaxis.set_major_locator(MultipleLocator(step))
+    ax.set_ylim(bottom, top)
+
+
+def _group(ax, x, values, color, row, seed):
+    """Model points, the prepared median tick and IQR band of one group."""
+    values = np.sort(values[np.isfinite(values)])
+    rng = np.random.default_rng(zlib.crc32(seed.encode()))
+    if row is not None and row.iqr_shown:
+        ax.add_patch(
+            Rectangle(
+                (x - 0.3, row.q25),
+                0.6,
+                row.q75 - row.q25,
+                facecolor=color,
+                alpha=0.22,
+                lw=0,
+                zorder=2,
+            )
+        )
+    ax.scatter(
+        x + rng.uniform(-0.16, 0.16, len(values)),
+        values,
+        color=tuple(0.8 * c for c in to_rgb(color)),
+        edgecolors="white",
+        linewidths=0.3,
+        s=10,
+        alpha=0.7,
+        zorder=4,
+    )
+    if row is not None and np.isfinite(row["median"]):
+        ax.plot(
+            [x - 0.3, x + 0.3],
+            [row["median"]] * 2,
+            color=color,
+            lw=1.8,
+            solid_capstyle="butt",
+            zorder=5,
+        )
+
+
+def season_grid(models, summary, *, variable, quantity, scenarios=None, amounts=None):
+    """Seasonal 2x2 grid of model points, median and IQR per scenario.
+
+    ``quantity`` "change"/"change_pct" share one y-axis across seasons, with
+    the historical-variability band and, for precipitation %, mostly-dry
+    seasons hatched. ``"value"`` (seasonal totals) adds a Historical group
+    and gives each season its own axis, so dry seasons are not squeezed.
+    The y-axis shows the unit only; periods go in the title and caption.
+    """
+    pick = lambda t: t.loc[  # noqa: E731
+        (t.variable == variable)
+        & (t.quantity == quantity)
+        & t.period.isin(SEASONS)
+        & (t.statistic == ("total" if quantity == "value" else "mean"))
+    ]
+    models, sums = pick(models), pick(summary)
+    scen, _ = shown_scenarios(models, scenarios)
+    totals = quantity == "value"
+    groups = (["historical"] if totals else []) + scen
+    unit = "°C" if variable == "temp" else "mm (season total)" if totals else "%"
+    fig, grid = new_fig(2 * 65, nrows=2, ncols=2, width_mm=W_FULL, sharey=not totals)
+    values = models.loc[models.scenario.isin(groups), "value"].to_numpy(float)
+    values = np.r_[0, values[np.isfinite(values)]]
+    for i, (ax, season) in enumerate(zip(grid.flat, SEASONS, strict=True)):
+        panel = sums.loc[sums.period == season]
+        title = f"{chr(97 + i)}) {season}"
+        if amounts and np.isfinite(amounts.get(season, np.nan)):
+            title += f" · ref. ≈{amounts[season]:.0f} mm"
+        dry = (
+            quantity == "change_pct"
+            and variable == "precip"
+            and _mostly_dry(panel.loc[panel.scenario.isin(scen)])
+        )
+        if dry:
+            ax.add_patch(_dry_cell((0, 0), 1, 1, transform=ax.transAxes, zorder=0))
+            title += " · dry"
+        ax.set_title(title, loc="left")
+        if not scen:
+            ax.text(
+                0.5,
+                0.5,
+                "No eligible\nmodel estimates",
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+                color=MUTED,
+                fontsize=FS_NOTE,
+            )
+            ax.set_xticks([])
+            if i % 2 == 0:
+                ax.set_ylabel(unit)
+            continue
+        if totals:
+            local = models.loc[
+                (models.period == season) & models.scenario.isin(groups), "value"
+            ].to_numpy(float)
+            _round_axis(ax, 0, np.nanmax(local) if len(local) else 1, floor=0)
+        else:
+            _round_axis(ax, values.min(), values.max())
+            if not dry and "noise_halfwidth" in panel:
+                half = panel.noise_halfwidth.astype(float).median()
+                if np.isfinite(half):
+                    ax.axhspan(-half, half, color=NOISE_FILL, lw=0, zorder=0.5)
+        ygrid(ax)
+        ax.axhline(0, color=MUTED, lw=LW_REF)
+        # The Historical group sits left of a divider, set back from the
+        # scenarios so its label does not crowd theirs.
+        first = int(totals)
+        xs = ([-0.35] if totals else []) + [first + j for j in range(len(scen))]
+        for x, s in zip(xs, groups, strict=True):
+            rows = panel.loc[panel.scenario == s]
+            _group(
+                ax,
+                x,
+                models.loc[
+                    (models.period == season) & (models.scenario == s), "value"
+                ].to_numpy(float),
+                HISTORICAL_COLOR if s == "historical" else _color(s),
+                rows.iloc[0] if len(rows) else None,
+                f"{season}:{s}",
+            )
+        if totals:
+            ax.axvline(0.4, color=MUTED, lw=0.5, ls=":")
+        ax.set_xticks(
+            xs, ["Historical" if s == "historical" else _label(s) for s in groups]
+        )
+        ax.tick_params(axis="x", length=0, pad=2)
+        ax.set_xlim(xs[0] - 0.65, xs[-1] + 0.6)
+        if i % 2 == 0:
+            ax.set_ylabel(unit)
+    return fig
 
 
 def dot_strip(
@@ -238,7 +446,6 @@ def dot_strip(
     reference=(1985, 2014),
     baseline=0.0,
     ylabel=None,
-    amounts=None,
 ):
     """Model points, median tick and IQR band per scenario; annual and seasons.
 
@@ -270,8 +477,6 @@ def dot_strip(
     pad = 0.06 * (high - low or 1)
     for i, (ax, period) in enumerate(zip(axes, STRIP_PERIODS, strict=True)):
         title = f"{chr(97 + i)}) {'Annual' if period == 'annual' else period}"
-        if amounts and np.isfinite(amounts.get(period, np.nan)):
-            title += f" · ref. ≈{amounts[period]:.0f} mm"
         panel_sums = sums.loc[sums.period == period]
         dry = variable == "precip" and _mostly_dry(panel_sums)
         if dry:
@@ -1268,23 +1473,27 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 combined="combined" in filename,
                 scenarios=scenarios,
             )
+        amounts = (
+            reference_amounts(table("climatology_summary"), scenarios)
+            if variable == "precip"
+            else None
+        )
+        if filename == "totals-precipitation.png":
+            return season_grid(
+                table("seasonal_totals"),
+                table("seasonal_totals_summary"),
+                variable="precip",
+                quantity="value",
+                scenarios=scenarios,
+                amounts=amounts,
+            )
         if filename.startswith("change-"):
-            return dot_strip(
+            return season_grid(
                 table("model_changes"),
                 table("change_summary"),
                 variable=variable,
                 quantity="change_pct" if filename.endswith("-pct.png") else "change",
                 scenarios=scenarios,
-                amounts=reference_amounts(table("climatology_summary"), scenarios)
-                if variable == "precip"
-                else None,
-                reference=next(
-                    (
-                        w["reference"]
-                        for w in record["windows"]
-                        if w["window_id"] == window_id
-                    ),
-                    record["reference"],
-                ),
+                amounts=amounts,
             )
     raise ValueError(f"unknown suite product: {filename}")

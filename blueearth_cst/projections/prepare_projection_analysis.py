@@ -229,6 +229,8 @@ def prepare_tables(
         "sign_agreement": analysis.sign_agreement(models),
         "climatology": climate,
         "climatology_summary": analysis.climatology_summary(climate),
+        "seasonal_totals": (totals := analysis.seasonal_totals(climate)),
+        "seasonal_totals_summary": analysis.ensemble_summary(totals),
         "monthly_change_summary": analysis.with_variability_band(
             analysis.monthly_change(changes)[1], changes
         ),
@@ -335,6 +337,7 @@ def skipped_product_messages(availability):
             "annual-precipitation.png": "Annual precipitation overview",
             "change-temperature.png": "Temperature changes",
             "change-precipitation-pct.png": "Percentage precipitation changes",
+            "totals-precipitation.png": "Seasonal precipitation totals",
             "seasonal-cycle-temperature.png": "Temperature seasonal cycle",
             "seasonal-cycle-precipitation.png": "Precipitation seasonal cycle",
             "monthly-change-temperature.png": "Monthly temperature changes",

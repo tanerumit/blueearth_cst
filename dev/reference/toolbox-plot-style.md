@@ -285,7 +285,7 @@ support counts, completeness thresholds and exclusion lists in the machine-reada
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |
 | WF2 trajectories | Model median and range; distinct historical trace; stacked inside scenario legend. |
 | WF2 handover line | Dashed line at the CMIP6 historical–scenario handover (2014.5), never the current year. |
-| WF2 change strips | Model points, median tick, IQR band; scenarios labelled on the x-axis; no legend. |
+| WF2 seasonal grids | 2 × 2 seasons; model points, median tick, IQR band; unit-only y-axis; no legend. |
 | WF2 seasonal cycle | Median lines; shade historical range only; one-row legend above the axes. |
 | WF2 dry periods | Precipitation %/ratio panels or months keeping at most half the models: hatched. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
@@ -305,18 +305,22 @@ Trend-sensitivity panels use sparse, calendar-aligned integer year labels with m
 eligible starting years. Share the start-year extent across panels and name the fixed end year in the
 x-axis title; retain every slope estimate and interval regardless of label density.
 
-WF2 annual/seasonal strips (change and variability ratio) show each model as a point, the median as a
-thick tick and the prepared IQR as a pale band where at least 10 models contribute. They draw no whiskers,
-so a single outlying model does not read as typical spread. Scenarios are labelled on the x-axis in two
-lines (SSP1 over 2.6) and each group's model count sits at the bottom of the panel. The precipitation
-strip shows percentage change only, with each panel title giving the reference amount (the ensemble-median
-monthly climatology summed over the period, e.g. "b) DJF · ref. ≈48 mm"); the separate absolute-change
-figure is retired.
+WF2 seasonal grids (temperature change, precipitation % change, precipitation seasonal totals) are 2 × 2
+panels for DJF, MAM, JJA and SON, without an annual panel; the change cloud and sign agreement keep the
+annual view. Each model is a point, the median a thick tick and the prepared IQR a pale band where at least
+10 models contribute; no whiskers, so one outlying model does not read as typical spread. Scenarios carry
+single-line x-axis labels; scenarios with fewer than 10 models are left out when another reaches 10, and the
+caption names them. The y-axis title is the unit only; model counts and periods go in the caption. Axes end
+on round 1-2-5 ticks (at most 8 labels) one step past the data. Change grids share one y-axis across
+seasons; the seasonal-totals grid (mm, season total) gives each season its own axis and adds a gray
+Historical group (each model's reference-period total) left of a divider. Precipitation panel titles give
+the reference amount (ensemble-median monthly climatology summed over the season, "b) MAM · ref. ≈16 mm").
+The variability-ratio strips keep the annual-plus-seasons row with two-line labels and per-group counts.
 
 WF2 change strips and monthly-change figures draw a flat gray band around zero: the 90% range of mean
 change that year-to-year variability alone gives in the models' historical runs (`noise_halfwidth`,
 computed in the analysis step from each member's detrended reference SD; median across models). One band
-per strip panel and one per month; none in mostly-dry periods or on the variability-ratio strips, where
+per season panel and one per month; none in mostly-dry periods or on the variability-ratio strips, where
 sampling benchmarks stay undisplayed.
 
 WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,

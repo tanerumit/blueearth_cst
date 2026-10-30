@@ -1,5 +1,6 @@
 """Test some snake command line interface (CLI) for validity of snakefiles."""
 
+import json
 import os
 import subprocess
 import sys
@@ -482,6 +483,42 @@ def test_wf2_dag_accepts_shared_newest_store_pins(config_with_staged_region, tmp
     counts = _job_counts(result)
     assert counts["fetch_cmip6_projections"] == 4
     assert counts["reduce_to_basin_averages"] == 4
+
+
+@pytest.mark.workflow_contract
+@pytest.mark.parametrize("only_ciesm", [False, True])
+def test_wf2_dag_excludes_ciesm_before_acquisition(
+    config_with_staged_region, tmp_path, only_ciesm
+):
+    cfg = load_composed_config(config_with_staged_region)
+    wf2 = cfg["workflows"]["analyze_projections"]
+    wf2["models"] = ["THU/CIESM"] + ([] if only_ciesm else ["NOAA-GFDL/GFDL-ESM4"])
+    wf2["scenarios"] = ["ssp245"]
+    wf2["members"] = {
+        "preference": ["r1i1p1f1"],
+        "overrides": {"THU/CIESM": ["r1i1p1f1"]},
+    }
+    config_path = write_config(tmp_path / "ciesm_exclusion", cfg)
+    result = _dry_run("analyze_projections.smk", cfg=config_path)
+    if only_ciesm:
+        assert result.returncode != 0
+        assert "source_quality_excluded" in result.stdout + result.stderr
+        assert "all variables" in result.stdout + result.stderr
+    else:
+        assert result.returncode == 0, result.stdout + result.stderr
+        counts = _job_counts(result)
+        # One valid model, its historical series and one SSP; no CIESM fetch/reduce.
+        assert counts["fetch_cmip6_projections"] == 2
+        assert counts["reduce_to_basin_averages"] == 2
+        stamp = json.loads(
+            (
+                Path(cfg["project"]["project_dir"])
+                / "data/climate/projections/cmip6/_engine/stage_b_settings.json"
+            ).read_text(encoding="utf-8")
+        )
+        assert len(stamp["source_quality_exclusions"]) == 1
+        assert stamp["source_quality_exclusions"][0]["dataset"] == "THU/CIESM"
+        assert all("CIESM" not in key for key in stamp["points"])
 
 
 def test_analyze_projections_owns_its_region():

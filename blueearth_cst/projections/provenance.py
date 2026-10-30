@@ -130,6 +130,14 @@ def build(
         "catalog_crawled_on": catalog_crawled_on,
         # --- what the run actually resolved to
         "sources": sources,
+        "source_quality_exclusions": [
+            {
+                key: row.get(key, "")
+                for key in ("dataset", "scenario", "member", "reason")
+            }
+            for row in composition_rows
+            if row.get("status") == "source_quality_excluded"
+        ],
         "unavailable_windows": [dict(row) for row in (unavailable_windows or [])],
         "composition": {
             "requested": len(composition_rows),

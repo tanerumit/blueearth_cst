@@ -153,6 +153,16 @@ def build(provenance, *, thresholds=None, max_flagged_months=None) -> str:
     ]
     lines += disclaimer_block(provenance, thresholds, max_flagged_months)
 
+    exclusions = provenance.get("source_quality_exclusions", [])
+    if exclusions:
+        lines += ["## Source-quality exclusions", ""]
+        for row in exclusions:
+            lines.append(
+                f"- **{row['dataset']} / {row['scenario']} / {row['member']}** — "
+                f"{row['reason']}."
+            )
+        lines.append("")
+
     unavailable = provenance.get("unavailable_windows", [])
     if unavailable:
         lines += ["## Unavailable windows", ""]

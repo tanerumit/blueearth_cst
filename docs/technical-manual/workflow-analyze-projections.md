@@ -68,6 +68,16 @@ Inputs are the basin polygon, cataloged CMIP6 data, and the selected model/scena
 combinations. The reference and future windows define the compared periods. WF2 does not read a scenario
 collection or model responses.
 
+WF2 excludes CMIP6 `THU/CIESM` completely, across all variables, experiments and members, because its
+published precipitation has an invalid scale. Excluding the whole model keeps the ensemble consistent
+across variables; it does not establish a defect in temperature. Requested CIESM combinations remain in
+coverage and composition records as `source_quality_excluded`, with the reason and counts, but create no
+acquisition jobs and contribute to no analysis or change-factor products. Member overrides cannot restore
+the model. Existing source caches are preserved; rerunning WF2 rebuilds affected derived products using
+the reduced ensemble. No speculative rescaling is applied. See
+[Monerie (2026), section 4](https://doi.org/10.1088/2515-7620/ae661c) for independent evidence of the
+precipitation problem. A request containing only excluded models fails with no resolved combinations.
+
 The GCM `reference_window` is independent of the ERA5 or other observed `climate.window`; the periods
 need not match and WF2 does not compare them. Calendar years are inclusive: 1985–2004 is 20 years.
 If a reference or horizon has no overlap or no complete water year, WF2 warns and continues with usable

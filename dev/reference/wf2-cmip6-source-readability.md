@@ -1,10 +1,15 @@
 # CMIP6 source readability
 
-Last updated: 2026-10-22
+Last updated: 2026-10-30
 
 Use this reference when changing WF2 fetches or diagnosing rejected source combinations.
 The generated `config/catalogs/cmip6_store_index.json` is the current source inventory.
 Historical crawl counts and staging outcomes are retained separately under R08.
+
+For source-quality policy, see the
+[WF2 technical manual](../../docs/technical-manual/workflow-analyze-projections.md).
+[CIESM source measurements and exclusion checks](../records/validation/ciesm-source-quality-2026-10-30.md)
+retain the evidence for rejecting that model before acquisition.
 
 ## 1. Grid geometry
 

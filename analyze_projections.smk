@@ -1086,6 +1086,11 @@ _stage_b_settings = json.dumps(
         "max_flagged_months": MAX_FLAGGED_MONTHS,
         "variable_spec": {k: list(v) for k, v in VARIABLE_SPEC.items()},
         "points": sorted(POINT_KEYS),
+        # Policy reporting must refresh even when an excluded source was already
+        # unresolved, and when this checkout has no prior Snakemake metadata.
+        "source_quality_exclusions": [
+            c._asdict() for c in COMBINATIONS if c.status == _res.SOURCE_QUALITY_EXCLUDED
+        ],
     },
     sort_keys=True,
     indent=1,

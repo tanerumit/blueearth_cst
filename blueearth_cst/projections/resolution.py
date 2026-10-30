@@ -17,6 +17,9 @@ hand-curated one, not merely cheaper: its header states that a source name
 resolving means the store is really there, because membership is a live-crawl
 fact rather than a curated claim.
 
+Source-quality exclusions take precedence over publication checks and apply to
+all variables. Their requested combinations remain in the auditable skip set.
+
 **Absence and failure are different classes** (design §4 criterion 7). Almost
 everything here is a *normal skip* recorded in the composition record — under
 ruling R3′ a model that publishes no ssp370, or one member where another
@@ -48,6 +51,18 @@ REFERENCE_MEMBER_UNPUBLISHED = "reference_member_unpublished"
 #: Recorded rather than dropped: :func:`resolve` emits one row per REQUESTED
 #: triple, and the skips are what make the composition record auditable.
 MEMBER_SUPERSEDED = "member_superseded"
+SOURCE_QUALITY_EXCLUDED = "source_quality_excluded"
+
+# Source-quality policy, independent of catalog availability or requested variables.
+# CIESM's published precipitation is anomalously small before WF2 conversion;
+# exclude the whole model to keep one consistent ensemble across variables.
+# Evidence: Monerie (2026), section 4, doi:10.1088/2515-7620/ae661c.
+SOURCE_QUALITY_EXCLUSIONS = {
+    ("cmip6", "THU/CIESM"): (
+        "published precipitation scale is invalid; all variables excluded "
+        "for ensemble consistency (doi:10.1088/2515-7620/ae661c)"
+    ),
+}
 
 #: Member-selection policies (board item t2608192107).
 #:
@@ -119,6 +134,13 @@ def _model_statuses(catalog, clim_project, model, scenarios, preference):
     model before it can emit any of its rows: which member wins is a property of
     the model across ALL requested scenarios, not of one scenario.
     """
+    exclusion = SOURCE_QUALITY_EXCLUSIONS.get((clim_project, model))
+    if exclusion:
+        return {
+            (scenario, member): (SOURCE_QUALITY_EXCLUDED, exclusion)
+            for scenario in scenarios
+            for member in preference
+        }
     known = model_in_catalog(catalog, clim_project, model)
     hist_key = entry_key(clim_project, model, "historical")
     hist_members = published_members(catalog, hist_key)
@@ -202,6 +224,9 @@ def resolve(
     one. That is the point: the skips are what make the composition record
     auditable, and an enumerated skip is what replaces the run-time
     ``asymmetric hist/clim members`` raise (design D7).
+
+    Source-quality exclusions apply to the entire model before member selection,
+    regardless of requested variables. Excluded triples retain their reason.
 
     ``members`` is an ORDERED PREFERENCE, most-wanted first, and ``selection``
     says what to do with it:
@@ -294,11 +319,19 @@ def unresolved_overrides(
     A model whose override resolved for SOME scenarios and not others is not
     reported: that is the ordinary shape of a model publishing one scenario and
     not another, and the policy has already decided what to do with it.
+    A requested model excluded for source quality is also not a configuration
+    error; the exclusion takes precedence over its member override.
     """
     if not overrides:
         return []
-    resolved_models = {c.dataset for c in combinations if c.resolved}
-    return sorted(model for model in overrides if model not in resolved_models)
+    # A member override cannot reinstate a model excluded by source-quality policy.
+    # Keep unknown/unrequested override keys as errors, as before.
+    usable_or_excluded = {
+        c.dataset
+        for c in combinations
+        if c.resolved or c.status == SOURCE_QUALITY_EXCLUDED
+    }
+    return sorted(model for model in overrides if model not in usable_or_excluded)
 
 
 def unknown_models(combinations: Iterable[Combination]) -> list[str]:
